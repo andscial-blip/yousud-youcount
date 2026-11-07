@@ -6,7 +6,8 @@ declare v_org uuid;
 begin
   insert into public.organizations(name) values ('YouSud ODV') returning id into v_org;
   insert into public.settings(org_id, key, value) values
-    (v_org, 'require_document', 'true'), (v_org, 'four_eyes', 'true'), (v_org, 'chart_version', '2');
+    (v_org, 'require_document', 'true'), (v_org, 'four_eyes', 'true'), (v_org, 'chart_version', '2'),
+    (v_org, 'ai_reading', 'false');
   insert into public.accounts(org_id, code, name_it, name_fr, currency, location, kind, sort) values
     (v_org, 'Banca Italia', 'Banca Italia', 'Banque Italie', 'EUR', 'IT', 'bank', 10),
     (v_org, 'Cassa Italia', 'Cassa Italia (contanti)', 'Caisse Italie (espèces)', 'EUR', 'IT', 'cash', 20),

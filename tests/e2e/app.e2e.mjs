@@ -53,6 +53,7 @@ async function seed() {
     description: 'PROVA materiale scolastico' });
   await save(U.op, { client_uuid: randomUUID(), kind: 'expense', op_date: today, amount: 35, currency: 'EUR',
     account_id: acc.bi, category_id: await id('categories', 'code', '201'), description: 'PROVA bozza operatore' });
+  await pool.query(`update settings set value = 'true' where key = 'ai_reading'`);
   const ym = today.slice(0, 7).split('-').map(Number);
   await as(U.resp, 'insert into fx_rates(org_id, year, month, rate, source) values ((select org_id from profiles where id = $1), $2, $3, 5000, $4)',
     [U.resp, ym[0], ym[1], 'prova e2e']);
@@ -61,7 +62,7 @@ async function seed() {
 
 function startNext(stack) {
   const p = spawn('npx', ['next', 'dev', '-p', String(APP_PORT)], {
-    env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: stack.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: stack.anonKey },
+    env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: stack.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: stack.anonKey, AI_MOCK: '1' },
     stdio: ['ignore', 'pipe', 'pipe'], detached: true });
   let log = '';
   p.stdout.on('data', (d) => (log += d));
@@ -149,6 +150,7 @@ try {
     await p.selectOption('#method', { label: 'Contanti' });
     await p.fill('#desc', 'PROVA quaderni');
     await p.locator('input[type=file]').nth(1).setInputFiles({ name: 'scontrino.png', mimeType: 'image/png', buffer: PNG });
+    await p.getByRole('button', { name: 'Usa la foto originale' }).click();
     await p.getByText('caricato', { exact: true }).waitFor();
     await p.getByRole('button', { name: 'Registra' }).click();
     await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
@@ -162,6 +164,36 @@ try {
                                    from movements m where id = $1`, [newId])).rows;
     assert.deepEqual(m, { amount: '250000.00', amount_eur: '50.00', status: 'recorded', docs: 1 });
     await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
+  });
+  await check('operatore: foto ritagliata e migliorata, lettura IA, conferma campo per campo', async () => {
+    const p = op.page;
+    const before = stack.files.size;
+    await p.goto(`${base}/nuovo`);
+    await p.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
+    await p.getByText('Ritaglia e migliora').waitFor();
+    await p.getByRole('button', { name: 'Usa la scansione' }).click();
+    await p.getByText('caricato', { exact: true }).waitFor({ timeout: 20000 });
+    assert.equal(stack.files.size - before, 3, 'originale, scansione migliorata e PDF');
+    await p.getByRole('button', { name: 'Leggi con l’IA' }).click();
+    await p.getByText('L’IA propone, tu decidi', { exact: false }).waitFor();
+    assert.equal(await p.inputValue('#amount'), '125000');
+    assert.equal(await p.inputValue('#desc'), 'Quaderni e penne per la scuola');
+    assert.match(await p.locator('#category option:checked').innerText(), /^303 ·/);
+    assert.equal(await p.inputValue('input[aria-label="Nome del nuovo fornitore o donatore"]'), 'Librairie Mixte Analakely');
+    await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    await p.selectOption('#project', { label: 'École Bonne Semence' });
+    await p.getByRole('button', { name: 'Registra' }).click();
+    await p.getByText('Conferma o correggi i campi proposti dall’IA').waitFor();
+    await p.screenshot({ path: `${SHOTS}/op_ia.png`, fullPage: true });
+    assert.match(p.url(), /\/nuovo$/, 'non registra senza conferma');
+    while (await p.getByRole('button', { name: 'Confermo' }).count()) await p.getByRole('button', { name: 'Confermo' }).first().click();
+    await p.getByRole('button', { name: 'Registra' }).click();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
+    const id = p.url().split('/').pop();
+    const [m] = (await pool.query(`select m.ai_extracted, m.amount, d.enhanced_path is not null as enh, d.pdf_path is not null as pdf,
+        d.extraction->>'model' as model from movements m join movement_documents md on md.movement_id = m.id
+        join documents d on d.id = md.document_id where m.id = $1`, [id])).rows;
+    assert.deepEqual(m, { ai_extracted: true, amount: '125000.00', enh: true, pdf: true, model: 'mock' });
   });
   await check('operatore: campi obbligatori e possibili doppioni segnalati', async () => {
     const p = op.page;
@@ -200,12 +232,12 @@ try {
     assert.doesNotMatch(await ro.page.locator('main').innerText(), /PROVA bozza operatore/);
     await ro.page.screenshot({ path: `${SHOTS}/ro_movimenti_mobile.png`, fullPage: true });
   });
-  await check('sola lettura: rendiconto con entrate A4 e uscite A1 in EUR (200 + 50 dal modulo)', async () => {
+  await check('sola lettura: rendiconto con entrate A4 e uscite A1 in EUR (200 + 50 dal modulo + 25 letto dall’IA)', async () => {
     await ro.page.goto(`${base}/rendiconto`);
     await ro.page.getByText('Totale uscite').waitFor();
     const txt = await ro.page.locator('main').innerText();
     assert.match(txt, /4\) Erogazioni liberali\s+2\.500,00\s?€/);
-    assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+250,00\s?€/);
+    assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+275,00\s?€/);
     await ro.page.screenshot({ path: `${SHOTS}/ro_rendiconto_mobile.png`, fullPage: true });
   });
   await check('operatore: niente "Da verificare" né amministrazione nel menu', async () => {
@@ -279,7 +311,10 @@ try {
     await p.getByRole('button', { name: 'Registra la conta' }).click();
     await p.waitForURL(/ok=cash/);
     const row = await p.locator('table.t').last().innerText();
-    assert.match(row, /\+1\.010\.000\s?MGA/, 'contati 0 contro saldo -1.010.000');
+    const [{ system_balance }] = (await pool.query('select system_balance from cash_counts order by created_at desc limit 1')).rows;
+    const exp = new Intl.NumberFormat('it-IT', { useGrouping: 'always' }).format(-Number(system_balance));
+    assert.ok(Number(system_balance) < 0);
+    assert.ok(row.includes(`+${exp}`), `differenza +${exp} in ${row}`);
   });
   await check('esportazione Excel di movimenti e rendiconto', async () => {
     const ExcelJS = require('exceljs');

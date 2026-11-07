@@ -48,7 +48,8 @@ w("declare v_org uuid;")
 w("begin")
 w("  insert into public.organizations(name) values ('YouSud ODV') returning id into v_org;")
 w("  insert into public.settings(org_id, key, value) values")
-w("    (v_org, 'require_document', 'true'), (v_org, 'four_eyes', 'true'), (v_org, 'chart_version', '%s');" % dump["CODES_V"])
+w("    (v_org, 'require_document', 'true'), (v_org, 'four_eyes', 'true'), (v_org, 'chart_version', '%s'),"
+  "\n    (v_org, 'ai_reading', 'false');" % dump["CODES_V"])
 
 # conti
 loc = {"Home": "IT", "Field": "MG"}
