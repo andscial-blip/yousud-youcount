@@ -25,7 +25,7 @@ export const SECTIONS: Section[] = [
   { href: '/guida', key: 'nav_guide', icon: 'M12 18h.01M9 9a3 3 0 1 1 4 2.8c-.6.3-1 .9-1 1.6V14', group: 'work' },
   { href: '/admin/utenti', key: 'nav_users', icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 11h5M19.5 8.5v5', roles: ADMIN, group: 'admin' },
   { href: '/admin/conti', key: 'nav_admin_accounts', icon: 'M3 7h18v12H3zM3 11h18', roles: ADMIN, group: 'admin' },
-  { href: '/admin/cambi', key: 'nav_fx', icon: 'M4 8h13l-3-3M20 16H7l3 3', roles: RESP, group: 'admin' },
+  { href: '/admin/cambi', key: 'nav_fx', icon: 'M5 19L19 5M7.5 7.5h.01M16.5 16.5h.01', roles: RESP, group: 'admin' },
   { href: '/admin/piano-conti', key: 'nav_chart', icon: 'M4 5h16M4 10h16M4 15h10M4 20h10', roles: ADMIN, group: 'admin' },
   { href: '/admin/progetti', key: 'nav_admin_projects', icon: 'M4 7h16v12H4zM9 7V4h6v3', roles: ADMIN, group: 'admin' },
   { href: '/admin/periodi', key: 'nav_periods', icon: 'M5 5h14v15H5zM5 10h14M9 3v4M15 3v4', roles: ADMIN, group: 'admin' },

@@ -19,7 +19,7 @@ export function TopNav({ items }: { items: NavLink[] }) {
     <nav className="nav" aria-label="Sezioni">
       <div className="wrap">
         {items.map((i) => (
-          <Link key={i.href} href={i.href} aria-current={isActive(path, i.href) ? 'page' : undefined}>{i.label}</Link>
+          <Link key={i.href} href={i.href} aria-current={isActive(path, i.href) ? 'page' : undefined}><Icon d={i.icon} size={16} />{i.label}</Link>
         ))}
       </div>
     </nav>
@@ -29,6 +29,8 @@ export function TopNav({ items }: { items: NavLink[] }) {
 // Telefono: Dashboard, Movimenti, "+" al centro, Documenti, Altro.
 export function BottomNav({ items }: { items: NavLink[] }) {
   const path = usePathname();
+  // nel modulo del movimento la barra in basso lascia spazio ai pulsanti Salva/Registra
+  if (path.startsWith('/nuovo') || path.endsWith('/modifica')) return null;
   return (
     <nav className="bnav" aria-label="Sezioni">
       {items.map((i) => (

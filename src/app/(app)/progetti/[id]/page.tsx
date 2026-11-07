@@ -31,11 +31,11 @@ export default async function ProjectDetail({ params, searchParams }: {
       <PageHead title={`${p.name} · ${year}`}>
         <div className="seg">
           <Link href={`/progetti/${id}?anno=${year - 1}`}>{year - 1}</Link>
-          <Link href={`/progetti/${id}?anno=${year}`} aria-pressed>{year}</Link>
+          <Link href={`/progetti/${id}?anno=${year}`} aria-current="true">{year}</Link>
           <Link href={`/progetti/${id}?anno=${year + 1}`}>{year + 1}</Link>
         </div>
       </PageHead>
-      {sp.ok === 'budget' && <div className="note">{t('b_saved')}</div>}
+      {sp.ok === 'budget' && <div className="note ok" role="status">{t('b_saved')}</div>}
       {sp.err && <div className="note err">{sp.err}</div>}
       {staff && (
         <Panel title={t('b_title')} pad>

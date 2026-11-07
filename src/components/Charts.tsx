@@ -2,10 +2,11 @@ import type { Lang } from '@/lib/i18n';
 
 // Grafici in SVG disegnati sul server: niente librerie, leggibili anche senza JavaScript.
 // Colori tenui: verde acqua per le entrate, blu notte per le uscite, lilla per i budget.
-export const C_IN = '#5FB8A8';
-export const C_OUT = '#3D5068';
-export const C_BUDGET = '#D9D3EE';
-export const C_OVER = '#D9786B';
+// colori come variabili del tema: contrasto corretto anche nel tema scuro (revisione del panel, A1-A2)
+export const C_IN = 'var(--c-in)';
+export const C_OUT = 'var(--c-out)';
+export const C_BUDGET = 'var(--c-budget)';
+export const C_OVER = 'var(--c-over)';
 
 const short = (n: number, lang: Lang) =>
   new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
@@ -31,7 +32,7 @@ export function MonthBars({ data, lang, labels }: {
     new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { month: 'short' }).format(new Date(2026, i, 1)));
   return (
     <figure style={{ margin: 0 }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${labels.in} / ${labels.out}`}>
+      <svg className="mbars" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${labels.in} / ${labels.out}`}>
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
           <g key={f}>
             <line x1={L} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--line-2)" />
@@ -51,7 +52,10 @@ export function MonthBars({ data, lang, labels }: {
           );
         })}
       </svg>
-      <figcaption className="legend"><span><i style={{ background: C_IN }} />{labels.in}</span><span><i style={{ background: C_OUT }} />{labels.out}</span></figcaption>
+      <figcaption className="legend">
+        <span><i style={{ background: C_IN }} />{labels.in} <b className="num">{full(data.reduce((s, d) => s + d.inc, 0), lang)}</b></span>
+        <span><i style={{ background: C_OUT }} />{labels.out} <b className="num">{full(data.reduce((s, d) => s + d.out, 0), lang)}</b></span>
+      </figcaption>
     </figure>
   );
 }
@@ -80,6 +84,7 @@ export function BudgetBar({ budget, spent }: { budget: number; spent: number }) 
       <i className="bb" style={{ width: `${(budget / max) * 100}%`, background: C_BUDGET }} />
       <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: C_OUT }} />
       {over && <i className="bs" style={{ left: `${(budget / max) * 100}%`, width: `${((spent - budget) / max) * 100}%`, background: C_OVER }} />}
+      {budget > 0 && <i className="bm" style={{ left: `calc(${(budget / max) * 100}% - 2px)` }} />}
     </span>
   );
 }

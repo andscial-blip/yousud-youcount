@@ -28,7 +28,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
       <PageHead title={`${t('nav_projects')} ${year}`}>
         <div className="seg">
           <Link href={`/progetti?anno=${year - 1}`}>{year - 1}</Link>
-          <Link href={`/progetti?anno=${year}`} aria-pressed>{year}</Link>
+          <Link href={`/progetti?anno=${year}`} aria-current="true">{year}</Link>
           <Link href={`/progetti?anno=${year + 1}`}>{year + 1}</Link>
         </div>
       </PageHead>

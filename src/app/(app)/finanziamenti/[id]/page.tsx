@@ -30,7 +30,7 @@ export default async function GrantDetail({ params, searchParams }: {
       <Link href="/finanziamenti" className="muted" style={{ textDecoration: 'none' }}>← {t('nav_grants')}</Link>
       <div className="h1row"><h1>{g.title}</h1>
         <span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? t('g_active') : t('g_closed')}</span></div>
-      {sp.ok === 'budget' && <div className="note">{t('b_saved')}</div>}
+      {sp.ok === 'budget' && <div className="note ok" role="status">{t('b_saved')}</div>}
       {sp.err && <div className="note err">{sp.err}</div>}
       <Panel pad>
         <dl className="kv">

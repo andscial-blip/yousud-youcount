@@ -70,8 +70,20 @@ for name, src in (('icon', icon), ('maskable', mask)):
         subprocess.run(['rsvg-convert', '-w', str(size), '-h', str(size), icons / f'{name}.svg',
                         '-o', icons / f'{name}-{size}.png'], check=True)
 subprocess.run(['rsvg-convert', '-w', '180', '-h', '180', icons / 'maskable.svg', '-o', icons / 'apple-touch-icon.png'], check=True)
+# versione semplificata per 16-32 px (approvata dal panel): 6 tessere, fughe e spunta più spesse
+SMALL = [('T0 T2 e L2', '#00A060'), ('T2 T3 R2 e', '#F0B048'), ('L2 e f L3', '#0870B0'), ('e R2 R3 f', '#C81858'),
+         ('L3 f B2 B0', '#90B848'), ('f R3 B3 B2', '#30A8D8')]
+P.update(dict(e=(50, 44), f=(50, 70)))
+small = []
+for names, col in SMALL:
+    piece = Polygon([P[n] for n in names.split()]).intersection(SHAPE)
+    if not piece.is_empty:
+        small.append(f'<path d="{path(piece)}" fill="{col}" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>')
+small.append('<path d="M33 50 L46 62 L68 37" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>')
+(brand / 'youcount-mark-small.svg').write_text(svg('\n'.join(small)))
 for s in (16, 32, 48):
-    subprocess.run(['rsvg-convert', '-w', str(s), '-h', str(s), brand / 'youcount-mark.svg', '-o', f'/tmp/yc-fav{s}.png'], check=True)
+    src = brand / ('youcount-mark-small.svg' if s <= 32 else 'youcount-mark.svg')
+    subprocess.run(['rsvg-convert', '-w', str(s), '-h', str(s), src, '-o', f'/tmp/yc-fav{s}.png'], check=True)
 subprocess.run(['convert', '/tmp/yc-fav16.png', '/tmp/yc-fav32.png', '/tmp/yc-fav48.png', root / 'src/app/favicon.ico'], check=True)
 for old in ('badge.svg',):
     (icons / old).unlink(missing_ok=True)

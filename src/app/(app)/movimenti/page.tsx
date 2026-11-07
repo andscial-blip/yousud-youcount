@@ -1,14 +1,16 @@
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { date, money, nm } from '@/lib/format';
-import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, PageHead, Panel } from '@/components/Page';
+import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
 
 type Row = {
   id: string; ref: string | null; op_date: string; kind: 'income' | 'expense' | 'transfer';
   status: 'draft' | 'recorded' | 'verified'; description: string; amount: string; currency: string; sign: number;
-  reverses_id: string | null; account: { name_it: string; name_fr: string } | null; category: { code: string } | null;
+  reverses_id: string | null; no_doc_reason: string | null; docs: { count: number }[];
+  account: { name_it: string; name_fr: string } | null; category: { code: string } | null;
   project: { name: string } | null;
 };
 
@@ -17,7 +19,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const { supabase, t, lang } = await requireMe();
   let q = supabase
     .from('movements')
-    .select(`id, ref, op_date, kind, status, description, amount, currency, sign, reverses_id,
+    .select(`id, ref, op_date, kind, status, description, amount, currency, sign, reverses_id, no_doc_reason, docs:movement_documents(count),
              account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name)`)
     .order('op_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -29,26 +31,28 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   return (
     <div className="stack">
       <PageHead title={t('nav_movements')}>
-        <a className="btn" href={`/api/v1/export/movimenti?anno=${new Date().getFullYear()}${stato ? `&stato=${stato}` : ''}`}>{t('exp_xlsx')}</a>
+        <a className="btn" href={`/api/v1/export/movimenti?anno=${new Date().getFullYear()}${stato ? `&stato=${stato}` : ''}`}><Ico name="download" />{t('exp_xlsx')}</a>
         <div className="seg">
           {filters.map(([v, l]) => (
-            <Link key={v} href={v ? `/movimenti?stato=${v}` : '/movimenti'} aria-pressed={stato === v}>{l}</Link>
+            <Link key={v} href={v ? `/movimenti?stato=${v}` : '/movimenti'} aria-current={(stato === v) ? 'true' : undefined}>{l}</Link>
           ))}
         </div>
       </PageHead>
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
+        {(data ?? []).length === 0 ? <EmptyState title={t('empty_mov')} text={t('empty_mov_t')} badge="plus"
+            action={<Link className="btn primary" href="/nuovo"><Ico name="plus" />{t('nav_new_long').replace('+ ', '')}</Link>} /> : (
           <table className="t">
             <thead>
-              <tr><th>{t('date')}</th><th className="hm">{t('ref')}</th><th>{t('description')}</th><th className="hm">{t('code')}</th>
-                <th className="hm">{t('project')}</th><th className="hm">{t('account')}</th><th className="r">{t('amount')}</th><th className="hm">{t('status')}</th></tr>
+              <tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th>{t('date')}</th><th className="hm">{t('ref')}</th><th>{t('description')}</th><th className="hm">{t('code')}</th>
+                <th className="hm">{t('project')}</th><th className="hm">{t('account')}</th><th className="r">{t('amount')}</th><th className="hm" style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th className="hm">{t('status')}</th></tr>
             </thead>
             <tbody>
               {data!.map((m) => {
                 const signed = Number(m.amount) * m.sign * (m.kind === 'income' ? 1 : -1);
                 return (
                   <tr key={m.id}>
+                    <td><KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} /></td>
                     <td className="num">{date(m.op_date)}</td>
                     <td className="num muted hm nw">{m.ref ?? '–'}</td>
                     <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind}`)}</Link>
@@ -58,7 +62,10 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <td className="muted hm">{m.category?.code ?? '–'}</td>
                     <td className="hm">{m.project?.name ?? '–'}</td>
                     <td className="hm">{nm(lang, m.account)}</td>
-                    <td className="r num nw">{m.kind === 'transfer' ? money(m.amount, m.currency, lang) : money(signed, m.currency, lang)}</td>
+                    <td className={`r num nw ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
+                      {m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</td>
+                    <td className="hm">{m.kind !== 'transfer' && <DocIndicator count={m.docs?.[0]?.count ?? 0} noDocReason={m.no_doc_reason}
+                      labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
                     <td className="hm"><StatusChip s={m.status} label={t(`st_${m.status}`)} /></td>
                   </tr>
                 );
@@ -71,6 +78,3 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   );
 }
 
-function StatusChip({ s, label }: { s: Row['status']; label: string }) {
-  return <span className={`chip ${s === 'verified' ? 'ok' : s === 'recorded' ? 'warn' : ''}`}>{label}</span>;
-}

@@ -23,7 +23,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   return (
     <div className="stack" style={{ maxWidth: 920 }}>
       <PageHead title={t('nav_settings')} />
-      {ok && <div className="note">✓</div>}
+      {ok && <div className="note ok" role="status">✓</div>}
       {err && <div className="note err">{err}</div>}
       <Panel>
         <table className="t">

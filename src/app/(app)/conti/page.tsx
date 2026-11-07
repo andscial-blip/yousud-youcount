@@ -25,7 +25,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
     <div className="stack">
       <PageHead title={t('nav_accounts')} />
       <ErrorNote prefix={t('error_load')} error={error} />
-      {ok === 'cash' && <div className="note">{t('cc_ok')}</div>}
+      {ok === 'cash' && <div className="note ok" role="status">{t('cc_ok')}</div>}
       {err && <div className="note err">{err}</div>}
       {(['IT', 'MG'] as const).map((loc) => (
         <Panel key={loc} title={loc === 'IT' ? t('italy') : t('madagascar')}>

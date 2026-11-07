@@ -4,6 +4,7 @@ import { money } from '@/lib/format';
 import type { Lang, T } from '@/lib/i18n';
 import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
+import { Ico } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,17 +42,17 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       <PageHead title={`${t('rep_title')} ${year}`}>
         <div className="seg noprint">
           <Link href={q(year - 1)}>{year - 1}</Link>
-          <Link href={q(year)} aria-pressed>{year}</Link>
+          <Link href={q(year)} aria-current="true">{year}</Link>
           <Link href={q(year + 1)}>{year + 1}</Link>
         </div>
       </PageHead>
       <div className="h1row noprint" style={{ gap: 8 }}>
         <div className="seg">
-          <Link href={q(year, false)} aria-pressed={!modelE}>{t('rep_modelD')}</Link>
-          <Link href={q(year, true)} aria-pressed={modelE}>{t('rep_modelE')}</Link>
+          <Link href={q(year, false)} aria-current={(!modelE) ? 'true' : undefined}>{t('rep_modelD')}</Link>
+          <Link href={q(year, true)} aria-current={(modelE) ? 'true' : undefined}>{t('rep_modelE')}</Link>
         </div>
         <div className="spacer" />
-        <a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}>{t('rep_xlsx')}</a>
+        <a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}><Ico name="download" />{t('rep_xlsx')}</a>
         <PrintButton label={t('rep_print')} />
       </div>
       <div className="note">{t('rep_draft')}</div>

@@ -5,6 +5,7 @@ import { requireMe, RESP } from '@/lib/session';
 import { date, dateTime, money, nm } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel } from '@/components/Page';
+import { Ico, KindIcon, StatusChip } from '@/components/Ui';
 import { discardAction, reverseAction, verifyAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -61,11 +62,12 @@ export default async function MovementDetail({ params, searchParams }: {
     <div className="stack" style={{ maxWidth: 920 }}>
       <Link href="/movimenti" className="muted" style={{ textDecoration: 'none' }}>{t('d_back')}</Link>
       <div className="h1row">
+        <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
         <h1>{m.ref ?? t('st_draft')} · {t(`k_${m.kind}`)}</h1>
-        <span className={`chip ${m.status === 'verified' ? 'ok' : m.status === 'recorded' ? 'warn' : ''}`}>{t(`st_${m.status}`)}</span>
-        {rev && <Link className="chip err" href={`/movimenti/${rev.id}`}>{t('d_reversed_by')} {rev.ref}</Link>}
+        <StatusChip s={m.status} label={t(`st_${m.status}`)} />
+        {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
-      {ok && <div className="note">{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? `${t('d_reverses')} ✓` : ''}</div>}
+      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ''}</div>}
       {errText && <div className="note err">{errText}</div>}
 
       <section className="kpis">
@@ -113,7 +115,7 @@ export default async function MovementDetail({ params, searchParams }: {
           {canVerify && (
             <form action={verifyAction}>
               <input type="hidden" name="id" value={m.id} /><input type="hidden" name="version" value={m.version} />
-              <button className="btn primary" type="submit">{t('verify_btn')}</button>
+              <button className="btn primary" type="submit"><Ico name="check" />{t('verify_btn')}</button>
             </form>
           )}
           {m.status === 'draft' && canEdit && (

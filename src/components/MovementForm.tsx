@@ -6,6 +6,7 @@ import type { Dict } from '@/lib/i18n';
 import type { RefData } from '@/lib/movement-ref';
 import { parseAmount } from '@/lib/amount';
 import { ScanEditor, type ScanResult } from './ScanEditor';
+import { Ico } from './Ui';
 
 type Kind = 'expense' | 'income' | 'transfer';
 export type Initial = {
@@ -291,7 +292,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       <div className="seg kinds" role="group" aria-label={t.f_kind}>
         {(['expense', 'income', 'transfer'] as const).map((k) => (
           <button type="button" key={k} aria-pressed={kind === k} disabled={Boolean(recordedLocked)}
-                  onClick={() => { setKind(k); setCategoryId(''); }}>{t[`k_${k}`]}</button>
+                  onClick={() => { setKind(k); setCategoryId(''); }}><Ico name={k} size={18} />{t[`k_${k}`]}</button>
         ))}
       </div>
 
@@ -405,10 +406,10 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       {kind !== 'transfer' && (
         <section className="panel"><div className="panel-h"><h2>{t.f_doc}</h2></div><div className="panel-b stack" style={{ gap: 12 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <label className="btn primary">{t.f_doc_photo}
+            <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
               <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
             </label>
-            <label className="btn">{t.f_doc_file}
+            <label className="btn big-touch"><Ico name="upload" />{t.f_doc_file}
               <input type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
             </label>
           </div>
@@ -425,7 +426,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
                       {aiBusy === d.id ? t.ai_reading : t.ai_read}</button>
                   )}
                   {d.state !== 'uploading' && !initial?.docs.some((x) => x.id === d.id) && (
-                    <button type="button" className="btn ghost" aria-label="×" onClick={() => setDocs((x) => x.filter((y) => y.key !== d.key))}>×</button>
+                    <button type="button" className="btn ghost" aria-label={t.remove_doc} title={t.remove_doc} onClick={() => setDocs((x) => x.filter((y) => y.key !== d.key))}><Ico name="close" /></button>
                   )}
                 </li>
               ))}
@@ -480,7 +481,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
         {(!initial || initial.status === 'draft') && (
           <button type="button" className="btn" disabled={busy} onClick={() => save('draft')}>{t.f_save_draft}</button>
         )}
-        <button type="submit" className="btn primary" disabled={busy}>{busy ? t.f_saving : t.f_record}</button>
+        <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : t.f_record}</button>
         <span className="hint" style={{ flex: '1 1 260px' }}>{t.f_record_hint}</span>
       </div>
     </form>

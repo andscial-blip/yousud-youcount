@@ -1,5 +1,6 @@
 import type { Lang, T } from '@/lib/i18n';
 import { money, nm } from '@/lib/format';
+import { Place } from './Ui';
 
 export type Balance = {
   account_id: string; code: string; name_it: string; name_fr: string; currency: 'EUR' | 'MGA'; kind: string; location: string;
@@ -20,7 +21,7 @@ export function BalancesTable({ rows, t, lang, detail = false }: { rows: Balance
         {rows.map((r) => (
           <tr key={r.account_id}>
             <td>{nm(lang, r)}</td>
-            <td className="muted">{r.location === 'IT' ? t('italy') : t('madagascar')}</td>
+            <td><Place loc={r.location} label={r.location === 'IT' ? t('italy') : t('madagascar')} /></td>
             {detail && <>
               <td className="r num">{money(r.opening_balance, r.currency, lang)}</td>
               <td className="r num">{money(r.movements_in, r.currency, lang)}</td>

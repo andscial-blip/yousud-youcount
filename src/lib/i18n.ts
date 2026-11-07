@@ -85,6 +85,11 @@ const it = {
   fees_title: 'Quote associative', fees_member: 'Socio', fees_payments: 'Versamenti', fees_last: 'Ultimo versamento',
   dash_chart: 'Entrate e uscite per mese', dash_by_project: 'Uscite per progetto', dash_year: 'Anno', exp_xlsx: 'Esporta in Excel',
   legend_in: 'Entrate', legend_out: 'Uscite',
+  // elementi grafici
+  doc_has: 'Giustificativo allegato', doc_missing: 'Giustificativo mancante', doc_none: 'Assenza del giustificativo dichiarata',
+  empty_mov: 'Nessun movimento', empty_mov_t: 'Registra la prima spesa o entrata con il pulsante «+».', empty_verify: 'Tutto verificato',
+  empty_verify_t: 'Non ci sono movimenti in attesa di verifica.', empty_docs: 'Nessun giustificativo in archivio',
+  net_online: 'In linea', net_offline: 'Senza rete', remove_doc: 'Rimuovi giustificativo', st_reversed: 'Stornato',
   // scansione e lettura IA
   scan_title: 'Ritaglia e migliora', scan_hint: 'Trascina i quattro angoli sui bordi del documento.', scan_rotate: 'Ruota',
   scan_reset: 'Bordi automatici', scan_enhance: 'Togli ombre e aumenta il contrasto', scan_use: 'Usa la scansione',
@@ -199,6 +204,10 @@ const fr: Record<Key, string> = {
   fees_title: 'Cotisations des membres', fees_member: 'Membre', fees_payments: 'Versements', fees_last: 'Dernier versement',
   dash_chart: 'Recettes et dépenses par mois', dash_by_project: 'Dépenses par projet', dash_year: 'Année', exp_xlsx: 'Exporter vers Excel',
   legend_in: 'Recettes', legend_out: 'Dépenses',
+  doc_has: 'Pièce jointe', doc_missing: 'Pièce justificative manquante', doc_none: 'Absence de pièce déclarée',
+  empty_mov: 'Aucun mouvement', empty_mov_t: 'Saisissez la première dépense ou recette avec le bouton « + ».', empty_verify: 'Tout est vérifié',
+  empty_verify_t: 'Aucun mouvement en attente de vérification.', empty_docs: 'Aucune pièce dans l’archive',
+  net_online: 'En ligne', net_offline: 'Hors ligne', remove_doc: 'Retirer la pièce', st_reversed: 'Extourné',
   scan_title: 'Recadrer et améliorer', scan_hint: 'Faites glisser les quatre coins sur les bords du document.', scan_rotate: 'Pivoter',
   scan_reset: 'Bords automatiques', scan_enhance: 'Supprimer les ombres et augmenter le contraste', scan_use: 'Utiliser le scan',
   scan_original: 'Utiliser la photo originale', scan_working: 'Traitement…', scan_cancel: 'Annuler',

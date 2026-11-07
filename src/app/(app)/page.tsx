@@ -4,6 +4,7 @@ import { money } from '@/lib/format';
 import { ErrorNote, PageHead, Panel, Empty } from '@/components/Page';
 import { BalancesTable, type Balance } from '@/components/Balances';
 import { HBars, MonthBars } from '@/components/Charts';
+import { Ico, Place } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,22 +45,24 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <PageHead title={t('nav_dashboard')}>
         <div className="seg">
           <Link href={`/?anno=${year - 1}`}>{year - 1}</Link>
-          <Link href={`/?anno=${year}`} aria-pressed>{year}</Link>
+          <Link href={`/?anno=${year}`} aria-current="true">{year}</Link>
           <Link href={`/?anno=${year + 1}`}>{year + 1}</Link>
         </div>
       </PageHead>
       <ErrorNote prefix={t('error_load')} error={error} />
       <section className="kpis">
-        <div className="kpi"><span className="l">{t('dash_it')}</span>
-          <span className="v num">{money(total('EUR'), 'EUR', lang)}</span><span className="s">{t('dash_it_s')}</span></div>
-        <div className="kpi"><span className="l">{t('dash_mg')}</span>
-          <span className="v num">{money(total('MGA'), 'MGA', lang)}</span><span className="s">{t('dash_mg_s')}</span></div>
-        <Link className="kpi" href="/movimenti?stato=recorded" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span className="l">{t('nav_verify')}</span><span className="v num">{toVerify ?? 0}</span>
-          <span className="s">{t('dash_verify_s')}</span></Link>
-        <Link className="kpi" href="/movimenti?stato=draft" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span className="l">{t('dash_drafts')}</span><span className="v num">{drafts ?? 0}</span>
-          <span className="s">{t('dash_drafts_s')}</span></Link>
+        <div className="kpi it"><span className="kh"><span className="ki"><Ico name="wallet" size={18} /></span><span className="l">{t('dash_it')}</span> <Place loc="IT" label={t('italy')} /></span>
+          <span className={`v num ${total('EUR') < 0 ? 'neg' : ''}`}>{money(total('EUR'), 'EUR', lang)}</span><span className="s">{t('dash_it_s')}</span></div>
+        <div className="kpi mg"><span className="kh"><span className="ki"><Ico name="wallet" size={18} /></span><span className="l">{t('dash_mg')}</span> <Place loc="MG" label={t('madagascar')} /></span>
+          <span className={`v num ${total('MGA') < 0 ? 'neg' : ''}`}>{money(total('MGA'), 'MGA', lang)}</span><span className="s">{t('dash_mg_s')}</span></div>
+        <Link className="kpi todo" href={me!.role === 'operator' ? '/movimenti?stato=recorded' : '/verifica'} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <span className="go"><Ico name="chevron" /></span>
+          <span className="kh"><span className="ki"><Ico name="clock" size={18} /></span><span className="l">{t('nav_verify')}</span></span>
+          <span className={`v num ${toVerify ? '' : 'zero'}`}>{toVerify ?? 0}</span><span className="s">{t('dash_verify_s')}</span></Link>
+        <Link className="kpi mine" href="/movimenti?stato=draft" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <span className="go"><Ico name="chevron" /></span>
+          <span className="kh"><span className="ki"><Ico name="draft" size={18} /></span><span className="l">{t('dash_drafts')}</span></span>
+          <span className={`v num ${drafts ? '' : 'zero'}`}>{drafts ?? 0}</span><span className="s">{t('dash_drafts_s')}</span></Link>
       </section>
       <div className="grid2">
         <Panel title={`${t('dash_chart')} · ${year}`} pad>

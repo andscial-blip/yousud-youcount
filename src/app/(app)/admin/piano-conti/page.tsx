@@ -24,8 +24,8 @@ export default async function Chart({ searchParams }: { searchParams: Promise<{ 
     <div className="stack">
       <PageHead title={t('nav_chart')}>
         <div className="seg">
-          <Link href="/admin/piano-conti?dir=out" aria-pressed={dir === 'out'}>{t('out')}</Link>
-          <Link href="/admin/piano-conti?dir=in" aria-pressed={dir === 'in'}>{t('in')}</Link>
+          <Link href="/admin/piano-conti?dir=out" aria-current={(dir === 'out') ? 'true' : undefined}>{t('out')}</Link>
+          <Link href="/admin/piano-conti?dir=in" aria-current={(dir === 'in') ? 'true' : undefined}>{t('in')}</Link>
         </div>
       </PageHead>
       <p className="muted" style={{ margin: 0 }}>{t('admin_readonly')}</p>

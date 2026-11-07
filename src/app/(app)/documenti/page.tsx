@@ -1,6 +1,10 @@
 import { requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
-import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, PageHead, Panel } from '@/components/Page';
+import { EmptyState, Ico } from '@/components/Ui';
+import type { IconName } from '@/lib/icons';
+
+const TYPE_ICON: Record<string, IconName> = { invoice: 'invoice', receipt: 'receipt', till_receipt: 'receipt', self_cert: 'selfCert', bank_statement: 'invoice', contract: 'invoice', other: 'invoice' };
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +27,7 @@ export default async function Documents() {
       <PageHead title={t('nav_documents')} />
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
+        {(data ?? []).length === 0 ? <EmptyState title={t('empty_docs')} badge="clip" /> : (
           <table className="t">
             <thead><tr><th>{t('doc_uploaded')}</th><th>{t('type')}</th><th>{t('doc_number')}</th><th>{t('date')}</th>
               <th className="r">{t('doc_total')}</th></tr></thead>
@@ -31,7 +35,7 @@ export default async function Documents() {
               {data!.map((d) => (
                 <tr key={d.id}>
                   <td className="num">{date(d.created_at)}</td>
-                  <td>{TYPE[d.doc_type]?.[lang === 'fr' ? 1 : 0] ?? d.doc_type}</td>
+                  <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><span className="kind" style={{ background: 'var(--surface-2)', color: 'var(--slate-2)' }}><Ico name={TYPE_ICON[d.doc_type] ?? 'invoice'} /></span>{TYPE[d.doc_type]?.[lang === 'fr' ? 1 : 0] ?? d.doc_type}</span></td>
                   <td>{d.doc_number ?? '–'}</td><td className="num">{date(d.doc_date)}</td>
                   <td className="r num">{d.total && d.currency ? money(d.total, d.currency, lang) : '–'}</td>
                 </tr>

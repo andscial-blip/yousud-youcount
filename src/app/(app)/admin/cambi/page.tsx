@@ -16,7 +16,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
     <div className="stack" style={{ maxWidth: 920 }}>
       <PageHead title={t('nav_fx')} />
       <p className="muted" style={{ margin: 0 }}>{t('fx_intro')}</p>
-      {ok && <div className="note">{t('fx_saved')}</div>}
+      {ok && <div className="note ok" role="status">{t('fx_saved')}</div>}
       {err && <div className="note err">{err}</div>}
       <Panel pad>
         <form action={saveRate} className="fgrid" style={{ alignItems: 'end' }}>
