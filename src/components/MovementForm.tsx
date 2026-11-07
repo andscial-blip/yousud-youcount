@@ -157,9 +157,9 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
     try {
       const res = await fetch('/api/v1/extract', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ document_id: docId }) });
-      const body = await res.json();
+      const body = await res.json().catch(() => ({ error: `http_${res.status}` }));
       if (!res.ok) {
-        setAiMsg(body.error === 'ai_disabled' ? t.ai_disabled : body.error === 'ai_not_configured' ? t.ai_not_configured : t.ai_err);
+        setAiMsg(body.error === 'ai_disabled' ? t.ai_disabled : body.error === 'ai_not_configured' ? t.ai_not_configured : `${t.ai_err} (${body.error ?? res.status})`);
         return;
       }
       const f = (body as AiResult).fields;

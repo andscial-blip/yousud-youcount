@@ -10,7 +10,10 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 const MAX_BYTES = 4.5 * 1024 * 1024;   // limite per immagine dell'API, con margine per la codifica
 
-const fail = (code: string, status: number) => NextResponse.json({ error: code }, { status });
+const fail = (code: string, status: number) => {
+  if (status !== 401) console.warn('[extract] rifiutata:', code, status);
+  return NextResponse.json({ error: code }, { status });
+};
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -53,7 +56,9 @@ export async function POST(req: NextRequest) {
         file: { base64: Buffer.from(await blob.arrayBuffer()).toString('base64'), mime },
       }));
     } catch (e) {
-      return fail((e as Error).message.startsWith('ai_') ? (e as Error).message : 'ai_invalid_output', 502);
+      const code = (e as Error).message.startsWith('ai_') ? (e as Error).message : 'ai_invalid_output';
+      console.error('[extract] lettura fallita:', code, (e as Error).name === 'TimeoutError' ? 'timeout' : '');
+      return fail(code, 502);
     }
   }
   const checks = runChecks(extraction);

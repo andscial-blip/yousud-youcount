@@ -24,9 +24,14 @@ export async function callClaude(opts: {
     }),
     signal: AbortSignal.timeout(60000),
   });
-  if (!res.ok) throw new Error(`ai_http_${res.status}`);
+  if (!res.ok) {
+    // nel log solo stato e messaggio d'errore dell'API (mai la chiave né il contenuto del documento)
+    const err = await res.json().catch(() => null);
+    console.error('[extract] API Anthropic', res.status, err?.error?.type ?? '', String(err?.error?.message ?? '').slice(0, 300));
+    throw new Error(`ai_http_${res.status}`);
+  }
   const body = await res.json();
   const tool = (body.content ?? []).find((c: { type: string }) => c.type === 'tool_use');
-  if (!tool) throw new Error('ai_no_result');
+  if (!tool) { console.error('[extract] nessun tool_use, stop_reason:', body.stop_reason); throw new Error('ai_no_result'); }
   return { extraction: parseToolInput(tool.input), usage: body.usage ?? { input_tokens: 0, output_tokens: 0 } };
 }

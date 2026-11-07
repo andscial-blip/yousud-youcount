@@ -259,6 +259,11 @@ a.rowlink:hover { color: var(--slate); text-decoration: underline; }
 .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .docs li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--surface-2); border-radius: var(--r); }
 .docs li span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) {
+  .docs li { flex-wrap: wrap; row-gap: 8px; }
+  .docs li span:first-child { flex-basis: 100%; }
+  .docs li .btn.primary { margin-left: auto; }
+}
 .chip.err { background: var(--pink); color: var(--pink-fg); border-color: transparent; }
 .check { display: flex; align-items: center; gap: 8px; font-family: var(--f-ui); font-weight: 600; cursor: pointer; }
 .check input { width: 18px; height: 18px; }
