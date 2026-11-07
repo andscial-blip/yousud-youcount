@@ -173,28 +173,27 @@ try {
     assert.ok(await p.getByRole('link', { name: 'Scarica' }).count() >= 1, 'pulsante di download con il nome del movimento');
     await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
   });
-  await check('operatore: foto ritagliata e migliorata, lettura IA, conferma campo per campo', async () => {
+  await check('operatore: foto ritagliata e migliorata, lettura IA automatica, registrare conferma tutto', async () => {
     const p = op.page;
     const before = stack.files.size;
     await p.goto(`${base}/nuovo`);
+    await p.fill('#desc', 'Testo scritto prima del file');
     await p.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
     await p.getByText('Ritaglia e migliora').waitFor();
     await p.getByRole('button', { name: 'Usa la scansione' }).click();
     await p.getByText('caricato', { exact: true }).waitFor({ timeout: 20000 });
     assert.equal(stack.files.size - before, 3, 'originale, scansione migliorata e PDF');
-    await p.getByRole('button', { name: 'Leggi con l’IA' }).click();
-    await p.getByText('L’IA propone, tu decidi', { exact: false }).waitFor();
+    // nessun clic: la lettura parte da sola dopo il caricamento
+    await p.getByText('Campi compilati dall’IA', { exact: false }).waitFor({ timeout: 20000 });
     assert.equal(await p.inputValue('#amount'), '125000');
-    assert.equal(await p.inputValue('#desc'), 'Quaderni e penne per la scuola');
+    assert.equal(await p.inputValue('#desc'), 'Testo scritto prima del file', 'la lettura automatica non sovrascrive quanto scritto');
     assert.match(await p.locator('#category option:checked').innerText(), /^303 ·/);
     assert.equal(await p.inputValue('input[aria-label="Nome del nuovo fornitore o donatore"]'), 'Librairie Mixte Analakely');
+    assert.equal(await p.getByRole('button', { name: 'Confermo' }).count(), 0, 'nessuna conferma campo per campo');
     await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    assert.ok(await p.inputValue('#rate'), 'tasso inserito in automatico');
     await p.selectOption('#project', { label: 'École Bonne Semence' });
-    await p.getByRole('button', { name: 'Registra' }).click();
-    await p.getByText('Conferma o correggi i campi proposti dall’IA').waitFor();
     await p.screenshot({ path: `${SHOTS}/op_ia.png`, fullPage: true });
-    assert.match(p.url(), /\/nuovo$/, 'non registra senza conferma');
-    while (await p.getByRole('button', { name: 'Confermo' }).count()) await p.getByRole('button', { name: 'Confermo' }).first().click();
     await p.getByRole('button', { name: 'Registra' }).click();
     await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
     const id = p.url().split('/').pop();
@@ -429,6 +428,16 @@ try {
     assert.equal(lang, 'fr');
   });
 
+  await check('tasso automatico: senza tasso del mese usa l’ultimo tasso usato in un movimento', async () => {
+    await pool.query('delete from fx_rates');
+    const [{ fx_rate }] = (await pool.query(`select fx_rate from movements where currency = 'MGA' and fx_rate is not null
+                                             order by op_date desc, created_at desc limit 1`)).rows;
+    const p = op.page;
+    await p.goto(`${base}/nuovo`);
+    await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    assert.equal(await p.inputValue('#rate'), String(Number(fx_rate)).replace('.', ','));
+    await p.getByText('ultimo tasso usato, inserito in automatico').waitFor();
+  });
   await check('uscita: chiude la sessione', async () => {
     await ro.page.goto(`${base}/altro`);
     await ro.page.getByRole('button', { name: 'Esci' }).first().click();

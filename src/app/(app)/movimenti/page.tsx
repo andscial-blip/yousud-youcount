@@ -44,7 +44,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
             action={<Link className="btn primary" href="/nuovo"><Ico name="plus" />{t('nav_new_long').replace('+ ', '')}</Link>} /> : (
           <table className="t">
             <thead>
-              <tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th>{t('date')}</th><th className="hm">{t('ref')}</th><th>{t('description')}</th><th className="hm">{t('code')}</th>
+              <tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th className="hm">{t('date')}</th><th className="hm">{t('ref')}</th><th>{t('description')}</th><th className="hm">{t('code')}</th>
                 <th className="hm">{t('project')}</th><th className="hm">{t('account')}</th><th className="r">{t('amount')}</th><th className="hm" style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th className="hm">{t('status')}</th></tr>
             </thead>
             <tbody>
@@ -53,11 +53,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 return (
                   <tr key={m.id}>
                     <td><KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} /></td>
-                    <td className="num">{date(m.op_date)}</td>
+                    <td className="num hm">{date(m.op_date)}</td>
                     <td className="num muted hm nw">{m.ref ?? '–'}</td>
                     <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind}`)}</Link>
                       {m.reverses_id && <> <span className="chip">{t('reversal')}</span></>}
-                      <div className="so muted">{[m.ref, m.category?.code, m.project?.name, nm(lang, m.account)].filter(Boolean).join(' · ')}</div>
+                      <div className="so muted">{[date(m.op_date), m.ref, m.category?.code, m.project?.name, nm(lang, m.account)].filter(Boolean).join(' · ')}</div>
                       <div className="so"><StatusChip s={m.status} label={t(`st_${m.status}`)} /></div></td>
                     <td className="muted hm">{m.category?.code ?? '–'}</td>
                     <td className="hm">{m.project?.name ?? '–'}</td>

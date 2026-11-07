@@ -17,7 +17,7 @@ export function BudgetTable({ rows, t, lang, edit }: {
   const shown = rows.filter((r) => Number(r.budget_eur) || Number(r.spent_eur));
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <table className="t">
+      <table className="t keep">
         <thead><tr><th>{t('group')}</th><th className="r">{t('b_budget')}</th><th className="r">{t('b_spent')}</th>
           <th className="r hm">{t('b_remaining')}</th><th style={{ width: '30%' }} className="hm" /></tr></thead>
         <tbody>

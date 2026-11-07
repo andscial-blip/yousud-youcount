@@ -66,6 +66,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
   const [dups, setDups] = useState<Dup[]>([]);
   const [scanQueue, setScanQueue] = useState<File[]>([]);
   const [ai, setAi] = useState<Partial<Record<AiKey, AiMark>>>({});
+  const autoRead = useRef(false);   // la lettura IA parte da sola una volta, al primo file
   const [aiBusy, setAiBusy] = useState<string | null>(null);
   const [aiMsg, setAiMsg] = useState<string | null>(null);
   const [aiChecks, setAiChecks] = useState<AiResult['checks']>([]);
@@ -85,12 +86,18 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
   const groups = [...new Set(cats.map((c) => c.group))];
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
-  // tasso proposto: quello del mese della data, o l'ultimo precedente
-  const suggested = useMemo(() => {
+  // tasso proposto in automatico: quello salvato per il mese della data; altrimenti il più recente tra
+  // l'ultimo tasso mensile precedente e l'ultimo tasso usato in un movimento in ariary
+  const rateSugg = useMemo(() => {
     const [y, m] = opDate.split('-').map(Number);
     const prev = R.rates.filter((r) => r.year < y || (r.year === y && r.month <= m));
-    return prev.length ? prev[prev.length - 1].rate : null;
-  }, [opDate, R.rates]);
+    const month = prev.length ? prev[prev.length - 1] : null;
+    if (month && month.year === y && month.month === m) return { rate: month.rate, src: 'month' as const };
+    const monthDate = month ? `${month.year}-${String(month.month).padStart(2, '0')}-01` : '';
+    if (R.lastRate && R.lastRate.date >= monthDate) return { rate: R.lastRate.rate, src: 'last' as const };
+    return month ? { rate: month.rate, src: 'month' as const } : null;
+  }, [opDate, R.rates, R.lastRate]);
+  const suggested = rateSugg?.rate ?? null;
   useEffect(() => {
     if (!rateTouched && suggested) setRateTxt(String(suggested).replace('.', ','));
   }, [suggested, rateTouched]);
@@ -145,13 +152,15 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       });
       if (error) throw error;
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, id: data.id, state: data.outcome === 'duplicate_file' ? 'dup' : 'ok' } : x)));
+      if (R.aiEnabled && !initial && !autoRead.current) { autoRead.current = true; readWithAi(data.id, true); }
     } catch {
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'err' } : x)));
     }
   }
 
   // lettura IA: i valori proposti riempiono i campi e restano "da confermare" finché l'utente non li conferma o li corregge
-  async function readWithAi(docId: string) {
+  // auto = lettura partita da sola: non sovrascrive ciò che l'utente ha già scritto
+  async function readWithAi(docId: string, auto = false) {
     setAiBusy(docId);
     setAiMsg(null);
     try {
@@ -168,19 +177,19 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       const usable = (x?: AiField) => x && x.value !== null && x.value !== '' && x.status !== 'missing';
       if (usable(f.total)) {
         const n = typeof f.total.value === 'number' ? f.total.value : parseAmount(String(f.total.value));
-        if (n) { setAmountTxt(String(n).replace('.', ',')); mark('amount', f.total); }
+        if (n && !(auto && amountTxt)) { setAmountTxt(String(n).replace('.', ',')); mark('amount', f.total); }
       }
       setAiCurrency(usable(f.currency) ? String(f.currency.value) : null);
       if (usable(f.doc_date) && /^\d{4}-\d{2}-\d{2}$/.test(String(f.doc_date.value))) {
         setDocDate(String(f.doc_date.value)); mark('docDate', f.doc_date);
         setOpDate(String(f.doc_date.value)); mark('opDate', { ...f.doc_date, status: 'inferred' });
       }
-      if (usable(f.description)) { setDescription(String(f.description.value).slice(0, 500)); mark('description', f.description); }
+      if (usable(f.description) && !(auto && description.trim())) { setDescription(String(f.description.value).slice(0, 500)); mark('description', f.description); }
       if (usable(f.category_code)) {
         const c = R.categories.find((x) => x.code === String(f.category_code.value) && x.direction === (kind === 'income' ? 'in' : 'out'));
-        if (c) { setCategoryId(c.id); mark('category', f.category_code); }
+        if (c && !(auto && categoryId)) { setCategoryId(c.id); mark('category', f.category_code); }
       }
-      if (usable(f.supplier_name)) {
+      if (usable(f.supplier_name) && !(auto && cpId)) {
         const name = String(f.supplier_name.value);
         const hit = R.counterparties.find((c) => c.name.toLowerCase() === name.toLowerCase());
         if (hit) setCpId(hit.id); else { setCpId('__new'); setCpNew(name); }
@@ -189,7 +198,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       if (usable(f.payment_method)) {
         const re = METHOD_HINT[String(f.payment_method.value)];
         const m = re && R.methods.find((x) => re.test(x.code) || re.test(x.name));
-        if (m) { setMethodId(m.id); mark('method', f.payment_method); }
+        if (m && !(auto && methodId)) { setMethodId(m.id); mark('method', f.payment_method); }
       }
       setAi(marks);
       setAiChecks((body as AiResult).checks ?? []);
@@ -222,7 +231,6 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
     if (needed) return;
     if (docs.some((d) => d.state === 'uploading')) return;
-    if (status === 'recorded' && Object.values(ai).some((m) => m && !m.confirmed)) { setError(t.ai_pending); return; }
     setBusy(true);
     try {
       let counterparty = cpId || null;
@@ -260,16 +268,17 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
   }
 
   const req = (bad: boolean) => (touched && bad ? <span className="ferr">{t.f_required}</span> : null);
-  const aiCls = (k: AiKey) => (ai[k] ? (ai[k]!.confirmed ? 'field ai-field ok' : 'field ai-field') : 'field');
+  // campi compilati dall'IA: chi registra li conferma tutti insieme; in giallo solo quelli incerti.
+  // Un campo corretto a mano perde l'etichetta (confirmed = modificato dall'utente).
+  const uncertain = (m?: AiMark) => Boolean(m && !m.confirmed && m.status !== 'present');
+  const aiCls = (k: AiKey) => (ai[k] && !ai[k]!.confirmed ? (uncertain(ai[k]) ? 'field ai-field' : 'field ai-field ok') : 'field');
   const aiTag = (k: AiKey) => {
     const m = ai[k];
-    if (!m) return null;
-    const st = m.status === 'ambiguous' ? 'err' : m.status === 'inferred' ? 'warn' : 'ok';
+    if (!m || m.confirmed) return null;
     return (
       <span className="ai-tag">
-        <span className={`chip ${m.confirmed ? 'ok' : st}`}>{m.confirmed ? t.ai_confirmed : `${t.ai_proposed} · ${t[`ai_status_${m.status}` as keyof Dict] ?? m.status}`}</span>
-        {m.source && <span>{t.ai_source}: <q>{m.source}</q></span>}
-        {!m.confirmed && <button type="button" className="btn" onClick={() => confirm(k)}>{t.ai_confirm}</button>}
+        <span className={`chip ${uncertain(m) ? 'warn' : 'ok'}`}>{uncertain(m) ? `${t.ai_proposed} · ${t.ai_check}` : t.ai_proposed}</span>
+        {uncertain(m) && m.source && <span>{t.ai_source}: <q>{m.source}</q></span>}
       </span>
     );
   };
@@ -321,9 +330,9 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       {Object.keys(ai).length > 0 && (
         <div className="note">
           <b>{t.ai_note}</b>
-          {aiChecks.length > 0 && (
+          {aiChecks.some((c) => !c.ok) && (
             <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-              {aiChecks.map((c) => <li key={c.code} style={{ color: c.ok ? 'var(--green)' : 'var(--red)' }}>{c.ok ? '✓' : '!'} {c.message}</li>)}
+              {aiChecks.filter((c) => !c.ok).map((c) => <li key={c.code} style={{ color: 'var(--red)' }}>! {c.message}</li>)}
             </ul>
           )}
         </div>
@@ -377,7 +386,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
             <label htmlFor="rate">{t.f_rate}</label>
             <input className="input num" id="rate" inputMode="decimal" value={rateTxt}
                    onChange={(e) => { setRateTxt(e.target.value); setRateTouched(true); }} />
-            <span className="hint">{suggested ? (!rateTouched || rate === suggested ? t.f_rate_auto : '') : t.f_rate_missing}</span>
+            <span className="hint">{suggested ? (!rateTouched || rate === suggested ? (rateSugg?.src === 'last' ? t.f_rate_last : t.f_rate_auto) : '') : t.f_rate_missing}</span>
             {req(missing.rate)}
           </div>
         )}

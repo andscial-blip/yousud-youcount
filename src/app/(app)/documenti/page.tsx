@@ -40,7 +40,7 @@ export default async function Documents() {
                 const name = docName(link?.movement?.ref, link?.seq, d.pdf_path ?? d.original_path, d.file_name);
                 return (
                 <tr key={d.id}>
-                  <td className="num">{link?.movement ? <Link href={`/movimenti/${link.movement.id}`}>{name}</Link> : name}</td>
+                  <td>{link?.movement ? <Link href={`/movimenti/${link.movement.id}`}>{name}</Link> : name}</td>
                   <td className="num">{date(d.created_at)}</td>
                   <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><span className="kind" style={{ background: 'var(--surface-2)', color: 'var(--slate-2)' }}><Ico name={TYPE_ICON[d.doc_type] ?? 'invoice'} /></span>{TYPE[d.doc_type]?.[lang === 'fr' ? 1 : 0] ?? d.doc_type}</span></td>
                   <td>{d.doc_number ?? '–'}</td><td className="num">{date(d.doc_date)}</td>

@@ -40,33 +40,37 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
       <Panel>
         {(data ?? []).length === 0 ? <EmptyState title={t('empty_verify')} text={t('empty_verify_t')} badge="check" /> : (
           <table className="t">
-            <thead><tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th>{t('date')}</th><th>{t('ref')}</th><th>{t('description')}</th><th>{t('code')}</th>
-              <th>{t('project')}</th><th>{t('account')}</th><th className="r">{t('amount')}</th><th style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th>{t('entered_by')}</th><th /></tr></thead>
+            <thead><tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th className="hm">{t('date')}</th><th className="hm">{t('ref')}</th><th>{t('description')}</th><th className="hm">{t('code')}</th>
+              <th className="hm">{t('project')}</th><th className="hm">{t('account')}</th><th className="r">{t('amount')}</th><th className="hm" style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th className="hm">{t('entered_by')}</th><th className="hm" /></tr></thead>
             <tbody>
-              {data!.map((r) => (
-                <tr key={r.id}>
-                  <td><KindIcon kind={r.kind} label={t(`k_${r.kind}`)} /></td>
-                  <td className="num">{date(r.op_date)}</td>
-                  <td className="num muted">{r.ref}</td>
-                  <td><Link className="rowlink" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>{r.reverses_id && <> <span className="chip">{t('reversal')}</span></>}</td>
-                  <td className="muted">{r.category?.code ?? '–'}</td>
-                  <td>{r.project?.name ?? '–'}</td>
-                  <td>{nm(lang, r.account)}</td>
-                  <td className="r num">{money(r.amount, r.currency, lang)}</td>
-                  <td>{r.kind !== 'transfer' && <DocIndicator count={r.docs?.[0]?.count ?? 0} noDocReason={r.no_doc_reason}
-                    labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
-                  <td>{name.get(r.created_by) ?? '–'}</td>
-                  <td className="r">
-                    {mine(r) ? <span className="chip">{t('verify_own')}</span> : (
-                      <form action={verifyMovement}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <input type="hidden" name="version" value={r.version} />
-                        <button className="btn primary" type="submit" style={{ padding: '5px 10px' }}><Ico name="check" />{t('verify_btn')}</button>
-                      </form>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {data!.map((r) => {
+                const action = mine(r) ? <span className="chip">{t('verify_own')}</span> : (
+                  <form action={verifyMovement}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="version" value={r.version} />
+                    <button className="btn primary" type="submit" style={{ padding: '5px 10px' }}><Ico name="check" />{t('verify_btn')}</button>
+                  </form>
+                );
+                return (
+                  <tr key={r.id}>
+                    <td><KindIcon kind={r.kind} label={t(`k_${r.kind}`)} /></td>
+                    <td className="num hm">{date(r.op_date)}</td>
+                    <td className="num muted hm nw">{r.ref}</td>
+                    <td><Link className="rowlink" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>{r.reverses_id && <> <span className="chip">{t('reversal')}</span></>}
+                      {/* telefono: i dettagli sotto la descrizione e il pulsante a portata di dito */}
+                      <div className="so muted">{[date(r.op_date), r.ref, r.category?.code, r.project?.name, nm(lang, r.account), name.get(r.created_by)].filter(Boolean).join(' · ')}</div>
+                      <div className="so" style={{ marginTop: 6 }}>{action}</div></td>
+                    <td className="muted hm">{r.category?.code ?? '–'}</td>
+                    <td className="hm">{r.project?.name ?? '–'}</td>
+                    <td className="hm">{nm(lang, r.account)}</td>
+                    <td className="r num nw">{money(r.amount, r.currency, lang)}</td>
+                    <td className="hm">{r.kind !== 'transfer' && <DocIndicator count={r.docs?.[0]?.count ?? 0} noDocReason={r.no_doc_reason}
+                      labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
+                    <td className="hm">{name.get(r.created_by) ?? '–'}</td>
+                    <td className="r hm">{action}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Logo, Wordmark } from '@/components/Logo';
 import { BottomNav, TopNav, Icon } from '@/components/Nav';
 import { NetStatus } from '@/components/NetStatus';
+import { TableCards } from '@/components/TableCards';
 import { I } from '@/lib/icons';
 import { supabaseConfigured } from '@/lib/supabase/env';
 import { guestLang, requireMe } from '@/lib/session';
@@ -49,6 +50,7 @@ function Shell({ t, who, top, bottom, children }: {
       </header>
       {top.length > 0 && <TopNav items={top} />}
       <main className="wrap">{children}</main>
+      <TableCards />
       {bottom.length > 0 && <BottomNav items={bottom} />}
     </>
   );

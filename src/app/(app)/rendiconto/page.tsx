@@ -62,7 +62,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       {(['out', 'in'] as const).map((dir) => (
         <section className="panel" key={dir} style={{ overflowX: 'auto' }}>
           <div className="panel-h"><h2>{dir === 'out' ? t('out') : t('in')}</h2></div>
-          <table className="t">
+          <table className="t keep">
             <thead><tr><th>{t('rep_item')}</th><th className="r">{year}</th><th className="r">{year - 1}</th></tr></thead>
             <tbody>
               {sections(dir).map((sec) => <SectionRows key={sec[0].section} sec={sec} lang={lang} aggregated={modelE} />)}
@@ -78,7 +78,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       <Result t={t} lang={lang} year={year} value={tot('in') - tot('out')} />
       {(fees ?? []).length > 0 && (
         <Panel title={`${t('fees_title')} ${year}`}>
-          <table className="t">
+          <table className="t keep">
             <thead><tr><th>{t('fees_member')}</th><th className="r">{t('fees_payments')}</th><th className="hm">{t('fees_last')}</th><th className="r">{t('amount')}</th></tr></thead>
             <tbody>
               {(fees as { counterparty_id: string; name: string; amount_eur: string; payments: number; last_date: string }[]).map((f) => (

@@ -12,13 +12,14 @@ export type RefData = {
   methods: { id: string; name: string; code: string }[];
   counterparties: { id: string; name: string }[];
   rates: { year: number; month: number; rate: number }[];
+  lastRate: { rate: number; date: string } | null;   // ultimo tasso usato in un movimento in ariary
   grants: { id: string; title: string; project_id: string | null }[];
   aiEnabled: boolean;
 };
 
 export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang): Promise<RefData> {
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
-  const [acc, cat, prj, met, cp, fx, mem, gr, ai] = await Promise.all([
+  const [acc, cat, prj, met, cp, fx, mem, gr, ai, last] = await Promise.all([
     supabase.from('accounts').select('id, name_it, name_fr, currency, location, kind').eq('active', true).order('sort'),
     supabase.from('categories').select('id, code, name_it, name_fr, direction, group:category_groups(code, name_it, name_fr)')
       .eq('active', true).order('sort'),
@@ -29,6 +30,8 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     supabase.from('project_members').select('project_id').eq('user_id', me.id),
     supabase.from('grants').select('id, title, project_id').eq('status', 'active').order('title'),
     supabase.from('settings').select('value').eq('key', 'ai_reading').maybeSingle(),
+    supabase.from('movements').select('fx_rate, op_date').eq('currency', 'MGA').not('fx_rate', 'is', null)
+      .order('op_date', { ascending: false }).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
   // un operatore senza "tutti i progetti" vede nel modulo solo quelli assegnati
   const allowed = me.role === 'operator' && !me.all_projects ? new Set((mem.data ?? []).map((m) => m.project_id)) : null;
@@ -46,5 +49,6 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     rates: (fx.data ?? []).map((r) => ({ year: r.year, month: r.month, rate: Number(r.rate) })),
     grants: gr.data ?? [],
     aiEnabled: ai.data?.value === true,
+    lastRate: last.data?.fx_rate ? { rate: Number(last.data.fx_rate), date: last.data.op_date } : null,
   };
 }
