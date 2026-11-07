@@ -102,6 +102,11 @@ try {
     return { ctx, page };
   };
 
+  await check('pagina di accesso: il logo si vede anche senza sessione', async () => {
+    const r = await fetch(`${base}/brand/youcount-mark.svg`, { redirect: 'manual' });
+    assert.equal(r.status, 200);
+    assert.match(r.headers.get('content-type') ?? '', /svg/);
+  });
   await check('senza sessione si viene mandati al login', async () => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
@@ -348,9 +353,61 @@ try {
   });
 
   const sa = await login('andrea@test.local');
+  await check('super admin: modifica conti, progetti, piano dei conti, controparti e chiude un mese', async () => {
+    const p = sa.page;
+    const row = (text) => p.locator('details.erow', { hasText: text });
+    // dopo ogni salvataggio si ricarica la pagina senza ?ok=1, così il salvataggio successivo è riconoscibile
+    const submit = async (btn) => {
+      await btn.click();
+      await p.waitForURL(/[?&](ok|err)=/, { timeout: 30000 });
+      assert.match(p.url(), /[?&]ok=1/, `salvataggio non riuscito: ${decodeURIComponent(p.url())}`);
+      await p.goto(p.url().replace(/[?&]ok=1/, ''));
+    };
+    // saldo iniziale di un conto
+    await p.goto(`${base}/admin/conti`);
+    await row('Cassa Italia (contanti)').locator('summary').click();
+    await row('Cassa Italia (contanti)').locator('input[name=opening_balance]').fill('1.250,50');
+    await submit(row('Cassa Italia (contanti)').getByRole('button', { name: 'Salva' }));
+    const [acc] = (await pool.query(`select opening_balance from accounts where code = 'Cassa Italia'`)).rows;
+    assert.equal(acc.opening_balance, '1250.50');
+    const [aud] = (await pool.query(`select count(*)::int n from audit_log where table_name = 'accounts' and action = 'update'`)).rows;
+    assert.ok(aud.n >= 1, 'modifica registrata nel registro');
+    await p.screenshot({ path: `${SHOTS}/sa_admin_conti.png`, fullPage: true });
+    // nuovo progetto
+    await p.goto(`${base}/admin/progetti`);
+    await p.locator('form', { hasText: 'Aggiungi' }).last().locator('input[name=name]').fill('Progetto e2e');
+    await submit(p.getByRole('button', { name: 'Aggiungi' }));
+    assert.equal((await pool.query(`select count(*)::int n from projects where name = 'Progetto e2e' and active`)).rows[0].n, 1);
+    // riga di rendiconto di un codice da classificare, poi ripristino
+    await p.goto(`${base}/admin/piano-conti?dir=out`);
+    await row('Altre spese da riclassificare').locator('summary').click();
+    await row('Altre spese da riclassificare').locator('select[name=report_line_key]').selectOption('A5');
+    await submit(row('Altre spese da riclassificare').getByRole('button', { name: 'Salva' }));
+    assert.equal((await pool.query(`select report_line_key k from categories where code = '999'`)).rows[0].k, 'A5');
+    await row('Altre spese da riclassificare').locator('summary').click();
+    await row('Altre spese da riclassificare').locator('select[name=report_line_key]').selectOption('');
+    await submit(row('Altre spese da riclassificare').getByRole('button', { name: 'Salva' }));
+    assert.equal((await pool.query(`select report_line_key k from categories where code = '999'`)).rows[0].k, null);
+    // controparte con dati riservati
+    await p.goto(`${base}/controparti`);
+    await p.locator('form', { hasText: 'Aggiungi' }).last().locator('input[name=name]').fill('Fornitore e2e');
+    await submit(p.getByRole('button', { name: 'Aggiungi' }));
+    await row('Fornitore e2e').locator('summary').click();
+    await row('Fornitore e2e').locator('input[name=iban]').fill('IT60X0542811101000000123456');
+    await submit(row('Fornitore e2e').getByRole('button', { name: 'Salva' }).last());
+    const [cp] = (await pool.query(`select x.iban from counterparty_private x join counterparties c on c.id = x.counterparty_id where c.name = 'Fornitore e2e'`)).rows;
+    assert.equal(cp.iban, 'IT60X0542811101000000123456');
+    // chiusura e riapertura di un mese vecchio senza movimenti da verificare
+    await p.goto(`${base}/admin/periodi`);
+    const last = p.locator('tbody tr').last();
+    await submit(last.getByRole('button', { name: 'Chiudi il mese' }));
+    assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 1);
+    await submit(p.locator('tbody tr').last().getByRole('button', { name: 'Riapri' }));
+    assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 0);
+  });
   await check('super admin: pagine di amministrazione e lingua francese', async () => {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
-      ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto'], ['/admin/impostazioni', 'Quattro occhi'],
+      ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto|da verificare'], ['/admin/impostazioni', 'Quattro occhi'],
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
       ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/admin/cambi', 'prova e2e'], ['/sincronizzazione', 'Tappa 4e'], ['/guida', 'Verifica e storni']]) {
       await sa.page.goto(base + path);

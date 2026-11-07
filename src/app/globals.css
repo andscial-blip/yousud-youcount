@@ -301,3 +301,21 @@ dl.kv dd { margin: 0; }
   .mbars text { font-size: 18px; }
   .seg a, .seg button { min-height: 40px; display: inline-flex; align-items: center; }
 }
+
+/* righe modificabili (amministrazione) */
+.field .flabel { font-family: var(--f-ui); font-weight: 600; font-size: 13px; color: var(--muted); }
+.erow { border-bottom: 1px solid var(--line); }
+.erow:last-child { border-bottom: 0; }
+.erow > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; min-height: 48px; }
+.erow > summary::-webkit-details-marker { display: none; }
+.erow > summary svg { color: var(--muted); flex: none; }
+.erow > summary:hover { background: var(--surface-2); }
+.erow[open] > summary { background: var(--surface-2); }
+.erow-s { flex: 1; display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.erow-b { padding: 14px 16px 18px; border-top: 1px dashed var(--line); }
+.erow.off > summary { opacity: .6; }
+.erow-s .num { font-variant-numeric: tabular-nums; }
+.erow-s .grow { flex: 1 1 200px; min-width: 0; }
+.erow-s .meta { min-width: 230px; text-align: right; }
+.erow-s .amt { min-width: 210px; text-align: right; }
+@media (max-width: 720px) { .erow-s .meta, .erow-s .amt { min-width: 0; text-align: left; } }
