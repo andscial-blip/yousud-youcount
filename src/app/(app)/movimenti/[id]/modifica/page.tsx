@@ -12,7 +12,7 @@ export default async function EditMovement({ params }: { params: Promise<{ id: s
   const { supabase, me, t, lang } = await requireMe();
   const { data: m } = await supabase.from('movements')
     .select(`id, version, status, kind, op_date, doc_date, description, amount, currency, fx_rate, account_id, to_account_id,
-             to_amount, category_id, project_id, counterparty_id, payment_method_id, notes, no_doc_reason,
+             to_amount, category_id, project_id, grant_id, counterparty_id, payment_method_id, notes, no_doc_reason,
              links:movement_documents(document:documents(id, original_path, file_name))`)
     .eq('id', id).maybeSingle();
   if (!m) notFound();

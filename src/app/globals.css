@@ -158,6 +158,29 @@ h3.grp { font-size: 13px; color: var(--muted); text-transform: uppercase; letter
 a.rowlink { color: var(--fg); text-decoration: none; font-weight: 600; }
 a.rowlink:hover { color: var(--slate); text-decoration: underline; }
 
+/* grafici */
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.hbars { display: grid; gap: 8px; }
+.hbar { display: grid; grid-template-columns: minmax(110px, 200px) 1fr max-content; align-items: center; gap: 10px; }
+.hbar .hl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar .hl a { color: var(--fg); text-decoration: none; }
+.hbar .hl a:hover { text-decoration: underline; }
+.hbar .ht { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.hbar .ht i { display: block; height: 100%; border-radius: 6px; }
+.hbar .hv { font-size: 13px; color: var(--muted); }
+.bbar { position: relative; display: block; height: 10px; min-width: 120px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
+.bbar i { position: absolute; top: 0; bottom: 0; left: 0; display: block; }
+.bbar .bb { border-radius: 5px; }
+.grid2 { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+@media print {
+  .top, .nav, .bnav, .noprint { display: none !important; }
+  body { background: #fff; }
+  main { padding: 0; }
+  .panel { border: 0; break-inside: avoid; }
+}
+
 /* modulo del movimento */
 .mform { max-width: 920px; }
 .fgrid { display: grid; gap: 16px 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }

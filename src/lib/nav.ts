@@ -19,6 +19,7 @@ export const SECTIONS: Section[] = [
   { href: '/progetti', key: 'nav_projects', icon: 'M4 7h16v12H4zM9 7V4h6v3', top: true, group: 'work' },
   { href: '/conti', key: 'nav_accounts', icon: 'M3 10h18M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18M12 3l9 5H3z', top: true, group: 'work' },
   { href: '/rendiconto', key: 'nav_report', icon: 'M5 20V10M12 20V4M19 20v-7', roles: STAFF, top: true, group: 'work' },
+  { href: '/finanziamenti', key: 'nav_grants', icon: 'M12 3v18M7 7h7.5a3.5 3.5 0 0 1 0 7H7', group: 'work' },
   { href: '/controparti', key: 'nav_counterparties', icon: 'M16 11a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0', group: 'work' },
   { href: '/sincronizzazione', key: 'nav_sync', icon: 'M4 12a8 8 0 0 1 14-5l2-2v6h-6M20 12a8 8 0 0 1-14 5l-2 2v-6h6', group: 'work' },
   { href: '/guida', key: 'nav_guide', icon: 'M12 18h.01M9 9a3 3 0 1 1 4 2.8c-.6.3-1 .9-1 1.6V14', group: 'work' },

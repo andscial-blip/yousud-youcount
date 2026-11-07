@@ -177,6 +177,30 @@ create table public.counterparty_private (
   updated_at      timestamptz not null default now()
 );
 
+-- ---------------------------------------------------------------- finanziamenti (contributi, bandi, donazioni vincolate)
+create table public.grants (
+  id         uuid primary key default gen_random_uuid(),
+  org_id     uuid not null references public.organizations(id) on delete restrict,
+  code       text check (code is null or length(code) <= 60),
+  title      text not null check (length(title) between 2 and 200),
+  donor_id   uuid references public.counterparties(id),
+  project_id uuid references public.projects(id),
+  currency   char(3) not null default 'EUR' check (currency in ('EUR','MGA')),
+  amount     numeric(16,2) check (amount is null or amount >= 0),
+  start_date date,
+  end_date   date,
+  status     text not null default 'active' check (status in ('active','closed')),
+  notes      text check (notes is null or length(notes) <= 2000),
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  version    integer not null default 1,
+  unique (org_id, code),
+  check (end_date is null or start_date is null or end_date >= start_date)
+);
+create index grants_project_idx on public.grants(project_id);
+
+
 -- ---------------------------------------------------------------- documenti
 create table public.documents (
   id               uuid primary key default gen_random_uuid(),
@@ -233,6 +257,7 @@ create table public.movements (
   to_amount         numeric(16,2) check (to_amount is null or to_amount > 0),
   category_id       uuid references public.categories(id),
   project_id        uuid references public.projects(id),
+  grant_id          uuid references public.grants(id),        -- finanziamento a cui si imputa la spesa
   counterparty_id   uuid references public.counterparties(id),
   payment_method_id uuid references public.payment_methods(id),
   notes             text check (notes is null or length(notes) <= 2000),
@@ -268,6 +293,7 @@ create index movements_org_date_idx    on public.movements(org_id, op_date desc)
 create index movements_account_idx     on public.movements(account_id, op_date);
 create index movements_to_account_idx  on public.movements(to_account_id) where to_account_id is not null;
 create index movements_project_idx     on public.movements(project_id, op_date);
+create index movements_grant_idx       on public.movements(grant_id) where grant_id is not null;
 create index movements_category_idx    on public.movements(category_id);
 create index movements_status_idx      on public.movements(org_id, status);
 create index movements_created_by_idx  on public.movements(created_by);

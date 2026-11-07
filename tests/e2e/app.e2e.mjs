@@ -79,7 +79,7 @@ async function waitFor(url, ms = 90000) {
 
 const results = [];
 async function check(name, fn) {
-  try { await fn(); results.push(['ok', name]); } catch (e) { results.push(['FAIL', name, e.message.split('\n')[0]]); }
+  try { await fn(); results.push(['ok', name]); } catch (e) { results.push(['FAIL', name, e.message.replace(/\s+/g, ' ').slice(0, 700)]); }
 }
 
 const U = await seed();
@@ -248,6 +248,65 @@ try {
     assert.match(await p.locator('main').innerText(), /Stornato da MOV-/);
     const [{ n }] = (await pool.query('select count(*)::int n from movements where reverses_id = $1', [newId])).rows;
     assert.equal(n, 1);
+  });
+
+  await check('responsabile: imposta il budget del progetto e crea un finanziamento', async () => {
+    const p = rs.page;
+    const [{ id: prj }] = (await pool.query(`select id from projects where name = 'École Antanetibe'`)).rows;
+    await p.goto(`${base}/progetti/${prj}?anno=${year}`);
+    await p.getByText('Imposta il budget').click();
+    await p.locator('label', { hasText: '04 · Beni di consumo e merci' }).click();
+    await p.keyboard.type('1.000');
+    await p.getByRole('button', { name: 'Salva il budget' }).click();
+    await p.waitForURL(/ok=budget/);
+    await p.getByText('Budget salvato.').waitFor();
+    const txt = await p.locator('main').innerText();
+    assert.match(txt, /04 · Beni di consumo e merci\s+1\.000,00\s?€\s+0,00\s?€/);
+    await p.goto(`${base}/finanziamenti`);
+    await p.getByText('Nuovo finanziamento').click();
+    await p.fill('#title', 'Bando scuole di prova');
+    await p.selectOption('#project_id', { label: 'École Antanetibe' });
+    await p.fill('#amount', '12.000');
+    await p.getByRole('button', { name: 'Salva', exact: true }).click();
+    await p.waitForURL(/\/finanziamenti\/[0-9a-f-]{36}$/);
+    assert.match(await p.locator('main').innerText(), /12\.000,00\s?€/);
+  });
+  await check('operatore: conta di cassa con differenza rispetto al saldo', async () => {
+    const p = op.page;
+    await p.goto(`${base}/conti`);
+    await p.selectOption('#cc-account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    await p.fill('#cc-counted', '0');
+    await p.getByRole('button', { name: 'Registra la conta' }).click();
+    await p.waitForURL(/ok=cash/);
+    const row = await p.locator('table.t').last().innerText();
+    assert.match(row, /\+1\.010\.000\s?MGA/, 'contati 0 contro saldo -1.010.000');
+  });
+  await check('esportazione Excel di movimenti e rendiconto', async () => {
+    const ExcelJS = require('exceljs');
+    for (const [path, needle] of [[`/api/v1/export/movimenti?anno=${year}`, 'PROVA donazione'], [`/api/v1/export/rendiconto?anno=${year}`, 'Erogazioni liberali']]) {
+      const r = await rs.page.request.get(base + path);
+      assert.equal(r.status(), 200, path);
+      assert.match(r.headers()['content-type'], /spreadsheetml/);
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(await r.body());
+      const cells = [];
+      wb.worksheets[0].eachRow((row) => row.eachCell((c) => cells.push(String(c.value))));
+      assert.ok(cells.some((c) => c.includes(needle)), `${path} contiene ${needle}`);
+    }
+    const anon = await browser.newContext();
+    assert.equal((await anon.request.get(`${base}/api/v1/export/movimenti`)).status(), 401);
+    await anon.close();
+  });
+  await check('dashboard con grafici, rendiconto modello E', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/`);
+    assert.ok(await p.locator('figure svg rect').count() >= 24, 'barre mensili');
+    assert.match(await p.locator('main').innerText(), /Uscite per progetto/);
+    await p.screenshot({ path: `${SHOTS}/resp_dashboard.png`, fullPage: true });
+    await p.goto(`${base}/rendiconto?anno=${year}&modello=E`);
+    const txt = await p.locator('main').innerText();
+    assert.match(txt, /A\) Entrate da attività di interesse generale/);
+    assert.doesNotMatch(txt, /4\) Erogazioni liberali/, 'nel modello E solo le sezioni');
   });
 
   const sa = await login('andrea@test.local');

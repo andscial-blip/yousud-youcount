@@ -11,7 +11,7 @@ export type Initial = {
   id: string; version: number; status: 'draft' | 'recorded' | 'verified'; kind: Kind; op_date: string;
   doc_date: string | null; description: string; amount: string; currency: string; fx_rate: string | null;
   account_id: string; to_account_id: string | null; to_amount: string | null; category_id: string | null;
-  project_id: string | null; counterparty_id: string | null; payment_method_id: string | null; notes: string | null;
+  project_id: string | null; grant_id?: string | null; counterparty_id: string | null; payment_method_id: string | null; notes: string | null;
   no_doc_reason: string | null; docs: { id: string; label: string }[];
 };
 type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err'; id?: string };
@@ -44,6 +44,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
   const [rateTouched, setRateTouched] = useState(Boolean(initial?.fx_rate));
   const [categoryId, setCategoryId] = useState(initial?.category_id ?? '');
   const [projectId, setProjectId] = useState(initial?.project_id ?? '');
+  const [grantId, setGrantId] = useState(initial?.grant_id ?? '');
   const [cpId, setCpId] = useState(initial?.counterparty_id ?? '');
   const [cpNew, setCpNew] = useState('');
   const [methodId, setMethodId] = useState(initial?.payment_method_id ?? '');
@@ -65,6 +66,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
   const dir = kind === 'income' ? 'in' : 'out';
   const cats = R.categories.filter((c) => c.direction === dir);
   const groups = [...new Set(cats.map((c) => c.group))];
+  const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
   // tasso proposto: quello del mese della data, o l'ultimo precedente
   const suggested = useMemo(() => {
@@ -158,6 +160,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
         to_amount: kind === 'transfer' ? parseAmount(toAmountTxt) : null,
         category_id: kind === 'transfer' ? null : categoryId || null,
         project_id: kind === 'transfer' ? null : projectId || null,
+        grant_id: kind === 'transfer' ? null : grantId || null,
         counterparty_id: counterparty, payment_method_id: methodId || null, notes: notes.trim() || null,
         no_doc_reason: noDoc ? noDocReason.trim() : null, status,
         document_ids: docs.filter((d) => d.id).map((d) => d.id), device_id: 'web',
@@ -260,6 +263,15 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
             {kind === 'expense' && <span className="hint">{t.f_project_hint}</span>}
             {req(missing.project)}
           </div>
+          {grants.length > 0 && (
+            <div className="field">
+              <label htmlFor="grant">{t.f_grant}</label>
+              <select className="input" id="grant" value={grantId} onChange={(e) => setGrantId(e.target.value)}>
+                <option value="">{t.f_cp_none}</option>
+                {grants.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+              </select>
+            </div>
+          )}
           <div className="field">
             <label htmlFor="cp">{t.f_counterparty}</label>
             <select className="input" id="cp" value={cpId} onChange={(e) => setCpId(e.target.value)}>

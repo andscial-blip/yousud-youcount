@@ -12,11 +12,12 @@ export type RefData = {
   methods: { id: string; name: string }[];
   counterparties: { id: string; name: string }[];
   rates: { year: number; month: number; rate: number }[];
+  grants: { id: string; title: string; project_id: string | null }[];
 };
 
 export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang): Promise<RefData> {
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
-  const [acc, cat, prj, met, cp, fx, mem] = await Promise.all([
+  const [acc, cat, prj, met, cp, fx, mem, gr] = await Promise.all([
     supabase.from('accounts').select('id, name_it, name_fr, currency, location, kind').eq('active', true).order('sort'),
     supabase.from('categories').select('id, code, name_it, name_fr, direction, group:category_groups(code, name_it, name_fr)')
       .eq('active', true).order('sort'),
@@ -25,6 +26,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     supabase.from('counterparties').select('id, name').eq('active', true).order('name').limit(2000),
     supabase.from('fx_rates').select('year, month, rate').order('year').order('month'),
     supabase.from('project_members').select('project_id').eq('user_id', me.id),
+    supabase.from('grants').select('id, title, project_id').eq('status', 'active').order('title'),
   ]);
   // un operatore senza "tutti i progetti" vede nel modulo solo quelli assegnati
   const allowed = me.role === 'operator' && !me.all_projects ? new Set((mem.data ?? []).map((m) => m.project_id)) : null;
@@ -40,5 +42,6 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     methods: (met.data ?? []).map((m) => ({ id: m.id, name: L(m) })),
     counterparties: cp.data ?? [],
     rates: (fx.data ?? []).map((r) => ({ year: r.year, month: r.month, rate: Number(r.rate) })),
+    grants: gr.data ?? [],
   };
 }

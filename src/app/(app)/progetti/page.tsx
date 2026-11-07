@@ -43,7 +43,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                 const a = agg.get(p.id) ?? { out: 0, inc: 0, n: 0 };
                 return (
                   <tr key={p.id} style={p.active ? undefined : { opacity: .6 }}>
-                    <td>{p.name} {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}</td>
+                    <td><Link className="rowlink" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link> {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}</td>
                     <td className="r num">{a.out ? money(a.out, 'EUR', lang) : '–'}</td>
                     <td className="r num">{a.inc ? money(a.inc, 'EUR', lang) : '–'}</td>
                     <td className="r num">{a.n || '–'}</td>

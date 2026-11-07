@@ -18,7 +18,7 @@ type M = {
   created_by: string; created_at: string; recorded_by: string | null; recorded_at: string | null;
   verified_by: string | null; verified_at: string | null;
   account: N; to_account: (N & { currency: string }) | null; category: (N & { code: string }) | null;
-  project: { name: string } | null; counterparty: { name: string } | null; method: N;
+  project: { name: string } | null; grant: { id: string; title: string } | null; counterparty: { name: string } | null; method: N;
 };
 type H = { at: string; action: string; actor: string | null; old_row: Record<string, unknown> | null; new_row: Record<string, unknown> | null };
 const SKIP = new Set(['updated_at', 'updated_by', 'version', 'last_op_uuid']);
@@ -32,7 +32,7 @@ export default async function MovementDetail({ params, searchParams }: {
   const { data: m } = await supabase.from('movements').select(`*,
       account:accounts!movements_account_id_fkey(name_it, name_fr),
       to_account:accounts!movements_to_account_id_fkey(name_it, name_fr, currency),
-      category:categories(code, name_it, name_fr), project:projects(name), counterparty:counterparties(name),
+      category:categories(code, name_it, name_fr), project:projects(name), grant:grants(id, title), counterparty:counterparties(name),
       method:payment_methods(name_it, name_fr)`).eq('id', id).maybeSingle<M>();
   if (!m) notFound();
   const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }] = await Promise.all([
@@ -82,6 +82,7 @@ export default async function MovementDetail({ params, searchParams }: {
           {m.kind === 'transfer' && row(t('f_to_account'), `${nm(lang, m.to_account)} · ${money(m.to_amount, m.to_account?.currency ?? m.currency, lang)}`)}
           {m.category && row(t('f_category'), `${m.category.code} · ${nm(lang, m.category)}`)}
           {m.kind !== 'transfer' && row(t('project'), m.project?.name)}
+          {m.grant && row(t('nav_grants'), <Link href={`/finanziamenti/${m.grant.id}`}>{m.grant.title}</Link>)}
           {m.counterparty && row(t('f_counterparty'), m.counterparty.name)}
           {m.method && row(t('f_method'), nm(lang, m.method))}
           {m.doc_date && row(t('f_doc_date'), date(m.doc_date))}

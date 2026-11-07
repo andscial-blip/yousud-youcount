@@ -6,7 +6,7 @@ App web installabile (PWA) per registrare entrate e uscite di YouSud ODV in Ital
 archiviare i giustificativi e preparare in bozza il rendiconto per cassa ETS.
 Interfaccia in italiano e francese (lingua scelta da ogni utente). Marchio: mappamondo del logo YouSud con un distintivo contabile (`scripts/gen_icons.py`).
 
-Stato: tappa 4a (fondamenta) con tutte le sezioni dell'app: Dashboard, Movimenti, Nuovo, Da verificare, Documenti, Progetti, Conti, Rendiconto, Fornitori e donatori, Sincronizzazione, Guida, Il mio account e, per gli amministratori, Utenti e ruoli, Conti finanziari, Piano dei conti, Progetti e centri di costo, Chiusure mensili, Impostazioni, Registro attività. Non ancora pubblicata: serve creare gli account Supabase e Vercel.
+Stato: tappe 4a e 4b (fondamenta, inserimento manuale, verifica, storni, budget, finanziamenti, conta di cassa, esportazioni Excel) con tutte le sezioni dell'app: Dashboard, Movimenti, Nuovo, Da verificare, Documenti, Progetti, Conti, Rendiconto, Fornitori e donatori, Sincronizzazione, Guida, Il mio account e, per gli amministratori, Utenti e ruoli, Conti finanziari, Piano dei conti, Progetti e centri di costo, Chiusure mensili, Impostazioni, Registro attività. Non ancora pubblicata: serve creare gli account Supabase e Vercel.
 
 ## Struttura
 
@@ -49,6 +49,7 @@ Richiede Node 22 e PostgreSQL 16.
 npm install
 npm run db:reset      # crea il DB di prova: stub Supabase + migrazioni + seed
 npm run test:db       # test del database
+npm run test:unit     # test delle funzioni (es. lettura degli importi)
 npm run test:e2e      # app + PostgREST (POSTGREST_BIN) + Playwright
 npm run build
 ```

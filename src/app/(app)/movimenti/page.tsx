@@ -29,6 +29,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   return (
     <div className="stack">
       <PageHead title={t('nav_movements')}>
+        <a className="btn" href={`/api/v1/export/movimenti?anno=${new Date().getFullYear()}${stato ? `&stato=${stato}` : ''}`}>{t('exp_xlsx')}</a>
         <div className="seg">
           {filters.map(([v, l]) => (
             <Link key={v} href={v ? `/movimenti?stato=${v}` : '/movimenti'} aria-pressed={stato === v}>{l}</Link>

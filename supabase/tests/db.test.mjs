@@ -395,3 +395,59 @@ test('uscita registrata senza progetto: rifiutata (serve il progetto o «Spese g
   const d = await rpc(U.op, 'save_movement', mov({ project_id: null }));
   assert.equal(d.status, 'draft', 'in bozza il progetto può mancare');
 });
+
+// ------------------------------------------------------------------ finanziamenti, budget, cassa, soci
+test('budget per progetto e per finanziamento: speso per gruppo di codici', async () => {
+  const prj = R.prj['Sport & Inclusione'];
+  const [{ id: g01 }] = await sql(`select id from category_groups where direction='out' and code='01'`);
+  const [{ id: g04 }] = await sql(`select id from category_groups where direction='out' and code='04'`);
+  await assert.rejects(as(U.op, (q) => q('insert into budget_lines(org_id, project_id, year, group_id, amount_eur) values ($1,$2,2023,$3,100)', [ORG, prj, g01])),
+    /row-level security/);
+  await as(U.resp, (q) => q('insert into budget_lines(org_id, project_id, year, group_id, amount_eur) values ($1,$2,2023,$3,1000), ($1,$2,2023,$4,500)',
+    [ORG, prj, g01, g04]));
+  const [grant] = await as(U.resp, (q) => q(`insert into grants(org_id, title, project_id, amount, created_by) values ($1, 'Bando prova', $2, 3000, $3) returning id`,
+    [ORG, prj, U.resp]));
+  await as(U.resp, (q) => q('insert into budget_lines(org_id, grant_id, group_id, amount_eur) values ($1,$2,$3,800)', [ORG, grant.id, g01]));
+  const nd = { status: 'recorded', op_date: '2023-05-02', project_id: prj, no_doc_reason: 'prova budget' };
+  await rpc(U.resp, 'save_movement', mov({ ...nd, amount: 300, category_id: R.out['101'], grant_id: grant.id }));
+  await rpc(U.resp, 'save_movement', mov({ ...nd, amount: 120, category_id: R.out['401'] }));
+  const byProject = await as(U.ro, (q) => q('select * from public.budget_vs_actual($1, 2023, null)', [prj]));
+  const row = (rows, code) => { const r = rows.find((x) => x.group_code === code); return { ...r, budget_eur: Number(r.budget_eur), spent_eur: Number(r.spent_eur) }; };
+  assert.deepEqual([row(byProject, '01').budget_eur, row(byProject, '01').spent_eur], [1000, 300]);
+  assert.deepEqual([row(byProject, '04').budget_eur, row(byProject, '04').spent_eur], [500, 120]);
+  const byGrant = await as(U.ro, (q) => q('select * from public.budget_vs_actual(null, null, $1)', [grant.id]));
+  assert.deepEqual([row(byGrant, '01').budget_eur, row(byGrant, '01').spent_eur, row(byGrant, '04').spent_eur], [800, 300, 0]);
+  assert.equal((await as(U.op, (q) => q('select * from public.budget_vs_actual($1, 2023, null)', [prj]))).length, 0, 'operatore: niente budget');
+});
+
+test('conta di cassa: confronta i contanti con il saldo dell\'app alla data', async () => {
+  const acc = R.acc['Cassa Missione'];
+  const bal = (await as(U.ro, (q) => q('select balance from public.account_balances($1) where account_id = $2', [today, acc])))[0].balance;
+  const r = await rpc(U.op, 'record_cash_count', acc, today, 1000, 'conta di prova', null);
+  assert.equal(Number(r.system_balance), Number(bal));
+  assert.equal(Number(r.difference), 1000 - Number(bal));
+  await assert.rejects(rpc(U.op, 'record_cash_count', R.acc['Banca Italia'], today, 10, null, null), /invalid/);
+  await assert.rejects(rpc(U.ro, 'record_cash_count', acc, today, 10, null, null), /forbidden/);
+  await assert.rejects(sql('update cash_counts set counted = 0'), /immutable/);
+});
+
+test('quote associative per socio (codice E104)', async () => {
+  const [m] = await as(U.op, (q) => q(`insert into counterparties(org_id, name, kind, created_by) values ($1, 'Socia di prova', 'member', $2) returning id`, [ORG, U.op]));
+  await rpc(U.resp, 'save_movement', mov({ kind: 'income', amount: 30, category_id: R.in['E104'], project_id: null, counterparty_id: m.id,
+    status: 'recorded', op_date: '2022-02-01', no_doc_reason: 'prova quote' }));
+  const fees = await as(U.ro, (q) => q('select * from public.member_fees(2022)'));
+  assert.deepEqual(fees.map((f) => [f.name, f.amount_eur]), [['Socia di prova', '30.00']]);
+});
+
+test('set_budget: sostituisce le righe in un colpo solo, solo responsabili', async () => {
+  const prj = R.prj['Agricoltura'];
+  const groups = await sql(`select id, code from category_groups where direction='out' order by code`);
+  const g = Object.fromEntries(groups.map((x) => [x.code, x.id]));
+  await assert.rejects(rpc(U.op, 'set_budget', prj, 2024, null, JSON.stringify([{ group_id: g['01'], amount_eur: 10 }])), /forbidden/);
+  await rpc(U.resp, 'set_budget', prj, 2024, null, JSON.stringify([{ group_id: g['01'], amount_eur: 100 }, { group_id: g['02'], amount_eur: 50 }]));
+  await rpc(U.resp, 'set_budget', prj, 2024, null, JSON.stringify([{ group_id: g['03'], amount_eur: 70 }, { group_id: g['04'], amount_eur: 0 }]));
+  const rows = await sql('select g.code, b.amount_eur from budget_lines b join category_groups g on g.id = b.group_id where b.project_id = $1 order by g.code', [prj]);
+  assert.deepEqual(rows.map((r) => [r.code, Number(r.amount_eur)]), [['03', 70]]);
+  const [{ n }] = await sql(`select count(*)::int n from audit_log where table_name = 'budget_lines' and action = 'delete'`);
+  assert.ok(n >= 2, 'le righe sostituite restano nel registro');
+});

@@ -167,6 +167,7 @@ begin
 
   foreach v_org in array array[
       (select p.org_id from public.projects p where p.id = new.project_id),
+      (select g.org_id from public.grants g where g.id = new.grant_id),
       (select x.org_id from public.counterparties x where x.id = new.counterparty_id),
       (select m.org_id from public.payment_methods m where m.id = new.payment_method_id)] loop
     if v_org is not null and v_org <> new.org_id then perform app.fail('invalid', 'riferimento di un altro ente'); end if;
@@ -253,7 +254,7 @@ $$;
 --   client_uuid (obbligatorio alla creazione), id + expected_version (per modificare), op_uuid (id della
 --   modifica, per reinvii senza effetti doppi), status ('draft' | 'recorded'), device_id, document_ids[],
 --   kind, op_date, doc_date, description, amount, currency, fx_rate, account_id, to_account_id, to_amount,
---   category_id, project_id, counterparty_id, payment_method_id, notes, ai_extracted, no_doc_reason.
+--   category_id, project_id, grant_id, counterparty_id, payment_method_id, notes, ai_extracted, no_doc_reason.
 -- In modifica, i campi assenti restano invariati; per svuotare un campo si invia null.
 create or replace function public.save_movement(p jsonb) returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -278,7 +279,7 @@ begin
   select coalesce(jsonb_object_agg(key, value), '{}'::jsonb) into v_fields
   from jsonb_each(p)
   where key = any (array['kind','op_date','doc_date','description','amount','currency','fx_rate','account_id',
-                         'to_account_id','to_amount','category_id','project_id','counterparty_id',
+                         'to_account_id','to_amount','category_id','project_id','grant_id','counterparty_id',
                          'payment_method_id','notes','ai_extracted','no_doc_reason']);
 
   if v_id is null then
@@ -299,11 +300,11 @@ begin
 
     insert into public.movements(org_id, client_uuid, last_op_uuid, kind, status, op_date, doc_date, description,
                                  amount, currency, fx_rate, account_id, to_account_id, to_amount, category_id,
-                                 project_id, counterparty_id, payment_method_id, notes, ai_extracted, no_doc_reason,
+                                 project_id, grant_id, counterparty_id, payment_method_id, notes, ai_extracted, no_doc_reason,
                                  created_by, updated_by, recorded_by, recorded_at, ref)
     values (v_org, v_client, v_op, v_new.kind, v_status, v_new.op_date, v_new.doc_date, coalesce(v_new.description, ''),
             v_new.amount, v_new.currency, v_new.fx_rate, v_new.account_id, v_new.to_account_id, v_new.to_amount,
-            v_new.category_id, v_new.project_id, v_new.counterparty_id, v_new.payment_method_id, v_new.notes,
+            v_new.category_id, v_new.project_id, v_new.grant_id, v_new.counterparty_id, v_new.payment_method_id, v_new.notes,
             coalesce(v_new.ai_extracted, false), v_new.no_doc_reason,
             v_uid, v_uid,
             case when v_status = 'recorded' then v_uid end,
@@ -343,7 +344,7 @@ begin
       kind = v_new.kind, status = v_status, op_date = v_new.op_date, doc_date = v_new.doc_date,
       description = coalesce(v_new.description, ''), amount = v_new.amount, currency = v_new.currency,
       fx_rate = v_new.fx_rate, account_id = v_new.account_id, to_account_id = v_new.to_account_id,
-      to_amount = v_new.to_amount, category_id = v_new.category_id, project_id = v_new.project_id,
+      to_amount = v_new.to_amount, category_id = v_new.category_id, project_id = v_new.project_id, grant_id = v_new.grant_id,
       counterparty_id = v_new.counterparty_id, payment_method_id = v_new.payment_method_id, notes = v_new.notes,
       ai_extracted = coalesce(v_new.ai_extracted, false), no_doc_reason = v_new.no_doc_reason,
       last_op_uuid = v_op, updated_by = v_uid,
@@ -419,12 +420,12 @@ begin
   end if;
 
   insert into public.movements(org_id, client_uuid, kind, status, op_date, doc_date, description, amount, currency,
-                               fx_rate, account_id, to_account_id, to_amount, category_id, project_id, counterparty_id,
+                               fx_rate, account_id, to_account_id, to_amount, category_id, project_id, grant_id, counterparty_id,
                                payment_method_id, notes, reverses_id, reversal_reason,
                                created_by, updated_by, recorded_by, recorded_at, ref)
   values (v_org, p_client_uuid, v_m.kind, 'recorded', coalesce(p_date, current_date), v_m.doc_date,
           left('Storno ' || v_m.ref || ' · ' || v_m.description, 500), v_m.amount, v_m.currency, v_m.fx_rate,
-          v_m.account_id, v_m.to_account_id, v_m.to_amount, v_m.category_id, v_m.project_id, v_m.counterparty_id,
+          v_m.account_id, v_m.to_account_id, v_m.to_amount, v_m.category_id, v_m.project_id, v_m.grant_id, v_m.counterparty_id,
           v_m.payment_method_id, v_m.notes, v_m.id, trim(p_reason),
           v_uid, v_uid, v_uid, now(), app.next_ref(v_org, coalesce(p_date, current_date)))
   returning * into v_r;

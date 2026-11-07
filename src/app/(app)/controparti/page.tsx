@@ -3,7 +3,7 @@ import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
 
 export const dynamic = 'force-dynamic';
 
-type Cp = { id: string; name: string; kind: 'supplier' | 'donor' | 'beneficiary' | 'staff' | 'other';
+type Cp = { id: string; name: string; kind: 'supplier' | 'donor' | 'beneficiary' | 'staff' | 'member' | 'other';
             vat_number: string | null; country: string | null; active: boolean };
 
 // Elenco senza dati personali: codice fiscale, contatti e IBAN stanno in una tabella separata
