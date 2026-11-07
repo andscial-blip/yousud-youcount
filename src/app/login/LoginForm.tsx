@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 type Labels = { email: string; password: string; btn: string; busy: string; bad: string; offline: string };
@@ -7,6 +7,12 @@ type Labels = { email: string; password: string; btn: string; busy: string; bad:
 export function LoginForm({ labels: L }: { labels: Labels }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // link email arrivato sull'indirizzo base: i dati di accesso sono dopo il #, li gestisce /auth/callback
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('access_token=') || hash.includes('error=')) window.location.replace(`/auth/callback${hash}`);
+  }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

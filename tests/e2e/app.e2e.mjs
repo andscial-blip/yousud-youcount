@@ -379,6 +379,25 @@ try {
     await ro.page.goto(`${base}/`);
     assert.match(ro.page.url(), /\/login/);
   });
+  await check('link email (invito o nuova password): apre la sessione e porta a «Imposta la password»', async () => {
+    const r = await fetch(`${stack.url}/auth/v1/token?grant_type=password`, { method: 'POST',
+      headers: { 'content-type': 'application/json', apikey: stack.anonKey },
+      body: JSON.stringify({ email: 'lettore@test.local', password: TEST_PASSWORD }) });
+    const tok = await r.json();
+    assert.ok(tok.access_token, 'token di prova');
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    // link dei modelli Supabase predefiniti: arriva sulla radice con i dati dopo il #
+    await p.goto(`${base}/#access_token=${tok.access_token}&refresh_token=${tok.refresh_token}&type=recovery`);
+    await p.waitForURL(/\/account\/password$/, { timeout: 30000 });
+    await p.getByText('Imposta la password').first().waitFor();
+    // link scaduto: messaggio chiaro e nessuna sessione
+    const ctx2 = await browser.newContext();
+    const p2 = await ctx2.newPage();
+    await p2.goto(`${base}/auth/callback#error=access_denied&error_code=otp_expired`);
+    await p2.getByText('Il link non è valido o è scaduto', { exact: false }).waitFor();
+    await ctx.close(); await ctx2.close();
+  });
 } finally {
   await browser.close();
   try { process.kill(-next.p.pid); } catch {}

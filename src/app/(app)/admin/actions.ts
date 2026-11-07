@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
+import { implicitClient } from '@/lib/supabase/implicit';
 import { parseAmount } from '@/lib/amount';
 
 // Azioni di amministrazione. Ogni permesso è controllato dal database (RLS e funzioni admin_*):
@@ -36,7 +37,7 @@ export async function inviteUser(form: FormData) {
   const fullName = String(form.get('full_name') ?? '').trim();
   const role = String(form.get('role') ?? 'operator');
   const { data, error } = await admin!.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName }, redirectTo: `${await origin()}/auth/confirm?next=/account/password`,
+    data: { full_name: fullName }, redirectTo: `${await origin()}/auth/callback?next=/account/password`,
   });
   if (error) back(path, `err=${encodeURIComponent(error.message)}`);
   // il profilo nasce in sola lettura; il ruolo lo assegna l'amministratore con i suoi permessi
@@ -66,10 +67,10 @@ export async function setProjects(form: FormData) {
 }
 
 export async function sendReset(form: FormData) {
-  const { supabase, me: m } = await me();
+  const { me: m } = await me();
   if (!m || !['super_admin', 'admin'].includes(m.role)) back('/admin/utenti', 'err=forbidden');
-  const { error } = await supabase.auth.resetPasswordForEmail(String(form.get('email')),
-    { redirectTo: `${await origin()}/auth/confirm?next=/account/password` });
+  const { error } = await implicitClient().auth.resetPasswordForEmail(String(form.get('email')),
+    { redirectTo: `${await origin()}/auth/callback?next=/account/password` });
   done('/admin/utenti', error);
 }
 
