@@ -28,3 +28,11 @@ grant usage on schema public to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+
+-- utente di connessione di PostgREST (come "authenticator" in Supabase)
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'authenticator') then
+    create role authenticator login noinherit password 'authenticator';
+  end if;
+end $$;
+grant anon, authenticated to authenticator;

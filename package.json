@@ -10,15 +10,20 @@
     "typecheck": "tsc --noEmit",
     "db:reset": "bash scripts/db_reset_local.sh",
     "test:db": "node --test --test-concurrency=1 supabase/tests/*.test.mjs",
-    "seed:gen": "python3 scripts/gen_seed.py ../analisi/acc_dump.json ../v2/app.html > supabase/seed.sql"
+    "seed:gen": "python3 scripts/gen_seed.py ../analisi/acc_dump.json ../v2/app.html > supabase/seed.sql",
+    "test:e2e": "node tests/e2e/app.e2e.mjs",
+    "stack:local": "node tests/e2e/local-stack.mjs"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/ibm-plex-sans-condensed": "^5.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "dexie": "^4.4.7",
     "next": "15.5.29",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "server-only": "^0.0.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
