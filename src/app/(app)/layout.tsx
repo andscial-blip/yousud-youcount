@@ -1,61 +1,52 @@
 import Link from 'next/link';
-import { Logo } from '@/components/Logo';
-import { BottomNav, TopNav } from '@/components/Nav';
+import { Logo, Wordmark } from '@/components/Logo';
+import { BottomNav, TopNav, Icon } from '@/components/Nav';
 import { supabaseConfigured } from '@/lib/supabase/env';
-import { requireMe, ROLE_LABEL } from '@/lib/session';
+import { guestLang, requireMe } from '@/lib/session';
+import { translator, type T } from '@/lib/i18n';
+import { visible } from '@/lib/nav';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  if (!supabaseConfigured) return <Shell who={null}><ConfigMissing /></Shell>;
-  const { me, user } = await requireMe();
-  if (!me || !me.active) {
-    return (
-      <Shell who={null}>
-        <div className="note err">
-          Account {me ? 'sospeso' : 'senza profilo'} ({user.email}). Rivolgiti all&apos;amministratore di YouSud.
-        </div>
-      </Shell>
-    );
+  if (!supabaseConfigured) {
+    const t = translator(await guestLang());
+    return <Shell t={t} who={null} top={[]} bottom={[]}><div className="note err">{t('not_configured_long')}</div></Shell>;
   }
-  return <Shell who={`${me.full_name || user.email} · ${ROLE_LABEL[me.role]}`}>{children}</Shell>;
+  const { me, t } = await requireMe();
+  if (!me || !me.active) {
+    return <Shell t={t} who={null} top={[]} bottom={[]}>
+      <div className="note err">{t(me ? 'account_suspended' : 'account_noprofile')}</div>
+    </Shell>;
+  }
+  const secs = visible(me.role);
+  const link = (s: (typeof secs)[number]) => ({ href: s.href, label: t(s.key), icon: s.icon });
+  return (
+    <Shell t={t} who={`${me.full_name || ''} · ${t(`r_${me.role}`)}`}
+           top={secs.filter((s) => s.top).map(link)} bottom={secs.filter((s) => s.bottom).map(link)}>
+      {children}
+    </Shell>
+  );
 }
 
-function Shell({ who, children }: { who: string | null; children: React.ReactNode }) {
+function Shell({ t, who, top, bottom, children }: {
+  t: T; who: string | null; top: { href: string; label: string; icon: string }[];
+  bottom: { href: string; label: string; icon: string }[]; children: React.ReactNode;
+}) {
   return (
     <>
       <header className="top">
         <div className="wrap">
-          <Link href="/" aria-label="Cruscotto" style={{ display: 'flex' }}><Logo /></Link>
-          <div className="brand">
-            <b>Mizana</b>
-            <span>Contabilità YouSud ODV</span>
-          </div>
+          <Link href="/" aria-label={t('nav_dashboard')} style={{ display: 'flex' }}><Logo /></Link>
+          <Wordmark tagline={t('app_tagline')} />
           <div className="spacer" />
-          {who && <span className="desk muted" style={{ color: 'rgba(255,255,255,.8)', fontSize: 13 }}>{who}</span>}
-          <Link className="btn primary desk" href="/nuovo">+ Nuovo movimento</Link>
-          <Link className="btn ghost mob" href="/altro" aria-label="Altro" style={{ color: '#fff' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                 strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          </Link>
+          {who && <Link href="/account" className="desk" style={{ color: 'rgba(255,255,255,.85)', fontSize: 13, textDecoration: 'none' }}>{who}</Link>}
+          {who && <Link className="btn primary desk" href="/nuovo">{t('nav_new_long')}</Link>}
+          {who && <Link className="btn ghost mob" href="/altro" aria-label={t('nav_more')} style={{ color: '#fff' }}>
+            <Icon d="M4 7h16M4 12h16M4 17h16" size={20} /></Link>}
         </div>
       </header>
-      <TopNav />
+      {top.length > 0 && <TopNav items={top} />}
       <main className="wrap">{children}</main>
-      <BottomNav />
+      {bottom.length > 0 && <BottomNav items={bottom} />}
     </>
-  );
-}
-
-function ConfigMissing() {
-  return (
-    <div className="panel">
-      <div className="panel-h"><h2>Collegamento al database non configurato</h2></div>
-      <div className="panel-b stack">
-        <p style={{ margin: 0 }}>
-          Mancano le variabili <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
-          Copia <code>.env.example</code> in <code>.env.local</code> e inserisci i valori del progetto Supabase.
-        </p>
-        <p className="muted" style={{ margin: 0 }}>Nessun dato viene mostrato finché il collegamento non è attivo.</p>
-      </div>
-    </div>
   );
 }

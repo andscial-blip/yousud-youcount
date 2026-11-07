@@ -1,30 +1,38 @@
-import { Logo } from '@/components/Logo';
+import { Logo, Wordmark } from '@/components/Logo';
 import { LoginForm } from './LoginForm';
 import { supabaseConfigured } from '@/lib/supabase/env';
+import { guestLang } from '@/lib/session';
+import { translator } from '@/lib/i18n';
+import { setLang } from '@/app/lang-action';
 
-export const metadata = { title: 'Accesso' };
+export const dynamic = 'force-dynamic';
 
-export default function Login() {
+export default async function Login() {
+  const lang = await guestLang();
+  const t = translator(lang);
   return (
-    <main className="wrap" style={{ maxWidth: 420, paddingTop: 'calc(48px + env(safe-area-inset-top, 0px))' }}>
+    <main className="wrap login" style={{ maxWidth: 420, paddingTop: 'calc(40px + env(safe-area-inset-top, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <Logo className="logo" />
-        <div>
-          <h1 style={{ fontSize: 22, color: 'var(--navy)' }}>Mizana</h1>
-          <div className="muted" style={{ fontSize: 13 }}>Contabilità YouSud ODV</div>
-        </div>
+        <Logo size={52} />
+        <Wordmark tagline={t('app_tagline')} />
+        <div className="spacer" />
+        <form action={setLang} className="seg">
+          <input type="hidden" name="back" value="/login" />
+          <button name="lang" value="it" aria-pressed={lang === 'it'}>IT</button>
+          <button name="lang" value="fr" aria-pressed={lang === 'fr'}>FR</button>
+        </form>
       </div>
       <section className="panel">
-        <div className="panel-h"><h2>Accedi</h2></div>
+        <div className="panel-h"><h2>{t('login_title')}</h2></div>
         <div className="panel-b">
-          {supabaseConfigured ? <LoginForm /> : (
-            <div className="note err">Collegamento al database non configurato.</div>
-          )}
+          {supabaseConfigured ? (
+            <LoginForm labels={{ email: t('email'), password: t('password'), btn: t('login_btn'), busy: t('login_busy'),
+                                  bad: t('login_bad'), offline: t('login_offline') }} />
+          ) : <div className="note err">{t('not_configured')}</div>}
         </div>
       </section>
-      <p className="muted" style={{ fontSize: 13 }}>
-        L&apos;accesso è solo su invito. Per un nuovo account o una password dimenticata rivolgiti all&apos;amministratore di YouSud.
-      </p>
+      <p className="muted" style={{ fontSize: 13 }}>{t('login_invite')}</p>
+      <p className="muted" style={{ fontSize: 12 }}>{t('app_sub')}</p>
     </main>
   );
 }

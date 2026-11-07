@@ -1,42 +1,45 @@
 import { requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
+import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Documenti' };
 
 type Doc = { id: string; doc_type: string; doc_date: string | null; doc_number: string | null; total: string | null;
              currency: string | null; created_at: string };
 
-const TYPE: Record<string, string> = {
-  invoice: 'Fattura', receipt: 'Ricevuta', till_receipt: 'Scontrino', self_cert: 'Autocertificazione',
-  bank_statement: 'Estratto conto', contract: 'Contratto', other: 'Altro',
+const TYPE: Record<string, [string, string]> = {
+  invoice: ['Fattura', 'Facture'], receipt: ['Ricevuta', 'Reçu'], till_receipt: ['Scontrino', 'Ticket de caisse'],
+  self_cert: ['Autocertificazione', 'Attestation sur l\'honneur'], bank_statement: ['Estratto conto', 'Relevé bancaire'],
+  contract: ['Contratto', 'Contrat'], other: ['Altro', 'Autre'],
 };
 
 export default async function Documents() {
-  const { supabase } = await requireMe();
+  const { supabase, t, lang } = await requireMe();
   const { data, error } = await supabase.from('documents')
     .select('id, doc_type, doc_date, doc_number, total, currency, created_at')
-    .order('created_at', { ascending: false }).limit(100).returns<Doc[]>();
+    .order('created_at', { ascending: false }).limit(200).returns<Doc[]>();
   return (
     <div className="stack">
-      <h1 style={{ fontSize: 22 }}>Documenti</h1>
-      {error && <div className="note err">Archivio non disponibile: {error.message}</div>}
-      <section className="panel" style={{ overflowX: 'auto' }}>
-        {(data ?? []).length === 0 ? <div className="panel-b muted">Nessun documento.</div> : (
+      <PageHead title={t('nav_documents')} />
+      <ErrorNote prefix={t('error_load')} error={error} />
+      <Panel>
+        {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
           <table className="t">
-            <thead><tr><th>Caricato</th><th>Tipo</th><th>Numero</th><th>Data</th><th className="r">Totale</th></tr></thead>
+            <thead><tr><th>{t('doc_uploaded')}</th><th>{t('type')}</th><th>{t('doc_number')}</th><th>{t('date')}</th>
+              <th className="r">{t('doc_total')}</th></tr></thead>
             <tbody>
               {data!.map((d) => (
                 <tr key={d.id}>
-                  <td className="num">{date(d.created_at)}</td><td>{TYPE[d.doc_type] ?? d.doc_type}</td>
+                  <td className="num">{date(d.created_at)}</td>
+                  <td>{TYPE[d.doc_type]?.[lang === 'fr' ? 1 : 0] ?? d.doc_type}</td>
                   <td>{d.doc_number ?? '–'}</td><td className="num">{date(d.doc_date)}</td>
-                  <td className="r num">{d.total && d.currency ? money(d.total, d.currency) : '–'}</td>
+                  <td className="r num">{d.total && d.currency ? money(d.total, d.currency, lang) : '–'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }

@@ -2,7 +2,9 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-export function LoginForm() {
+type Labels = { email: string; password: string; btn: string; busy: string; bad: string; offline: string };
+
+export function LoginForm({ labels: L }: { labels: Labels }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -17,7 +19,7 @@ export function LoginForm() {
     });
     if (error) {
       setBusy(false);
-      setError(navigator.onLine ? 'Email o password non corretti.' : 'Serve una connessione per il primo accesso.');
+      setError(navigator.onLine ? L.bad : L.offline);
       return;
     }
     const next = new URLSearchParams(window.location.search).get('next');
@@ -27,15 +29,15 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="stack" style={{ gap: 14 }}>
       <div className="field">
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">{L.email}</label>
         <input className="input" id="email" name="email" type="email" autoComplete="username" required />
       </div>
       <div className="field">
-        <label htmlFor="password">Password</label>
+        <label htmlFor="password">{L.password}</label>
         <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
       {error && <div className="note err" role="alert">{error}</div>}
-      <button className="btn primary" type="submit" disabled={busy}>{busy ? 'Accesso…' : 'Accedi'}</button>
+      <button className="btn primary" type="submit" disabled={busy}>{busy ? L.busy : L.btn}</button>
     </form>
   );
 }

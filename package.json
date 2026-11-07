@@ -1,5 +1,5 @@
 {
-  "name": "mizana",
+  "name": "youcount",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "db:reset": "bash scripts/db_reset_local.sh",
     "test:db": "node --test --test-concurrency=1 supabase/tests/*.test.mjs",
     "seed:gen": "python3 scripts/gen_seed.py ../analisi/acc_dump.json ../v2/app.html > supabase/seed.sql",
-    "test:e2e": "node tests/e2e/app.e2e.mjs",
+    "test:e2e": "bash scripts/db_reset_local.sh && node tests/e2e/app.e2e.mjs",
     "stack:local": "node tests/e2e/local-stack.mjs"
   },
   "dependencies": {

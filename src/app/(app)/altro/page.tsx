@@ -1,24 +1,33 @@
-import { requireMe, ROLE_LABEL } from '@/lib/session';
+import Link from 'next/link';
+import { requireMe } from '@/lib/session';
+import { visible } from '@/lib/nav';
+import { Icon } from '@/components/Nav';
+import { PageHead } from '@/components/Page';
 import { SignOut } from '@/components/SignOut';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Altro' };
 
+// Tutte le sezioni non presenti nella barra del telefono, raggruppate.
 export default async function More() {
-  const { me, user } = await requireMe();
+  const { me, t } = await requireMe();
+  const secs = visible(me?.role);
+  const groups = [
+    { k: 'grp_work' as const, items: secs.filter((s) => s.group === 'work') },
+    { k: 'grp_admin' as const, items: secs.filter((s) => s.group === 'admin') },
+    { k: 'grp_me' as const, items: secs.filter((s) => s.group === 'me') },
+  ].filter((g) => g.items.length > 0);
   return (
     <div className="stack">
-      <h1 style={{ fontSize: 22 }}>Altro</h1>
-      <section className="panel">
-        <div className="panel-h"><h2>Il mio account</h2></div>
-        <div className="panel-b stack">
-          <div><span className="muted">Nome</span><br />{me?.full_name || '–'}</div>
-          <div><span className="muted">Email</span><br />{user.email}</div>
-          <div><span className="muted">Ruolo</span><br />{me ? ROLE_LABEL[me.role] : '–'}</div>
-          <div><SignOut /></div>
+      <PageHead title={t('nav_more')} />
+      {groups.map((g) => (
+        <div key={g.k} className="stack" style={{ gap: 12 }}>
+          <h3 className="grp">{t(g.k)}</h3>
+          <nav className="menu">
+            {g.items.map((s) => <Link key={s.href} href={s.href}><Icon d={s.icon} />{t(s.key)}</Link>)}
+          </nav>
         </div>
-      </section>
-      <p className="muted" style={{ margin: 0 }}>Gestione utenti, conti e codici: tappa 4e.</p>
+      ))}
+      <div><SignOut label={t('sign_out')} /></div>
     </div>
   );
 }

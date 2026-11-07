@@ -1,4 +1,4 @@
--- Mizana – contabilità YouSud
+-- YouCount – contabilità YouSud
 -- 0100 · Tipi e tabelle
 -- Regole: UUID ovunque, org_id su ogni riga, nessuna cancellazione dei movimenti registrati
 -- (si correggono con uno storno), storico delle modifiche in audit_log.

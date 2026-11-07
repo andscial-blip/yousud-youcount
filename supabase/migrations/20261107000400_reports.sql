@@ -24,7 +24,7 @@ grant select on public.v_ledger to authenticated;
 
 -- Saldi dei conti a una data: saldo d'apertura + entrate - uscite +/- giroconti, nella valuta del conto.
 create or replace function public.account_balances(p_at date default current_date)
-returns table (account_id uuid, code text, name_it text, currency char(3), kind text, location text,
+returns table (account_id uuid, code text, name_it text, name_fr text, currency char(3), kind text, location text,
                opening_balance numeric, movements_in numeric, movements_out numeric, balance numeric,
                unverified integer)
 language sql stable security definer set search_path = '' as $$
@@ -40,7 +40,7 @@ language sql stable security definer set search_path = '' as $$
     from public.movements m
     where m.org_id = app.me_org() and m.status <> 'draft' and m.kind = 'transfer' and m.op_date <= p_at
   )
-  select a.id, a.code, a.name_it, a.currency, a.kind, a.location, a.opening_balance,
+  select a.id, a.code, a.name_it, a.name_fr, a.currency, a.kind, a.location, a.opening_balance,
          coalesce(sum(f.fin), 0), coalesce(sum(f.fout), 0),
          a.opening_balance + coalesce(sum(f.fin), 0) - coalesce(sum(f.fout), 0),
          coalesce(sum(f.unv), 0)::int

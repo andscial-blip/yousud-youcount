@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH ?? '/opt/node-tools/node_modules/playwright');
 const DB = process.env.DATABASE_URL ?? 'postgres://tester:tester@localhost:5432/mizana_test';
 const APP_PORT = 3312;
-const SHOTS = process.env.SHOTS_DIR ?? '/tmp/mizana-e2e';
+const SHOTS = process.env.SHOTS_DIR ?? '/tmp/youcount-e2e';
 const pool = new pg.Pool({ connectionString: DB });
 const year = new Date().getFullYear();
 const today = new Date().toISOString().slice(0, 10);
@@ -149,9 +149,57 @@ try {
     assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+200,00\s?€/);
     await ro.page.screenshot({ path: `${SHOTS}/ro_rendiconto_mobile.png`, fullPage: true });
   });
+  await check('operatore: niente "Da verificare" né amministrazione nel menu', async () => {
+    await op.page.goto(`${base}/altro`);
+    const txt = await op.page.locator('main').innerText();
+    assert.doesNotMatch(txt, /Da verificare|Utenti e ruoli|Registro attività/);
+    assert.match(txt, /Fornitori e donatori/);
+    await op.page.goto(`${base}/admin/utenti`);
+    assert.match(await op.page.locator('main').innerText(), /riservata agli amministratori/);
+  });
+
+  const rs = await login('resp@test.local');
+  await check('responsabile: verifica il movimento inserito dall\'operatore, non il proprio', async () => {
+    await rs.page.goto(`${base}/verifica`);
+    const rowOp = rs.page.locator('tr', { hasText: 'PROVA materiale scolastico' });
+    const rowOwn = rs.page.locator('tr', { hasText: 'PROVA donazione' });
+    assert.match(await rowOwn.innerText(), /inserito da te/);
+    await rowOp.getByRole('button', { name: 'Verifica' }).click();
+    await rs.page.waitForURL(/\/verifica\?ok=MOV-/);
+    assert.equal(await rs.page.locator('tr', { hasText: 'PROVA materiale scolastico' }).count(), 0);
+    const [{ status }] = (await pool.query(`select status from movements where description = 'PROVA materiale scolastico'`)).rows;
+    assert.equal(status, 'verified');
+    await rs.page.screenshot({ path: `${SHOTS}/resp_verifica.png`, fullPage: true });
+  });
+
+  const sa = await login('andrea@test.local');
+  await check('super admin: pagine di amministrazione e lingua francese', async () => {
+    for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
+      ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto'], ['/admin/impostazioni', 'Quattro occhi'],
+      ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
+      ['/conti', 'Saldo iniziale'], ['/controparti', 'Nessun dato'], ['/sincronizzazione', 'Tappa 4e'], ['/guida', 'Verifica e storni']]) {
+      await sa.page.goto(base + path);
+      assert.match(await sa.page.locator('main').innerText(), new RegExp(text), path);
+    }
+    await sa.page.goto(`${base}/altro`);
+    await sa.page.screenshot({ path: `${SHOTS}/sa_altro.png`, fullPage: true });
+    await sa.page.goto(`${base}/account`);
+    await sa.page.getByRole('button', { name: 'Français' }).click();
+    await sa.page.waitForURL(/\/account/);
+    await sa.page.getByText('Mon compte').first().waitFor();
+    await sa.page.goto(`${base}/`);
+    const header = await sa.page.locator('header').innerText();
+    assert.match(header, /Chaque dépense, sa pièce justificative/);
+    assert.match(await sa.page.locator('nav.nav').innerText(), /Tableau de bord/);
+    assert.match(await sa.page.locator('main').innerText(), /Trésorerie en Italie/);
+    await sa.page.screenshot({ path: `${SHOTS}/sa_dashboard_fr.png`, fullPage: true });
+    const [{ lang }] = (await pool.query(`select lang from profiles where email = 'andrea@test.local'`)).rows;
+    assert.equal(lang, 'fr');
+  });
+
   await check('uscita: chiude la sessione', async () => {
     await ro.page.goto(`${base}/altro`);
-    await ro.page.getByRole('button', { name: 'Esci' }).click();
+    await ro.page.getByRole('button', { name: 'Esci' }).first().click();
     await ro.page.waitForURL(/\/login/);
     await ro.page.goto(`${base}/`);
     assert.match(ro.page.url(), /\/login/);

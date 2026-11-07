@@ -1,12 +1,12 @@
-/* Mizana service worker.
+/* YouCount service worker.
  * - Pagine: rete prima; senza rete, ultima copia salvata o la pagina /offline.
  * - File statici con hash (_next/static, icone): cache prima.
  * - Dati (Supabase, /api): mai in cache qui. I dati offline stanno in IndexedDB (coda d'invio),
  *   così il database centrale resta l'archivio ufficiale.
  * Nessuna dipendenza dalla Background Sync API: l'invio della coda lo gestisce l'app.
  */
-const VERSION = 'mizana-v1';
-const SHELL = ['/offline', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/logo.svg'];
+const VERSION = 'youcount-v2';
+const SHELL = ['/offline', '/manifest.webmanifest', '/icons/icon-192.png', '/brand/youcount-mark.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

@@ -1,17 +1,16 @@
-import { Logo } from '@/components/Logo';
+import { Logo, Wordmark } from '@/components/Logo';
+import { guestLang } from '@/lib/session';
+import { translator } from '@/lib/i18n';
 
-export const metadata = { title: 'Senza connessione' };
-
-export default function Offline() {
+export default async function Offline() {
+  const t = translator(await guestLang());
   return (
-    <main className="wrap" style={{ maxWidth: 480, paddingTop: 48 }}>
+    <main className="wrap login" style={{ maxWidth: 480, paddingTop: 48 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <Logo />
-        <h1 style={{ fontSize: 22, color: 'var(--navy)' }}>Senza connessione</h1>
+        <Logo size={52} /><Wordmark tagline={t('app_tagline')} />
       </div>
-      <div className="note">
-        Questa pagina non era stata salvata sul dispositivo. Le pagine già aperte con la rete restano consultabili.
-      </div>
+      <h1 style={{ fontSize: 20, marginBottom: 10 }}>{t('offline_title')}</h1>
+      <div className="note">{t('offline_text')}</div>
     </main>
   );
 }

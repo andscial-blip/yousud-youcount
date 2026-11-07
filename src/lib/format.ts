@@ -1,13 +1,15 @@
-// Formati numerici e date per l'italiano. MGA senza decimali, EUR con due.
-export function money(value: number | string | null | undefined, currency: string) {
+import type { Lang } from './i18n';
+
+// Importi: MGA senza decimali, EUR con due; separatore delle migliaia sempre presente.
+export function money(value: number | string | null | undefined, currency: string, lang: Lang = 'it') {
   if (value === null || value === undefined || value === '') return '–';
   const n = typeof value === 'string' ? Number(value) : value;
-  return new Intl.NumberFormat('it-IT', {
+  return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', {
     style: 'currency',
     currency,
     minimumFractionDigits: currency === 'MGA' ? 0 : 2,
     maximumFractionDigits: currency === 'MGA' ? 0 : 2,
-    // separatore delle migliaia anche sotto 10.000 (in italiano Intl lo omette per 4 cifre)
+    // in italiano Intl omette il separatore per i numeri di 4 cifre: lo forziamo
     useGrouping: 'always',
   } as Intl.NumberFormatOptions).format(n);
 }
@@ -18,5 +20,13 @@ export function date(d: string | null | undefined) {
   return `${day}/${m}/${y}`;
 }
 
-export const KIND_LABEL = { income: 'Entrata', expense: 'Uscita', transfer: 'Giroconto' } as const;
-export const STATUS_LABEL = { draft: 'Bozza', recorded: 'Da verificare', verified: 'Verificato' } as const;
+export function dateTime(d: string | null | undefined, lang: Lang = 'it') {
+  if (!d) return '–';
+  return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', {
+    dateStyle: 'short', timeStyle: 'short', timeZone: 'Indian/Antananarivo', // ora del Madagascar, indicata nel testo
+  }).format(new Date(d));
+}
+
+// nome nella lingua dell'utente, con l'italiano come riserva
+export const nm = (lang: Lang, o: { name_it: string; name_fr?: string | null } | null | undefined) =>
+  !o ? '–' : lang === 'fr' && o.name_fr ? o.name_fr : o.name_it;

@@ -3,10 +3,10 @@ import './globals.css';
 import { RegisterSW } from '@/components/RegisterSW';
 
 export const metadata: Metadata = {
-  title: { default: 'Mizana · Contabilità YouSud', template: '%s · Mizana' },
-  description: 'Registrazione di entrate e uscite, giustificativi e rendiconto per YouSud ODV.',
-  applicationName: 'Mizana',
-  appleWebApp: { capable: true, title: 'Mizana', statusBarStyle: 'black-translucent' },
+  title: { default: 'YouCount · Contabilità YouSud', template: '%s · YouCount' },
+  description: 'Ogni spesa, il suo giustificativo. Contabilità di YouSud ODV.',
+  applicationName: 'YouCount',
+  appleWebApp: { capable: true, title: 'YouCount', statusBarStyle: 'black-translucent' },
   icons: { icon: '/favicon.ico', apple: '/icons/apple-touch-icon.png' },
   robots: { index: false, follow: false },
 };

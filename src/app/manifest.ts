@@ -2,15 +2,15 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Mizana · Contabilità YouSud',
-    short_name: 'Mizana',
-    description: 'Entrate, uscite e giustificativi di YouSud ODV',
+    name: 'YouCount · Contabilità YouSud',
+    short_name: 'YouCount',
+    description: 'Ogni spesa, il suo giustificativo – Chaque dépense, sa pièce justificative',
     lang: 'it',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#EEF1F5',
+    background_color: '#FFFFFF',
     theme_color: '#44546A',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

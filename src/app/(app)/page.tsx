@@ -1,67 +1,42 @@
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
+import { ErrorNote, PageHead, Panel, Empty } from '@/components/Page';
+import { BalancesTable, type Balance } from '@/components/Balances';
 
 export const dynamic = 'force-dynamic';
 
-type Balance = {
-  account_id: string; code: string; name_it: string; currency: 'EUR' | 'MGA'; kind: string; location: string;
-  balance: string; unverified: number;
-};
-
 export default async function Dashboard() {
-  const { supabase, me } = await requireMe();
-  const [{ data: balances, error }, { count: toVerify }, { count: drafts }] = await Promise.all([
+  const { supabase, me, t, lang } = await requireMe();
+  const [{ data, error }, { count: toVerify }, { count: drafts }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id),
   ]);
-  const rows = (balances ?? []) as Balance[];
+  const rows = (data ?? []) as Balance[];
   const total = (cur: string) => rows.filter((r) => r.currency === cur && r.kind !== 'advance')
     .reduce((s, r) => s + Number(r.balance), 0);
 
   return (
     <div className="stack">
-      <h1 style={{ fontSize: 22 }}>Cruscotto</h1>
-      {error && <div className="note err">Saldi non disponibili: {error.message}</div>}
-      <section className="kpis" aria-label="Indicatori">
-        <div className="kpi"><span className="l">Liquidità in Italia</span><span className="v num">{money(total('EUR'), 'EUR')}</span>
-          <span className="s">banca, cassa e conti online in EUR</span></div>
-        <div className="kpi"><span className="l">Liquidità in Madagascar</span><span className="v num">{money(total('MGA'), 'MGA')}</span>
-          <span className="s">banca, cassa e mobile money in MGA</span></div>
+      <PageHead title={t('nav_dashboard')} />
+      <ErrorNote prefix={t('error_load')} error={error} />
+      <section className="kpis">
+        <div className="kpi"><span className="l">{t('dash_it')}</span>
+          <span className="v num">{money(total('EUR'), 'EUR', lang)}</span><span className="s">{t('dash_it_s')}</span></div>
+        <div className="kpi"><span className="l">{t('dash_mg')}</span>
+          <span className="v num">{money(total('MGA'), 'MGA', lang)}</span><span className="s">{t('dash_mg_s')}</span></div>
         <Link className="kpi" href="/movimenti?stato=recorded" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span className="l">Da verificare</span><span className="v num">{toVerify ?? 0}</span>
-          <span className="s">movimenti registrati non ancora verificati</span></Link>
+          <span className="l">{t('nav_verify')}</span><span className="v num">{toVerify ?? 0}</span>
+          <span className="s">{t('dash_verify_s')}</span></Link>
         <Link className="kpi" href="/movimenti?stato=draft" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span className="l">Le mie bozze</span><span className="v num">{drafts ?? 0}</span>
-          <span className="s">da completare e registrare</span></Link>
+          <span className="l">{t('dash_drafts')}</span><span className="v num">{drafts ?? 0}</span>
+          <span className="s">{t('dash_drafts_s')}</span></Link>
       </section>
-
-      <section className="panel">
-        <div className="panel-h"><h2>Saldi dei conti</h2></div>
-        {rows.length === 0 ? (
-          <div className="panel-b muted">Nessun conto visibile.</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="t">
-              <thead><tr><th>Conto</th><th>Luogo</th><th className="r">Saldo</th><th className="r">Da verificare</th></tr></thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.account_id}>
-                    <td>{r.name_it}</td>
-                    <td className="muted">{r.location === 'IT' ? 'Italia' : 'Madagascar'}</td>
-                    <td className="r num">{money(r.balance, r.currency)}</td>
-                    <td className="r num">{r.unverified > 0 ? <span className="chip warn">{r.unverified}</span> : '–'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-      <p className="muted" style={{ margin: 0 }}>
-        I saldi comprendono i movimenti registrati e verificati; gli storni sono già sottratti.
-      </p>
+      <Panel title={t('balances')}>
+        {rows.length === 0 ? <Empty text={t('none')} /> : <BalancesTable rows={rows} t={t} lang={lang} />}
+      </Panel>
+      <p className="muted" style={{ margin: 0 }}>{t('balances_note')}</p>
     </div>
   );
 }

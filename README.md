@@ -1,10 +1,12 @@
-# Mizana · Contabilità YouSud ODV
+# YouCount · Contabilità YouSud ODV
+
+Ogni spesa, il suo giustificativo · Chaque dépense, sa pièce justificative
 
 App web installabile (PWA) per registrare entrate e uscite di YouSud ODV in Italia e in Madagascar,
 archiviare i giustificativi e preparare in bozza il rendiconto per cassa ETS.
-Nome provvisorio: «mizana» significa bilancia in malgascio.
+Interfaccia in italiano e francese (lingua scelta da ogni utente). Marchio: mappamondo del logo YouSud con un distintivo contabile (`scripts/gen_icons.py`).
 
-Stato: tappa 4a (fondamenta). Non ancora pubblicata: serve creare gli account Supabase e Vercel.
+Stato: tappa 4a (fondamenta) con tutte le sezioni dell'app: Dashboard, Movimenti, Nuovo, Da verificare, Documenti, Progetti, Conti, Rendiconto, Fornitori e donatori, Sincronizzazione, Guida, Il mio account e, per gli amministratori, Utenti e ruoli, Conti finanziari, Piano dei conti, Progetti e centri di costo, Chiusure mensili, Impostazioni, Registro attività. Non ancora pubblicata: serve creare gli account Supabase e Vercel.
 
 ## Struttura
 
