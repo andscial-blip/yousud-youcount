@@ -174,7 +174,7 @@ begin
     (v_org, 'in', 'E509', (select id from public.category_groups g where g.org_id = v_org and g.direction = 'in' and g.code = 'E5'), 'Altre entrate', 'Autres recettes', 'A10', 2, 220),
     (v_org, 'in', 'E404', (select id from public.category_groups g where g.org_id = v_org and g.direction = 'in' and g.code = 'E4'), 'Sponsorizzazioni e altre attività commerciali (attività diverse, art. 6 CTS)', 'Parrainages et autres activités commerciales (activités diverses, art. 6 CTS)', 'B3', 2, 230),
     (v_org, 'in', 'E999', (select id from public.category_groups g where g.org_id = v_org and g.direction = 'in' and g.code = 'E5'), 'Entrate da classificare (bloccano la chiusura)', 'Recettes à classer (bloquent la clôture)', null, 2, 240),
-    (v_org, 'in', 'E904', (select id from public.category_groups g where g.org_id = v_org and g.direction = 'in' and g.code = 'E9'), 'Avanzo dell''anno precedente (saldo iniziale, non è un ricavo)', 'Excédent de l''exercice précédent (solde d''ouverture, pas un produit)', 'A10', 2, 250);
+    (v_org, 'in', 'E904', (select id from public.category_groups g where g.org_id = v_org and g.direction = 'in' and g.code = 'E9'), 'Avanzo dell''anno precedente (saldo iniziale, non è un ricavo)', 'Excédent de l''exercice précédent (solde d''ouverture, pas un produit)', null, 2, 250);
   insert into public.payment_methods(org_id, code, name_it, name_fr, sort) values
     (v_org, 'Contanti', 'Contanti', 'Espèces', 10),
     (v_org, 'Bonifico', 'Bonifico', 'Virement', 20),

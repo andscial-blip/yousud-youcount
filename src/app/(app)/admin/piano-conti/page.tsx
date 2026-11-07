@@ -54,7 +54,7 @@ export default async function Chart({ searchParams }: { searchParams: Promise<{ 
             <EditRow key={c.id} inactive={!c.active} summary={<>
               <span className="num" style={{ width: 52 }}>{c.code}</span>
               <span className="grow">{nm(lang, c)}</span>
-              {c.report_line_key ? <span className="chip">{c.report_line_key}</span> : <span className="chip warn">{t('to_classify')}</span>}
+              {c.group?.code === 'E9' ? <span className="chip">{t('out_report')}</span> : c.report_line_key ? <span className="chip">{c.report_line_key}</span> : <span className="chip warn">{t('to_classify')}</span>}
               {!c.active && <span className="chip">{t('inactive')}</span>}
             </>}>
               <form action={saveRow} className="fgrid">

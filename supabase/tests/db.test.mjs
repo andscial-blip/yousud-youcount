@@ -87,9 +87,10 @@ after(() => pool.end());
 test('seed: piano dei conti ripreso dal Gestionale', async () => {
   const [c] = await sql(`select count(*) filter (where direction='out')::int o, count(*) filter (where direction='in')::int i,
                                 count(*) filter (where report_line_key is null)::int n from categories`);
-  assert.deepEqual(c, { o: 64, i: 25, n: 2 });
+  // senza riga: i due codici «da classificare» e E904 (saldo iniziale, fuori rendiconto come nel Gestionale)
+  assert.deepEqual(c, { o: 64, i: 25, n: 3 });
   const unmapped = await sql(`select code from categories where report_line_key is null order by code`);
-  assert.deepEqual(unmapped.map((r) => r.code), ['999', 'E999']);
+  assert.deepEqual(unmapped.map((r) => r.code), ['999', 'E904', 'E999']);
   const [g] = await sql(`select kind, legacy_name from projects where name = 'Spese generali (fuori progetto)'`);
   assert.deepEqual(g, { kind: 'structure', legacy_name: 'General' });
 });

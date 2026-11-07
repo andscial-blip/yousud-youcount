@@ -100,6 +100,9 @@ for n, c in enumerate(dump["CODES_EX_NEW"]):
     rows.append(("out", c, rl, n))
 for n, c in enumerate(dump["CODES_IN_NEW"]):
     rl = dump["MAP_IN_NEW"].get(c["c"]) or None
+    # E904 (saldo iniziale, gruppo E9): come nel Gestionale (lineOf) non entra nel rendiconto
+    if c["cat"] == "E9" or c["c"] == "E904":
+        rl = None
     assert rl is None or rl in lines_in, (c["c"], rl)
     rows.append(("in", c, rl, n))
 vals = []
