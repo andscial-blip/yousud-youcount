@@ -1,0 +1,74 @@
+[
+ {
+  "c": "Banca Italia",
+  "cur": "EUR",
+  "loc": "Home",
+  "it": "Banca Italia",
+  "fr": "Banque Italie",
+  "kind": "bank",
+  "det": ""
+ },
+ {
+  "c": "Cassa Italia",
+  "cur": "EUR",
+  "loc": "Home",
+  "it": "Cassa Italia (contanti)",
+  "fr": "Caisse Italie (espèces)",
+  "kind": "cash",
+  "det": ""
+ },
+ {
+  "c": "Paypal",
+  "cur": "EUR",
+  "loc": "Home",
+  "it": "PayPal",
+  "fr": "PayPal",
+  "kind": "mobile",
+  "det": ""
+ },
+ {
+  "c": "Satispay",
+  "cur": "EUR",
+  "loc": "Home",
+  "it": "Satispay",
+  "fr": "Satispay",
+  "kind": "mobile",
+  "det": ""
+ },
+ {
+  "c": "Banca Missione",
+  "cur": "MGA",
+  "loc": "Field",
+  "it": "BNI Madagascar (banca)",
+  "fr": "BNI Madagascar (banque)",
+  "kind": "bank",
+  "det": ""
+ },
+ {
+  "c": "Cassa Missione",
+  "cur": "MGA",
+  "loc": "Field",
+  "it": "Cassa Madagascar (contanti)",
+  "fr": "Caisse Madagascar (espèces)",
+  "kind": "cash",
+  "det": ""
+ },
+ {
+  "c": "Mvola Telma",
+  "cur": "MGA",
+  "loc": "Field",
+  "it": "Mvola (mobile money)",
+  "fr": "Mvola (mobile money)",
+  "kind": "mobile",
+  "det": ""
+ },
+ {
+  "c": "Anticipi referente",
+  "cur": "EUR",
+  "loc": "Field",
+  "it": "Anticipi al referente in Madagascar",
+  "fr": "Avances au responsable à Madagascar",
+  "kind": "advance",
+  "det": ""
+ }
+]

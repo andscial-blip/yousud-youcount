@@ -13,7 +13,10 @@
 // del rimborso; le spese «pocket» le paga il personale con l'anticipo ricevuto; i saldi partono da cfg.openings
 // alla data cfg.openAt; codici vecchi (cfg.codesV < 2) convertiti con migTarget del Gestionale.
 //
-// Uso: node scripts/migrate/gestionale.mjs <backup.xlsx> <cartella-uscita> [--pocket-account=CODICE] [--status=recorded|verified]
+// Uso: node scripts/migrate/gestionale.mjs <backup.xlsx | copia.json> <cartella-uscita> [--add=movimenti.json]
+//        [--pocket-account=CODICE] [--status=recorded|verified]
+// Una copia .json è il contenuto d.json delle copie automatiche del Gestionale (scheda Backup); --add aggiunge
+// o sostituisce (stesso id) movimenti letti dopo la copia.
 
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
@@ -79,6 +82,12 @@ async function readBackup(file) {
            cfg: gj('config/main') ?? {}, rates: gj('config/rates') ?? {}, sheets: wb.worksheets.map((w) => w.name), _info: info };
 }
 
+function readSnapshot(file) {
+  const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return { info: { 'Esportato il': d.ts ? new Date(d.ts).toISOString() : '?' }, movs: d.movs ?? [], pocket: d.pocket ?? [],
+           docs: d.docs ?? [], cfg: d.cfg ?? {}, rates: d.rates ?? {}, sheets: ['copia automatica (JSON)'] };
+}
+
 // ------------------------------------------------------------------ regole del Gestionale
 const r2 = (x) => Math.round(x * 100) / 100;
 const mvOK = (m) => !m.status || m.status === 'Done';
@@ -111,11 +120,25 @@ function uuidFrom(name) { // UUID v5-like deterministico: stesso id del Gestiona
 const isoDate = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 
 // ------------------------------------------------------------------ piano di importazione
-const B = await readBackup(SRC);
+const B = SRC.endsWith('.json') ? readSnapshot(SRC) : await readBackup(SRC);
+if (opt.add) {
+  const extra = JSON.parse(fs.readFileSync(opt.add, 'utf8'));
+  for (const m of extra) {
+    const i = B.movs.findIndex((x) => x.id === m.id);
+    if (i >= 0) B.movs[i] = m; else B.movs.push(m);
+  }
+  B.sheets.push(`+ ${extra.length} movimenti da ${path.basename(opt.add)}`);
+}
 const cfg = B.cfg, rules = makeRules(cfg, B.rates);
-const accounts = (Array.isArray(cfg.accounts) && cfg.accounts.length ? cfg.accounts : null);
+// conti: quelli della configurazione del Gestionale, altrimenti il suo elenco predefinito (ACCOUNTS in app.html)
+const accounts = Array.isArray(cfg.accounts) && cfg.accounts.length ? cfg.accounts
+  : JSON.parse(fs.readFileSync(new URL('./gestionale-accounts.json', import.meta.url), 'utf8'));
 const ACC = new Map((accounts ?? []).map((a) => [a.c, a]));
-const pendEx = (+cfg.codesV || 1) < 2, pendIn = (+cfg.codesInV || 1) < 2;
+// come pendEx()/pendIn() del Gestionale: conversione solo se la versione è < 2 E gli elenchi salvati sono quelli vecchi
+const oldStored = (L, OLD) => Array.isArray(L) && L.length > 0
+  && L.filter((x) => { const q = OLD.find((z) => z[0] === x.c); return q && q[2] === x.it; }).length >= L.length / 2;
+const pendEx = (+cfg.codesV || 1) < 2 && oldStored(cfg.lists?.codesEx, CODES_EX_OLD);
+const pendIn = (+cfg.codesInV || 1) < 2 && oldStored(cfg.lists?.codesIn, CODES_IN_OLD);
 const oldEx = new Set(pendEx ? CODES_EX_OLD.map((x) => x[0]) : []), oldIn = new Set(pendIn ? CODES_IN_OLD.map((x) => x[0]) : []);
 const structPrj = Array.isArray(cfg.structPrj) ? cfg.structPrj : ['General'];
 
