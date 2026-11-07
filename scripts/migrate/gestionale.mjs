@@ -3,7 +3,7 @@
 //
 // Legge SOLO il backup Excel scaricato dal Gestionale (scheda Backup → «Scarica backup Excel»):
 // il Gestionale non viene mai toccato. Produce:
-//   <out>/import.sql   un'unica transazione da eseguire sul database (prima in locale, poi online dopo un backup)
+//   <out>/chunks/NN.sql blocchi da eseguire in ordine (prima in locale, poi online); <out>/import.sql = tutti i blocchi
 //   <out>/report.md    cosa entra, cosa resta fuori e perché, decisioni da prendere
 //   <out>/expected.json saldi per conto e rendiconto per anno calcolati con le regole del Gestionale,
 //                       da confrontare con quelli di YouCount dopo il caricamento (scripts/migrate/verify.mjs)
@@ -32,6 +32,8 @@ if (!SRC || !OUT) { console.error('uso: gestionale.mjs <backup.xlsx> <cartella-u
 const opt = Object.fromEntries(flags.map((f) => f.replace(/^--/, '').split('=')));
 const POCKET_ACC = opt['pocket-account'] ?? 'Anticipi personale';
 const STATUS = opt.status === 'verified' ? 'verified' : 'recorded';
+// --verified-before=AAAA-MM-GG: i movimenti con data di cassa precedente entrano come verificati (già controllati nel Gestionale)
+const VERIFIED_BEFORE = opt['verified-before'] ?? null;
 
 // ------------------------------------------------------------------ lettura del backup Excel
 const XL_PRE = '§';
@@ -201,12 +203,13 @@ for (const m of B.movs) {
   if (due) bits.push('Da rimborsare a chi ha pagato (nel Gestionale «da rimborsare»): resta bozza finché non si rimborsa');
   if (pocket) bits.push(`Pagato con l'anticipo in contanti del personale${m.acct ? ` (conto indicato: ${m.acct})` : ''}`);
   if (m.imp) bits.push(`Importato da ${m.imp}`);
+  if (m.recon?.d) bits.push(`Riconciliato con l'estratto conto il ${m.recon.d}`);
   if (m.note) bits.push(String(m.note));
   bits.push(`Gestionale: ${m.id}`);
   const rcpt = [m.rcpt, m.rcptNo].filter(Boolean).join(' ');
   const nDocs = (Array.isArray(m.docs) ? m.docs.length : 0) + (Array.isArray(m.photos) ? m.photos.length : 0);
   plan.push({
-    legacy: m.id, ref: m.ref ?? null, kind, status: due ? 'draft' : STATUS, opDate, docDate: m.date !== opDate ? m.date : (isoDate(m.date) ?? null),
+    legacy: m.id, ref: m.ref ?? null, kind, status: due ? 'draft' : VERIFIED_BEFORE && opDate < VERIFIED_BEFORE ? 'verified' : STATUS, opDate, docDate: m.date !== opDate ? m.date : (isoDate(m.date) ?? null),
     description: String(m.desc ?? '').slice(0, 500), amount: acc.cur === 'MGA' ? Math.round(amount) : r2(amount), currency: acc.cur,
     rate: acc.cur === 'MGA' ? +(+rate).toFixed(4) : null, acc: acc.c, to: to?.c ?? null,
     toAmount: to ? (to.cur === 'MGA' ? Math.round(toAmount) : r2(toAmount)) : null,
@@ -226,7 +229,7 @@ for (const p of B.pocket) {
   usedAccounts.add(cash);
   const given = p.kind === 'given';
   plan.push({
-    legacy: `pocket:${p.id}`, ref: null, kind: 'transfer', status: STATUS, opDate: p.date, docDate: null,
+    legacy: `pocket:${p.id}`, ref: null, kind: 'transfer', status: VERIFIED_BEFORE && p.date < VERIFIED_BEFORE ? 'verified' : STATUS, opDate: p.date, docDate: null,
     description: `${given ? 'Anticipo in contanti a' : 'Restituzione anticipo da'} ${p.worker ?? 'personale'}`.slice(0, 500),
     amount: Math.round(+p.mga), currency: 'MGA', rate: rules.rateFor(p.date) ?? null,
     acc: given ? cash : POCKET_ACC, to: given ? POCKET_ACC : cash, toAmount: Math.round(+p.mga),
@@ -303,76 +306,47 @@ if (pocketUsed) {
   expectedBalances[POCKET_ACC] = { cur: 'MGA', open: 0, bal };
 }
 
-// ------------------------------------------------------------------ SQL
-const used = [...usedAccounts];
-const sql = [];
-const w = (s) => sql.push(s);
-w('-- Importazione dal Gestionale YouSud, generata da scripts/migrate/gestionale.mjs');
-w(`-- File: ${path.basename(SRC)} · esportato il ${B.info['Esportato il'] ?? '?'} · ${plan.length} movimenti`);
-w('begin;');
-w('do $mig$');
-w('declare v_org uuid; v_admin uuid; v_struct uuid; v_cnt int;');
-w('begin');
-w("  select id into v_org from public.organizations order by created_at limit 1;");
-w("  select id into v_admin from public.profiles where org_id = v_org and role = 'super_admin' and active order by created_at limit 1;");
-w("  if v_admin is null then raise exception 'manca il super amministratore'; end if;");
-w("  if exists (select 1 from public.movements where org_id = v_org and legacy_id is null) then");
-w("    raise exception 'ci sono già movimenti inseriti in YouCount: importazione fermata'; end if;");
-// conto per gli anticipi del personale
-if (pocketUsed) {
-  w(`  insert into public.accounts(org_id, code, name_it, name_fr, currency, location, kind, sort)`);
-  w(`  values (v_org, ${q(POCKET_ACC)}, 'Anticipi in contanti al personale', 'Avances en espèces au personnel', 'MGA', 'MG', 'advance', 85)`);
-  w('  on conflict (org_id, code) do nothing;');
+// ------------------------------------------------------------------ SQL a blocchi con impronta di controllo
+// Ogni blocco chiama app.import_gestionale (migrazione 1100): inserisce i movimenti e ricalcola l'impronta MD5
+// dei dati scritti; se non coincide con quella calcolata qui, il blocco viene annullato.
+const f2 = (v) => (+v).toFixed(2), f4 = (v) => (+v).toFixed(4);
+const canon = (x) => [x.legacy, x.ref ?? '', x.kind, x.status, x.opDate, x.docDate ?? '', x.description, f2(x.amount), x.currency,
+  x.rate ? f4(x.rate) : '', x.acc, x.to ?? '', x.toAmount != null ? f2(x.toAmount) : '', x.code ?? '', x.prj ?? '',
+  (x.supplier ?? '').toLowerCase(), x.method ?? '', x.notes ?? '', x.noDoc ?? ''].join('|');
+const md5 = (rows) => createHash('md5').update(rows.slice().sort((a, b) => (a.legacy < b.legacy ? -1 : a.legacy > b.legacy ? 1 : 0))
+  .map(canon).join('\n'), 'utf8').digest('hex');
+const J = (x) => ({
+  id: uuidFrom(x.legacy), cu: uuidFrom('client:' + x.legacy), lid: x.legacy, ref: x.ref, k: x.kind, st: x.status, d: x.opDate,
+  dd: x.docDate, de: x.description, a: f2(x.amount), cur: x.currency, r: x.rate ? f4(x.rate) : null, acc: x.acc, to: x.to,
+  ta: x.toAmount != null ? f2(x.toAmount) : null, code: x.code, prj: x.prj, str: x.prj ? structPrj.includes(x.prj) : false,
+  cp: x.supplier, pm: x.method, no: x.notes, nd: x.noDoc,
+});
+const setup = {
+  pocket: pocketUsed, pocketCode: POCKET_ACC,
+  openings: (accounts ?? []).filter((a) => a.c in openings || preOpen[a.c]).map((a) => {
+    const open = (+openings[a.c] || 0) - (preOpen[a.c] ?? 0);
+    return { c: a.c, v: a.cur === 'MGA' ? String(Math.round(open)) : f2(open), d: openAt || '' };
+  }),
+  projects: [...projects].filter((p) => !structPrj.includes(p)),
+  cps: [...suppliers.values()].map((x) => ({ n: x.name, k: x.kind })),
+};
+const SIZE = +(opt.chunk ?? 45);
+const ordered = plan.slice().sort((a, b) => (a.legacy < b.legacy ? -1 : a.legacy > b.legacy ? 1 : 0));
+const chunks = [];
+for (let i = 0; i < ordered.length || i === 0; i += SIZE) {
+  const part = ordered.slice(i, i + SIZE);
+  const body = { movs: part.map(J), md5: md5(part) };
+  if (i === 0) body.setup = setup;
+  if (i + SIZE >= ordered.length) body.total = plan.length;
+  const json = JSON.stringify(body);
+  if (json.includes('$g$')) throw new Error('testo con $g$: cambiare delimitatore');
+  chunks.push(`select app.import_gestionale($g$${json}$g$::jsonb);`);
+  if (!ordered.length) break;
 }
-// saldi iniziali
-for (const a of accounts ?? []) {
-  if (!(a.c in openings) && !preOpen[a.c]) continue;
-  const open = (+openings[a.c] || 0) - (preOpen[a.c] ?? 0);
-  w(`  update public.accounts set opening_balance = ${num(a.cur === 'MGA' ? Math.round(open) : r2(open))}, opening_date = ${q(openAt || null)}`);
-  w(`  where org_id = v_org and code = ${q(a.c)};`);
-}
-w('  if (select count(*) from public.accounts where org_id = v_org and code in (' + used.map(q).join(', ') + `)) <> ${used.length} then`);
-w("    raise exception 'conti del Gestionale mancanti in YouCount'; end if;");
-// progetti mancanti
-for (const p of projects) {
-  if (structPrj.includes(p)) continue;
-  w(`  if not exists (select 1 from public.projects where org_id = v_org and (legacy_name = ${q(p)} or name = ${q(p)})) then`);
-  w(`    insert into public.projects(org_id, name, kind, legacy_name) values (v_org, ${q(p)}, 'project', ${q(p)}); end if;`);
-}
-w("  select id into v_struct from public.projects where org_id = v_org and kind = 'structure' order by created_at limit 1;");
-// controparti
-for (const s of suppliers.values()) {
-  w(`  if not exists (select 1 from public.counterparties where org_id = v_org and lower(name) = lower(${q(s.name)})) then`);
-  w(`    insert into public.counterparties(org_id, name, kind, created_by) values (v_org, ${q(s.name)}, ${q(s.kind)}, v_admin); end if;`);
-}
-// movimenti
-for (const x of plan) {
-  const accSel = (c) => `(select id from public.accounts where org_id = v_org and code = ${q(c)})`;
-  const prjSel = x.prj === null ? 'null' : structPrj.includes(x.prj) ? 'v_struct'
-    : `(select id from public.projects where org_id = v_org and (legacy_name = ${q(x.prj)} or name = ${q(x.prj)}) order by legacy_name nulls last limit 1)`;
-  const catSel = x.code ? `(select id from public.categories where org_id = v_org and code = ${q(x.code)} and direction = '${x.kind === 'expense' ? 'out' : 'in'}')` : 'null';
-  const cpSel = x.supplier ? `(select id from public.counterparties where org_id = v_org and lower(name) = lower(${q(x.supplier)}) order by created_at limit 1)` : 'null';
-  const pmSel = x.method ? `(select id from public.payment_methods where org_id = v_org and code = ${q(x.method)})` : 'null';
-  const rec = x.status !== 'draft';
-  w(`  insert into public.movements(id, org_id, client_uuid, ref, kind, status, op_date, doc_date, description, amount, currency, fx_rate,`);
-  w('    account_id, to_account_id, to_amount, category_id, project_id, counterparty_id, payment_method_id, notes, no_doc_reason, legacy_id,');
-  w('    created_by, updated_by, recorded_by, recorded_at, verified_by, verified_at)');
-  w(`  values (${q(uuidFrom(x.legacy))}, v_org, ${q(uuidFrom('client:' + x.legacy))}, ${q(x.ref)}, '${x.kind}', '${x.status}', ${q(x.opDate)}, ${q(x.docDate)},`);
-  w(`    ${q(x.description)}, ${num(x.amount)}, '${x.currency}', ${x.rate ? num(x.rate) : 'null'}, ${accSel(x.acc)}, ${x.to ? accSel(x.to) : 'null'}, ${num(x.toAmount)},`);
-  w(`    ${catSel}, ${prjSel}, ${cpSel}, ${pmSel}, ${q(x.notes)}, ${q(x.noDoc)}, ${q(x.legacy)},`);
-  w(`    v_admin, v_admin, ${rec ? 'v_admin' : 'null'}, ${rec ? 'now()' : 'null'}, ${x.status === 'verified' ? 'v_admin, now()' : 'null, null'})`);
-  w('  on conflict (org_id, legacy_id) do nothing;');
-}
-// numerazione: il prossimo numero di ogni anno continua dopo quelli importati
-w('  insert into app.ref_counters(org_id, year, last)');
-w("  select v_org, substr(ref, 5, 4)::int, max(substr(ref, 10)::int) from public.movements");
-w("  where org_id = v_org and ref ~ '^MOV-[0-9]{4}-[0-9]+$' group by 1, 2");
-w('  on conflict (org_id, year) do update set last = greatest(app.ref_counters.last, excluded.last);');
-w(`  select count(*) into v_cnt from public.movements where org_id = v_org and legacy_id is not null;`);
-w(`  if v_cnt <> ${plan.length} then raise exception 'importati % movimenti invece di ${plan.length}', v_cnt; end if;`);
-w('end');
-w('$mig$;');
-w('commit;');
+fs.mkdirSync(path.join(OUT, 'chunks'), { recursive: true });
+for (const f of fs.readdirSync(path.join(OUT, 'chunks'))) fs.unlinkSync(path.join(OUT, 'chunks', f));
+chunks.forEach((c, i) => fs.writeFileSync(path.join(OUT, 'chunks', `${String(i + 1).padStart(2, '0')}.sql`), c + '\n'));
+const sql = [`-- Importazione dal Gestionale: ${plan.length} movimenti in ${chunks.length} blocchi (scripts/migrate/gestionale.mjs)`, ...chunks];
 
 // ------------------------------------------------------------------ rapporto
 const count = (f) => plan.filter(f).length;

@@ -66,3 +66,17 @@ test('movimento difettoso: escluso, segnalato nel rapporto e la verifica lo most
   assert.match(out, /\| Paypal \(EUR\) \| -27\.00 \| -15\.00 \| 12\.00 \|/);
   } finally { await pool.end(); }
 });
+
+test('blocco alterato durante la trasmissione: annullato dall\'impronta, nulla viene scritto', async () => {
+  const pool = await freshDb();
+  try {
+    run('node', ['tests/migrate/make-fixture.mjs', '/tmp/mig-t.xlsx', '--clean']);
+    run('node', ['scripts/migrate/gestionale.mjs', '/tmp/mig-t.xlsx', '/tmp/mig-t']);
+    const sql = fs.readFileSync('/tmp/mig-t/chunks/01.sql', 'utf8').replace('Carburante', 'Carburantr');
+    fs.writeFileSync('/tmp/mig-t/bad.sql', sql);
+    assert.throws(() => run('psql', [DB, '-qX', '-v', 'ON_ERROR_STOP=1', '-f', '/tmp/mig-t/bad.sql'], { stdio: 'pipe' }), /impronta dei dati diversa/);
+    assert.equal((await pool.query('select count(*)::int n from movements')).rows[0].n, 0);
+    assert.equal((await pool.query("select count(*)::int n from counterparties where name = 'Lousin'")).rows[0].n, 0);
+  } finally { await pool.end(); }
+});
+
