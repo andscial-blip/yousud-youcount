@@ -9,8 +9,8 @@
 | Seed (piano dei conti del Gestionale) | caricato: 8 conti, 51 righe di rendiconto, 15 gruppi, 89 codici, 14 metodi, 10 progetti |
 | Bucket `documents` privato + 2 policy | creati |
 | Accesso anonimo a tabelle e funzioni | revocato (verificato con `has_table_privilege` / `has_function_privilege`) |
-| Repository GitHub | da creare (l'integrazione GitHub non ha il permesso: errore 403) |
-| Progetto Vercel | da creare |
+| Repository GitHub `andscial-blip/yousud-youcount` (privato) | creato, codice caricato |
+| Progetto Vercel `youcount` (fra1), collegato al repository | online: https://youcount-gold.vercel.app (protezione Vercel solo sulle anteprime) |
 | Configurazione Auth (Site URL, iscrizioni chiuse, modelli email) | da fare dal pannello Supabase |
 | Primo super amministratore | da creare dopo il primo deploy |
 
