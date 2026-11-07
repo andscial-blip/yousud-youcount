@@ -1,3 +1,4 @@
+import { docName } from '@/lib/doc-name';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
@@ -37,7 +38,7 @@ export default async function MovementDetail({ params, searchParams }: {
       method:payment_methods(name_it, name_fr)`).eq('id', id).maybeSingle<M>();
   if (!m) notFound();
   const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }] = await Promise.all([
-    supabase.from('movement_documents').select('document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id),
+    supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
     supabase.rpc('user_directory'),
     supabase.from('movements').select('id, ref').eq('reverses_id', id).maybeSingle(),
@@ -45,10 +46,17 @@ export default async function MovementDetail({ params, searchParams }: {
   ]);
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   type D = { id: string; original_path: string; pdf_path: string | null; mime: string; file_name: string | null; created_at: string };
-  const docs = ((links ?? []) as unknown as { document: D | null }[]).map((l) => l.document).filter(Boolean) as D[];
-  const signed = docs.length
-    ? (await supabase.storage.from('documents').createSignedUrls(docs.map((d) => d.pdf_path ?? d.original_path), 600)).data ?? []
-    : [];
+  const docs = ((links ?? []) as unknown as { seq: number; document: D | null }[])
+    .filter((l) => l.document)
+    .map((l) => {
+      const path = l.document!.pdf_path ?? l.document!.original_path;
+      return { ...l.document!, path, name: docName(m.ref, l.seq, path, l.document!.file_name) };
+    });
+  const bucket = supabase.storage.from('documents');
+  const signed = await Promise.all(docs.map(async (d) => ({
+    open: (await bucket.createSignedUrl(d.path, 600)).data?.signedUrl,
+    save: (await bucket.createSignedUrl(d.path, 600, { download: d.name })).data?.signedUrl,
+  })));
   const resp = me && RESP.includes(me.role);
   const strict = fe?.value !== false;
   const canVerify = resp && m.status === 'recorded' && !rev && !(strict && (m.created_by === me!.id || m.recorded_by === me!.id));
@@ -96,13 +104,14 @@ export default async function MovementDetail({ params, searchParams }: {
         </dl>
       </Panel>
 
-      {m.kind !== 'transfer' && (
+      {(m.kind !== 'transfer' || docs.length > 0) && (
         <Panel title={t('d_documents')} pad>
           {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}: ${m.no_doc_reason}` : t('none')}</p> : (
             <ul className="docs">
               {docs.map((d, i) => (
-                <li key={d.id}><span>{d.file_name ?? (d.pdf_path ?? d.original_path).split('/').pop()}</span>
-                  {signed[i]?.signedUrl ? <a className="btn" href={signed[i].signedUrl} target="_blank" rel="noreferrer">{t('d_open')}</a> : null}</li>
+                <li key={d.id}><span className="num">{d.name}</span>
+                  {signed[i]?.open ? <a className="btn" href={signed[i].open} target="_blank" rel="noreferrer">{t('d_open')}</a> : null}
+                  {signed[i]?.save ? <a className="btn ghost" href={signed[i].save} title={d.name}><Ico name="download" />{t('d_download')}</a> : null}</li>
               ))}
             </ul>
           )}

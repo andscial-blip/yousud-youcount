@@ -159,10 +159,13 @@ try {
     assert.match(txt, new RegExp(`MOV-${year}-\\d{3}`));
     assert.match(txt, /50,00\s?€/);
     assert.match(txt, /Cartoleria di prova/);
-    assert.match(txt, /scontrino|\.png/);
-    const [m] = (await pool.query(`select amount, amount_eur, status, (select count(*)::int from movement_documents where movement_id = m.id) docs
+    const [m] = (await pool.query(`select amount, amount_eur, status, ref, (select count(*)::int from movement_documents where movement_id = m.id) docs,
+                                   (select max(seq) from movement_documents where movement_id = m.id) seq
                                    from movements m where id = $1`, [newId])).rows;
-    assert.deepEqual(m, { amount: '250000.00', amount_eur: '50.00', status: 'recorded', docs: 1 });
+    const ref = m.ref; delete m.ref;
+    assert.deepEqual(m, { amount: '250000.00', amount_eur: '50.00', status: 'recorded', docs: 1, seq: 1 });
+    assert.ok(txt.includes(`${ref}.png`), 'il giustificativo prende il nome del movimento');
+    assert.ok(await p.getByRole('link', { name: 'Scarica' }).count() >= 1, 'pulsante di download con il nome del movimento');
     await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
   });
   await check('operatore: foto ritagliata e migliorata, lettura IA, conferma campo per campo', async () => {

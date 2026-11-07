@@ -46,7 +46,7 @@ const it = {
   rep_item: 'Voce', rep_total_out: 'Totale uscite', rep_total_in: 'Totale entrate', rep_result: 'Avanzo / disavanzo',
   rep_result_s: 'entrate meno uscite, investimenti e imposte inclusi',
   // documenti
-  doc_uploaded: 'Caricato', doc_number: 'Numero', doc_total: 'Totale',
+  doc_name: 'Nome', doc_uploaded: 'Caricato', doc_number: 'Numero', doc_total: 'Totale',
   // account
   acc_lang: 'Lingua', sign_out: 'Esci', save: 'Salva',
   // login
@@ -133,7 +133,7 @@ const it = {
   err_immutable: 'Il movimento non è più modificabile: usa lo storno.', err_four_eyes: 'Chi ha inserito il movimento non può verificarlo.',
   err_generic: 'Salvataggio non riuscito', err_expense_project: 'Per un’uscita serve il progetto o «Spese generali».',
   // dettaglio
-  d_history: 'Storico delle modifiche', d_documents: 'Giustificativi', d_open: 'Apri', d_edit: 'Modifica',
+  d_history: 'Storico delle modifiche', d_documents: 'Giustificativi', d_open: 'Apri', d_download: 'Scarica', d_edit: 'Modifica',
   d_reverse: 'Storna', d_reverse_reason: 'Motivo dello storno', d_reverse_btn: 'Conferma lo storno', d_discard: 'Elimina bozza',
   d_created: 'Inserito', d_recorded: 'Registrato', d_verified: 'Verificato', d_reversed_by: 'Stornato da', d_reverses: 'Storno di',
   d_no_reason: 'Senza giustificativo', d_changed: 'campi modificati', d_back: '← Movimenti',
@@ -180,7 +180,7 @@ const fr: Record<Key, string> = {
   rep_unclassified: 'mouvements avec des codes sans ligne de bilan (ex. 999 / E999) : à reclasser.',
   rep_item: 'Poste', rep_total_out: 'Total des dépenses', rep_total_in: 'Total des recettes', rep_result: 'Excédent / déficit',
   rep_result_s: 'recettes moins dépenses, investissements et impôts compris',
-  doc_uploaded: 'Chargé le', doc_number: 'Numéro', doc_total: 'Total',
+  doc_name: 'Nom', doc_uploaded: 'Chargé le', doc_number: 'Numéro', doc_total: 'Total',
   acc_lang: 'Langue', sign_out: 'Se déconnecter', save: 'Enregistrer',
   login_title: 'Connexion', login_btn: 'Se connecter', login_busy: 'Connexion…', password: 'Mot de passe',
   login_bad: 'E-mail ou mot de passe incorrect.', login_offline: 'Une connexion est nécessaire pour le premier accès.',
@@ -258,7 +258,7 @@ const fr: Record<Key, string> = {
   err_currency_mismatch: 'La devise ne correspond pas au compte.', err_forbidden: 'Opération non autorisée pour votre rôle.',
   err_immutable: 'Le mouvement n’est plus modifiable : utilisez l’extourne.', err_four_eyes: 'La personne qui a saisi le mouvement ne peut pas le vérifier.',
   err_generic: 'Échec de l’enregistrement', err_expense_project: 'Une dépense nécessite un projet ou « Spese generali ».',
-  d_history: 'Historique des modifications', d_documents: 'Pièces justificatives', d_open: 'Ouvrir', d_edit: 'Modifier',
+  d_history: 'Historique des modifications', d_documents: 'Pièces justificatives', d_open: 'Ouvrir', d_download: 'Télécharger', d_edit: 'Modifier',
   d_reverse: 'Extourner', d_reverse_reason: 'Motif de l’extourne', d_reverse_btn: 'Confirmer l’extourne', d_discard: 'Supprimer le brouillon',
   d_created: 'Saisi', d_recorded: 'Comptabilisé', d_verified: 'Vérifié', d_reversed_by: 'Extourné par', d_reverses: 'Extourne de',
   d_no_reason: 'Sans pièce justificative', d_changed: 'champs modifiés', d_back: '← Mouvements',
