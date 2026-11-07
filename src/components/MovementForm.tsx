@@ -204,7 +204,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
     amount: !amount, account: !accountId, toAccount: kind === 'transfer' && !toAccountId,
     toAmount: kind === 'transfer' && !parseAmount(toAmountTxt),
     category: kind !== 'transfer' && !categoryId, project: kind === 'expense' && !projectId,
-    rate: currency === 'MGA' && !rate, noDocReason: noDoc && noDocReason.trim().length < 5,
+    rate: currency === 'MGA' && !rate, noDocReason: kind !== 'transfer' && noDoc && noDocReason.trim().length < 5,
   };
 
   function errorText(msg: string) {
@@ -242,7 +242,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
         project_id: kind === 'transfer' ? null : projectId || null,
         grant_id: kind === 'transfer' ? null : grantId || null,
         counterparty_id: counterparty, payment_method_id: methodId || null, notes: notes.trim() || null,
-        no_doc_reason: noDoc ? noDocReason.trim() : null, status,
+        no_doc_reason: kind !== 'transfer' && noDoc ? noDocReason.trim() : null, status,
         document_ids: docs.filter((d) => d.id).map((d) => d.id), device_id: 'web',
         ai_extracted: Object.keys(ai).length > 0 || undefined,
       };
@@ -289,6 +289,60 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
                     onDone={(r) => { setScanQueue((q) => q.slice(1)); upload(r); }}
                     onCancel={() => setScanQueue((q) => q.slice(1))} />
       )}
+      <section className="panel doc-first"><div className="panel-h"><h2>{t.f_doc}</h2>{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
+          <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+        </label>
+        <label className="btn big-touch"><Ico name="upload" />{t.f_doc_file}
+          <input type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+        </label>
+      </div>
+      {docs.length > 0 && (
+        <ul className="docs">
+          {docs.map((d) => (
+            <li key={d.key}>
+              <span>{d.label}</span>
+              <span className={`chip ${d.state === 'ok' ? 'ok' : d.state === 'err' ? 'err' : 'warn'}`}>
+                {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? t.f_doc_dup : t.f_doc_err}
+              </span>
+              {R.aiEnabled && d.id && (d.state === 'ok' || d.state === 'dup') && (
+                <button type="button" className="btn primary" disabled={aiBusy !== null} onClick={() => readWithAi(d.id!)}>
+                  {aiBusy === d.id ? t.ai_reading : t.ai_read}</button>
+              )}
+              {d.state !== 'uploading' && !initial?.docs.some((x) => x.id === d.id) && (
+                <button type="button" className="btn ghost" aria-label={t.remove_doc} title={t.remove_doc} onClick={() => setDocs((x) => x.filter((y) => y.key !== d.key))}><Ico name="close" /></button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {aiMsg && <div className="note err">{aiMsg}</div>}
+      {Object.keys(ai).length > 0 && (
+        <div className="note">
+          <b>{t.ai_note}</b>
+          {aiChecks.length > 0 && (
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              {aiChecks.map((c) => <li key={c.code} style={{ color: c.ok ? 'var(--green)' : 'var(--red)' }}>{c.ok ? '✓' : '!'} {c.message}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+      {kind !== 'transfer' && <label className="check"><input type="checkbox" checked={noDoc} onChange={(e) => setNoDoc(e.target.checked)} /> {t.f_no_doc}</label>}
+      {kind !== 'transfer' && noDoc && (
+        <div className="field">
+          <label htmlFor="nodoc">{t.f_no_doc_reason}</label>
+          <input className="input" id="nodoc" value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
+          {req(missing.noDocReason)}
+        </div>
+      )}
+      <div className={aiCls('docDate')}>
+        <label htmlFor="docdate">{t.f_doc_date}</label>
+        <input className="input" id="docdate" type="date" value={docDate} onChange={(e) => { setDocDate(e.target.value); confirm('docDate'); }} style={{ maxWidth: 220 }} />
+        {aiTag('docDate')}
+      </div>
+      </div></section>
+
       <div className="seg kinds" role="group" aria-label={t.f_kind}>
         {(['expense', 'income', 'transfer'] as const).map((k) => (
           <button type="button" key={k} aria-pressed={kind === k} disabled={Boolean(recordedLocked)}
@@ -402,62 +456,6 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
           {aiTag('description')}
         </div>
       </div></section>
-
-      {kind !== 'transfer' && (
-        <section className="panel"><div className="panel-h"><h2>{t.f_doc}</h2></div><div className="panel-b stack" style={{ gap: 12 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
-              <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
-            </label>
-            <label className="btn big-touch"><Ico name="upload" />{t.f_doc_file}
-              <input type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
-            </label>
-          </div>
-          {docs.length > 0 && (
-            <ul className="docs">
-              {docs.map((d) => (
-                <li key={d.key}>
-                  <span>{d.label}</span>
-                  <span className={`chip ${d.state === 'ok' ? 'ok' : d.state === 'err' ? 'err' : 'warn'}`}>
-                    {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? t.f_doc_dup : t.f_doc_err}
-                  </span>
-                  {R.aiEnabled && d.id && (d.state === 'ok' || d.state === 'dup') && (
-                    <button type="button" className="btn primary" disabled={aiBusy !== null} onClick={() => readWithAi(d.id!)}>
-                      {aiBusy === d.id ? t.ai_reading : t.ai_read}</button>
-                  )}
-                  {d.state !== 'uploading' && !initial?.docs.some((x) => x.id === d.id) && (
-                    <button type="button" className="btn ghost" aria-label={t.remove_doc} title={t.remove_doc} onClick={() => setDocs((x) => x.filter((y) => y.key !== d.key))}><Ico name="close" /></button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {aiMsg && <div className="note err">{aiMsg}</div>}
-          {Object.keys(ai).length > 0 && (
-            <div className="note">
-              <b>{t.ai_note}</b>
-              {aiChecks.length > 0 && (
-                <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-                  {aiChecks.map((c) => <li key={c.code} style={{ color: c.ok ? 'var(--green)' : 'var(--red)' }}>{c.ok ? '✓' : '!'} {c.message}</li>)}
-                </ul>
-              )}
-            </div>
-          )}
-          <label className="check"><input type="checkbox" checked={noDoc} onChange={(e) => setNoDoc(e.target.checked)} /> {t.f_no_doc}</label>
-          {noDoc && (
-            <div className="field">
-              <label htmlFor="nodoc">{t.f_no_doc_reason}</label>
-              <input className="input" id="nodoc" value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
-              {req(missing.noDocReason)}
-            </div>
-          )}
-          <div className={aiCls('docDate')}>
-            <label htmlFor="docdate">{t.f_doc_date}</label>
-            <input className="input" id="docdate" type="date" value={docDate} onChange={(e) => { setDocDate(e.target.value); confirm('docDate'); }} style={{ maxWidth: 220 }} />
-            {aiTag('docDate')}
-          </div>
-        </div></section>
-      )}
 
       <section className="panel"><div className="panel-b field">
         <label htmlFor="notes">{t.f_notes}</label>
