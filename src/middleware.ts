@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from '@/lib/supabase/env';
 
-const PUBLIC = ['/login', '/offline', '/manifest.webmanifest', '/sw.js'];
+const PUBLIC = ['/login', '/offline', '/auth', '/manifest.webmanifest', '/sw.js'];
 
 // Rinnova la sessione e manda al login chi non è autenticato. Nessuna registrazione pubblica.
 export async function middleware(req: NextRequest) {

@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic';
 
 type L = { month: number; kind: string; amount_eur: string | null; project_id: string | null; project_name: string | null };
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ anno?: string }> }) {
-  const { anno } = await searchParams;
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ anno?: string; pw?: string }> }) {
+  const { anno, pw } = await searchParams;
   const year = Number(anno) || new Date().getFullYear();
   const { supabase, me, t, lang } = await requireMe();
   const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }] = await Promise.all([
@@ -49,6 +49,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <Link href={`/?anno=${year + 1}`}>{year + 1}</Link>
         </div>
       </PageHead>
+      {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
       <section className="kpis">
         <div className="kpi it"><span className="kh"><span className="ki"><Ico name="wallet" size={18} /></span><span className="l">{t('dash_it')}</span> <Place loc="IT" label={t('italy')} /></span>

@@ -2,6 +2,7 @@ import { requireMe } from '@/lib/session';
 import { PageHead, Panel } from '@/components/Page';
 import { SignOut } from '@/components/SignOut';
 import { setLang } from '@/app/lang-action';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,10 @@ export default async function Account() {
               <button name="lang" value="fr" aria-pressed={lang === 'fr'}>Français</button>
             </form>
           </div>
-          <div><SignOut label={t('sign_out')} /></div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link className="btn" href="/account/password">{t('pw_change')}</Link>
+            <SignOut label={t('sign_out')} />
+          </div>
         </div>
       </Panel>
     </div>
