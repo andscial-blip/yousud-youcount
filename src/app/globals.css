@@ -62,15 +62,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .top { position: sticky; top: 0; z-index: 20; background: var(--slate); color: var(--on-slate);
        padding-top: env(safe-area-inset-top, 0px); }
 .top .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; }
-.logo-plate { display: inline-flex; align-items: center; justify-content: center; flex: none; background: #fff;
-              border-radius: 9px; box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+.logo { display: block; flex: none; }
 .brand { display: flex; flex-direction: column; min-width: 0; }
-.brand b { font-family: var(--f-ui); font-size: 20px; font-weight: 700; letter-spacing: .01em; line-height: 1.1; }
-.brand > span { font-size: 12px; opacity: .8; letter-spacing: .01em; }
-.wm-count { color: var(--amber); }
-.login .brand b { color: var(--navy); font-size: 24px; }
-.login .brand > span { color: var(--muted); opacity: 1; }
-.top .wm-count { color: var(--amber-soft); }
+.brand b { font-family: var(--f-ui); font-size: 21px; font-weight: 700; letter-spacing: .005em; line-height: 1.05; }
+.brand > span { font-size: 12px; opacity: .82; letter-spacing: .01em; }
+/* «You» nel verde YouSud, «Count» in blu notte; sull'intestazione ardesia versioni chiare */
+.wm-you { color: #00A060; }
+.wm-count { color: var(--navy); }
+.top .wm-you { color: #7FD3A6; }
+.top .wm-count { color: #FFFFFF; }
 .spacer { flex: 1; }
 .nav { background: var(--slate); border-top: 1px solid rgba(255,255,255,.12); }
 .nav .wrap { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
@@ -153,6 +153,40 @@ h3.grp { font-size: 13px; color: var(--muted); text-transform: uppercase; letter
   .hm { display: none; }
   .so { display: block; }
   table.t td, table.t th { padding: 8px 6px; }
+}
+
+a.rowlink { color: var(--fg); text-decoration: none; font-weight: 600; }
+a.rowlink:hover { color: var(--slate); text-decoration: underline; }
+
+/* modulo del movimento */
+.mform { max-width: 920px; }
+.fgrid { display: grid; gap: 16px 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fgrid .span2 { grid-column: 1 / -1; }
+.input.big { font-size: 22px; font-family: var(--f-ui); font-weight: 700; padding: 10px 12px; }
+.hint { font-size: 12.5px; color: var(--muted); }
+.ferr { font-size: 12.5px; color: var(--red); font-weight: 600; }
+.kinds button { padding: 9px 16px; font-size: 15px; }
+.seg.kinds { display: inline-grid; grid-template-columns: repeat(3, auto); }
+.docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.docs li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--surface-2); border-radius: var(--r); }
+.docs li span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip.err { background: var(--pink); color: var(--pink-fg); border-color: transparent; }
+.check { display: flex; align-items: center; gap: 8px; font-family: var(--f-ui); font-weight: 600; cursor: pointer; }
+.check input { width: 18px; height: 18px; }
+.factions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.factions .btn { padding: 11px 20px; font-size: 15px; }
+select.input { appearance: auto; }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+dl.kv dt { color: var(--muted); font-family: var(--f-ui); font-weight: 600; font-size: 13px; }
+dl.kv dd { margin: 0; }
+@media (max-width: 760px) {
+  .fgrid { grid-template-columns: minmax(0, 1fr); }
+  .factions { position: sticky; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); background: var(--bg); padding: 10px 0; z-index: 5; }
+  .factions .btn { flex: 1 1 140px; }
+  .factions .hint { display: none; }
+  .seg.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  dl.kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  dl.kv dd { margin-bottom: 8px; }
 }
 
 /* menu solo su telefono */

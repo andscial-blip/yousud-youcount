@@ -12,7 +12,8 @@
     "test:db": "node --test --test-concurrency=1 supabase/tests/*.test.mjs",
     "seed:gen": "python3 scripts/gen_seed.py ../analisi/acc_dump.json ../v2/app.html > supabase/seed.sql",
     "test:e2e": "bash scripts/db_reset_local.sh && node tests/e2e/app.e2e.mjs",
-    "stack:local": "node tests/e2e/local-stack.mjs"
+    "stack:local": "node tests/e2e/local-stack.mjs",
+    "test:unit": "node --experimental-strip-types --test tests/unit/*.test.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",

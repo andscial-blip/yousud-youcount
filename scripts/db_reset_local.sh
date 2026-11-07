@@ -5,6 +5,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 URL="${DATABASE_URL:-postgres://tester:tester@localhost:5432/mizana_test}"
 ADMIN_URL="${URL%/*}/postgres"
+# Postgres locale fermo (sessione riavviata)? Lo avvia, se il cluster è quello di sistema.
+if ! psql "$ADMIN_URL" -qXtAc "select 1" >/dev/null 2>&1 && command -v pg_ctlcluster >/dev/null; then
+  pg_ctlcluster 16 main start 2>/dev/null || true; sleep 2
+fi
 DB="${URL##*/}"
 psql "$ADMIN_URL" -qX -v ON_ERROR_STOP=1 -c "drop database if exists \"$DB\" with (force);" -c "create database \"$DB\";"
 psql "$URL" -qX -v ON_ERROR_STOP=1 -f supabase/tests/stub_supabase.sql

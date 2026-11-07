@@ -70,6 +70,34 @@ const it = {
   a_insert: 'creazione', a_update: 'modifica', a_delete: 'eliminazione',
   rl: 'Riga rendiconto', to_classify: 'da classificare', group: 'Gruppo',
   cp_kind_supplier: 'Fornitore', cp_kind_donor: 'Donatore', cp_kind_beneficiary: 'Beneficiario', cp_kind_staff: 'Personale', cp_kind_other: 'Altro',
+  // modulo movimento
+  f_new_title: 'Nuovo movimento', f_edit_title: 'Modifica movimento', f_kind: 'Tipo',
+  f_op_date: 'Data operazione', f_doc_date: 'Data del documento', f_amount: 'Importo', f_rate: 'Tasso MGA per 1 EUR',
+  f_rate_auto: 'proposto dal tasso del mese', f_rate_missing: 'Nessun tasso salvato per questo mese: inseriscilo.',
+  f_eur_equiv: 'Controvalore', f_account: 'Conto', f_from_account: 'Dal conto', f_to_account: 'Al conto',
+  f_to_amount: 'Importo arrivato', f_category: 'Codice contabile', f_project: 'Progetto o centro di costo',
+  f_project_hint: 'Per le spese fuori progetto scegli «Spese generali».', f_counterparty: 'Fornitore, donatore o beneficiario',
+  f_cp_none: 'Nessuno', f_cp_new: '+ Nuovo…', f_cp_new_ph: 'Nome del nuovo fornitore o donatore', f_method: 'Modalità di pagamento',
+  f_description: 'Descrizione', f_description_ph: 'Cosa è stato pagato o ricevuto', f_notes: 'Note', f_doc: 'Giustificativo',
+  f_doc_photo: 'Scatta una foto', f_doc_file: 'Carica un file', f_doc_uploading: 'Caricamento…', f_doc_ok: 'caricato',
+  f_doc_dup: 'già in archivio: collego quello esistente', f_doc_err: 'caricamento non riuscito',
+  f_no_doc: 'Il giustificativo non c’è', f_no_doc_reason: 'Perché manca (obbligatorio)',
+  f_save_draft: 'Salva bozza', f_record: 'Registra', f_saving: 'Salvataggio…', f_dups_title: 'Possibili doppioni',
+  f_dups_text: 'Esistono movimenti con stesso importo e date vicine. Controlla prima di registrare.',
+  f_required: 'Campo obbligatorio', f_choose: 'Scegli…', f_conflict: 'Qualcuno ha modificato questo movimento nel frattempo. Ricarica la pagina per vedere la versione aggiornata.',
+  f_record_hint: 'Registrando, il movimento riceve un numero e conta nei saldi. Poi lo modifica solo un responsabile.',
+  err_document_required: 'Allega il giustificativo oppure indica perché manca.', err_period_closed: 'Il mese è chiuso: non si registrano movimenti in quel periodo.',
+  err_currency_mismatch: 'La valuta non corrisponde al conto.', err_forbidden: 'Operazione non consentita per il tuo ruolo.',
+  err_immutable: 'Il movimento non è più modificabile: usa lo storno.', err_four_eyes: 'Chi ha inserito il movimento non può verificarlo.',
+  err_generic: 'Salvataggio non riuscito', err_expense_project: 'Per un’uscita serve il progetto o «Spese generali».',
+  // dettaglio
+  d_history: 'Storico delle modifiche', d_documents: 'Giustificativi', d_open: 'Apri', d_edit: 'Modifica',
+  d_reverse: 'Storna', d_reverse_reason: 'Motivo dello storno', d_reverse_btn: 'Conferma lo storno', d_discard: 'Elimina bozza',
+  d_created: 'Inserito', d_recorded: 'Registrato', d_verified: 'Verificato', d_reversed_by: 'Stornato da', d_reverses: 'Storno di',
+  d_no_reason: 'Senza giustificativo', d_changed: 'campi modificati', d_back: '← Movimenti',
+  // cambi
+  nav_fx: 'Tassi di cambio', fx_intro: 'Un tasso per mese (MGA per 1 EUR). Viene proposto in automatico nei movimenti in ariary.',
+  fx_source: 'Fonte', fx_save: 'Salva', fx_saved: 'Tasso salvato.',
   r_super_admin: 'Super amministratore', r_admin: 'Amministratore', r_responsabile: 'Responsabile', r_operator: 'Operatore', r_read_only: 'Sola lettura',
 };
 
@@ -131,6 +159,31 @@ const fr: Record<Key, string> = {
   a_insert: 'création', a_update: 'modification', a_delete: 'suppression',
   rl: 'Ligne du bilan', to_classify: 'à classer', group: 'Groupe',
   cp_kind_supplier: 'Fournisseur', cp_kind_donor: 'Donateur', cp_kind_beneficiary: 'Bénéficiaire', cp_kind_staff: 'Personnel', cp_kind_other: 'Autre',
+  f_new_title: 'Nouveau mouvement', f_edit_title: 'Modifier le mouvement', f_kind: 'Type',
+  f_op_date: 'Date de l’opération', f_doc_date: 'Date du document', f_amount: 'Montant', f_rate: 'Taux MGA pour 1 EUR',
+  f_rate_auto: 'proposé à partir du taux du mois', f_rate_missing: 'Aucun taux enregistré pour ce mois : saisissez-le.',
+  f_eur_equiv: 'Contre-valeur', f_account: 'Compte', f_from_account: 'Du compte', f_to_account: 'Vers le compte',
+  f_to_amount: 'Montant reçu', f_category: 'Code comptable', f_project: 'Projet ou centre de coût',
+  f_project_hint: 'Pour les dépenses hors projet, choisissez « Spese generali ».', f_counterparty: 'Fournisseur, donateur ou bénéficiaire',
+  f_cp_none: 'Aucun', f_cp_new: '+ Nouveau…', f_cp_new_ph: 'Nom du nouveau fournisseur ou donateur', f_method: 'Mode de paiement',
+  f_description: 'Description', f_description_ph: 'Ce qui a été payé ou reçu', f_notes: 'Notes', f_doc: 'Pièce justificative',
+  f_doc_photo: 'Prendre une photo', f_doc_file: 'Charger un fichier', f_doc_uploading: 'Chargement…', f_doc_ok: 'chargé',
+  f_doc_dup: 'déjà dans l’archive : je relie l’existant', f_doc_err: 'échec du chargement',
+  f_no_doc: 'Il n’y a pas de pièce justificative', f_no_doc_reason: 'Pourquoi elle manque (obligatoire)',
+  f_save_draft: 'Enregistrer le brouillon', f_record: 'Comptabiliser', f_saving: 'Enregistrement…', f_dups_title: 'Doublons possibles',
+  f_dups_text: 'Des mouvements de même montant et à des dates proches existent. Vérifiez avant de comptabiliser.',
+  f_required: 'Champ obligatoire', f_choose: 'Choisir…', f_conflict: 'Quelqu’un a modifié ce mouvement entre-temps. Rechargez la page pour voir la version à jour.',
+  f_record_hint: 'Une fois comptabilisé, le mouvement reçoit un numéro et compte dans les soldes. Ensuite, seul un responsable peut le modifier.',
+  err_document_required: 'Joignez la pièce justificative ou indiquez pourquoi elle manque.', err_period_closed: 'Le mois est clôturé : aucun mouvement ne peut y être comptabilisé.',
+  err_currency_mismatch: 'La devise ne correspond pas au compte.', err_forbidden: 'Opération non autorisée pour votre rôle.',
+  err_immutable: 'Le mouvement n’est plus modifiable : utilisez l’extourne.', err_four_eyes: 'La personne qui a saisi le mouvement ne peut pas le vérifier.',
+  err_generic: 'Échec de l’enregistrement', err_expense_project: 'Une dépense nécessite un projet ou « Spese generali ».',
+  d_history: 'Historique des modifications', d_documents: 'Pièces justificatives', d_open: 'Ouvrir', d_edit: 'Modifier',
+  d_reverse: 'Extourner', d_reverse_reason: 'Motif de l’extourne', d_reverse_btn: 'Confirmer l’extourne', d_discard: 'Supprimer le brouillon',
+  d_created: 'Saisi', d_recorded: 'Comptabilisé', d_verified: 'Vérifié', d_reversed_by: 'Extourné par', d_reverses: 'Extourne de',
+  d_no_reason: 'Sans pièce justificative', d_changed: 'champs modifiés', d_back: '← Mouvements',
+  nav_fx: 'Taux de change', fx_intro: 'Un taux par mois (MGA pour 1 EUR). Il est proposé automatiquement pour les mouvements en ariary.',
+  fx_source: 'Source', fx_save: 'Enregistrer', fx_saved: 'Taux enregistré.',
   r_super_admin: 'Super administrateur', r_admin: 'Administrateur', r_responsabile: 'Responsable', r_operator: 'Opérateur', r_read_only: 'Lecture seule',
 };
 
@@ -138,4 +191,6 @@ const DICT: Record<Lang, Record<Key, string>> = { it, fr };
 
 export const normLang = (v: string | null | undefined): Lang => (v === 'fr' ? 'fr' : 'it');
 export const translator = (lang: Lang) => (k: Key) => DICT[lang][k];
+export const dictFor = (lang: Lang) => DICT[lang];
+export type Dict = Record<Key, string>;
 export type T = ReturnType<typeof translator>;

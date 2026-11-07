@@ -53,6 +53,9 @@ async function seed() {
     description: 'PROVA materiale scolastico' });
   await save(U.op, { client_uuid: randomUUID(), kind: 'expense', op_date: today, amount: 35, currency: 'EUR',
     account_id: acc.bi, category_id: await id('categories', 'code', '201'), description: 'PROVA bozza operatore' });
+  const ym = today.slice(0, 7).split('-').map(Number);
+  await as(U.resp, 'insert into fx_rates(org_id, year, month, rate, source) values ((select org_id from profiles where id = $1), $2, $3, 5000, $4)',
+    [U.resp, ym[0], ym[1], 'prova e2e']);
   return U;
 }
 
@@ -129,6 +132,62 @@ try {
     assert.match(txt, new RegExp(`MOV-${year}-\\d{3}`));
     await op.page.screenshot({ path: `${SHOTS}/op_movimenti.png`, fullPage: true });
   });
+  // PNG 1×1 valido, come finto giustificativo
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  let newId = null;
+  await check('operatore: registra un\'uscita in ariary con il giustificativo', async () => {
+    const p = op.page;
+    await p.goto(`${base}/nuovo`);
+    await p.fill('#amount', '250.000');
+    await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    assert.equal(await p.inputValue('#rate'), '5000', 'tasso proposto dal mese');
+    await p.getByText('50,00 €').first().waitFor();
+    await p.selectOption('#category', { label: '401 · Materiali di consumo' });
+    await p.selectOption('#project', { label: 'École Antanetibe' });
+    await p.selectOption('#cp', { value: '__new' });
+    await p.fill('input[aria-label="Nome del nuovo fornitore o donatore"]', 'Cartoleria di prova');
+    await p.selectOption('#method', { label: 'Contanti' });
+    await p.fill('#desc', 'PROVA quaderni');
+    await p.locator('input[type=file]').nth(1).setInputFiles({ name: 'scontrino.png', mimeType: 'image/png', buffer: PNG });
+    await p.getByText('caricato', { exact: true }).waitFor();
+    await p.getByRole('button', { name: 'Registra' }).click();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
+    newId = p.url().split('/').pop();
+    const txt = await p.locator('main').innerText();
+    assert.match(txt, new RegExp(`MOV-${year}-\\d{3}`));
+    assert.match(txt, /50,00\s?€/);
+    assert.match(txt, /Cartoleria di prova/);
+    assert.match(txt, /scontrino|\.png/);
+    const [m] = (await pool.query(`select amount, amount_eur, status, (select count(*)::int from movement_documents where movement_id = m.id) docs
+                                   from movements m where id = $1`, [newId])).rows;
+    assert.deepEqual(m, { amount: '250000.00', amount_eur: '50.00', status: 'recorded', docs: 1 });
+    await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
+  });
+  await check('operatore: campi obbligatori e possibili doppioni segnalati', async () => {
+    const p = op.page;
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.goto(`${base}/nuovo`);
+    await p.fill('#amount', '250000');
+    await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    await p.getByText('Possibili doppioni').waitFor();
+    await p.getByRole('button', { name: 'Registra' }).click();
+    await p.getByText('Campo obbligatorio').first().waitFor();
+    assert.match(p.url(), /\/nuovo$/);
+    await p.screenshot({ path: `${SHOTS}/op_nuovo_mobile.png`, fullPage: true });
+    await p.setViewportSize({ width: 1280, height: 860 });
+  });
+  await check('operatore: modifica la propria bozza, lo storico la registra', async () => {
+    const p = op.page;
+    const [{ id }] = (await pool.query(`select id from movements where description = 'PROVA bozza operatore'`)).rows;
+    await p.goto(`${base}/movimenti/${id}/modifica`);
+    await p.fill('#amount', '40');
+    await p.getByRole('button', { name: 'Salva bozza' }).click();
+    await p.waitForURL(new RegExp(`/movimenti/${id}$`));
+    const txt = await p.locator('main').innerText();
+    assert.match(txt, /-40,00\s?€/);
+    assert.match(txt, /modifica · amount/);
+  });
+
   await check('operatore: rendiconto non accessibile', async () => {
     await op.page.goto(`${base}/rendiconto`);
     assert.match(await op.page.locator('main').innerText(), /visibile a responsabili/);
@@ -141,12 +200,12 @@ try {
     assert.doesNotMatch(await ro.page.locator('main').innerText(), /PROVA bozza operatore/);
     await ro.page.screenshot({ path: `${SHOTS}/ro_movimenti_mobile.png`, fullPage: true });
   });
-  await check('sola lettura: rendiconto con entrate A4 e uscite A1 in EUR', async () => {
+  await check('sola lettura: rendiconto con entrate A4 e uscite A1 in EUR (200 + 50 dal modulo)', async () => {
     await ro.page.goto(`${base}/rendiconto`);
     await ro.page.getByText('Totale uscite').waitFor();
     const txt = await ro.page.locator('main').innerText();
     assert.match(txt, /4\) Erogazioni liberali\s+2\.500,00\s?€/);
-    assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+200,00\s?€/);
+    assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+250,00\s?€/);
     await ro.page.screenshot({ path: `${SHOTS}/ro_rendiconto_mobile.png`, fullPage: true });
   });
   await check('operatore: niente "Da verificare" né amministrazione nel menu', async () => {
@@ -172,12 +231,31 @@ try {
     await rs.page.screenshot({ path: `${SHOTS}/resp_verifica.png`, fullPage: true });
   });
 
+  await check('responsabile: verifica e poi storna il movimento dell\'operatore', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/movimenti/${newId}`);
+    await p.getByRole('button', { name: 'Verifica' }).click();
+    await p.waitForURL(/ok=verified/);
+    assert.match(await p.locator('main').innerText(), /Verificato/);
+    await p.getByText('Storna', { exact: true }).click();
+    await p.fill('#reason', 'quaderni restituiti al fornitore');
+    await p.getByRole('button', { name: 'Conferma lo storno' }).click();
+    await p.waitForURL(/ok=reversed/);
+    const txt = await p.locator('main').innerText();
+    assert.match(txt, /Storno di/);
+    assert.match(txt, /quaderni restituiti/);
+    await p.goto(`${base}/movimenti/${newId}`);
+    assert.match(await p.locator('main').innerText(), /Stornato da MOV-/);
+    const [{ n }] = (await pool.query('select count(*)::int n from movements where reverses_id = $1', [newId])).rows;
+    assert.equal(n, 1);
+  });
+
   const sa = await login('andrea@test.local');
   await check('super admin: pagine di amministrazione e lingua francese', async () => {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
       ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto'], ['/admin/impostazioni', 'Quattro occhi'],
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
-      ['/conti', 'Saldo iniziale'], ['/controparti', 'Nessun dato'], ['/sincronizzazione', 'Tappa 4e'], ['/guida', 'Verifica e storni']]) {
+      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/admin/cambi', 'prova e2e'], ['/sincronizzazione', 'Tappa 4e'], ['/guida', 'Verifica e storni']]) {
       await sa.page.goto(base + path);
       assert.match(await sa.page.locator('main').innerText(), new RegExp(text), path);
     }

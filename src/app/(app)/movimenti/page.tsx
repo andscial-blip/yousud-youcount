@@ -50,7 +50,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <tr key={m.id}>
                     <td className="num">{date(m.op_date)}</td>
                     <td className="num muted hm nw">{m.ref ?? '–'}</td>
-                    <td>{m.description || <span className="muted">{t(`k_${m.kind}`)}</span>}
+                    <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind}`)}</Link>
                       {m.reverses_id && <> <span className="chip">{t('reversal')}</span></>}
                       <div className="so muted">{[m.ref, m.category?.code, m.project?.name, nm(lang, m.account)].filter(Boolean).join(' · ')}</div>
                       <div className="so"><StatusChip s={m.status} label={t(`st_${m.status}`)} /></div></td>

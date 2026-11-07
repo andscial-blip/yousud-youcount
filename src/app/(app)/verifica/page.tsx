@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { can, requireMe, RESP } from '@/lib/session';
 import { date, money, nm } from '@/lib/format';
 import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
@@ -45,7 +46,7 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
                 <tr key={r.id}>
                   <td className="num">{date(r.op_date)}</td>
                   <td className="num muted">{r.ref}</td>
-                  <td>{r.description || t(`k_${r.kind}`)}{r.reverses_id && <> <span className="chip">{t('reversal')}</span></>}</td>
+                  <td><Link className="rowlink" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>{r.reverses_id && <> <span className="chip">{t('reversal')}</span></>}</td>
                   <td className="muted">{r.category?.code ?? '–'}</td>
                   <td>{r.project?.name ?? '–'}</td>
                   <td>{nm(lang, r.account)}</td>

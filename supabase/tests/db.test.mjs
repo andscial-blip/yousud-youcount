@@ -375,3 +375,23 @@ test('rendiconto: struttura in sezione E, progetti in A, storni netti, solo staf
   assert.equal(un.length, 1);
   assert.equal((await as(U.op, (q) => q('select * from public.report_cash_statement($1)', [y]))).length, 0);
 });
+
+// ------------------------------------------------------------------ cambi e progetto obbligatorio
+test('tassi di cambio: li imposta un responsabile, si usa quello del mese o il precedente', async () => {
+  await assert.rejects(as(U.op, (q) => q('insert into fx_rates(org_id, year, month, rate) values ($1, 2026, 3, 5000)', [ORG])),
+    /row-level security/);
+  await as(U.resp, (q) => q('insert into fx_rates(org_id, year, month, rate, source) values ($1, 2026, 3, 5000, $2), ($1, 2026, 5, 5100, $2)',
+    [ORG, 'prova']));
+  const rate = async (d) => (await as(U.op, (q) => q('select public.fx_rate_for($1) r', [d])))[0].r;
+  assert.equal(await rate('2026-03-15'), '5000.0000');
+  assert.equal(await rate('2026-04-02'), '5000.0000');
+  assert.equal(await rate('2026-06-30'), '5100.0000');
+  assert.equal(await rate('2026-01-10'), null);
+});
+
+test('uscita registrata senza progetto: rifiutata (serve il progetto o «Spese generali»)', async () => {
+  await assert.rejects(rpc(U.op, 'save_movement', mov({ project_id: null, status: 'recorded', no_doc_reason: 'prova progetto' })),
+    /movements_expense_project/);
+  const d = await rpc(U.op, 'save_movement', mov({ project_id: null }));
+  assert.equal(d.status, 'draft', 'in bozza il progetto può mancare');
+});

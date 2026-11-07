@@ -71,6 +71,36 @@ async function auth(req, res, url) {
   return send(res, 404, { msg: 'not implemented in local stack' });
 }
 
+// finto Storage: tiene i file in memoria; basta per caricare un giustificativo e aprirlo con un link firmato
+const FILES = new Map();
+async function storage(req, res, url) {
+  const p = decodeURIComponent(url.pathname.replace('/storage/v1', ''));
+  const auth = verify((req.headers.authorization ?? '').replace(/^Bearer /, ''));
+  if (req.method === 'GET' && p.startsWith('/object/sign/')) {
+    const f = FILES.get(p.slice('/object/sign/'.length));
+    if (!f) return send(res, 404, { error: 'not found' });
+    res.writeHead(200, { 'content-type': f.type });
+    return res.end(f.buf);
+  }
+  if (!auth || auth.role !== 'authenticated') return send(res, 403, { error: 'unauthorized' });
+  if (req.method === 'POST' && p.startsWith('/object/sign/')) {
+    const rest = p.slice('/object/sign/'.length);
+    const body = JSON.parse((await readBody(req)).toString() || '{}');
+    if (Array.isArray(body.paths)) {
+      return send(res, 200, body.paths.map((path) => ({ path, error: FILES.has(`${rest}/${path}`) ? null : 'not found',
+        signedURL: `/object/sign/${rest}/${path}?token=locale` })));
+    }
+    return send(res, 200, { signedURL: `/object/sign/${rest}?token=locale` });
+  }
+  if (req.method === 'POST' && p.startsWith('/object/')) {
+    const key = p.slice('/object/'.length);
+    if (FILES.has(key)) return send(res, 409, { error: 'Duplicate', message: 'The resource already exists' });
+    FILES.set(key, { buf: await readBody(req), type: req.headers['content-type'] ?? 'application/octet-stream' });
+    return send(res, 200, { Key: key, Id: key });
+  }
+  return send(res, 404, { msg: 'not implemented in local stack' });
+}
+
 function proxyRest(req, res, url) {
   const up = http.request({ host: '127.0.0.1', port: PGRST_PORT, method: req.method,
     path: url.pathname.replace('/rest/v1', '') + url.search,
@@ -94,11 +124,12 @@ export async function startStack() {
     const url = new URL(req.url, `http://localhost:${PORT}`);
     if (req.method === 'OPTIONS') {
       res.writeHead(204, { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*',
-                           'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS' });
+                           'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS' });
       return res.end();
     }
     if (url.pathname.startsWith('/auth/v1')) return auth(req, res, url).catch((e) => send(res, 500, { msg: e.message }));
     if (url.pathname.startsWith('/rest/v1')) return proxyRest(req, res, url);
+    if (url.pathname.startsWith('/storage/v1')) return storage(req, res, url).catch((e) => send(res, 500, { msg: e.message }));
     send(res, 404, {});
   });
   await new Promise((r) => server.listen(PORT, r));
@@ -108,7 +139,7 @@ export async function startStack() {
     await new Promise((r) => setTimeout(r, 200));
   }
   return { url: `http://localhost:${PORT}`, anonKey: ANON_KEY,
-           stop: async () => { pgrst.kill(); server.close(); await pool.end(); } };
+           files: FILES, stop: async () => { pgrst.kill(); server.close(); await pool.end(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

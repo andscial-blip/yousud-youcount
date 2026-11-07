@@ -492,12 +492,12 @@ begin
     perform app.fail('invalid', 'percorso del file fuori dalla cartella dell''ente');
   end if;
   insert into public.documents(org_id, client_uuid, doc_type, doc_date, doc_number, total, currency, counterparty_id,
-                               original_path, enhanced_path, pdf_path, sha256, mime, size_bytes, pages, uploaded_by)
+                               original_path, enhanced_path, pdf_path, sha256, mime, file_name, size_bytes, pages, uploaded_by)
   values (v_org, (p->>'client_uuid')::uuid, coalesce(nullif(p->>'doc_type', ''), 'receipt'),
           nullif(p->>'doc_date', '')::date, nullif(p->>'doc_number', ''), nullif(p->>'total', '')::numeric,
           nullif(p->>'currency', ''), nullif(p->>'counterparty_id', '')::uuid,
           p->>'original_path', nullif(p->>'enhanced_path', ''), nullif(p->>'pdf_path', ''),
-          lower(p->>'sha256'), coalesce(nullif(p->>'mime', ''), 'application/octet-stream'),
+          lower(p->>'sha256'), coalesce(nullif(p->>'mime', ''), 'application/octet-stream'), left(nullif(p->>'file_name', ''), 255),
           nullif(p->>'size_bytes', '')::bigint, nullif(p->>'pages', '')::int, v_uid)
   returning * into v_d;
   return jsonb_build_object('outcome', 'applied', 'id', v_d.id, 'version', v_d.version);

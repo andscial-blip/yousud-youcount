@@ -194,6 +194,7 @@ create table public.documents (
   pdf_path         text,
   sha256           text not null check (sha256 ~ '^[0-9a-f]{64}$'),
   mime             text not null,
+  file_name        text check (file_name is null or length(file_name) <= 255),   -- nome del file caricato
   size_bytes       bigint check (size_bytes is null or size_bytes >= 0),
   pages            integer check (pages is null or pages > 0),
   extraction       jsonb,                    -- per campo: valore, fonte, confidenza, stato

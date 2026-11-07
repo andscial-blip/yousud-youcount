@@ -9,7 +9,7 @@ export const ADMIN: Role[] = ['super_admin', 'admin'];
 export const RESP: Role[] = ['super_admin', 'admin', 'responsabile'];
 export const STAFF: Role[] = ['super_admin', 'admin', 'responsabile', 'read_only'];
 
-export type Me = { id: string; full_name: string; role: Role; active: boolean; lang: string };
+export type Me = { id: string; org_id: string; full_name: string; role: Role; active: boolean; lang: string; all_projects: boolean };
 
 // Lingua prima dell'accesso: cookie scelto sulla pagina di login, poi lingua del browser.
 export async function guestLang(): Promise<Lang> {
@@ -26,7 +26,7 @@ export async function requireMe() {
   if (!auth.user) redirect('/login');
   const { data: me } = await supabase
     .from('profiles')
-    .select('id, full_name, role, active, lang')
+    .select('id, org_id, full_name, role, active, lang, all_projects')
     .eq('id', auth.user.id)
     .maybeSingle<Me>();
   const lang = me ? normLang(me.lang) : await guestLang();
