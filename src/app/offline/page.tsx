@@ -7,7 +7,7 @@ export default async function Offline() {
   return (
     <main className="wrap login" style={{ maxWidth: 480, paddingTop: 48 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <Logo size={52} /><Wordmark tagline={t('app_tagline')} />
+        <Logo size={72} /><Wordmark tagline={t('app_tagline')} />
       </div>
       <h1 style={{ fontSize: 20, marginBottom: 10 }}>{t('offline_title')}</h1>
       <div className="note">{t('offline_text')}</div>

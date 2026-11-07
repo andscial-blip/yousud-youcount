@@ -53,23 +53,36 @@ def mark_body(seam='#FFFFFF'):
     return '\n'.join(out)
 
 
-def svg(body, bg=''):
-    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">{bg}{body}</svg>'
+def svg(body, bg='', vb='0 0 100 100'):
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vb}">{bg}{body}</svg>'
+
+
+# la ricevuta occupa x 22-78, y 8-93: centro (50, 50.5)
+TIGHT = '6 6.5 88 88'  # riquadro stretto attorno al marchio (logo in app e favicon)
+
+
+def fit(scale):
+    """Marchio centrato nel quadrato 100x100 alla scala data (altezza ricevuta = 85 x scala)."""
+    return f'translate({50 - 50 * scale:.2f} {50 - 50.5 * scale:.2f}) scale({scale})'
 
 
 body = mark_body()
-(brand / 'youcount-mark.svg').write_text(svg(body))
-# icona: fondo bianco arrotondato, marchio all'86%
-icon = svg(f'<g transform="translate(7 6) scale(.86)">{body}</g>', '<rect width="100" height="100" rx="22" fill="#FFFFFF"/>')
-# maskable: fondo pieno, marchio nella zona sicura (cerchio centrale dell'80%)
-mask = svg(f'<g transform="translate(19 18) scale(.62)">{body}</g>', '<rect width="100" height="100" fill="#FFFFFF"/>')
+(brand / 'youcount-mark.svg').write_text(svg(body, vb=TIGHT))
+WHITE = '<rect width="100" height="100" fill="#FFFFFF"/>'
+# icona "any" (PC): fondo bianco arrotondato, ricevuta all'80% dell'altezza
+icon = svg(f'<g transform="{fit(.94)}">{body}</g>', '<rect width="100" height="100" rx="22" fill="#FFFFFF"/>')
+# maskable (Android): fondo pieno; scala massima che resta nel cerchio sicuro dell'80% (raggio 40)
+mask = svg(f'<g transform="{fit(.82)}">{body}</g>', WHITE)
+# iOS: arrotonda gli angoli ma non ritaglia a cerchio, quindi margine minore
+apple = svg(f'<g transform="{fit(.9)}">{body}</g>', WHITE)
 (icons / 'icon.svg').write_text(icon)
 (icons / 'maskable.svg').write_text(mask)
+(icons / 'apple.svg').write_text(apple)
 for name, src in (('icon', icon), ('maskable', mask)):
     for size in (192, 512):
         subprocess.run(['rsvg-convert', '-w', str(size), '-h', str(size), icons / f'{name}.svg',
                         '-o', icons / f'{name}-{size}.png'], check=True)
-subprocess.run(['rsvg-convert', '-w', '180', '-h', '180', icons / 'maskable.svg', '-o', icons / 'apple-touch-icon.png'], check=True)
+subprocess.run(['rsvg-convert', '-w', '180', '-h', '180', icons / 'apple.svg', '-o', icons / 'apple-touch-icon.png'], check=True)
 # versione semplificata per 16-32 px (approvata dal panel): 6 tessere, fughe e spunta più spesse
 SMALL = [('T0 T2 e L2', '#00A060'), ('T2 T3 R2 e', '#F0B048'), ('L2 e f L3', '#0870B0'), ('e R2 R3 f', '#C81858'),
          ('L3 f B2 B0', '#90B848'), ('f R3 B3 B2', '#30A8D8')]
@@ -80,7 +93,7 @@ for names, col in SMALL:
     if not piece.is_empty:
         small.append(f'<path d="{path(piece)}" fill="{col}" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>')
 small.append('<path d="M33 50 L46 62 L68 37" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>')
-(brand / 'youcount-mark-small.svg').write_text(svg('\n'.join(small)))
+(brand / 'youcount-mark-small.svg').write_text(svg('\n'.join(small), vb=TIGHT))
 for s in (16, 32, 48):
     src = brand / ('youcount-mark-small.svg' if s <= 32 else 'youcount-mark.svg')
     subprocess.run(['rsvg-convert', '-w', str(s), '-h', str(s), src, '-o', f'/tmp/yc-fav{s}.png'], check=True)

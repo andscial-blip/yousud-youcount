@@ -5,7 +5,7 @@
  *   così il database centrale resta l'archivio ufficiale.
  * Nessuna dipendenza dalla Background Sync API: l'invio della coda lo gestisce l'app.
  */
-const VERSION = 'youcount-v2';
+const VERSION = 'youcount-v3';
 const SHELL = ['/offline', '/manifest.webmanifest', '/icons/icon-192.png', '/brand/youcount-mark.svg'];
 
 self.addEventListener('install', (event) => {

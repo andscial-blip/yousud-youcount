@@ -15,7 +15,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <main className="wrap login" style={{ maxWidth: 420, paddingTop: 'calc(40px + env(safe-area-inset-top, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <Logo size={52} />
+        <Logo size={72} />
         <Wordmark tagline={t('app_tagline')} />
         <div className="spacer" />
         <form action={setLang} className="seg">

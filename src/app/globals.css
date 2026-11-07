@@ -74,6 +74,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
        padding-top: env(safe-area-inset-top, 0px); }
 .top .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; }
 .logo { display: block; flex: none; }
+.top .logo { width: 50px; height: 50px; }
+@media (max-width: 760px) { .top .logo { width: 44px; height: 44px; } }
 .brand { display: flex; flex-direction: column; min-width: 0; }
 .brand b { font-family: var(--f-ui); font-size: 21px; font-weight: 700; letter-spacing: .005em; line-height: 1.05; }
 .brand > span { font-size: 12px; opacity: .82; letter-spacing: .01em; }
