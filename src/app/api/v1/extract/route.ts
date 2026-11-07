@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const lang = me.lang === 'fr' ? 'fr' : 'it';
   const { data: cats } = await supabase.from('categories').select('code, name_it, name_fr').eq('active', true).order('sort');
   const categories = (cats ?? []).map((c) => ({ code: c.code, name: lang === 'fr' && c.name_fr ? c.name_fr : c.name_it }));
-  const model = process.env.AI_MODEL || 'claude-haiku-4-5';
+  const model = process.env.AI_MODEL || 'claude-sonnet-5-5';
 
   let extraction;
   let usage = { input_tokens: 0, output_tokens: 0 };
