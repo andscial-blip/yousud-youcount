@@ -1,13 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { listOutbox } from '@/lib/outbox';
 
 // Esce e cancella le pagine salvate per l'uso offline, così su un telefono condiviso non restano dati visibili.
-export function SignOut({ label }: { label: string }) {
+// Se sul telefono ci sono movimenti non ancora inviati, chiede conferma: uscendo andrebbero persi.
+export function SignOut({ label, warn }: { label: string; warn: string }) {
   const [busy, setBusy] = useState(false);
   return (
     <button className="btn" disabled={busy} onClick={async () => {
+      const pending = await listOutbox().catch(() => []);
+      if (pending.length && !window.confirm(warn)) return;
       setBusy(true);
+      if (pending.length) indexedDB.deleteDatabase('youcount');
       await createClient().auth.signOut();
       if ('caches' in window) {
         const keys = await caches.keys();

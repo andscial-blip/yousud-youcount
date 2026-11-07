@@ -27,7 +27,7 @@ export default async function More() {
           </nav>
         </div>
       ))}
-      <div><SignOut label={t('sign_out')} /></div>
+      <div><SignOut label={t('sign_out')} warn={t('q_signout_warn')} /></div>
     </div>
   );
 }

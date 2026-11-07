@@ -60,7 +60,7 @@ const it = {
   offline_title: 'Senza connessione', offline_text: 'Questa pagina non era stata salvata sul dispositivo. Le pagine già aperte con la rete restano consultabili.',
   // pagine in costruzione
   new_text: 'Tappa 4c: fotografa o carica il giustificativo, l\'app migliora l\'immagine, ne fa un PDF, propone i campi letti e tu li verifichi uno per uno prima di registrare.',
-  sync_text: 'Tappa 4e: coda dei movimenti salvati senza rete, invio automatico e manuale, conflitti. Qui sotto gli ultimi invii registrati dal server.',
+  sync_text: 'Senza rete i movimenti nuovi restano sul telefono e partono da soli appena torna la connessione. Per usare l’app offline aprila almeno una volta con la rete.',
   sync_outcome: 'Esito', sync_op: 'Operazione',
   admin_readonly: 'Tocca una riga per modificarla. Le voci non si cancellano: si disattivano, così lo storico resta completo.',
   name_it_l: 'Nome in italiano', name_fr_l: 'Nome in francese', opening_date: 'Data del saldo iniziale', start_date: 'Inizio', end_date: 'Fine',
@@ -146,6 +146,14 @@ const it = {
   nav_fx: 'Tassi di cambio', fx_intro: 'Un tasso per mese (MGA per 1 EUR). Viene proposto in automatico nei movimenti in ariary.',
   fx_source: 'Fonte', fx_save: 'Salva', fx_saved: 'Tasso salvato.',
   r_super_admin: 'Super amministratore', r_admin: 'Amministratore', r_responsabile: 'Responsabile', r_operator: 'Operatore', r_read_only: 'Sola lettura',
+  // coda offline
+  f_doc_local: 'sul telefono, sarà inviato con il movimento', q_saved: 'Salvato sul telefono: verrà inviato da solo appena torna la rete. Puoi inserire il prossimo.',
+  q_pending: 'da inviare', q_title: 'Sul telefono, in attesa di invio', q_send: 'Invia ora', q_sending: 'Invio in corso…', q_delete: 'Elimina',
+  q_delete_confirm: 'Eliminare questo movimento dal telefono? Non è ancora stato inviato e andrà perso.',
+  q_err: 'non inviato', q_wait: 'in attesa', q_empty: 'Nessun movimento in attesa: tutto è stato inviato.',
+  q_edit_offline: 'Per modificare un movimento già registrato serve la rete.', q_files: 'giustificativi',
+  q_signout_warn: 'Ci sono movimenti salvati sul telefono e non ancora inviati. Se esci adesso andranno persi. Uscire comunque?',
+  q_server_log: 'Ultimi invii ricevuti dal server', q_no_ai: 'Senza rete la lettura IA non è disponibile: compila i campi a mano.',
 };
 
 export type Key = keyof typeof it;
@@ -196,7 +204,7 @@ const fr: Record<Key, string> = {
   account_noprofile: 'Compte sans profil. Adressez-vous à l\'administrateur de YouSud.',
   offline_title: 'Pas de connexion', offline_text: 'Cette page n\'avait pas été enregistrée sur l\'appareil. Les pages déjà ouvertes avec le réseau restent consultables.',
   new_text: 'Étape 4c : photographiez ou chargez la pièce justificative ; l\'application améliore l\'image, en fait un PDF, propose les champs lus et vous les vérifiez un par un avant d\'enregistrer.',
-  sync_text: 'Étape 4e : file d\'attente des mouvements saisis hors ligne, envoi automatique et manuel, conflits. Ci-dessous, les derniers envois enregistrés par le serveur.',
+  sync_text: 'Sans réseau, les nouveaux mouvements restent sur le téléphone et partent tout seuls dès le retour de la connexion. Pour utiliser l’app hors ligne, ouvrez-la au moins une fois avec le réseau.',
   sync_outcome: 'Résultat', sync_op: 'Opération',
   admin_readonly: 'Touchez une ligne pour la modifier. Rien ne se supprime : on désactive, ainsi l’historique reste complet.',
   name_it_l: 'Nom en italien', name_fr_l: 'Nom en français', opening_date: 'Date du solde initial', start_date: 'Début', end_date: 'Fin',
@@ -275,6 +283,14 @@ const fr: Record<Key, string> = {
   nav_fx: 'Taux de change', fx_intro: 'Un taux par mois (MGA pour 1 EUR). Il est proposé automatiquement pour les mouvements en ariary.',
   fx_source: 'Source', fx_save: 'Enregistrer', fx_saved: 'Taux enregistré.',
   r_super_admin: 'Super administrateur', r_admin: 'Administrateur', r_responsabile: 'Responsable', r_operator: 'Opérateur', r_read_only: 'Lecture seule',
+  // file d'attente hors ligne
+  f_doc_local: 'sur le téléphone, sera envoyée avec le mouvement', q_saved: 'Enregistré sur le téléphone : il sera envoyé tout seul dès le retour du réseau. Vous pouvez saisir le suivant.',
+  q_pending: 'à envoyer', q_title: 'Sur le téléphone, en attente d’envoi', q_send: 'Envoyer maintenant', q_sending: 'Envoi en cours…', q_delete: 'Supprimer',
+  q_delete_confirm: 'Supprimer ce mouvement du téléphone ? Il n’a pas encore été envoyé et sera perdu.',
+  q_err: 'non envoyé', q_wait: 'en attente', q_empty: 'Aucun mouvement en attente : tout a été envoyé.',
+  q_edit_offline: 'Pour modifier un mouvement déjà enregistré, il faut le réseau.', q_files: 'pièces',
+  q_signout_warn: 'Des mouvements enregistrés sur le téléphone n’ont pas encore été envoyés. Si vous vous déconnectez maintenant, ils seront perdus. Se déconnecter quand même ?',
+  q_server_log: 'Derniers envois reçus par le serveur', q_no_ai: 'Sans réseau, la lecture IA n’est pas disponible : remplissez les champs à la main.',
 };
 
 const DICT: Record<Lang, Record<Key, string>> = { it, fr };

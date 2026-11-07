@@ -6,6 +6,7 @@ import type { Dict } from '@/lib/i18n';
 import type { RefData } from '@/lib/movement-ref';
 import { parseAmount } from '@/lib/amount';
 import { ScanEditor, type ScanResult } from './ScanEditor';
+import { deviceId, isNetworkError, putOutbox, uploadDocument, type OutFile } from '@/lib/outbox';
 import { Ico } from './Ui';
 
 type Kind = 'expense' | 'income' | 'transfer';
@@ -16,7 +17,7 @@ export type Initial = {
   project_id: string | null; grant_id?: string | null; counterparty_id: string | null; payment_method_id: string | null; notes: string | null;
   no_doc_reason: string | null; docs: { id: string; label: string }[];
 };
-type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err'; id?: string };
+type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err' | 'local'; id?: string };
 type AiKey = 'amount' | 'opDate' | 'docDate' | 'description' | 'category' | 'cp' | 'method';
 type AiMark = { status: string; confidence: number; source: string | null; confirmed: boolean };
 type AiField = { value: string | number | null; source: string | null; confidence: number; status: string; note?: string | null };
@@ -27,21 +28,32 @@ const METHOD_HINT: Record<string, RegExp> = {
 };
 type Dup = { id: string; ref: string | null; op_date: string; amount: string; currency: string; description: string };
 
-async function sha256(file: File) {
-  const buf = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 const today = () => new Date().toISOString().slice(0, 10);
 const fmt = (n: number, cur: string) => new Intl.NumberFormat('it-IT', {
   style: 'currency', currency: cur, minimumFractionDigits: cur === 'MGA' ? 0 : 2, maximumFractionDigits: cur === 'MGA' ? 0 : 2,
   useGrouping: 'always',
 } as Intl.NumberFormatOptions).format(n);
 
-export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: Dict; initial?: Initial }) {
+type Props = { refData: RefData; t: Dict; initial?: Initial };
+
+// Dopo un salvataggio senza rete il modulo riparte vuoto (nuova chiave) per il movimento successivo.
+export function MovementForm(props: Props) {
+  const [round, setRound] = useState(0);
+  const [queued, setQueued] = useState(false);
+  return (
+    <>
+      {queued && <div className="note ok" role="status" style={{ marginBottom: 14 }}>{props.t.q_saved}</div>}
+      <Form key={round} {...props} onQueued={() => { setQueued(true); setRound((r) => r + 1); window.scrollTo(0, 0); }} />
+    </>
+  );
+}
+
+function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => void }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const clientUuid = useRef<string>(initial ? '' : crypto.randomUUID());
+  // giustificativi rimasti sul telefono (senza rete): partono con il movimento dalla coda
+  const localFiles = useRef(new Map<string, OutFile>());
 
   const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense');
   const [opDate, setOpDate] = useState(initial?.op_date ?? today());
@@ -130,31 +142,22 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
   async function upload(r: ScanResult) {
     const file = r.original;
     const key = crypto.randomUUID();
+    const keepLocal = () => {
+      localFiles.current.set(key, { key, name: file.name, type: file.type || 'application/octet-stream', size: file.size,
+        original: file, enhanced: r.enhanced ?? null, pdf: r.pdf ?? null });
+      setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'local' } : x)));
+    };
     setDocs((d) => [...d, { key, label: file.name, state: 'uploading' }]);
+    // senza rete (solo per un movimento nuovo): il file resta sul telefono e parte con il movimento
+    if (!navigator.onLine && !initial) { keepLocal(); return; }
     try {
-      const hash = await sha256(file);
-      const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const base = `${R.orgId}/${opDate.slice(0, 4)}/${key}`;
-      const paths = { original: `${base}.${ext}`, enhanced: r.enhanced ? `${base}-scan.jpg` : null, pdf: r.pdf ? `${base}.pdf` : null };
-      const { data: found } = await supabase.from('documents').select('id').eq('sha256', hash).maybeSingle();
-      if (!found) {
-        const put = async (path: string, body: Blob, type: string) => {
-          const up = await supabase.storage.from('documents').upload(path, body, { contentType: type, upsert: false });
-          if (up.error) throw up.error;
-        };
-        await put(paths.original, file, file.type || 'application/octet-stream');
-        if (r.enhanced && paths.enhanced) await put(paths.enhanced, r.enhanced, 'image/jpeg');
-        if (r.pdf && paths.pdf) await put(paths.pdf, r.pdf, 'application/pdf');
-      }
-      const { data, error } = await supabase.rpc('register_document', {
-        p: { client_uuid: key, sha256: hash, original_path: paths.original, enhanced_path: paths.enhanced, pdf_path: paths.pdf,
-             mime: file.type || 'application/octet-stream', file_name: file.name, size_bytes: file.size, doc_date: docDate || null },
-      });
-      if (error) throw error;
+      const data = await uploadDocument(supabase, { orgId: R.orgId, year: opDate.slice(0, 4), key, file, name: file.name,
+        type: file.type, size: file.size, enhanced: r.enhanced, pdf: r.pdf, docDate: docDate || null });
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, id: data.id, state: data.outcome === 'duplicate_file' ? 'dup' : 'ok' } : x)));
       if (R.aiEnabled && !initial && !autoRead.current) { autoRead.current = true; readWithAi(data.id, true); }
-    } catch {
-      setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'err' } : x)));
+    } catch (e) {
+      if (!initial && isNetworkError(e)) keepLocal();
+      else setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'err' } : x)));
     }
   }
 
@@ -231,7 +234,37 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
     if (needed) return;
     if (docs.some((d) => d.state === 'uploading')) return;
+    if (initial && !navigator.onLine) { setError(t.q_edit_offline); return; }
     setBusy(true);
+    const payload = (counterparty: string | null): Record<string, unknown> => ({
+      kind, op_date: opDate, doc_date: docDate || null, description: description.trim(), amount,
+      currency, fx_rate: currency === 'MGA' ? rate : null, account_id: accountId,
+      to_account_id: kind === 'transfer' ? toAccountId : null,
+      to_amount: kind === 'transfer' ? parseAmount(toAmountTxt) : null,
+      category_id: kind === 'transfer' ? null : categoryId || null,
+      project_id: kind === 'transfer' ? null : projectId || null,
+      grant_id: kind === 'transfer' ? null : grantId || null,
+      counterparty_id: counterparty, payment_method_id: methodId || null, notes: notes.trim() || null,
+      no_doc_reason: kind !== 'transfer' && noDoc ? noDocReason.trim() : null, status,
+      document_ids: docs.filter((d) => d.id).map((d) => d.id), device_id: deviceId(),
+      ai_extracted: Object.keys(ai).length > 0 || undefined,
+    });
+    // senza rete (o con giustificativi rimasti sul telefono): il movimento va nella coda e partirà da solo
+    const queue = async () => {
+      const files = docs.filter((d) => d.state === 'local').map((d) => localFiles.current.get(d.key)!).filter(Boolean);
+      await putOutbox({
+        id: clientUuid.current, createdAt: new Date().toISOString(), orgId: R.orgId, userId: R.userId,
+        label: description.trim() || t[`k_${kind}` as keyof Dict], amount: amount ?? 0, currency, opDate,
+        payload: payload(cpId && cpId !== '__new' ? cpId : null),
+        cpNew: cpId === '__new' && cpNew.trim() ? { name: cpNew.trim(), kind: kind === 'income' ? 'donor' : 'supplier' } : null,
+        docIds: docs.filter((d) => d.id).map((d) => d.id!), files, state: 'pending', attempts: 0,
+      });
+      onQueued();
+    };
+    if (!initial && (!navigator.onLine || docs.some((d) => d.state === 'local'))) {
+      try { await queue(); } catch (e) { setError(errorText(String((e as Error)?.message ?? e))); setBusy(false); }
+      return;
+    }
     try {
       let counterparty = cpId || null;
       if (cpId === '__new' && cpNew.trim()) {
@@ -241,19 +274,7 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
         if (error) throw error;
         counterparty = data.id;
       } else if (cpId === '__new') counterparty = null;
-      const p: Record<string, unknown> = {
-        kind, op_date: opDate, doc_date: docDate || null, description: description.trim(), amount,
-        currency, fx_rate: currency === 'MGA' ? rate : null, account_id: accountId,
-        to_account_id: kind === 'transfer' ? toAccountId : null,
-        to_amount: kind === 'transfer' ? parseAmount(toAmountTxt) : null,
-        category_id: kind === 'transfer' ? null : categoryId || null,
-        project_id: kind === 'transfer' ? null : projectId || null,
-        grant_id: kind === 'transfer' ? null : grantId || null,
-        counterparty_id: counterparty, payment_method_id: methodId || null, notes: notes.trim() || null,
-        no_doc_reason: kind !== 'transfer' && noDoc ? noDocReason.trim() : null, status,
-        document_ids: docs.filter((d) => d.id).map((d) => d.id), device_id: 'web',
-        ai_extracted: Object.keys(ai).length > 0 || undefined,
-      };
+      const p = payload(counterparty);
       if (initial) Object.assign(p, { id: initial.id, expected_version: initial.version, op_uuid: crypto.randomUUID() });
       else p.client_uuid = clientUuid.current;
       const { data, error } = await supabase.rpc('save_movement', { p });
@@ -262,6 +283,8 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
       router.push(`/movimenti/${data.id}`);
       router.refresh();
     } catch (e) {
+      // la rete è caduta durante l'invio: il movimento nuovo va nella coda invece di andare perso
+      if (!initial && isNetworkError(e)) { try { await queue(); return; } catch { /* sotto: errore mostrato */ } }
       setError(errorText((e as { message?: string }).message ?? String(e)));
       setBusy(false);
     }
@@ -307,20 +330,21 @@ export function MovementForm({ refData: R, t, initial }: { refData: RefData; t: 
           <input type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
         </label>
       </div>
+      {R.aiEnabled && docs.some((d) => d.state === 'local') && <div className="note">{t.q_no_ai}</div>}
       {docs.length > 0 && (
         <ul className="docs">
           {docs.map((d) => (
             <li key={d.key}>
               <span>{d.label}</span>
               <span className={`chip ${d.state === 'ok' ? 'ok' : d.state === 'err' ? 'err' : 'warn'}`}>
-                {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? t.f_doc_dup : t.f_doc_err}
+                {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? t.f_doc_dup : d.state === 'local' ? t.f_doc_local : t.f_doc_err}
               </span>
               {R.aiEnabled && d.id && (d.state === 'ok' || d.state === 'dup') && (
                 <button type="button" className="btn primary" disabled={aiBusy !== null} onClick={() => readWithAi(d.id!)}>
                   {aiBusy === d.id ? t.ai_reading : t.ai_read}</button>
               )}
               {d.state !== 'uploading' && !initial?.docs.some((x) => x.id === d.id) && (
-                <button type="button" className="btn ghost" aria-label={t.remove_doc} title={t.remove_doc} onClick={() => setDocs((x) => x.filter((y) => y.key !== d.key))}><Ico name="close" /></button>
+                <button type="button" className="btn ghost" aria-label={t.remove_doc} title={t.remove_doc} onClick={() => { localFiles.current.delete(d.key); setDocs((x) => x.filter((y) => y.key !== d.key)); }}><Ico name="close" /></button>
               )}
             </li>
           ))}

@@ -26,7 +26,7 @@ export default async function Account() {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Link className="btn" href="/account/password">{t('pw_change')}</Link>
-            <SignOut label={t('sign_out')} />
+            <SignOut label={t('sign_out')} warn={t('q_signout_warn')} />
           </div>
         </div>
       </Panel>

@@ -41,7 +41,7 @@ function Shell({ t, who, top, bottom, children }: {
           <Link href="/" aria-label={t('nav_dashboard')} style={{ display: 'flex' }}><Logo /></Link>
           <Wordmark tagline={t('app_tagline')} />
           <div className="spacer" />
-          {who && <NetStatus labels={{ online: t('net_online'), offline: t('net_offline') }} />}
+          {who && <NetStatus labels={{ online: t('net_online'), offline: t('net_offline'), pending: t('q_pending') }} />}
           {who && <Link href="/account" className="desk" style={{ color: 'rgba(255,255,255,.85)', fontSize: 13, textDecoration: 'none' }}>{who}</Link>}
           {who && <Link className="btn primary desk" href="/nuovo"><Icon d={I.plus} size={16} />{t('nav_new_long').replace('+ ', '')}</Link>}
           {who && <Link className="btn ghost mob" href="/altro" aria-label={t('nav_more')} style={{ color: '#fff' }}>

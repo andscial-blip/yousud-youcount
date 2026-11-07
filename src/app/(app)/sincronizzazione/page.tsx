@@ -1,6 +1,8 @@
 import { requireMe } from '@/lib/session';
 import { dateTime } from '@/lib/format';
 import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { OutboxList } from '@/components/OutboxList';
+import { dictFor } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +16,10 @@ export default async function Sync() {
   return (
     <div className="stack">
       <PageHead title={t('nav_sync')} />
-      <div className="note"><b>{t('coming')}.</b> {t('sync_text')}</div>
+      <div className="note">{t('sync_text')}</div>
+      <OutboxList t={dictFor(lang)} />
       <ErrorNote prefix={t('error_load')} error={error} />
-      <Panel>
+      <Panel title={t('q_server_log')}>
         {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
           <table className="t">
             <thead><tr><th>{t('audit_when')}</th><th>{t('sync_op')}</th><th>{t('sync_outcome')}</th></tr></thead>
