@@ -42,7 +42,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return (
     <div className="stack">
-      <PageHead title={t('nav_dashboard')}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <PageHead title={t('nav_dashboard')} lead={<img className="org-logo" src="/brand/yousud-logo-512.png" alt="YouSud" width={64} height={64} />}>
         <div className="seg">
           <Link href={`/?anno=${year - 1}`}>{year - 1}</Link>
           <Link href={`/?anno=${year}`} aria-current="true">{year}</Link>

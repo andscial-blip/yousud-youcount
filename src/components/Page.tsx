@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 
-export function PageHead({ title, children }: { title: string; children?: ReactNode }) {
+export function PageHead({ title, lead, children }: { title: string; lead?: ReactNode; children?: ReactNode }) {
   return (
     <div className="h1row">
+      {lead}
       <h1>{title}</h1>
       <div className="spacer" />
       {children}

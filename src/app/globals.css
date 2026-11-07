@@ -222,6 +222,8 @@ h3.grp { font-size: 13px; color: var(--muted); text-transform: uppercase; letter
 .seg [aria-pressed="true"], .seg [aria-current="true"] { background: var(--slate); color: #fff; }
 .h1row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .h1row h1 { font-size: 22px; }
+.org-logo { display: block; flex: none; width: 64px; height: 64px; object-fit: contain; }
+@media (max-width: 760px) { .org-logo { width: 48px; height: 48px; } }
 
 /* tabelle su telefono: colonne secondarie nascoste, riassunte sotto la descrizione */
 .nw { white-space: nowrap; }
