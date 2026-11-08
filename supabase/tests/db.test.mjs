@@ -452,3 +452,58 @@ test('set_budget: sostituisce le righe in un colpo solo, solo responsabili', asy
   const [{ n }] = await sql(`select count(*)::int n from audit_log where table_name = 'budget_lines' and action = 'delete'`);
   assert.ok(n >= 2, 'le righe sostituite restano nel registro');
 });
+
+test('spese da rimborsare: senza conto e fuori dai saldi; il rimborso le registra alla data di cassa', async () => {
+  const due = (over) => mov({ account_id: null, currency: 'MGA', fx_rate: 5000, amount: 40000, category_id: R.out['203'],
+    project_id: R.prj['École Piccolino'], paid_by: 'Chanfy', reimb_status: 'due', op_date: '2025-03-10', doc_date: '2025-03-10', ...over });
+  const accMga = R.acc['Cassa Missione'];
+  const bal = async () => Number((await as(U.ro, (q) => q('select balance from public.account_balances($1) where account_id = $2', [today, accMga])))[0].balance);
+  const before = await bal();
+  // operatore: registra due spese pagate di tasca propria (bozze senza conto, senza numero)
+  const a = await rpc(U.op, 'save_movement', due({ description: 'taxi', document_ids: [await doc(U.op)] }));
+  const b = await rpc(U.op, 'save_movement', due({ description: 'pranzo', amount: 25000, no_doc_reason: 'scontrino perso' }));
+  assert.deepEqual([a.status, a.ref, b.status], ['draft', null, 'draft']);
+  // non si può registrare senza conto, né chiedere "paid" direttamente
+  await assert.rejects(rpc(U.op, 'save_movement', due({ status: 'recorded' })), /movements_account_or_due|due_is_expense_draft/);
+  await assert.rejects(rpc(U.op, 'save_movement', due({ reimb_status: 'paid' })), /reimburse_expenses/);
+  assert.equal(await bal(), before, 'le spese da rimborsare non toccano i saldi');
+  // il rimborso lo fa un responsabile, non l'operatore
+  const batch = randomUUID();
+  const p = { ids: [a.id, b.id], account_id: accMga, date: '2025-04-02', client_batch: batch };
+  await assert.rejects(rpc(U.op, 'reimburse_expenses', p), /forbidden/);
+  await assert.rejects(rpc(U.resp, 'reimburse_expenses', { ...p, account_id: R.acc['Banca Italia'] }), /currency_mismatch/);
+  const r = await rpc(U.resp, 'reimburse_expenses', p);
+  assert.deepEqual([r.outcome, r.count, Number(r.total)], ['applied', 2, 65000]);
+  const rows = await sql('select status, op_date::text d, doc_date::text dd, account_id, reimb_status, ref, recorded_by, paid_by from movements where id = any($1) order by amount', [[a.id, b.id]]);
+  for (const m of rows) {
+    assert.deepEqual([m.status, m.d, m.dd, m.account_id, m.reimb_status, m.recorded_by, m.paid_by],
+      ['recorded', '2025-04-02', '2025-03-10', accMga, 'paid', U.resp, 'Chanfy']);
+    assert.match(m.ref, /^MOV-2025-\d{3}$/);
+  }
+  assert.equal(await bal(), before - 65000, 'il saldo scende alla data del rimborso');
+  // reinvio dello stesso rimborso: nessun effetto doppio
+  const again = await rpc(U.resp, 'reimburse_expenses', p);
+  assert.deepEqual([again.outcome, again.count], ['duplicate', 2]);
+  // una spesa già rimborsata non si rimborsa di nuovo
+  await assert.rejects(rpc(U.resp, 'reimburse_expenses', { ...p, client_batch: randomUUID() }), /già rimborsata/);
+  // senza giustificativo né motivo il rimborso è rifiutato (e non resta nulla a metà)
+  const c = await rpc(U.op, 'save_movement', due({ description: 'senza ricevuta' }));
+  await assert.rejects(rpc(U.resp, 'reimburse_expenses', { ids: [c.id], account_id: accMga, date: '2025-04-03', client_batch: randomUUID() }), /document_required/);
+  const [cc] = await sql('select status, reimb_status, account_id from movements where id = $1', [c.id]);
+  assert.deepEqual([cc.status, cc.reimb_status, cc.account_id], ['draft', 'due', null]);
+  // spesa incompleta (es. bozza importata): messaggio chiaro invece dell'errore di vincolo
+  const d = await rpc(U.op, 'save_movement', due({ description: 'incompleta', category_id: null, no_doc_reason: 'scontrino perso' }));
+  await assert.rejects(rpc(U.resp, 'reimburse_expenses', { ids: [d.id], account_id: accMga, date: '2025-04-03', client_batch: randomUUID() }),
+    /incompleta \(Chanfy\): manca il codice contabile/);
+  // spesa in ariary senza tasso: prende il tasso del mese del rimborso (o dell'ultimo precedente)
+  const e = await rpc(U.op, 'save_movement', due({ description: 'senza tasso', fx_rate: null, no_doc_reason: 'scontrino perso' }));
+  const rate = (await sql(`select r.rate from fx_rates r where (r.year, r.month) <= (2025, 4) order by r.year desc, r.month desc limit 1`))[0]?.rate;
+  if (rate) {
+    await rpc(U.resp, 'reimburse_expenses', { ids: [e.id], account_id: accMga, date: '2025-04-03', client_batch: randomUUID() });
+    const [ee] = await sql('select status, fx_rate from movements where id = $1', [e.id]);
+    assert.deepEqual([ee.status, Number(ee.fx_rate)], ['recorded', Number(rate)]);
+  } else {
+    await assert.rejects(rpc(U.resp, 'reimburse_expenses', { ids: [e.id], account_id: accMga, date: '2025-04-03', client_batch: randomUUID() }),
+      /manca il tasso di cambio/);
+  }
+});

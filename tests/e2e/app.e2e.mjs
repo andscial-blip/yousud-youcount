@@ -264,7 +264,49 @@ try {
     assert.match(await op.page.locator('main').innerText(), /riservata agli amministratori/);
   });
 
+  await check('operatore: spesa pagata di tasca propria → da rimborsare (senza conto, fuori dai saldi)', async () => {
+    const p = op.page;
+    await p.goto(`${base}/nuovo`);
+    await p.fill('#amount', '18.000');
+    assert.equal(await p.inputValue('#paidby'), 'Operatore di prova', 'pagato da: chi è collegato, modificabile');
+    await p.getByRole('radio', { name: 'Di tasca propria, da rimborsare' }).click();
+    assert.equal(await p.locator('#account').count(), 0, 'nessun conto da scegliere');
+    await p.getByRole('radio', { name: 'MGA' }).click();
+    assert.ok(await p.inputValue('#rate'), 'tasso proposto');
+    await p.selectOption('#category', { label: '401 · Materiali di consumo' });
+    await p.selectOption('#project', { label: 'Sapone Solidale' });
+    await p.fill('#desc', 'PROVA taxi da rimborsare');
+    await p.getByLabel(/Il giustificativo non c/).check();
+    await p.fill('#nodoc', 'il tassista non rilascia ricevute');
+    assert.equal(await p.getByRole('button', { name: 'Salva bozza' }).count(), 0);
+    await p.getByRole('button', { name: 'Salva da rimborsare' }).click();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
+    assert.match(await p.locator('main').innerText(), /Da rimborsare[\s\S]*Operatore di prova/);
+    const [m] = (await pool.query(`select status, reimb_status, account_id, paid_by, currency, amount::int from movements where description = 'PROVA taxi da rimborsare'`)).rows;
+    assert.deepEqual(m, { status: 'draft', reimb_status: 'due', account_id: null, paid_by: 'Operatore di prova', currency: 'MGA', amount: 18000 });
+    // l'operatore vede la spesa in "Da rimborsare" ma non può rimborsarla
+    await p.goto(`${base}/rimborsi`);
+    await p.getByText('PROVA taxi da rimborsare').waitFor();
+    assert.equal(await p.getByRole('button', { name: /Registra il rimborso/ }).count(), 0);
+  });
   const rs = await login('resp@test.local');
+  await check('responsabile: rimborsa la spesa → registrata con la data del rimborso e il conto scelto', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/`);
+    await p.getByRole('link', { name: /1 spese da rimborsare/ }).click();
+    await p.waitForURL(/\/rimborsi$/);
+    const panel = p.locator('section.panel', { hasText: 'PROVA taxi da rimborsare' });
+    await panel.locator('select[name=account_id]').selectOption({ label: 'Cassa Madagascar (contanti)' });
+    await panel.getByRole('button', { name: /Registra il rimborso/ }).click();
+    await p.waitForURL(/\/rimborsi\?ok=MOV-/);
+    await p.getByText('Nessuna spesa da rimborsare.').waitFor();
+    await p.getByText('Ultimi rimborsi').waitFor();
+    const [m] = (await pool.query(`select m.status, m.reimb_status, a.code, m.op_date::text d, m.ref, m.recorded_by = (select id from profiles where full_name = 'Responsabile di prova') by_resp
+      from movements m join accounts a on a.id = m.account_id where m.description = 'PROVA taxi da rimborsare'`)).rows;
+    assert.deepEqual([m.status, m.reimb_status, m.code, m.d, m.by_resp], ['recorded', 'paid', 'Cassa Missione', today, true]);
+    assert.match(m.ref, new RegExp(`^MOV-${year}-\\d{3}$`));
+    await p.screenshot({ path: `${SHOTS}/resp_rimborsi.png`, fullPage: true });
+  });
   await check('responsabile: verifica il movimento inserito dall\'operatore, non il proprio', async () => {
     await rs.page.goto(`${base}/verifica`);
     const rowOp = rs.page.locator('tr', { hasText: 'PROVA materiale scolastico' });

@@ -13,9 +13,10 @@ type Kind = 'expense' | 'income' | 'transfer';
 export type Initial = {
   id: string; version: number; status: 'draft' | 'recorded' | 'verified'; kind: Kind; op_date: string;
   doc_date: string | null; description: string; amount: string; currency: string; fx_rate: string | null;
-  account_id: string; to_account_id: string | null; to_amount: string | null; category_id: string | null;
+  account_id: string | null; to_account_id: string | null; to_amount: string | null; category_id: string | null;
   project_id: string | null; grant_id?: string | null; counterparty_id: string | null; payment_method_id: string | null; notes: string | null;
   no_doc_reason: string | null; docs: { id: string; label: string }[];
+  paid_by?: string | null; reimb_status?: 'due' | 'paid' | null;
 };
 type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err' | 'local'; id?: string };
 type AiKey = 'amount' | 'opDate' | 'docDate' | 'description' | 'category' | 'cp' | 'method';
@@ -60,6 +61,10 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
   const [docDate, setDocDate] = useState(initial?.doc_date ?? '');
   const [amountTxt, setAmountTxt] = useState(initial ? String(Number(initial.amount)).replace('.', ',') : '');
   const [accountId, setAccountId] = useState(initial?.account_id ?? '');
+  // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
+  const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
+  const [ownPocket, setOwnPocket] = useState(initial?.reimb_status === 'due');
+  const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial?.currency === 'MGA' ? 'MGA' : 'EUR');
   const [toAccountId, setToAccountId] = useState(initial?.to_account_id ?? '');
   const [toAmountTxt, setToAmountTxt] = useState(initial?.to_amount ? String(Number(initial.to_amount)).replace('.', ',') : '');
   const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? String(Number(initial.fx_rate)).replace('.', ',') : '');
@@ -90,7 +95,8 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
 
   const account = R.accounts.find((a) => a.id === accountId);
   const toAccount = R.accounts.find((a) => a.id === toAccountId);
-  const currency = account?.currency ?? 'EUR';
+  const due = kind === 'expense' && ownPocket;
+  const currency = due ? dueCurrency : account?.currency ?? 'EUR';
   const amount = parseAmount(amountTxt);
   const rate = parseAmount(rateTxt);
   const dir = kind === 'income' ? 'in' : 'out';
@@ -121,7 +127,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
 
   // possibili doppioni (stesso importo e valuta, ±3 giorni, stesso conto o controparte)
   useEffect(() => {
-    if (!amount || !accountId || !opDate) { setDups([]); return; }
+    if (!amount || !accountId || !opDate || due) { setDups([]); return; }
     const h = setTimeout(async () => {
       const { data } = await supabase.rpc('find_duplicates', {
         p: { amount, currency, op_date: opDate, account_id: accountId, counterparty_id: cpId || null, exclude_id: initial?.id ?? null },
@@ -129,7 +135,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
       setDups((data ?? []) as Dup[]);
     }, 500);
     return () => clearTimeout(h);
-  }, [amount, currency, opDate, accountId, cpId, initial?.id, supabase]);
+  }, [amount, currency, opDate, accountId, cpId, initial?.id, supabase, due]);
 
   // immagini → ritaglio e miglioramento prima del caricamento; PDF → caricati così come sono
   function addFiles(files: FileList | null) {
@@ -183,6 +189,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
         if (n && !(auto && amountTxt)) { setAmountTxt(String(n).replace('.', ',')); mark('amount', f.total); }
       }
       setAiCurrency(usable(f.currency) ? String(f.currency.value) : null);
+      if (usable(f.currency) && ['EUR', 'MGA'].includes(String(f.currency.value))) setDueCurrency(String(f.currency.value) as 'EUR' | 'MGA');
       if (usable(f.doc_date) && /^\d{4}-\d{2}-\d{2}$/.test(String(f.doc_date.value))) {
         setDocDate(String(f.doc_date.value)); mark('docDate', f.doc_date);
         setOpDate(String(f.doc_date.value)); mark('opDate', { ...f.doc_date, status: 'inferred' });
@@ -213,7 +220,8 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
   }
 
   const missing = {
-    amount: !amount, account: !accountId, toAccount: kind === 'transfer' && !toAccountId,
+    amount: !amount, account: !accountId && !due, toAccount: kind === 'transfer' && !toAccountId,
+    paidBy: kind === 'expense' && !paidBy.trim(),
     toAmount: kind === 'transfer' && !parseAmount(toAmountTxt),
     category: kind !== 'transfer' && !categoryId, project: kind === 'expense' && !projectId,
     rate: currency === 'MGA' && !rate, noDocReason: kind !== 'transfer' && noDoc && noDocReason.trim().length < 5,
@@ -232,13 +240,17 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
     const needed = status === 'recorded'
       ? Object.values(missing).some(Boolean)
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
+    // spesa di tasca propria: resta "da rimborsare" (bozza senza conto) finché un responsabile non la rimborsa
+    if (due) status = 'draft';
     if (needed) return;
     if (docs.some((d) => d.state === 'uploading')) return;
     if (initial && !navigator.onLine) { setError(t.q_edit_offline); return; }
     setBusy(true);
     const payload = (counterparty: string | null): Record<string, unknown> => ({
       kind, op_date: opDate, doc_date: docDate || null, description: description.trim(), amount,
-      currency, fx_rate: currency === 'MGA' ? rate : null, account_id: accountId,
+      currency, fx_rate: currency === 'MGA' ? rate : null, account_id: due ? null : accountId,
+      paid_by: kind === 'expense' ? paidBy.trim() || null : null,
+      reimb_status: due ? 'due' : initial?.reimb_status === 'due' ? null : undefined,
       to_account_id: kind === 'transfer' ? toAccountId : null,
       to_amount: kind === 'transfer' ? parseAmount(toAmountTxt) : null,
       category_id: kind === 'transfer' ? null : categoryId || null,
@@ -385,7 +397,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
 
       <section className="panel"><div className="panel-b fgrid">
         <div className={aiCls('amount')}>
-          <label htmlFor="amount">{t.f_amount}{account ? ` (${currency})` : ''}</label>
+          <label htmlFor="amount">{t.f_amount}{account || due ? ` (${currency})` : ''}</label>
           <input className="input big num" id="amount" inputMode="decimal" autoComplete="off" value={amountTxt}
                  onChange={(e) => { setAmountTxt(e.target.value); confirm('amount'); }} placeholder="0,00" />
           {aiTag('amount')}
@@ -398,13 +410,41 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
           <input className="input" id="opdate" type="date" value={opDate} onChange={(e) => { setOpDate(e.target.value); confirm('opDate'); }} />
           {aiTag('opDate')}
         </div>
-        <div className="field">
-          <label htmlFor="account">{kind === 'transfer' ? t.f_from_account : t.f_account}</label>
-          <select className="input" id="account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            <option value="">{t.f_choose}</option>{accOptions()}
-          </select>
-          {req(missing.account)}
-        </div>
+        {kind === 'expense' && (<>
+          <div className="field">
+            <label htmlFor="paidby">{t.f_paid_by}</label>
+            <input className="input" id="paidby" list="payers" maxLength={120} value={paidBy} onChange={(e) => setPaidBy(e.target.value)} />
+            <datalist id="payers">{R.payers.map((n) => <option key={n} value={n} />)}</datalist>
+            <span className="hint">{t.f_paid_by_hint}</span>
+            {req(missing.paidBy)}
+          </div>
+          <div className="field">
+            <span className="flabel" id="howpaid">{t.f_how_paid}</span>
+            <div className="seg" role="radiogroup" aria-labelledby="howpaid">
+              <button type="button" role="radio" aria-checked={!ownPocket} disabled={initial?.reimb_status === 'paid'} onClick={() => setOwnPocket(false)}>{t.f_paid_org}</button>
+              <button type="button" role="radio" aria-checked={ownPocket} disabled={Boolean(initial && initial.status !== 'draft')} onClick={() => setOwnPocket(true)}>{t.f_paid_own}</button>
+            </div>
+            {due && <span className="hint">{t.f_due_hint}</span>}
+          </div>
+        </>)}
+        {due ? (
+          <div className="field">
+            <span className="flabel" id="duecur">{t.f_currency}</span>
+            <div className="seg" role="radiogroup" aria-labelledby="duecur">
+              {(['EUR', 'MGA'] as const).map((c) => (
+                <button key={c} type="button" role="radio" aria-checked={dueCurrency === c} onClick={() => setDueCurrency(c)}>{c}</button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="field">
+            <label htmlFor="account">{kind === 'transfer' ? t.f_from_account : t.f_account}</label>
+            <select className="input" id="account" value={accountId ?? ''} onChange={(e) => setAccountId(e.target.value)}>
+              <option value="">{t.f_choose}</option>{accOptions()}
+            </select>
+            {req(missing.account)}
+          </div>
+        )}
         {currency === 'MGA' && (
           <div className="field">
             <label htmlFor="rate">{t.f_rate}</label>
@@ -509,11 +549,11 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
       {error && <div className="note err" role="alert">{error}</div>}
 
       <div className="factions">
-        {(!initial || initial.status === 'draft') && (
+        {(!initial || initial.status === 'draft') && !due && (
           <button type="button" className="btn" disabled={busy} onClick={() => save('draft')}>{t.f_save_draft}</button>
         )}
-        <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : t.f_record}</button>
-        <span className="hint" style={{ flex: '1 1 260px' }}>{t.f_record_hint}</span>
+        <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : due ? t.f_save_due : t.f_record}</button>
+        <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint}</span>
       </div>
     </form>
   );

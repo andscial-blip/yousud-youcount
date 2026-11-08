@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 type Row = {
   id: string; ref: string | null; op_date: string; kind: 'income' | 'expense' | 'transfer';
   status: 'draft' | 'recorded' | 'verified'; description: string; amount: string; currency: string; sign: number;
-  reverses_id: string | null; no_doc_reason: string | null; docs: { count: number }[];
+  reverses_id: string | null; no_doc_reason: string | null; docs: { count: number }[]; reimb_status: 'due' | 'paid' | null; paid_by: string | null;
   account: { name_it: string; name_fr: string } | null; category: { code: string } | null;
   project: { name: string } | null;
 };
@@ -19,7 +19,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const { supabase, t, lang } = await requireMe();
   let q = supabase
     .from('movements')
-    .select(`id, ref, op_date, kind, status, description, amount, currency, sign, reverses_id, no_doc_reason, docs:movement_documents(count),
+    .select(`id, ref, op_date, kind, status, description, amount, currency, sign, reverses_id, no_doc_reason, reimb_status, paid_by, docs:movement_documents(count),
              account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name)`)
     .order('op_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -57,6 +57,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <td className="num muted hm nw">{m.ref ?? '–'}</td>
                     <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind}`)}</Link>
                       {m.reverses_id && <> <span className="chip">{t('reversal')}</span></>}
+                      {m.reimb_status === 'due' && <> <span className="chip warn">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span></>}
                       <div className="so muted">{[date(m.op_date), m.ref, m.category?.code, m.project?.name, nm(lang, m.account)].filter(Boolean).join(' · ')}</div>
                       <div className="so"><StatusChip s={m.status} label={t(`st_${m.status}`)} /></div></td>
                     <td className="muted hm">{m.category?.code ?? '–'}</td>

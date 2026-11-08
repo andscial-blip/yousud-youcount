@@ -15,13 +15,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const year = Number(anno) || new Date().getFullYear();
   const { supabase, me, t, lang } = await requireMe();
   const isAdmin = ['super_admin', 'admin'].includes(me!.role);
-  const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }] = await Promise.all([
+  const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
-    supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id),
+    supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id).is('reimb_status', null),
     supabase.from('v_ledger').select('month, kind, amount_eur, project_id, project_name').eq('year', year).neq('kind', 'transfer')
       .limit(50000).returns<L[]>(),
     isAdmin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
+    supabase.from('movements').select('id', { count: 'exact', head: true }).eq('reimb_status', 'due'),
   ]);
   // piano gratuito di Supabase senza backup automatici: promemoria settimanale per gli amministratori
   const backupAt = (lastBackup?.value as { at?: string } | null)?.at;
@@ -57,6 +58,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       </PageHead>
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
+      {Boolean(dueCount) && (
+        <div className="note"><Link href="/rimborsi">{dueCount} {t('dash_reimb')}</Link></div>
+      )}
       {backupDue && (
         <div className="note warn">
           {backupDays === null ? t('bk_never') : t('bk_due').replace('{n}', String(backupDays))}{' '}

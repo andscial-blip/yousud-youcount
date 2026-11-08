@@ -19,6 +19,7 @@ type M = {
   reverses_id: string | null; reversal_reason: string | null; version: number; ai_extracted: boolean;
   created_by: string; created_at: string; recorded_by: string | null; recorded_at: string | null;
   verified_by: string | null; verified_at: string | null;
+  paid_by: string | null; reimb_status: 'due' | 'paid' | null; reimbursed_at: string | null; reimbursed_by: string | null;
   account: N; to_account: (N & { currency: string }) | null; category: (N & { code: string }) | null;
   project: { name: string } | null; grant: { id: string; title: string } | null; counterparty: { name: string } | null; method: N;
 };
@@ -88,7 +89,10 @@ export default async function MovementDetail({ params, searchParams }: {
         <dl className="kv">
           {row(t('f_op_date'), date(m.op_date))}
           {row(t('description'), m.description || null)}
-          {row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
+          {m.reimb_status === 'due' ? row(t('account'), <span className="chip warn">{t('reimb_due_chip')}</span>)
+            : row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
+          {m.paid_by && row(t('f_paid_by'), m.paid_by)}
+          {m.reimb_status === 'paid' && m.reimbursed_at && row(t('reimb_done_row'), `${date(m.op_date)} · ${name.get(m.reimbursed_by ?? '') ?? '–'}`)}
           {m.kind === 'transfer' && row(t('f_to_account'), `${nm(lang, m.to_account)} · ${money(m.to_amount, m.to_account?.currency ?? m.currency, lang)}`)}
           {m.category && row(t('f_category'), `${m.category.code} · ${nm(lang, m.category)}`)}
           {m.kind !== 'transfer' && row(t('project'), m.project?.name)}

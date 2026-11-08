@@ -54,6 +54,9 @@ async function seed() {
   await save({ ...base, client_uuid: randomUUID(), kind: 'transfer', op_date: today, amount: 4300, currency: 'EUR',
     account_id: bi, to_account_id: await id('accounts', 'code', 'Banca Missione'), to_amount: 21738091,
     description: 'Giroconto da conto italiano a conto malgascio' });
+  await save({ ...base, status: 'draft', client_uuid: randomUUID(), kind: 'expense', op_date: today, amount: 45000, currency: 'MGA', fx_rate: 5055.37,
+    account_id: null, reimb_status: 'due', paid_by: 'Chanfy Rakotomalala', category_id: await id('categories', 'code', '203'), project_id: prj,
+    description: 'Taxi-brousse Antananarivo – Ambanja per consegna materiale scolastico' });
   const movId = typeof mov === 'object' ? (mov.id ?? mov) : mov;
   const org = (await pool.query('select org_id from profiles where id = $1', [sa])).rows[0].org_id;
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
@@ -127,7 +130,7 @@ try {
   await waitFor(`${base}/login`);
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
     '/verifica', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
-    '/controparti', '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
+    '/controparti', '/rimborsi', '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro'];
   for (const lang of LANGS) {
     await pool.query('update profiles set lang = $1 where id = $2', [lang, S.sa]);
@@ -155,6 +158,8 @@ try {
         await sp.close();
       }
     }
+    // negli screenshot di controllo niente schermata d'apertura (ogni pagina di prova è una sessione nuova)
+    await ctx.addInitScript(() => { try { sessionStorage.setItem('yc-splash', '1'); } catch {} });
     await page.close();
     for (const path of PAGES) {
       for (const w of WIDTHS) {

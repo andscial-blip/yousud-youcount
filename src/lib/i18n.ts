@@ -159,6 +159,14 @@ const it = {
   bk_never: 'Non è ancora stato fatto un backup dei dati: scaricalo e salvalo nel Drive condiviso di YouSud.',
   bk_due: 'Ultimo backup dei dati {n} giorni fa: scaricane uno nuovo e salvalo nel Drive condiviso di YouSud.', bk_last: 'Ultimo backup',
   bk_text: 'Tutti i dati dell’app (movimenti, conti, piano dei conti, progetti, controparti, registro delle modifiche) in un file Excel, un foglio per tabella. Conservalo nel Drive condiviso di YouSud. I file dei giustificativi restano nell’archivio dell’app: il foglio documents ne elenca percorso e impronta.',
+  f_paid_by: 'Pagato da', f_paid_by_hint: 'Chi ha speso materialmente: tu o un collega.', f_how_paid: 'Come è stata pagata',
+  f_paid_org: 'Con i soldi di YouSud', f_paid_own: 'Di tasca propria, da rimborsare', f_currency: 'Valuta', f_save_due: 'Salva da rimborsare',
+  f_due_hint: 'Non tocca i conti: entra in contabilità quando un responsabile la rimborsa, con la data del rimborso.',
+  nav_reimb: 'Da rimborsare', reimb_due_chip: 'Da rimborsare', reimb_done_row: 'Rimborsata il',
+  reimb_text: 'Spese pagate di tasca propria. Non toccano i conti finché non si rimborsano: il rimborso le registra con la data in cui escono i soldi, come vuole il rendiconto per cassa.',
+  reimb_none: 'Nessuna spesa da rimborsare.', reimb_date: 'Data del rimborso', reimb_pay: 'Registra il rimborso', reimb_all: 'Seleziona tutte',
+  reimb_no_doc: 'manca il giustificativo', reimb_selected: 'spese', reimb_one: 'spesa', reimb_recent: 'Ultimi rimborsi', reimb_done: 'Rimborso registrato:',
+  dash_reimb: 'spese da rimborsare',
 };
 
 export type Key = keyof typeof it;
@@ -301,6 +309,14 @@ const fr: Record<Key, string> = {
   bk_never: 'Aucune sauvegarde des données n’a encore été faite : téléchargez-la et conservez-la dans le Drive partagé de YouSud.',
   bk_due: 'Dernière sauvegarde des données il y a {n} jours : téléchargez-en une nouvelle et conservez-la dans le Drive partagé de YouSud.', bk_last: 'Dernière sauvegarde',
   bk_text: 'Toutes les données de l’app (mouvements, comptes, plan comptable, projets, tiers, journal des modifications) dans un fichier Excel, une feuille par table. Conservez-le dans le Drive partagé de YouSud. Les fichiers des pièces restent dans l’archive de l’app : la feuille documents indique leur chemin et leur empreinte.',
+  f_paid_by: 'Payé par', f_paid_by_hint: 'Qui a dépensé concrètement : vous ou un collègue.', f_how_paid: 'Comment a-t-elle été payée',
+  f_paid_org: 'Avec l’argent de YouSud', f_paid_own: 'De sa poche, à rembourser', f_currency: 'Devise', f_save_due: 'Enregistrer à rembourser',
+  f_due_hint: 'Ne touche pas les comptes : entre en comptabilité quand un responsable la rembourse, à la date du remboursement.',
+  nav_reimb: 'À rembourser', reimb_due_chip: 'À rembourser', reimb_done_row: 'Remboursée le',
+  reimb_text: 'Dépenses payées de sa poche. Elles ne touchent pas les comptes tant qu’elles ne sont pas remboursées : le remboursement les enregistre à la date où l’argent sort, comme le veut le compte de caisse.',
+  reimb_none: 'Aucune dépense à rembourser.', reimb_date: 'Date du remboursement', reimb_pay: 'Enregistrer le remboursement', reimb_all: 'Tout sélectionner',
+  reimb_no_doc: 'pièce manquante', reimb_selected: 'dépenses', reimb_one: 'dépense', reimb_recent: 'Derniers remboursements', reimb_done: 'Remboursement enregistré :',
+  dash_reimb: 'dépenses à rembourser',
 };
 
 const DICT: Record<Lang, Record<Key, string>> = { it, fr };
