@@ -161,6 +161,9 @@ try {
     await p.getByRole('button', { name: 'Registra' }).click();
     await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
     newId = p.url().split('/').pop();
+    // la pagina arriva dopo lo scheletro di caricamento
+    await p.locator('main [aria-busy=true]').waitFor({ state: 'detached' });
+    await p.locator('main h1').waitFor();
     const txt = await p.locator('main').innerText();
     assert.match(txt, new RegExp(`MOV-${year}-\\d{3}`));
     assert.match(txt, /50,00\s?€/);
@@ -500,6 +503,63 @@ try {
     await op.page.goto(`${base}/analisi`);
     await op.page.getByText('Questa sezione è visibile a responsabili', { exact: false }).waitFor();
     await p.screenshot({ path: `${SHOTS}/resp_analisi.png`, fullPage: true });
+  });
+  await check('anticipi: nuova persona, consegna, spesa con l\'anticipo, autocertificazione firmata', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/anticipi`);
+    await p.getByRole('heading', { name: 'Anticipi' }).waitFor();
+    await p.getByText('Nuova persona con anticipo').click();
+    await p.getByLabel('Nome della persona').fill('Hery');
+    await p.getByRole('button', { name: 'Crea', exact: true }).click();
+    await p.waitForURL(/\/anticipi\?ok=1/);
+    await p.goto(`${base}/anticipi`);
+    await p.locator('#adv').selectOption({ label: 'Hery · MGA' });
+    await p.locator('#advcash').selectOption({ label: 'Cassa Madagascar (contanti) · MGA' });
+    await p.getByLabel('Importo').fill('200.000');
+    await p.getByRole('button', { name: 'Registra', exact: true }).click();
+    await p.waitForURL(/\/anticipi\?(ok|err)=/);
+    assert.match(p.url(), /ok=1/, decodeURIComponent(p.url()));
+    const [adv] = (await pool.query(`select id, holder from accounts where kind = 'advance' and holder = 'Hery'`)).rows;
+    const [tr] = (await pool.query(`select m.amount, m.fx_rate, a.code from movements m join accounts a on a.id = m.account_id
+      where m.kind = 'transfer' and m.to_account_id = $1`, [adv.id])).rows;
+    assert.deepEqual([tr.amount, tr.fx_rate, tr.code], ['200000.00', '5000.0000', 'Cassa Missione']);
+    // nel modulo: «Con l'anticipo» propone solo i conti anticipi e mette la persona in «Pagato da»
+    const o = op.page;
+    await o.goto(`${base}/nuovo`);
+    await o.getByRole('radio', { name: 'Con l’anticipo' }).click();
+    await o.locator('#account').selectOption({ label: 'Hery · MGA' });
+    assert.equal(await o.locator('#paidby').inputValue(), 'Hery');
+    assert.match(await o.locator('main').innerText(), /non riduce la cassa/);
+    // spesa con l'anticipo, senza scontrino
+    const [{ op: opId }] = (await pool.query(`select id op from profiles where full_name = 'Operatore di prova'`)).rows;
+    const [{ cat, prj }] = (await pool.query(`select (select id from categories where code = '401') cat, (select id from projects where name = 'École Piccolino') prj`)).rows;
+    const sp = await save(opId, { client_uuid: randomUUID(), kind: 'expense', status: 'recorded', op_date: today, amount: 50000, currency: 'MGA',
+      fx_rate: 5000, account_id: adv.id, category_id: cat, project_id: prj, paid_by: 'Hery', description: 'PROVA mercato con anticipo',
+      no_doc_reason: 'mercato senza ricevuta' });
+    await p.goto(`${base}/movimenti/${sp.id}`);
+    const aut = p.locator('section.panel', { hasText: 'Autocertificazione di spesa' });
+    assert.equal(await aut.getByLabel('Dichiarante (chi ha speso)').inputValue(), 'Hery');
+    await aut.getByLabel('Luogo della spesa').fill('Antananarivo');
+    await aut.getByRole('button', { name: 'Genera il PDF' }).click();
+    await p.waitForURL(/ok=aut/);
+    await p.getByText('Autocertificazione generata e allegata al movimento.').waitFor();
+    const [sc] = (await pool.query(`select s.number, s.amount, s.lang, d.doc_type, d.mime from self_certs s join documents d on d.id = s.document_id
+      where s.movement_id = $1`, [sp.id])).rows;
+    assert.match(sc.number, new RegExp(`^AUT-${year}-\\d{3}$`));
+    assert.deepEqual([sc.amount, sc.lang, sc.doc_type, sc.mime], ['50000.00', 'both', 'self_cert', 'application/pdf']);
+    const href = await p.locator('ul.docs a', { hasText: 'Apri' }).first().getAttribute('href');
+    const pdf = await p.request.get(href.startsWith('http') ? href : `${base}${href}`);
+    assert.equal((await pdf.body()).subarray(0, 5).toString(), '%PDF-');
+    await p.locator('section.panel', { hasText: sc.number }).getByText('Da firmare').waitFor();
+    await p.getByRole('button', { name: 'Copia firmata vista' }).click();
+    await p.waitForURL(/ok=aut_signed/);
+    await p.locator('section.panel', { hasText: sc.number }).getByText('Firmata', { exact: true }).waitFor();
+    // riepilogo: consegnato 200.000, speso 50.000, da giustificare 150.000
+    await p.goto(`${base}/anticipi`);
+    const row = p.locator('tr', { hasText: 'Hery' });
+    const txt = (await row.innerText()).replace(/[  ]/g, ' ');
+    assert.match(txt, /200\.000 MGA[\s\S]*50\.000 MGA[\s\S]*150\.000 MGA/);
+    await p.screenshot({ path: `${SHOTS}/resp_anticipi.png`, fullPage: true });
   });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;

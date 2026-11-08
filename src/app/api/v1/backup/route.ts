@@ -16,7 +16,7 @@ const TABLES: [string, string[]][] = [
   ['category_groups', ['id']], ['categories', ['id']], ['projects', ['id']], ['project_members', ['project_id', 'user_id']],
   ['payment_methods', ['id']], ['counterparties', ['id']], ['counterparty_private', ['counterparty_id']], ['grants', ['id']],
   ['budget_lines', ['id']], ['documents', ['id']], ['movements', ['id']], ['movement_documents', ['movement_id', 'document_id']],
-  ['periods', ['org_id', 'year', 'month']], ['fx_rates', ['org_id', 'year', 'month']], ['cash_counts', ['id']], ['bank_reconciliations', ['id']], ['api_clients', ['id']], ['reconciliation_items', ['movement_id', 'side']],
+  ['periods', ['org_id', 'year', 'month']], ['fx_rates', ['org_id', 'year', 'month']], ['cash_counts', ['id']], ['bank_reconciliations', ['id']], ['api_clients', ['id']], ['reconciliation_items', ['movement_id', 'side']], ['self_certs', ['id']],
   ['audit_log', ['id']], ['sync_log', ['id']],
 ];
 const PAGE = 1000;   // PostgREST restituisce al massimo 1000 righe per richiesta

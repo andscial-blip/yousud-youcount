@@ -57,11 +57,20 @@ async function seed() {
   await save({ ...base, status: 'draft', client_uuid: randomUUID(), kind: 'expense', op_date: today, amount: 45000, currency: 'MGA', fx_rate: 5055.37,
     account_id: null, reimb_status: 'due', paid_by: 'Chanfy Rakotomalala', category_id: await id('categories', 'code', '203'), project_id: prj,
     description: 'Taxi-brousse Antananarivo – Ambanja per consegna materiale scolastico' });
+  // anticipo a una persona con nome lungo: consegna di 40 giorni fa, una spesa senza scontrino (per il modulo AUT)
+  await as(sa, `select public.create_advance_account('Fanomezantsoa Rakotondrabe', 'MGA', 'MG') r`);
+  const advId = (await pool.query(`select id from accounts where holder = 'Fanomezantsoa Rakotondrabe'`)).rows[0].id;
+  const old = new Date(Date.now() - 40 * 864e5).toISOString().slice(0, 10);
+  await save({ ...base, client_uuid: randomUUID(), kind: 'transfer', op_date: old, amount: 1250000, to_amount: 1250000, currency: 'MGA',
+    fx_rate: 5055.37, account_id: cm, to_account_id: advId, description: 'Anticipo in contanti a Fanomezantsoa Rakotondrabe' });
+  const advMov = (await save({ ...base, client_uuid: randomUUID(), kind: 'expense', op_date: today, amount: 87500, currency: 'MGA', fx_rate: 5055.37,
+    account_id: advId, paid_by: 'Fanomezantsoa Rakotondrabe', category_id: await id('categories', 'code', '203'), project_id: prj,
+    description: 'Pranzo al mercato di Ambanja per la squadra di consegna', no_doc_reason: 'venditrice ambulante senza ricevute' })).id;
   const movId = typeof mov === 'object' ? (mov.id ?? mov) : mov;
   const org = (await pool.query('select org_id from profiles where id = $1', [sa])).rows[0].org_id;
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
     [org, 'Bando Fondazione per l’istruzione primaria in Madagascar 2026–2028', prj, today])).rows[0].id;
-  return { sa, movId, prj, grant, bi };
+  return { sa, movId, prj, grant, bi, advMov };
 }
 
 function startNext(stack) {
@@ -130,11 +139,11 @@ try {
   await waitFor(`${base}/login`);
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
     '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
-    '/controparti', '/rimborsi', '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
+    '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro'];
-  // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri) — prova rapida di una sezione nuova
+  // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri; /a/* = tutte le pagine sotto /a/) — prova rapida
   const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
-  if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`))));
+  if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`) || (o.endsWith('*') && x.startsWith(o.slice(0, -1))))));
   for (const lang of LANGS) {
     await pool.query('update profiles set lang = $1 where id = $2', [lang, S.sa]);
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: process.env.DARK ? 'dark' : 'light' });
@@ -175,7 +184,7 @@ try {
           // errori della pagina e della console (in sviluppo Next mostra «Issue» per questi): sono problemi da correggere
           const cerr = [];
           p.on('pageerror', (e) => cerr.push(`errore: ${e.message.split('\n')[0]}`));
-          p.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource.*(401|403|404)/i.test(m.text())) cerr.push(`console: ${m.text().split('\n')[0].slice(0, 200)}`); });
+          p.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource.*(401|403|404)/i.test(m.text())) cerr.push(`console: ${m.text().slice(0, 3000)}`); });
           await p.setViewportSize({ width: w, height: 860 });
           await p.goto(base + path.replace('#doc', ''), { waitUntil: 'networkidle', timeout: 60000 });
           if (path === '/nuovo#doc') {

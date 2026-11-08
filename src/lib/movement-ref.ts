@@ -7,7 +7,7 @@ import type { Me } from './session';
 export type RefData = {
   orgId: string; userId: string; userName: string; role: Me['role'];
   payers: string[];   // "Pagato da": nomi già usati e persone visibili
-  accounts: { id: string; name: string; currency: 'EUR' | 'MGA'; location: 'IT' | 'MG'; kind: string }[];
+  accounts: { id: string; name: string; currency: 'EUR' | 'MGA'; location: 'IT' | 'MG'; kind: string; holder: string | null }[];
   categories: { id: string; code: string; name: string; direction: 'in' | 'out'; group: string }[];
   projects: { id: string; name: string; kind: 'project' | 'structure' }[];
   methods: { id: string; name: string; code: string }[];
@@ -21,7 +21,7 @@ export type RefData = {
 export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang): Promise<RefData> {
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
   const [acc, cat, prj, met, cp, fx, mem, gr, ai, last, pb, pf] = await Promise.all([
-    supabase.from('accounts').select('id, name_it, name_fr, currency, location, kind').eq('active', true).order('sort'),
+    supabase.from('accounts').select('id, name_it, name_fr, currency, location, kind, holder').eq('active', true).order('sort'),
     supabase.from('categories').select('id, code, name_it, name_fr, direction, group:category_groups(code, name_it, name_fr)')
       .eq('active', true).order('sort'),
     supabase.from('projects').select('id, name, kind').eq('active', true).order('kind', { ascending: false }).order('name'),
@@ -43,7 +43,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     orgId: me.org_id, userId: me.id, userName: me.full_name, role: me.role,
     payers: [...new Set([...((pf.data ?? []) as { full_name: string; active: boolean }[]).filter((x) => x.active).map((x) => x.full_name), ...(pb.data ?? []).map((x) => x.paid_by)]
       .filter((n): n is string => Boolean(n && n.trim())))].sort((a, b) => a.localeCompare(b)),
-    accounts: (acc.data ?? []).map((a) => ({ id: a.id, name: L(a), currency: a.currency, location: a.location, kind: a.kind })),
+    accounts: (acc.data ?? []).map((a) => ({ id: a.id, name: L(a), currency: a.currency, location: a.location, kind: a.kind, holder: a.holder ?? null })),
     categories: (cat.data ?? []).map((c) => {
       const g = c.group as unknown as G;
       return { id: c.id, code: c.code, name: L(c), direction: c.direction, group: g ? `${g.code} · ${L(g)}` : '' };

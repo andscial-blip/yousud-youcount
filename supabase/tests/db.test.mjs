@@ -604,3 +604,71 @@ test('collegamento con altre app: chiave mostrata una volta, sola lettura a pagi
   await rpc(U.admin, 'revoke_api_client', k.id);
   await assert.rejects(anon('api_read', k.key, 'projects', null, null, 10), /unauthorized/);
 });
+
+test('anticipi al personale: consegna fuori cassa, spese nel rendiconto, saldo da giustificare, autocertificazione', async () => {
+  const cash = R.acc['Cassa Missione'];
+  const rate = { currency: 'MGA', fx_rate: 5000 };
+  await assert.rejects(rpc(U.op, 'create_advance_account', 'Rakoto', 'MGA', 'MG'), /forbidden/);
+  const acc = await rpc(U.resp, 'create_advance_account', 'Rakoto', 'MGA', 'MG');
+  await assert.rejects(rpc(U.resp, 'create_advance_account', 'rakoto', 'MGA', 'MG'), /esiste già/);
+  const cashBal = async () => (await as(U.resp, (q) => q('select balance from account_balances() where account_id = $1', [cash])))[0].balance;
+  const sum = async () => (await as(U.resp, (q) => q('select * from advance_summary() where account_id = $1', [acc.id])))[0];
+  const stmt = async () => Number((await as(U.resp, (q) => q(
+    `select coalesce(sum(amount_eur),0) s from report_cash_statement($1) where direction = 'out'`, [year])))[0].s);
+  const c0 = Number(await cashBal()); const s0 = await stmt();
+
+  // consegna: giroconto cassa → anticipi (la cassa scende, il rendiconto no)
+  const old = new Date(Date.now() - 40 * 864e5).toISOString().slice(0, 10);
+  await rpc(U.resp, 'save_movement', { client_uuid: randomUUID(), kind: 'transfer', op_date: old, amount: 500000, to_amount: 500000,
+    account_id: cash, to_account_id: acc.id, status: 'recorded', ...rate });
+  assert.equal(Number(await cashBal()), c0 - 500000);
+  assert.equal(await stmt(), s0);
+
+  // spesa con l'anticipo: entra nel rendiconto, la cassa non scende di nuovo
+  const sp = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'mercato senza ricevuta',
+    account_id: acc.id, amount: 150000, paid_by: 'Rakoto', ...rate }));
+  assert.equal(Number(await cashBal()), c0 - 500000);
+  assert.equal(await stmt(), s0 + 30);
+  // su un conto anticipi non si incassa
+  await assert.rejects(rpc(U.op, 'save_movement', mov({ kind: 'income', category_id: R.in['E101'], account_id: acc.id,
+    status: 'recorded', no_doc_reason: 'prova entrata', ...rate })), /non si registrano entrate/);
+
+  // restituzione parziale
+  await rpc(U.resp, 'save_movement', { client_uuid: randomUUID(), kind: 'transfer', op_date: today, amount: 50000, to_amount: 50000,
+    account_id: acc.id, to_account_id: cash, status: 'recorded', ...rate });
+  let s = await sum();
+  assert.deepEqual([Number(s.given), Number(s.spent), Number(s.returned), Number(s.balance)], [500000, 150000, 50000, 300000]);
+  assert.equal(s.open_since.toISOString().slice(0, 10) <= old, true, 'aperto dalla consegna di 40 giorni fa');
+  assert.equal(s.holder, 'Rakoto');
+  assert.equal(s.spent_count, 1);
+  // l'operatore non vede il riepilogo
+  assert.equal((await as(U.op, (q) => q('select * from advance_summary()'))).length, 0);
+
+  // autocertificazione: dati presi dal movimento, numero AUT, un PDF allegato, poi firmata
+  await assert.rejects(rpc(U.ro, 'create_self_cert', { movement_id: sp.id, declarant: 'Rakoto', reason: 'mercato' }), /forbidden/);
+  await assert.rejects(rpc(U.op, 'create_self_cert', { movement_id: sp.id, declarant: 'Rakoto', reason: '' }), /motivo/);
+  const a1 = await rpc(U.op, 'create_self_cert', { movement_id: sp.id, declarant: 'Rakoto', reason: 'mercato senza ricevuta', amount: 1 });
+  assert.match(a1.number, new RegExp(`^AUT-${year}-\\d{3}$`));
+  assert.equal(Number(a1.amount), 150000, 'importo dal movimento, non dal dispositivo');
+  const a2 = await rpc(U.op, 'create_self_cert', { movement_id: sp.id, declarant: 'Rakoto Jean', reason: 'mercato senza ricevuta', lang: 'fr' });
+  assert.equal(a2.number, a1.number, 'riemessa prima del PDF: stesso numero');
+  assert.equal(a2.lang, 'fr');
+  await assert.rejects(rpc(U.resp, 'sign_self_cert', a1.id), /prima si genera/);
+  const d = await doc(U.op);
+  const at = await rpc(U.op, 'attach_self_cert', a1.id, d);
+  assert.equal(at.document_id, d);
+  const [dd] = await sql('select doc_type, doc_number from documents where id = $1', [d]);
+  assert.deepEqual(dd, { doc_type: 'self_cert', doc_number: a1.number });
+  assert.equal((await sql('select 1 from movement_documents where movement_id = $1 and document_id = $2', [sp.id, d])).length, 1);
+  await assert.rejects(rpc(U.op, 'create_self_cert', { movement_id: sp.id, declarant: 'X', reason: 'altro motivo' }), /già emessa/);
+  assert.equal((await sum()).aut_to_sign, 1);
+  await assert.rejects(rpc(U.op, 'sign_self_cert', a1.id), /forbidden/);
+  const sg = await rpc(U.resp, 'sign_self_cert', a1.id);
+  assert.ok(sg.signed_at);
+  s = await sum();
+  assert.equal(s.aut_to_sign, 0);
+  assert.equal(s.spent_no_doc, 0);
+  // non per entrate o giroconti
+  const inc = await rpc(U.op, 'save_movement', mov({ kind: 'income', category_id: R.in['E101'], status: 'recorded', no_doc_reason: 'prova entrata' }));
+  await assert.rejects(rpc(U.op, 'create_self_cert', { movement_id: inc.id, declarant: 'X', reason: 'prova motivo' }), /solo per una spesa/);
+});

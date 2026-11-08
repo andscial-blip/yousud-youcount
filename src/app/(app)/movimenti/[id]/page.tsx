@@ -7,7 +7,7 @@ import { date, dateTime, money, nm } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
-import { discardAction, reverseAction, verifyAction } from './actions';
+import { discardAction, reverseAction, selfCertAction, signSelfCertAction, verifyAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +20,7 @@ type M = {
   created_by: string; created_at: string; recorded_by: string | null; recorded_at: string | null;
   verified_by: string | null; verified_at: string | null;
   paid_by: string | null; reimb_status: 'due' | 'paid' | null; reimbursed_at: string | null; reimbursed_by: string | null;
-  account: N; to_account: (N & { currency: string }) | null; category: (N & { code: string }) | null;
+  account: (N & { location: string; kind: string; holder: string | null }) | null; to_account: (N & { currency: string }) | null; category: (N & { code: string }) | null;
   project: { name: string } | null; grant: { id: string; title: string } | null; counterparty: { name: string } | null; method: N;
 };
 type H = { at: string; action: string; actor: string | null; old_row: Record<string, unknown> | null; new_row: Record<string, unknown> | null };
@@ -40,12 +40,12 @@ export default async function MovementDetail({ params, searchParams }: {
   const { ok, err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   const { data: m } = await supabase.from('movements').select(`*,
-      account:accounts!movements_account_id_fkey(name_it, name_fr),
+      account:accounts!movements_account_id_fkey(name_it, name_fr, location, kind, holder),
       to_account:accounts!movements_to_account_id_fkey(name_it, name_fr, currency),
       category:categories(code, name_it, name_fr), project:projects(name), grant:grants(id, title), counterparty:counterparties(name),
       method:payment_methods(name_it, name_fr)`).eq('id', id).maybeSingle<M>();
   if (!m) notFound();
-  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }] = await Promise.all([
+  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }] = await Promise.all([
     supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
     supabase.rpc('user_directory'),
@@ -53,6 +53,9 @@ export default async function MovementDetail({ params, searchParams }: {
     supabase.from('settings').select('value').eq('key', 'four_eyes').maybeSingle(),
     // spunte nella riconciliazione bancaria (spiegano perché importo, conto e data non si modificano più)
     supabase.from('reconciliation_items').select('side, rec:bank_reconciliations(statement_date, account_id)').eq('movement_id', id),
+    supabase.from('self_certs').select('id, number, declarant, declarant_role, place, reason, lang, document_id, signed_at, signed_by')
+      .eq('movement_id', id).maybeSingle<{ id: string; number: string; declarant: string; declarant_role: string | null; place: string | null;
+        reason: string; lang: string; document_id: string | null; signed_at: string | null; signed_by: string | null }>(),
   ]);
   const recDates = ((recs ?? []) as unknown as { side: string; rec: { statement_date: string } | null }[])
     .map((r) => r.rec?.statement_date).filter(Boolean) as string[];
@@ -74,6 +77,11 @@ export default async function MovementDetail({ params, searchParams }: {
   const canVerify = resp && m.status === 'recorded' && !rev && !(strict && (m.created_by === me!.id || m.recorded_by === me!.id));
   const canReverse = resp && m.status !== 'draft' && !m.reverses_id && !rev;
   const canEdit = !rev && (m.status === 'draft' ? (m.created_by === me!.id || resp) : m.status === 'recorded' && resp);
+  // autocertificazione: per una spesa senza giustificativo (o con l'AUT già emessa), non verificata, non da chi legge soltanto
+  const writer = Boolean(me && me.role !== 'read_only');
+  const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
+  const showAut = autPossible && (Boolean(aut) || (writer && m.status !== 'verified' && docs.length === 0));
+  const autDefaultLang = aut?.lang ?? (m.account?.location === 'MG' || m.currency === 'MGA' ? 'both' : 'it');
   const signedAmount = m.kind === 'transfer' ? Number(m.amount) : Number(m.amount) * (m.reverses_id ? -1 : 1) * (m.kind === 'income' ? 1 : -1);
   const errText = err ? (t(`err_${err.split(':')[0]}` as Key) ?? err) : null;
 
@@ -87,7 +95,7 @@ export default async function MovementDetail({ params, searchParams }: {
         <StatusChip s={m.status} label={t(`st_${m.status}`)} />
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
-      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ''}</div>}
+      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ''}</div>}
       {errText && <div className="note err">{errText}</div>}
 
       <div className="detail">
@@ -152,6 +160,48 @@ export default async function MovementDetail({ params, searchParams }: {
                   ))}
                 </ul>
               )}
+            </Panel>
+          )}
+
+          {showAut && (
+            <Panel title={aut ? `${t('aut_title')} · ${aut.number}` : t('aut_title')} pad>
+              {aut?.document_id ? (
+                <div className="aut-box">
+                  <p style={{ margin: 0 }}>{aut.declarant}{aut.declarant_role ? ` · ${aut.declarant_role}` : ''}{' '}
+                    <span className={`chip ${aut.signed_at ? 'ok' : 'warn'}`}>{aut.signed_at ? t('aut_signed') : t('aut_to_sign')}</span></p>
+                  {aut.signed_at && <p className="muted" style={{ margin: 0 }}>{t('aut_signed_by')}: {name.get(aut.signed_by ?? '') ?? '–'} · {dateTime(aut.signed_at, lang)}</p>}
+                  {!aut.signed_at && resp && (
+                    <form action={signSelfCertAction}>
+                      <input type="hidden" name="id" value={m.id} /><input type="hidden" name="aut" value={aut.id} />
+                      <button className="btn" type="submit"><Ico name="check" />{t('aut_sign_btn')}</button>
+                    </form>
+                  )}
+                  <p className="hint" style={{ margin: 0 }}>{t('aut_check')}</p>
+                </div>
+              ) : writer && m.status !== 'verified' ? (
+                <form action={selfCertAction} className="aut-box">
+                  <p className="muted" style={{ margin: 0 }}>{t('aut_intro')}</p>
+                  <input type="hidden" name="id" value={m.id} />
+                  <div className="field"><label htmlFor="aut-decl">{t('aut_declarant')}</label>
+                    <input className="input" id="aut-decl" name="declarant" required maxLength={120}
+                           defaultValue={aut?.declarant ?? m.paid_by ?? m.account?.holder ?? ''} /></div>
+                  <div className="field"><label htmlFor="aut-role">{t('aut_role')}</label>
+                    <input className="input" id="aut-role" name="declarant_role" maxLength={120} defaultValue={aut?.declarant_role ?? ''} /></div>
+                  <div className="field"><label htmlFor="aut-place">{t('aut_place')}</label>
+                    <input className="input" id="aut-place" name="place" maxLength={120} defaultValue={aut?.place ?? ''} /></div>
+                  <div className="field"><label htmlFor="aut-reason">{t('aut_reason')}</label>
+                    <textarea className="input" id="aut-reason" name="reason" required minLength={5} maxLength={500} rows={2}
+                              defaultValue={aut?.reason ?? m.no_doc_reason ?? ''} /></div>
+                  <div className="field"><span className="flabel" id="aut-lang">{t('aut_lang')}</span>
+                    <div className="seg" role="radiogroup" aria-labelledby="aut-lang">
+                      {(['it', 'fr', 'both'] as const).map((l) => (
+                        <label key={l}><input type="radio" name="lang" value={l} defaultChecked={autDefaultLang === l} /> {t(`aut_lang_${l}`)}</label>
+                      ))}
+                    </div></div>
+                  <p className="hint" style={{ margin: 0 }}>{t('aut_data')} {t('aut_check')}</p>
+                  <div><button className="btn primary" type="submit"><Ico name="download" />{t('aut_create')}</button></div>
+                </form>
+              ) : null}
             </Panel>
           )}
 

@@ -15,7 +15,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const year = Number(anno) || new Date().getFullYear();
   const { supabase, me, t, lang } = await requireMe();
   const isAdmin = ['super_admin', 'admin'].includes(me!.role);
-  const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }] = await Promise.all([
+  const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }, { data: advs }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id).is('reimb_status', null),
@@ -23,7 +23,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       .limit(50000).returns<L[]>(),
     isAdmin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('reimb_status', 'due'),
+    me!.role !== 'operator' ? supabase.rpc('advance_summary') : Promise.resolve({ data: null }),
   ]);
+  // anticipi aperti da oltre 30 giorni (avviso del Gestionale) e autocertificazioni stampate in attesa di firma
+  const advRows = (advs ?? []) as { balance: string; open_since: string | null; aut_to_sign: number }[];
+  const advLate = advRows.filter((r) => Number(r.balance) > 0 && r.open_since && Date.now() - Date.parse(r.open_since) > 30 * 864e5).length;
+  const autToSign = advRows.reduce((n, r) => n + r.aut_to_sign, 0);
   // piano gratuito di Supabase senza backup automatici: promemoria settimanale per gli amministratori
   const backupAt = (lastBackup?.value as { at?: string } | null)?.at;
   const backupDays = backupAt ? Math.floor((Date.now() - new Date(backupAt).getTime()) / 86400000) : null;
@@ -76,11 +81,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       </PageHead>
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
-      {(Boolean(dueCount) || backupDue) && (
+      {(Boolean(dueCount) || backupDue || advLate > 0 || autToSign > 0) && (
         <section className="todo" aria-label={t('todo_title')}>
           <h2>{t('todo_title')}</h2>
           <ul>
             {Boolean(dueCount) && <li><Ico name="wallet" /><Link href="/rimborsi">{dueCount} {t(dueCount === 1 ? 'dash_reimb_one' : 'dash_reimb')}</Link></li>}
+            {advLate > 0 && <li><Ico name="wallet" /><Link href="/anticipi">{t('dash_adv_late').replace('{n}', String(advLate))}</Link></li>}
+            {autToSign > 0 && <li><Ico name="check" /><Link href="/anticipi">{t('dash_aut_sign').replace('{n}', String(autToSign))}</Link></li>}
             {backupDue && <li><Ico name="download" /><span>{backupDays === null ? t('bk_never') : t('bk_due').replace('{n}', String(backupDays))}{' '}
               <Link href="/admin/impostazioni">{t('bk_go')}</Link></span></li>}
           </ul>

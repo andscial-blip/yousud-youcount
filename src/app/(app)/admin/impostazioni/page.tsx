@@ -2,7 +2,7 @@ import { ADMIN, can, requireMe } from '@/lib/session';
 import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
-import { toggleSetting } from './actions';
+import { saveDocDetails, toggleSetting } from './actions';
 import { ApiKeys } from '@/components/ApiKeys';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +25,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     const v = (data ?? []).find((s) => s.key === k)?.value;
     return v === undefined || v === null ? def : v === true;
   };
+  const orgDet = ((data ?? []).find((s) => s.key === 'org_details')?.value ?? {}) as { address?: string; tax_id?: string };
+  const signer = ((data ?? []).find((s) => s.key === 'doc_signer')?.value ?? {}) as { name?: string; role?: string };
   const lastBackup = (data ?? []).find((s) => s.key === 'last_backup')?.value as { at?: string; by?: string } | undefined;
   return (
     <div className="stack" style={{ maxWidth: 920 }}>
@@ -51,6 +53,21 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             })}
           </tbody>
         </table>
+      </Panel>
+      <Panel title={t('doc_title')} pad>
+        <p className="muted" style={{ marginTop: 0 }}>{t('doc_text')}</p>
+        <form action={saveDocDetails} className="fgrid">
+          <div className="field span2"><label htmlFor="d-addr">{t('doc_address')}</label>
+            <input className="input" id="d-addr" name="address" maxLength={300} defaultValue={orgDet.address ?? ''} /></div>
+          <div className="field"><label htmlFor="d-tax">{t('doc_tax')}</label>
+            <input className="input" id="d-tax" name="tax_id" maxLength={40} defaultValue={orgDet.tax_id ?? ''} /></div>
+          <div className="field" />
+          <div className="field"><label htmlFor="d-sig">{t('doc_signer')}</label>
+            <input className="input" id="d-sig" name="signer" maxLength={120} defaultValue={signer.name ?? ''} /></div>
+          <div className="field"><label htmlFor="d-sigr">{t('doc_signer_role')}</label>
+            <input className="input" id="d-sigr" name="signer_role" maxLength={120} defaultValue={signer.role ?? ''} /></div>
+          <div className="span2"><button className="btn primary" type="submit">{t('save')}</button></div>
+        </form>
       </Panel>
       <Panel title={t('bk_title')}>
         <div className="panel-b stack" style={{ gap: 12 }}>

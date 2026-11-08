@@ -64,7 +64,16 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
   const [accountId, setAccountId] = useState(initial?.account_id ?? '');
   // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
-  const [ownPocket, setOwnPocket] = useState(initial?.reimb_status === 'due');
+  // come è stata pagata una spesa: dall'ente (conto), di tasca propria (da rimborsare) o con l'anticipo di una persona
+  const advances = R.accounts.filter((a) => a.kind === 'advance');
+  const [payMode, setPayMode] = useState<'org' | 'own' | 'adv'>(initial?.reimb_status === 'due' ? 'own'
+    : R.accounts.find((a) => a.id === initial?.account_id)?.kind === 'advance' ? 'adv' : 'org');
+  const ownPocket = payMode === 'own';
+  const choosePay = (m: 'org' | 'own' | 'adv') => {
+    setPayMode(m);
+    const isAdv = R.accounts.find((a) => a.id === accountId)?.kind === 'advance';
+    if ((m === 'adv') !== isAdv) setAccountId('');
+  };
   const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial?.currency === 'MGA' ? 'MGA' : 'EUR');
   const [toAccountId, setToAccountId] = useState(initial?.to_account_id ?? '');
   const [toAmountTxt, setToAmountTxt] = useState(initial?.to_amount ? String(Number(initial.to_amount)).replace('.', ',') : '');
@@ -323,9 +332,11 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
       </span>
     );
   };
-  const accOptions = (exclude?: string) => (['IT', 'MG'] as const).map((loc) => (
+  const advMode = kind === 'expense' && payMode === 'adv';
+  // gli anticipi non si scelgono come conto di una spesa dell'ente o di un'entrata (solo con «Con l'anticipo» o nei giroconti)
+  const accOptions = (exclude?: string, noAdvance = false) => (['IT', 'MG'] as const).map((loc) => (
     <optgroup key={loc} label={loc === 'IT' ? t.italy : t.madagascar}>
-      {R.accounts.filter((a) => a.location === loc && a.id !== exclude).map((a) => (
+      {R.accounts.filter((a) => a.location === loc && a.id !== exclude && !(noAdvance && a.kind === 'advance')).map((a) => (
         <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>
       ))}
     </optgroup>
@@ -401,7 +412,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
       <div className="seg kinds" role="group" aria-label={t.f_kind}>
         {(['expense', 'income', 'transfer'] as const).map((k) => (
           <button type="button" key={k} aria-pressed={kind === k} disabled={Boolean(recordedLocked)}
-                  onClick={() => { setKind(k); setCategoryId(''); }}><Ico name={k} size={18} />{t[`k_${k}`]}</button>
+                  onClick={() => { setKind(k); setCategoryId(''); if (k === 'income' && R.accounts.find((a) => a.id === accountId)?.kind === 'advance') setAccountId(''); }}><Ico name={k} size={18} />{t[`k_${k}`]}</button>
         ))}
       </div>
 
@@ -431,10 +442,14 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
           <div className="field">
             <span className="flabel" id="howpaid">{t.f_how_paid}</span>
             <div className="seg" role="radiogroup" aria-labelledby="howpaid">
-              <button type="button" role="radio" aria-checked={!ownPocket} disabled={initial?.reimb_status === 'paid'} onClick={() => setOwnPocket(false)}>{t.f_paid_org}</button>
-              <button type="button" role="radio" aria-checked={ownPocket} disabled={Boolean(initial && initial.status !== 'draft')} onClick={() => setOwnPocket(true)}>{t.f_paid_own}</button>
+              <button type="button" role="radio" aria-checked={payMode === 'org'} disabled={initial?.reimb_status === 'paid'} onClick={() => choosePay('org')}>{t.f_paid_org}</button>
+              <button type="button" role="radio" aria-checked={ownPocket} disabled={Boolean(initial && initial.status !== 'draft')} onClick={() => choosePay('own')}>{t.f_paid_own}</button>
+              {advances.length > 0 && (
+                <button type="button" role="radio" aria-checked={payMode === 'adv'} disabled={initial?.reimb_status === 'paid'} onClick={() => choosePay('adv')}>{t.f_paid_adv}</button>
+              )}
             </div>
             {due && <span className="hint">{t.f_due_hint}</span>}
+            {payMode === 'adv' && kind === 'expense' && <span className="hint">{t.f_adv_hint}</span>}
           </div>
         </>)}
         {due ? (
@@ -448,9 +463,14 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
           </div>
         ) : (
           <div className="field">
-            <label htmlFor="account">{kind === 'transfer' ? t.f_from_account : t.f_account}</label>
-            <select className="input" id="account" value={accountId ?? ''} onChange={(e) => setAccountId(e.target.value)}>
-              <option value="">{t.f_choose}</option>{accOptions()}
+            <label htmlFor="account">{kind === 'transfer' ? t.f_from_account : advMode ? t.f_adv_account : t.f_account}</label>
+            <select className="input" id="account" value={accountId ?? ''} onChange={(e) => {
+              setAccountId(e.target.value);
+              const h = R.accounts.find((a) => a.id === e.target.value)?.holder;
+              if (advMode && h) setPaidBy(h);
+            }}>
+              <option value="">{t.f_choose}</option>
+              {advMode ? advances.map((a) => <option key={a.id} value={a.id}>{a.holder ?? a.name} · {a.currency}</option>) : accOptions(undefined, kind !== 'transfer')}
             </select>
             {req(missing.account)}
           </div>

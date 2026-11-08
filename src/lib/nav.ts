@@ -21,6 +21,7 @@ export const SECTIONS: Section[] = [
   { href: '/analisi', key: 'nav_analysis', icon: 'M4 20V4M4 20h16M8 16l4-5 3 3 5-7', roles: STAFF, top: true, group: 'work' },
   { href: '/rendiconto', key: 'nav_report', icon: 'M5 20V10M12 20V4M19 20v-7', roles: STAFF, top: true, group: 'work' },
   { href: '/rimborsi', key: 'nav_reimb', icon: 'M4 7h15v12H4zM4 7l11-3v3M15 13h.01', group: 'work' },
+  { href: '/anticipi', key: 'nav_advances', icon: 'M3 8h18v10H3zM7 8V6h10v2M12 11v4M10 13h4', roles: STAFF, group: 'work' },
   { href: '/riconciliazione', key: 'nav_rec', icon: 'M4 6h11M4 12h7M4 18h7M14 15l3 3 5-6', roles: STAFF, group: 'work' },
   { href: '/finanziamenti', key: 'nav_grants', icon: 'M12 3v18M7 7h7.5a3.5 3.5 0 0 1 0 7H7', group: 'work' },
   { href: '/controparti', key: 'nav_counterparties', icon: 'M16 11a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0', group: 'work' },
