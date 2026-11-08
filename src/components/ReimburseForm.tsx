@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { reimburse } from '@/app/(app)/rimborsi/actions';
+import { money } from '@/lib/format';
+import type { Lang } from '@/lib/i18n';
 
 export type DueRow = {
   id: string; description: string; amount: string; currency: string; doc_date: string | null; op_date: string; paid_by: string | null;
@@ -9,9 +11,7 @@ export type DueRow = {
 };
 type L = { date: string; when: string; desc: string; account: string; method: string; pay: string; choose: string; all: string; no_doc: string; one: string; many: string };
 
-const fmt = (n: number, cur: string, lang: string) => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', {
-  style: 'currency', currency: cur, minimumFractionDigits: cur === 'MGA' ? 0 : 2, maximumFractionDigits: cur === 'MGA' ? 0 : 2,
-}).format(n);
+const fmt = (n: number, cur: string, lang: string) => money(n, cur, lang as Lang);
 const day = (d: string | null) => (d ? d.split('-').reverse().join('/') : '–');
 
 // Spese da rimborsare di una persona in una valuta: si scelgono le righe, il conto, la data e si registra il rimborso.

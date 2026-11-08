@@ -36,6 +36,8 @@ function Shell({ t, who, top, bottom, children }: {
 }) {
   return (
     <>
+      {/* lingua della pagina per lettori di schermo e sillabazione: quella scelta dall'utente */}
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(t('lang_code'))}` }} />
       <Splash tagline={t('app_tagline')} />
       <header className="top">
         <div className="wrap">

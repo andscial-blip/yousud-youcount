@@ -36,7 +36,7 @@ const it = {
   verify_btn: 'Verifica', verify_own: 'inserito da te', verify_done: 'Verificato.', entered_by: 'Inserito da',
   // progetti
   prj_spent: 'Uscite', prj_income: 'Entrate', prj_moves: 'Movimenti', prj_structure: 'struttura',
-  prj_note: 'Importi in EUR dei movimenti registrati e verificati dell\'anno. Budget e confronto speso/preventivo: tappa 4d.',
+  prj_note: 'Importi in EUR dei movimenti registrati e verificati dell\'anno. Budget e confronto con il preventivo nella pagina di ogni progetto.',
   // conti
   acc_opening: 'Saldo iniziale', acc_in: 'Entrate', acc_out: 'Uscite e giroconti in uscita',
   // rendiconto
@@ -48,7 +48,8 @@ const it = {
   // documenti
   doc_name: 'Nome', doc_uploaded: 'Caricato', doc_number: 'Numero', doc_total: 'Totale',
   // account
-  acc_lang: 'Lingua', sign_out: 'Esci', save: 'Salva',
+  f_nodoc_filter: 'Senza giustificativo', search_mov: 'Cerca per descrizione o numero MOV', search_clear: 'Annulla ricerca', empty_search: 'Nessun movimento corrisponde alla ricerca.',
+  lang_code: 'it', acc_lang: 'Lingua', sign_out: 'Esci', save: 'Salva',
   // login
   login_title: 'Accedi', login_btn: 'Accedi', login_busy: 'Accesso…', password: 'Password',
   login_bad: 'Email o password non corretti.', login_offline: 'Serve una connessione per il primo accesso.',
@@ -62,7 +63,7 @@ const it = {
   new_text: 'Tappa 4c: fotografa o carica il giustificativo, l\'app migliora l\'immagine, ne fa un PDF, propone i campi letti e tu li verifichi uno per uno prima di registrare.',
   sync_text: 'Senza rete i movimenti nuovi restano sul telefono e partono da soli appena torna la connessione. Per usare l’app offline aprila almeno una volta con la rete.',
   sync_outcome: 'Esito', sync_op: 'Operazione',
-  admin_readonly: 'Tocca una riga per modificarla. Le voci non si cancellano: si disattivano, così lo storico resta completo.',
+  admin_readonly: 'Seleziona una riga per modificarla. Le voci non si cancellano: si disattivano, così lo storico resta completo.',
   name_it_l: 'Nome in italiano', name_fr_l: 'Nome in francese', opening_date: 'Data del saldo iniziale', start_date: 'Inizio', end_date: 'Fine',
   sort_l: 'Ordine', vat: 'P.IVA / NIF', cp_add: 'Nuova controparte', add: 'Aggiungi',
   retro_warn: 'Attenzione: la modifica vale anche per i movimenti già registrati e cambia saldi e rendiconti.',
@@ -166,7 +167,7 @@ const it = {
   reimb_text: 'Spese pagate di tasca propria. Non toccano i conti finché non si rimborsano: il rimborso le registra con la data in cui escono i soldi, come vuole il rendiconto per cassa.',
   reimb_none: 'Nessuna spesa da rimborsare.', reimb_date: 'Data del rimborso', reimb_pay: 'Registra il rimborso', reimb_all: 'Seleziona tutte',
   reimb_no_doc: 'manca il giustificativo', reimb_selected: 'spese', reimb_one: 'spesa', reimb_recent: 'Ultimi rimborsi', reimb_done: 'Rimborso registrato:',
-  dash_reimb: 'spese da rimborsare',
+  dash_reimb: 'spese da rimborsare', dash_reimb_one: 'spesa da rimborsare',
   nav_rec: 'Riconciliazione bancaria',
   rec_text: 'Confronta i movimenti dell’app con l’estratto conto. Inserisci data e saldo dell’estratto e spunta i movimenti che vi compaiono: si conferma quando la differenza è zero. I movimenti non spuntati (per esempio un assegno non ancora incassato) restano per l’estratto successivo.',
   rec_last: 'Ultimo estratto', rec_balance: 'Saldo riconciliato', rec_open: 'Da spuntare', rec_go: 'Riconcilia', rec_never: 'mai',
@@ -219,7 +220,7 @@ const fr: Record<Key, string> = {
   verify_intro: 'Mouvements enregistrés en attente de vérification. La personne qui a saisi un mouvement ne peut pas le vérifier.',
   verify_btn: 'Vérifier', verify_own: 'saisi par vous', verify_done: 'Vérifié.', entered_by: 'Saisi par',
   prj_spent: 'Dépenses', prj_income: 'Recettes', prj_moves: 'Mouvements', prj_structure: 'structure',
-  prj_note: 'Montants en EUR des mouvements enregistrés et vérifiés de l\'année. Budget et comparaison dépensé/prévu : étape 4d.',
+  prj_note: 'Montants en EUR des mouvements enregistrés et vérifiés de l\'année. Budget et comparaison avec le prévisionnel dans la page de chaque projet.',
   acc_opening: 'Solde initial', acc_in: 'Recettes', acc_out: 'Dépenses et virements sortants',
   rep_title: 'Compte de caisse', rep_draft: 'Brouillon calculé à partir des mouvements enregistrés et vérifiés, selon les lignes du modèle D utilisées dans le Gestionale. La conformité au décret du 5 mars 2020 doit être vérifiée par l\'expert-comptable avant l\'approbation.',
   rep_missing_rate: 'mouvements en MGA sans taux de change : montants en EUR incomplets.',
@@ -227,7 +228,8 @@ const fr: Record<Key, string> = {
   rep_item: 'Poste', rep_total_out: 'Total des dépenses', rep_total_in: 'Total des recettes', rep_result: 'Excédent / déficit',
   rep_result_s: 'recettes moins dépenses, investissements et impôts compris',
   doc_name: 'Nom', doc_uploaded: 'Chargé le', doc_number: 'Numéro', doc_total: 'Total',
-  acc_lang: 'Langue', sign_out: 'Se déconnecter', save: 'Enregistrer',
+  f_nodoc_filter: 'Sans pièce', search_mov: 'Rechercher par description ou numéro MOV', search_clear: 'Effacer la recherche', empty_search: 'Aucun mouvement ne correspond à la recherche.',
+  lang_code: 'fr', acc_lang: 'Langue', sign_out: 'Se déconnecter', save: 'Enregistrer',
   login_title: 'Connexion', login_btn: 'Se connecter', login_busy: 'Connexion…', password: 'Mot de passe',
   login_bad: 'E-mail ou mot de passe incorrect.', login_offline: 'Une connexion est nécessaire pour le premier accès.',
   login_invite: 'L\'accès se fait uniquement sur invitation. Pour un nouveau compte, adressez-vous à l\'administrateur de YouSud.',
@@ -239,7 +241,7 @@ const fr: Record<Key, string> = {
   new_text: 'Étape 4c : photographiez ou chargez la pièce justificative ; l\'application améliore l\'image, en fait un PDF, propose les champs lus et vous les vérifiez un par un avant d\'enregistrer.',
   sync_text: 'Sans réseau, les nouveaux mouvements restent sur le téléphone et partent tout seuls dès le retour de la connexion. Pour utiliser l’app hors ligne, ouvrez-la au moins une fois avec le réseau.',
   sync_outcome: 'Résultat', sync_op: 'Opération',
-  admin_readonly: 'Touchez une ligne pour la modifier. Rien ne se supprime : on désactive, ainsi l’historique reste complet.',
+  admin_readonly: 'Sélectionnez une ligne pour la modifier. Rien ne se supprime : on désactive, ainsi l’historique reste complet.',
   name_it_l: 'Nom en italien', name_fr_l: 'Nom en français', opening_date: 'Date du solde initial', start_date: 'Début', end_date: 'Fin',
   sort_l: 'Ordre', vat: 'N° TVA / NIF', cp_add: 'Nouvelle contrepartie', add: 'Ajouter',
   retro_warn: 'Attention : la modification vaut aussi pour les mouvements déjà enregistrés et change soldes et comptes rendus.',
@@ -336,7 +338,7 @@ const fr: Record<Key, string> = {
   reimb_text: 'Dépenses payées de sa poche. Elles ne touchent pas les comptes tant qu’elles ne sont pas remboursées : le remboursement les enregistre à la date où l’argent sort, comme le veut le compte de caisse.',
   reimb_none: 'Aucune dépense à rembourser.', reimb_date: 'Date du remboursement', reimb_pay: 'Enregistrer le remboursement', reimb_all: 'Tout sélectionner',
   reimb_no_doc: 'pièce manquante', reimb_selected: 'dépenses', reimb_one: 'dépense', reimb_recent: 'Derniers remboursements', reimb_done: 'Remboursement enregistré :',
-  dash_reimb: 'dépenses à rembourser',
+  dash_reimb: 'dépenses à rembourser', dash_reimb_one: 'dépense à rembourser',
   nav_rec: 'Rapprochement bancaire',
   rec_text: 'Comparez les mouvements de l’app avec le relevé de compte. Saisissez la date et le solde du relevé et cochez les mouvements qui y figurent : on valide quand l’écart est nul. Les mouvements non cochés (par exemple un chèque pas encore encaissé) restent pour le relevé suivant.',
   rec_last: 'Dernier relevé', rec_balance: 'Solde rapproché', rec_open: 'À cocher', rec_go: 'Rapprocher', rec_never: 'jamais',

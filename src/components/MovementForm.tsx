@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { Dict } from '@/lib/i18n';
+import type { Dict, Lang } from '@/lib/i18n';
+import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
 import { parseAmount } from '@/lib/amount';
 import { ScanEditor, type ScanResult } from './ScanEditor';
@@ -30,10 +31,6 @@ const METHOD_HINT: Record<string, RegExp> = {
 type Dup = { id: string; ref: string | null; op_date: string; amount: string; currency: string; description: string };
 
 const today = () => new Date().toISOString().slice(0, 10);
-const fmt = (n: number, cur: string) => new Intl.NumberFormat('it-IT', {
-  style: 'currency', currency: cur, minimumFractionDigits: cur === 'MGA' ? 0 : 2, maximumFractionDigits: cur === 'MGA' ? 0 : 2,
-  useGrouping: 'always',
-} as Intl.NumberFormatOptions).format(n);
 
 type Props = { refData: RefData; t: Dict; initial?: Initial };
 
@@ -403,7 +400,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
-          {amount && currency === 'MGA' && rate ? <span className="hint">{t.f_eur_equiv}: {fmt(amount / rate, 'EUR')}</span> : null}
+          {amount && currency === 'MGA' && rate ? <span className="hint">{t.f_eur_equiv}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</span> : null}
         </div>
         <div className={aiCls('opDate')}>
           <label htmlFor="opdate">{t.f_op_date}</label>
@@ -541,7 +538,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
           <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
             {dups.map((d) => (
               <li key={d.id}><a href={`/movimenti/${d.id}`} target="_blank" rel="noreferrer">
-                {d.ref ?? '—'} · {d.op_date.split('-').reverse().join('/')} · {fmt(Number(d.amount), d.currency)} · {d.description}</a></li>
+                {d.ref ?? '—'} · {d.op_date.split('-').reverse().join('/')} · {money(Number(d.amount), d.currency, t.lang_code as Lang)} · {d.description}</a></li>
             ))}
           </ul>
         </div>

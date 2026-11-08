@@ -6,6 +6,14 @@ import { dictFor } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
+// nomi delle operazioni del server in parole dell'utente
+const OP: Record<string, [string, string]> = {
+  save_movement: ['Movimento salvato', 'Mouvement enregistré'], register_document: ['Giustificativo caricato', 'Pièce chargée'],
+  verify_movement: ['Movimento verificato', 'Mouvement vérifié'], reverse_movement: ['Storno', 'Extourne'],
+  reimburse_expenses: ['Rimborso registrato', 'Remboursement enregistré'], reconcile_account: ['Riconciliazione bancaria', 'Rapprochement bancaire'],
+  delete_draft: ['Bozza eliminata', 'Brouillon supprimé'], link_document: ['Giustificativo collegato', 'Pièce liée'],
+};
+
 type S = { id: number; at: string; operation: string; outcome: 'applied' | 'duplicate' | 'conflict'; device_id: string | null };
 
 export default async function Sync() {
@@ -26,7 +34,7 @@ export default async function Sync() {
             <tbody>
               {data!.map((s) => (
                 <tr key={s.id}>
-                  <td className="num">{dateTime(s.at, lang)}</td><td>{s.operation}</td>
+                  <td className="num">{dateTime(s.at, lang)}</td><td>{OP[s.operation]?.[lang === 'fr' ? 1 : 0] ?? s.operation}</td>
                   <td><span className={`chip ${s.outcome === 'conflict' ? 'warn' : 'ok'}`}>{label[s.outcome]}</span></td>
                 </tr>
               ))}

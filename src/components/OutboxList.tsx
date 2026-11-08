@@ -3,11 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Dict } from '@/lib/i18n';
 import { createClient } from '@/lib/supabase/client';
+import { money } from '@/lib/format';
+import type { Lang } from '@/lib/i18n';
 import { deleteOutbox, flushOutbox, listOutbox, OUTBOX_EVENT, type OutItem } from '@/lib/outbox';
 
-const fmt = (n: number, cur: string) => new Intl.NumberFormat('it-IT', {
-  style: 'currency', currency: cur, maximumFractionDigits: cur === 'MGA' ? 0 : 2, minimumFractionDigits: cur === 'MGA' ? 0 : 2,
-}).format(n);
 const day = (d: string) => d.split('-').reverse().join('/');
 
 // Movimenti salvati sul telefono e non ancora ricevuti dal server.
@@ -45,7 +44,7 @@ export function OutboxList({ t }: { t: Dict }) {
                 <span className="muted">{day(it.opDate)}{it.files.length ? ` · ${it.files.length} ${t.q_files}` : ''}</span>
                 {it.state === 'error' && it.error && <span className="ferr">{it.error}</span>}
               </div>
-              <span className="num nw">{fmt(it.amount, it.currency)}</span>
+              <span className="num nw">{money(it.amount, it.currency, t.lang_code as Lang)}</span>
               <span className={`chip ${it.state === 'error' ? 'err' : 'warn'}`}>{it.state === 'error' ? t.q_err : t.q_wait}</span>
               {it.state === 'error' && (
                 <button className="btn ghost" onClick={async () => { if (window.confirm(t.q_delete_confirm)) await deleteOutbox(it.id); }}>{t.q_delete}</button>

@@ -2,6 +2,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { parseAmount } from '@/lib/amount';
+import { money } from '@/lib/format';
+import type { Lang } from '@/lib/i18n';
 import { reconcile } from '@/app/(app)/riconciliazione/actions';
 
 export type Leg = { movement_id: string; side: 'from' | 'to'; ref: string | null; op_date: string; description: string; amount: number };
@@ -24,10 +26,7 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
   const [balTxt, setBalTxt] = useState('');
   const [sel, setSel] = useState<Set<string>>(() => new Set(legs.filter((l) => l.op_date <= today).map(key)));
   const [client] = useState(() => crypto.randomUUID());
-  const dec = currency === 'MGA' ? 0 : 2;
-  const fmt = (n: number) => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', {
-    style: 'currency', currency, minimumFractionDigits: dec, maximumFractionDigits: dec,
-  }).format(n);
+  const fmt = (n: number) => money(n, currency, lang as Lang);
 
   // saldo dell'estratto: anche zero o negativo (scoperto)
   const balance = useMemo(() => {

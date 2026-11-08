@@ -12,7 +12,11 @@ const TABLE: Record<string, [string, string]> = {
   accounts: ['Conti', 'Comptes'], categories: ['Piano dei conti', 'Plan comptable'], projects: ['Progetti', 'Projets'],
   profiles: ['Utenti', 'Utilisateurs'], periods: ['Chiusure', 'Clôtures'], settings: ['Impostazioni', 'Paramètres'],
   counterparties: ['Fornitori e donatori', 'Fournisseurs et donateurs'], counterparty_private: ['Dati personali controparti', 'Données personnelles'],
-  project_members: ['Accessi ai progetti', 'Accès aux projets'],
+  project_members: ['Accessi ai progetti', 'Accès aux projets'], grants: ['Finanziamenti', 'Financements'],
+  budget_lines: ['Budget', 'Budget'], cash_counts: ['Conte di cassa', 'Comptages de caisse'], fx_rates: ['Tassi di cambio', 'Taux de change'],
+  organizations: ['Ente', 'Organisation'], report_lines: ['Righe del rendiconto', 'Lignes du compte de caisse'],
+  category_groups: ['Gruppi di codici', 'Groupes de codes'], payment_methods: ['Modalità di pagamento', 'Moyens de paiement'],
+  bank_reconciliations: ['Riconciliazioni bancarie', 'Rapprochements bancaires'],
 };
 
 export default async function Audit() {
@@ -26,7 +30,9 @@ export default async function Audit() {
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   const what = (a: A) => {
     const r = (a.new_row ?? a.old_row ?? {}) as Record<string, unknown>;
-    return String(r.ref ?? r.name ?? r.code ?? r.full_name ?? r.key ?? '');
+    if (a.table_name === 'fx_rates' && r.month) return `${String(r.month).padStart(2, '0')}/${r.year} · ${r.rate}`;
+    if (a.table_name === 'bank_reconciliations' && r.statement_date) return String(r.statement_date).split('-').reverse().join('/');
+    return String(r.ref ?? r.title ?? r.name ?? r.name_it ?? r.file_name ?? r.code ?? r.full_name ?? r.key ?? '');
   };
   return (
     <div className="stack">

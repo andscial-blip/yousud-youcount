@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function Account() {
   const { me, user, t, lang } = await requireMe();
   return (
-    <div className="stack">
+    <div className="stack" style={{ maxWidth: 920 }}>
       <PageHead title={t('nav_account')} />
       <Panel pad>
         <div className="stack" style={{ gap: 14 }}>

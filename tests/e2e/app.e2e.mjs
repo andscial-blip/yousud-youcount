@@ -232,7 +232,7 @@ try {
     await p.waitForURL(new RegExp(`/movimenti/${id}$`));
     const txt = await p.locator('main').innerText();
     assert.match(txt, /-40,00\s?€/);
-    assert.match(txt, /modifica · amount/);
+    assert.match(txt, /modifica · Importo/);
   });
 
   await check('operatore: rendiconto non accessibile', async () => {
@@ -293,7 +293,7 @@ try {
   await check('responsabile: rimborsa la spesa → registrata con la data del rimborso e il conto scelto', async () => {
     const p = rs.page;
     await p.goto(`${base}/`);
-    await p.getByRole('link', { name: /1 spese da rimborsare/ }).click();
+    await p.getByRole('link', { name: /1 spesa da rimborsare/ }).click();
     await p.waitForURL(/\/rimborsi$/);
     const panel = p.locator('section.panel', { hasText: 'PROVA taxi da rimborsare' });
     await panel.locator('select[name=account_id]').selectOption({ label: 'Cassa Madagascar (contanti)' });
@@ -451,6 +451,24 @@ try {
     assert.equal((await rs.page.request.get(`${base}/api/v1/export/finanziamento?id=${randomUUID()}`)).status(), 404);
     await pool.query(`update movements set grant_id = null where grant_id = $1`, [gid]);
     await pool.query(`delete from grants where id = $1`, [gid]);
+  });
+  await check('movimenti: ricerca per descrizione o numero e filtro «Senza giustificativo»', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/movimenti`);
+    await p.getByRole('searchbox').fill('donazione');
+    await p.getByRole('searchbox').press('Enter');
+    await p.waitForURL(/q=donazione/);
+    const txt = await p.locator('main table').innerText();
+    assert.match(txt, /PROVA donazione/);
+    assert.doesNotMatch(txt, /PROVA materiale scolastico/);
+    const [{ ref }] = (await pool.query(`select ref from movements where ref is not null order by ref limit 1`)).rows;
+    await p.goto(`${base}/movimenti?q=${ref}`);
+    assert.equal(await p.locator('main tbody tr').count(), 1, 'ricerca per numero MOV');
+    await p.goto(`${base}/movimenti?stato=nodoc`);
+    const [{ n }] = (await pool.query(`select count(*)::int n from movements where no_doc_reason is not null`)).rows;
+    assert.equal(await p.locator('main tbody tr').count(), Math.min(n, 200));
+    await p.goto(`${base}/movimenti?q=zzz-niente`);
+    await p.getByText('Nessun movimento corrisponde alla ricerca.').waitFor();
   });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;

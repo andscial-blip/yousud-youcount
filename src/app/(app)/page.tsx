@@ -77,7 +77,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </PageHead>
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
       {Boolean(dueCount) && (
-        <div className="note"><Link href="/rimborsi">{dueCount} {t('dash_reimb')}</Link></div>
+        <div className="note info"><Link href="/rimborsi">{dueCount} {t(dueCount === 1 ? 'dash_reimb_one' : 'dash_reimb')}</Link></div>
       )}
       {backupDue && (
         <div className="note warn">

@@ -24,7 +24,14 @@ type M = {
   project: { name: string } | null; grant: { id: string; title: string } | null; counterparty: { name: string } | null; method: N;
 };
 type H = { at: string; action: string; actor: string | null; old_row: Record<string, unknown> | null; new_row: Record<string, unknown> | null };
-const SKIP = new Set(['updated_at', 'updated_by', 'version', 'last_op_uuid']);
+const SKIP = new Set(['updated_at', 'updated_by', 'version', 'last_op_uuid', 'recorded_by', 'recorded_at', 'ref', 'amount_eur', 'sign']);
+// campi modificati nello storico, con l'etichetta che l'utente vede nel modulo
+const FIELD: Record<string, Key> = {
+  amount: 'amount', description: 'description', op_date: 'f_op_date', doc_date: 'f_doc_date', account_id: 'account',
+  to_account_id: 'f_to_account', to_amount: 'f_to_account', category_id: 'f_category', project_id: 'project', grant_id: 'nav_grants',
+  counterparty_id: 'f_counterparty', payment_method_id: 'f_method', notes: 'f_notes', status: 'status', currency: 'currency',
+  fx_rate: 'f_rate', paid_by: 'f_paid_by', no_doc_reason: 'd_no_reason', kind: 'f_kind', reimb_status: 'nav_reimb',
+};
 
 export default async function MovementDetail({ params, searchParams }: {
   params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }>;
@@ -68,7 +75,7 @@ export default async function MovementDetail({ params, searchParams }: {
 
   const row = (label: string, value: React.ReactNode) => (<><dt>{label}</dt><dd>{value ?? '–'}</dd></>);
   return (
-    <div className="stack" style={{ maxWidth: 920 }}>
+    <div className="stack">
       <Link href="/movimenti" className="muted" style={{ textDecoration: 'none' }}>{t('d_back')}</Link>
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
@@ -79,99 +86,105 @@ export default async function MovementDetail({ params, searchParams }: {
       {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ''}</div>}
       {errText && <div className="note err">{errText}</div>}
 
-      <section className="kpis">
-        <div className="kpi"><span className="l">{t('amount')}</span>
-          <span className="v num">{money(signedAmount, m.currency, lang)}</span>
-          <span className="s">{m.currency === 'MGA' && m.amount_eur ? `${money(m.amount_eur, 'EUR', lang)} · ${t('f_rate')} ${Number(m.fx_rate).toLocaleString('it-IT', { useGrouping: 'always' } as Intl.NumberFormatOptions)}` : ' '}</span></div>
-      </section>
-
-      <Panel pad>
-        <dl className="kv">
-          {row(t('f_op_date'), date(m.op_date))}
-          {row(t('description'), m.description || null)}
-          {m.reimb_status === 'due' ? row(t('account'), <span className="chip warn">{t('reimb_due_chip')}</span>)
-            : row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
-          {m.paid_by && row(t('f_paid_by'), m.paid_by)}
-          {m.reimb_status === 'paid' && m.reimbursed_at && row(t('reimb_done_row'), `${date(m.op_date)} · ${name.get(m.reimbursed_by ?? '') ?? '–'}`)}
-          {m.kind === 'transfer' && row(t('f_to_account'), `${nm(lang, m.to_account)} · ${money(m.to_amount, m.to_account?.currency ?? m.currency, lang)}`)}
-          {m.category && row(t('f_category'), `${m.category.code} · ${nm(lang, m.category)}`)}
-          {m.kind !== 'transfer' && row(t('project'), m.project?.name)}
-          {m.grant && row(t('nav_grants'), <Link href={`/finanziamenti/${m.grant.id}`}>{m.grant.title}</Link>)}
-          {m.counterparty && row(t('f_counterparty'), m.counterparty.name)}
-          {m.method && row(t('f_method'), nm(lang, m.method))}
-          {m.doc_date && row(t('f_doc_date'), date(m.doc_date))}
-          {m.notes && row(t('f_notes'), m.notes)}
-          {m.reverses_id && row(t('d_reverses'), <><Link href={`/movimenti/${m.reverses_id}`}>{t('d_open')}</Link> · {m.reversal_reason}</>)}
-          {row(t('d_created'), `${dateTime(m.created_at, lang)} · ${name.get(m.created_by) ?? '–'}`)}
-          {m.recorded_at && row(t('d_recorded'), `${dateTime(m.recorded_at, lang)} · ${name.get(m.recorded_by ?? '') ?? '–'}`)}
-          {m.verified_at && row(t('d_verified'), `${dateTime(m.verified_at, lang)} · ${name.get(m.verified_by ?? '') ?? '–'}`)}
-        </dl>
-      </Panel>
-
-      {(m.kind !== 'transfer' || docs.length > 0) && (
-        <Panel title={t('d_documents')} pad>
-          {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}: ${m.no_doc_reason}` : t('none')}</p> : (
-            <ul className="docs">
-              {docs.map((d, i) => (
-                <li key={d.id}><span className="num">{d.name}</span>
-                  {signed[i]?.open ? <a className="btn" href={signed[i].open} target="_blank" rel="noreferrer">{t('d_open')}</a> : null}
-                  {signed[i]?.save ? <a className="btn ghost" href={signed[i].save} title={d.name}><Ico name="download" />{t('d_download')}</a> : null}</li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      )}
-
-      {(canEdit || canVerify || canReverse || m.status === 'draft') && (
-        <div className="factions">
-          {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}
-          {canVerify && (
-            <form action={verifyAction}>
-              <input type="hidden" name="id" value={m.id} /><input type="hidden" name="version" value={m.version} />
-              <button className="btn primary" type="submit"><Ico name="check" />{t('verify_btn')}</button>
-            </form>
-          )}
-          {m.status === 'draft' && canEdit && (
-            <form action={discardAction}>
-              <input type="hidden" name="id" value={m.id} />
-              <button className="btn ghost" type="submit" style={{ color: 'var(--red)' }}>{t('d_discard')}</button>
-            </form>
+      <div className="detail">
+        <div className="detail-main stack">
+          <section className="panel mv-sum">
+            <div className="mv-amt">
+              <span className="l">{t('amount')}</span>
+              <span className={`v num ${signedAmount < 0 ? '' : m.kind === 'income' ? 'pos' : ''}`}>{money(signedAmount, m.currency, lang)}</span>
+              {m.currency === 'MGA' && m.amount_eur && <span className="s num">{money(m.amount_eur, 'EUR', lang)} · {t('f_rate')} {money(m.fx_rate, 'MGA', lang).replace(/\s?MGA$/, '')}</span>}
+            </div>
+            <div className="panel-b">
+              <dl className="kv">
+                {row(t('f_op_date'), date(m.op_date))}
+                {row(t('description'), m.description || null)}
+                {m.reimb_status === 'due' ? row(t('account'), <span className="chip warn">{t('reimb_due_chip')}</span>)
+                : row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
+                {m.paid_by && row(t('f_paid_by'), m.paid_by)}
+                {m.reimb_status === 'paid' && m.reimbursed_at && row(t('reimb_done_row'), `${date(m.op_date)} · ${name.get(m.reimbursed_by ?? '') ?? '–'}`)}
+                {m.kind === 'transfer' && row(t('f_to_account'), `${nm(lang, m.to_account)} · ${money(m.to_amount, m.to_account?.currency ?? m.currency, lang)}`)}
+                {m.category && row(t('f_category'), `${m.category.code} · ${nm(lang, m.category)}`)}
+                {m.kind !== 'transfer' && row(t('project'), m.project?.name)}
+                {m.grant && row(t('nav_grants'), <Link href={`/finanziamenti/${m.grant.id}`}>{m.grant.title}</Link>)}
+                {m.counterparty && row(t('f_counterparty'), m.counterparty.name)}
+                {m.method && row(t('f_method'), nm(lang, m.method))}
+                {m.doc_date && row(t('f_doc_date'), date(m.doc_date))}
+                {m.notes && row(t('f_notes'), m.notes)}
+                {m.reverses_id && row(t('d_reverses'), <><Link href={`/movimenti/${m.reverses_id}`}>{t('d_open')}</Link> · {m.reversal_reason}</>)}
+                {row(t('d_created'), `${dateTime(m.created_at, lang)} · ${name.get(m.created_by) ?? '–'}`)}
+                {m.recorded_at && row(t('d_recorded'), `${dateTime(m.recorded_at, lang)} · ${name.get(m.recorded_by ?? '') ?? '–'}`)}
+                {m.verified_at && row(t('d_verified'), `${dateTime(m.verified_at, lang)} · ${name.get(m.verified_by ?? '') ?? '–'}`)}
+              </dl>
+            </div>
+          </section>
+          {(canEdit || canVerify || canReverse || m.status === 'draft') && (
+            <div className="factions">
+              {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}
+              {canVerify && (
+                <form action={verifyAction}>
+                  <input type="hidden" name="id" value={m.id} /><input type="hidden" name="version" value={m.version} />
+                  <button className="btn primary" type="submit"><Ico name="check" />{t('verify_btn')}</button>
+                </form>
+              )}
+              {m.status === 'draft' && canEdit && (
+                <form action={discardAction}>
+                  <input type="hidden" name="id" value={m.id} />
+                  <button className="btn ghost" type="submit" style={{ color: 'var(--red)' }}>{t('d_discard')}</button>
+                </form>
+              )}
+            </div>
           )}
         </div>
-      )}
-      {canReverse && (
-        <details className="panel">
-          <summary className="panel-h" style={{ cursor: 'pointer' }}><h2>{t('d_reverse')}</h2></summary>
-          <form action={reverseAction} className="panel-b stack" style={{ gap: 10 }}>
-            <input type="hidden" name="id" value={m.id} />
-            <input type="hidden" name="client_uuid" value={randomUUID()} />
-            <div className="field">
-              <label htmlFor="reason">{t('d_reverse_reason')}</label>
-              <input className="input" id="reason" name="reason" required minLength={5} maxLength={300} />
-            </div>
-            <div><button className="btn primary" type="submit">{t('d_reverse_btn')}</button></div>
-          </form>
-        </details>
-      )}
+        <aside className="detail-side stack">
+          {(m.kind !== 'transfer' || docs.length > 0) && (
+            <Panel title={t('d_documents')} pad>
+              {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}: ${m.no_doc_reason}` : t('none')}</p> : (
+                <ul className="docs">
+                  {docs.map((d, i) => (
+                    <li key={d.id}><span className="num">{d.name}</span>
+                      {signed[i]?.open ? <a className="btn" href={signed[i].open} target="_blank" rel="noreferrer">{t('d_open')}</a> : null}
+                      {signed[i]?.save ? <a className="btn ghost" href={signed[i].save} title={d.name}><Ico name="download" />{t('d_download')}</a> : null}</li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          )}
 
-      <Panel title={t('d_history')}>
-        <table className="t">
-          <tbody>
-            {((hist ?? []) as H[]).map((h, i) => {
-              const changed = h.action === 'update' && h.old_row && h.new_row
-                ? Object.keys(h.new_row).filter((k) => !SKIP.has(k) && JSON.stringify(h.new_row![k]) !== JSON.stringify(h.old_row![k]))
-                : [];
-              return (
-                <tr key={i}>
-                  <td className="num nw">{dateTime(h.at, lang)}</td>
-                  <td>{h.actor ? name.get(h.actor) ?? '–' : '–'}</td>
-                  <td>{t(`a_${h.action}` as Key)}{changed.length > 0 && <span className="muted"> · {changed.join(', ')}</span>}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Panel>
+          {canReverse && (
+            <details className="panel">
+              <summary className="panel-h" style={{ cursor: 'pointer' }}><h2>{t('d_reverse')}</h2></summary>
+              <form action={reverseAction} className="panel-b stack" style={{ gap: 10 }}>
+                <input type="hidden" name="id" value={m.id} />
+                <input type="hidden" name="client_uuid" value={randomUUID()} />
+                <div className="field">
+                  <label htmlFor="reason">{t('d_reverse_reason')}</label>
+                  <input className="input" id="reason" name="reason" required minLength={5} maxLength={300} />
+                </div>
+                <div><button className="btn primary" type="submit">{t('d_reverse_btn')}</button></div>
+              </form>
+            </details>
+          )}
+
+          <Panel title={t('d_history')}>
+            <table className="t">
+              <tbody>
+                {((hist ?? []) as H[]).map((h, i) => {
+                  const changed = h.action === 'update' && h.old_row && h.new_row
+                    ? Object.keys(h.new_row).filter((k) => !SKIP.has(k) && JSON.stringify(h.new_row![k]) !== JSON.stringify(h.old_row![k]))
+                    : [];
+                  return (
+                    <tr key={i}>
+                      <td className="num nw">{dateTime(h.at, lang)}</td>
+                      <td>{h.actor ? name.get(h.actor) ?? '–' : '–'}</td>
+                      <td>{t(`a_${h.action}` as Key)}{changed.length > 0 && <span className="muted"> · {[...new Set(changed.map((k) => (FIELD[k] ? t(FIELD[k]) : k)))].join(', ')}</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Panel>
+        </aside>
+      </div>
     </div>
   );
 }

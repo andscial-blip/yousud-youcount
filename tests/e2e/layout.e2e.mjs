@@ -172,6 +172,10 @@ try {
         let p;
         try {
           p = await c.newPage();
+          // errori della pagina e della console (in sviluppo Next mostra «Issue» per questi): sono problemi da correggere
+          const cerr = [];
+          p.on('pageerror', (e) => cerr.push(`errore: ${e.message.split('\n')[0]}`));
+          p.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource.*(401|403|404)/i.test(m.text())) cerr.push(`console: ${m.text().split('\n')[0].slice(0, 200)}`); });
           await p.setViewportSize({ width: w, height: 860 });
           await p.goto(base + path.replace('#doc', ''), { waitUntil: 'networkidle', timeout: 60000 });
           if (path === '/nuovo#doc') {
@@ -182,8 +186,9 @@ try {
             const ai = p.locator('.docs .btn.primary');
             if (await ai.count()) { await ai.click(); await p.locator('.chip', { hasText: /Proposto|Proposé/ }).first().waitFor({ timeout: 20000 }).catch(() => {}); }
           }
-          const { bad, scrollers } = await p.evaluate(audit);
-          if ((process.env.SHOT_PATHS ?? '').split(',').includes(path)) await p.screenshot({ path: `${SHOTS}/view_${lang}_${w}_${path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`, fullPage: true });
+          const { bad: bad0, scrollers } = await p.evaluate(audit);
+          const bad = [...bad0, ...new Set(cerr)];
+          if (process.env.SHOT_PATHS === '*' || (process.env.SHOT_PATHS ?? '').split(',').includes(path)) await p.screenshot({ path: `${SHOTS}/view_${lang}_${w}_${path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`, fullPage: true });
           if (scrollers.length && w <= 412) scrolling.set(path, [...(scrolling.get(path) ?? []), `${lang} ${w}: ${scrollers.join('; ')}`]);
           if (bad.length) {
             total += bad.length;

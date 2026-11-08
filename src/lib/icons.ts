@@ -1,6 +1,7 @@
 // Pittogrammi approvati dal panel di design (7/11/2026): tratto 2, viewBox 24, solo contorno, colore dal testo.
 export const I = {
   income: 'M17 7L7 17M7 9v8h8',
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4',
   expense: 'M7 17L17 7M9 7h8v8',
   transfer: 'M4 8h13l-3-3M20 16H7l3 3',
   clip: 'M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.7 17.2a1.7 1.7 0 0 1-2.4-2.4L15 7',
