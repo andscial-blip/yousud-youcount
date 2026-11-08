@@ -3,6 +3,7 @@ import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
 import { toggleSetting } from './actions';
+import { ApiKeys } from '@/components/ApiKeys';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,10 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const { ok, err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
-  const { data } = await supabase.from('settings').select('key, value');
+  const [{ data }, { data: keys }] = await Promise.all([
+    supabase.from('settings').select('key, value'),
+    supabase.from('api_clients').select('id, name, key_prefix, created_at, last_used_at, revoked_at').order('created_at', { ascending: false }),
+  ]);
   const val = (k: string, def: boolean) => {
     const v = (data ?? []).find((s) => s.key === k)?.value;
     return v === undefined || v === null ? def : v === true;
@@ -54,6 +58,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           {lastBackup?.at && <p style={{ margin: 0 }}>{t('bk_last')}: <b>{new Date(lastBackup.at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })}</b> · {lastBackup.by}</p>}
           <div><a className="btn primary" href="/api/v1/backup"><Ico name="download" />{t('bk_btn')}</a></div>
         </div>
+      </Panel>
+      <Panel title={t('api_title')}>
+        <p className="panel-b muted" style={{ margin: 0, paddingBottom: 0 }}>{t('api_text')}</p>
+        <ApiKeys rows={keys ?? []} lang={lang} labels={{ name: t('api_name'), create: t('api_create'), shown: t('api_shown'), copy: t('api_copy'),
+          revoke: t('api_revoke'), revoked: t('api_revoked'), never: t('api_never'), last: t('api_last'), created: t('api_created'),
+          none: t('api_none'), prefix: t('api_prefix') }} />
       </Panel>
     </div>
   );

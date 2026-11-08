@@ -381,6 +381,15 @@ details.idle > summary { cursor: pointer; border-top: 1px solid var(--line-2); }
 .meter-row .meter.over i { background: var(--c-over); }
 .rec-tools { display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 0; }
 .rec-tools .btn { white-space: nowrap; flex: 0 0 auto; }
+/* scheletro di caricamento tra una pagina e l'altra */
+.sk { background: linear-gradient(90deg, var(--surface-2) 0%, var(--line-2) 50%, var(--surface-2) 100%); background-size: 200% 100%;
+  border-radius: var(--r); animation: sk 1.2s ease-in-out infinite; }
+.sk-title { height: 28px; width: 220px; }
+.sk-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.sk-card { height: 92px; }
+.sk-panel { height: 320px; }
+@keyframes sk { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 /* dettaglio movimento: importo in evidenza, dati, poi a lato giustificativi, storno e storico */
 .detail { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }

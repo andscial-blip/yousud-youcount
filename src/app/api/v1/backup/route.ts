@@ -16,7 +16,7 @@ const TABLES: [string, string[]][] = [
   ['category_groups', ['id']], ['categories', ['id']], ['projects', ['id']], ['project_members', ['project_id', 'user_id']],
   ['payment_methods', ['id']], ['counterparties', ['id']], ['counterparty_private', ['counterparty_id']], ['grants', ['id']],
   ['budget_lines', ['id']], ['documents', ['id']], ['movements', ['id']], ['movement_documents', ['movement_id', 'document_id']],
-  ['periods', ['org_id', 'year', 'month']], ['fx_rates', ['org_id', 'year', 'month']], ['cash_counts', ['id']], ['bank_reconciliations', ['id']], ['reconciliation_items', ['movement_id', 'side']],
+  ['periods', ['org_id', 'year', 'month']], ['fx_rates', ['org_id', 'year', 'month']], ['cash_counts', ['id']], ['bank_reconciliations', ['id']], ['api_clients', ['id']], ['reconciliation_items', ['movement_id', 'side']],
   ['audit_log', ['id']], ['sync_log', ['id']],
 ];
 const PAGE = 1000;   // PostgREST restituisce al massimo 1000 righe per richiesta
@@ -39,11 +39,13 @@ export async function GET() {
   for (const [table, pk] of TABLES) {
     const rows: Record<string, unknown>[] = [];
     for (let from = 0; ; from += PAGE) {
-      let q = supabase.from(table).select('*');
+      // api_clients: l'impronta delle chiavi non esce dal database (le chiavi si ricreano, non si ripristinano)
+      const sel: string = table === 'api_clients' ? 'id, org_id, name, key_prefix, scopes, created_by, created_at, last_used_at, revoked_at, revoked_by' : '*';
+      let q = supabase.from(table).select(sel);
       for (const k of pk) q = q.order(k, { ascending: true });
       const { data, error } = await q.range(from, from + PAGE - 1);
       if (error) return NextResponse.json({ error: `${table}: ${error.message}` }, { status: 500 });
-      rows.push(...(data ?? []));
+      rows.push(...((data ?? []) as unknown as Record<string, unknown>[]));
       if ((data ?? []).length < PAGE) break;
     }
     const cols = rows.length ? Object.keys(rows[0]) : [];

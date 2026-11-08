@@ -571,3 +571,36 @@ test('riconciliazione bancaria: spunta dell\'estratto, quadratura al centesimo, 
   // lo storico non si cancella dall'app
   await assert.rejects(as(U.admin, (q) => q('delete from public.bank_reconciliations where id = $1', [r.id])), /permission denied/);
 });
+
+test('collegamento con altre app: chiave mostrata una volta, sola lettura a pagine, niente bozze, revoca', async () => {
+  await assert.rejects(rpc(U.resp, 'create_api_client', 'App madre'), /forbidden/);
+  const k = await rpc(U.admin, 'create_api_client', 'App madre');
+  assert.match(k.key, /^yc_[0-9a-f]{64}$/);
+  const [row] = await sql('select key_hash, key_prefix from api_clients where id = $1', [k.id]);
+  assert.notEqual(row.key_hash, k.key, 'nel database solo l\'impronta');
+  assert.equal(row.key_prefix, k.key.slice(0, 10));
+  // l'app collegata non ha un utente (ruolo anon)
+  const anon = async (fn, ...a) => {
+    const c = await pool.connect();
+    try {
+      await c.query('set role anon');
+      return (await c.query(`select public.${fn}(${a.map((_, i) => `$${i + 1}`).join(',')}) as r`, a)).rows[0].r;
+    } finally { await c.query('reset role').catch(() => {}); c.release(); }
+  };
+  await assert.rejects(anon('api_read', 'yc_sbagliata', 'movements', null, null, 10), /unauthorized/);
+  await assert.rejects(anon('api_read', k.key, 'profiles', null, null, 10), /entità sconosciuta/);
+  const [{ n }] = await sql(`select count(*)::int n from movements where status <> 'draft'`);
+  let seen = 0, since = null, after = null, pages = 0;
+  do {
+    const r = await anon('api_read', k.key, 'movements', since, after, 7);
+    assert.ok(r.items.every((m) => m.status !== 'draft'), 'niente bozze');
+    seen += r.count; pages++;
+    since = r.next?.since ?? null; after = r.next?.after ?? null;
+  } while (since && pages < 100);
+  assert.equal(seen, n, 'tutte le pagine, nessun doppione');
+  const cps = await anon('api_read', k.key, 'counterparties', null, null, 1000);
+  assert.ok(cps.items.every((c) => !('iban' in c) && !('tax_code' in c)), 'niente dati personali');
+  // revoca: la chiave smette di funzionare
+  await rpc(U.admin, 'revoke_api_client', k.id);
+  await assert.rejects(anon('api_read', k.key, 'projects', null, null, 10), /unauthorized/);
+});

@@ -281,6 +281,7 @@ try {
     assert.equal(await p.getByRole('button', { name: 'Salva bozza' }).count(), 0);
     await p.getByRole('button', { name: 'Salva da rimborsare' }).click();
     await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
+    await p.locator('main [aria-busy=true]').waitFor({ state: 'detached' });
     assert.match(await p.locator('main').innerText(), /Da rimborsare[\s\S]*Operatore di prova/);
     const [m] = (await pool.query(`select status, reimb_status, account_id, paid_by, currency, amount::int from movements where description = 'PROVA taxi da rimborsare'`)).rows;
     assert.deepEqual(m, { status: 'draft', reimb_status: 'due', account_id: null, paid_by: 'Operatore di prova', currency: 'MGA', amount: 18000 });
@@ -572,6 +573,25 @@ try {
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 1);
     await submit(p.locator('tbody tr').last().getByRole('button', { name: 'Riapri' }));
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 0);
+  });
+  await check('collegamento con altre app: chiave creata in Impostazioni (mostrata una volta), API di sola lettura', async () => {
+    const p = sa.page;
+    await p.goto(`${base}/admin/impostazioni`);
+    await p.locator('input[name=name]').fill('App madre e2e');
+    await p.getByRole('button', { name: 'Crea chiave' }).click();
+    const key = (await p.locator('.note.ok code').innerText()).trim();
+    assert.match(key, /^yc_[0-9a-f]{64}$/);
+    const [{ n }] = (await pool.query(`select count(*)::int n from movements where status <> 'draft'`)).rows;
+    const r = await p.request.get(`${base}/api/v1/integrazione/movements?limit=1000`, { headers: { authorization: `Bearer ${key}` } });
+    assert.equal(r.status(), 200);
+    const body = await r.json();
+    assert.equal(body.count, n);
+    assert.equal(body.next, null);
+    assert.equal((await p.request.get(`${base}/api/v1/integrazione/movements`, { headers: { authorization: 'Bearer yc_sbagliata' } })).status(), 401);
+    assert.equal((await p.request.get(`${base}/api/v1/integrazione/profiles`, { headers: { authorization: `Bearer ${key}` } })).status(), 404);
+    await p.reload();
+    assert.equal(await p.locator('.note.ok code').count(), 0, 'la chiave non si rivede');
+    await p.getByText('App madre e2e').waitFor();
   });
   await check('backup completo: righe identiche al database per ogni tabella; vietato agli operatori', async () => {
     await sa.page.goto(`${base}/`);
