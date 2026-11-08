@@ -46,7 +46,11 @@ export default async function Reconciliation({ searchParams }: {
 
   const acc = conto ? accounts.find((a) => a.id === conto) : undefined;
   if (!acc) {
-    const rows = await Promise.all(accounts.map(async (a) => ({ a, s: status(a, await legsOf(a.id)) })));
+    const [rows, { data: bal }] = await Promise.all([
+      Promise.all(accounts.map(async (a) => ({ a, s: status(a, await legsOf(a.id)) }))),
+      supabase.rpc('account_balances'),
+    ]);
+    const appBal = new Map(((bal ?? []) as { account_id: string; balance: string }[]).map((b) => [b.account_id, Number(b.balance)]));
     return (
       <div className="stack">
         <PageHead title={t('nav_rec')} />
@@ -55,7 +59,7 @@ export default async function Reconciliation({ searchParams }: {
         <Panel>
           {rows.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('rec_no_accounts')}</p> : (
             <table className="t">
-              <thead><tr><th>{t('account')}</th><th>{t('rec_last')}</th><th className="r">{t('rec_balance')}</th>
+              <thead><tr><th>{t('account')}</th><th>{t('rec_last')}</th><th className="r">{t('rec_balance')}</th><th className="r">{t('rec_app_balance')}</th>
                 <th className="r">{t('rec_open')}</th><th /></tr></thead>
               <tbody>
                 {rows.map(({ a, s }) => (
@@ -63,6 +67,7 @@ export default async function Reconciliation({ searchParams }: {
                     <td><Link className="rowlink" href={`/riconciliazione?conto=${a.id}`}>{L(a)}</Link></td>
                     <td className="num">{s.last ? day(s.last) : <span className="muted">{t('rec_never')}</span>}</td>
                     <td className="r num nw">{money(s.balance, a.currency, lang)}</td>
+                    <td className="r num nw">{money(appBal.get(a.id) ?? null, a.currency, lang)}</td>
                     <td className="r num">{s.open.length}</td>
                     <td className="r"><Link className="btn" href={`/riconciliazione?conto=${a.id}`}>{t('rec_go')}</Link></td>
                   </tr>

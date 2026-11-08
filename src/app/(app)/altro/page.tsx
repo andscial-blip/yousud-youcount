@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { visible } from '@/lib/nav';
 import { Icon } from '@/components/Nav';
-import { PageHead } from '@/components/Page';
+import { PageHead, SearchBox } from '@/components/Page';
 import { SignOut } from '@/components/SignOut';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export default async function More() {
   return (
     <div className="stack">
       <PageHead title={t('nav_more')} />
+      <SearchBox action="/movimenti" value="" placeholder={t('search_mov')} clearLabel={t('search_clear')} />
       {groups.map((g) => (
         <div key={g.k} className="stack" style={{ gap: 12 }}>
           <h3 className="grp">{t(g.k)}</h3>
