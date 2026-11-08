@@ -413,6 +413,45 @@ try {
     assert.equal((await anon.request.get(`${base}/api/v1/export/movimenti`)).status(), 401);
     await anon.close();
   });
+  await check('rendiconto al finanziatore: Excel con riepilogo, spese con giustificativi ed entrate; vietato agli operatori', async () => {
+    const ExcelJS = require('exceljs');
+    const [{ id: org }] = (await pool.query('select id from organizations')).rows;
+    const [{ id: gid }] = (await pool.query(`insert into grants(org_id, title, code, amount, currency, start_date, end_date)
+      values ($1, 'PROVA bando scuola', 'PB-01', 10000, 'EUR', $2, $3) returning id`, [org, `${year}-01-01`, `${year}-12-31`])).rows;
+    // movimenti registrati (non verificati: quelli verificati non cambiano più), uno di spesa e uno di entrata
+    const pick = async (kind) => (await pool.query(`select id, description from movements where kind = $1 and status = 'recorded'
+      and reverses_id is null and extract(year from op_date) = $2 order by op_date limit 1`, [kind, year])).rows[0];
+    const e = await pick('expense'); const i = await pick('income');
+    assert.ok(e && i, 'movimenti registrati di prova');
+    await pool.query(`update movements set grant_id = $1 where id = any($2)`, [gid, [e.id, i.id]]);
+    const [{ spent, recv }] = (await pool.query(`select
+        coalesce(sum(amount_eur * sign) filter (where kind = 'expense'), 0)::float spent,
+        coalesce(sum(amount_eur * sign) filter (where kind = 'income'), 0)::float recv
+      from movements where grant_id = $1 and status <> 'draft'`, [gid])).rows;
+    assert.ok(spent > 0 && recv > 0, 'dati di prova');
+    // dalla pagina del finanziamento
+    await rs.page.goto(`${base}/finanziamenti/${gid}`);
+    const [dl] = await Promise.all([rs.page.waitForEvent('download'), rs.page.getByRole('button', { name: 'Scarica il rendiconto (Excel)' }).click()]);
+    assert.match(dl.suggestedFilename(), /^rendiconto-pb-01-/);
+    await dl.saveAs(`${SHOTS}/rendiconto_finanziatore.xlsx`);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(await dl.path());
+    assert.deepEqual(wb.worksheets.map((w) => w.name), ['Riepilogo', 'Spese', 'Entrate']);
+    const val = (ws, label) => { let v; ws.eachRow((r) => { if (r.getCell(1).value === label) v = r.getCell(2).value; }); return v; };
+    assert.equal(val(wb.getWorksheet('Riepilogo'), 'Speso nel periodo EUR'), spent);
+    assert.equal(val(wb.getWorksheet('Riepilogo'), 'Ricevuto nel periodo EUR'), recv);
+    const sp = []; wb.getWorksheet('Spese').eachRow((r) => sp.push(r.values.join('|')));
+    assert.ok(sp.some((x) => x.includes(e.description)), 'spesa elencata');
+    assert.ok(!sp.some((x) => x.includes(i.description)), 'entrata non tra le spese');
+    // periodo che esclude tutto: totali a zero
+    const r0 = await rs.page.request.get(`${base}/api/v1/export/finanziamento?id=${gid}&dal=${year - 1}-01-01&al=${year - 1}-01-31`);
+    const wb0 = new ExcelJS.Workbook(); await wb0.xlsx.load(await r0.body());
+    assert.equal(val(wb0.getWorksheet('Riepilogo'), 'Speso nel periodo EUR'), 0);
+    assert.equal((await op.page.request.get(`${base}/api/v1/export/finanziamento?id=${gid}`)).status(), 403);
+    assert.equal((await rs.page.request.get(`${base}/api/v1/export/finanziamento?id=${randomUUID()}`)).status(), 404);
+    await pool.query(`update movements set grant_id = null where grant_id = $1`, [gid]);
+    await pool.query(`delete from grants where id = $1`, [gid]);
+  });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;
     await p.goto(`${base}/`);

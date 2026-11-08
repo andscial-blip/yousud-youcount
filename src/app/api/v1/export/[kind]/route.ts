@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return NextResponse.json({ error: 'non autenticato' }, { status: 401 });
-  const { data: me } = await supabase.from('profiles').select('lang, active').eq('id', auth.user.id).maybeSingle();
+  const { data: me } = await supabase.from('profiles').select('lang, active, role').eq('id', auth.user.id).maybeSingle();
   if (!me?.active) return NextResponse.json({ error: 'account non attivo' }, { status: 403 });
   const fr = normLang(me.lang) === 'fr';
   const year = Number(req.nextUrl.searchParams.get('anno')) || new Date().getFullYear();
@@ -106,6 +106,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       : 'Bozza calcolata da YouCount dai movimenti registrati e verificati. Conformità da verificare con il commercialista.' });
     note.font = { color: { argb: 'FF5E6B7C' } };
     file = `${fr ? 'compte-de-caisse' : 'rendiconto'}-${year}.xlsx`;
+  } else if (kind === 'finanziamento') {
+    const r = await grantReport(supabase, req, fr, wb, me.role);
+    if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
+    file = r.file;
   } else {
     return NextResponse.json({ error: 'esportazione sconosciuta' }, { status: 404 });
   }
@@ -117,4 +121,145 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       'cache-control': 'no-store',
     },
   });
+}
+
+type Sb = Awaited<ReturnType<typeof createClient>>;
+type Nm = { name_it: string; name_fr: string | null } | null;
+
+// Rendiconto al finanziatore: entrate e spese collegate al finanziamento nel periodo scelto, per gruppo di budget,
+// con i giustificativi. Solo dati già in YouCount (movimenti registrati o verificati); nessuna regola di ripartizione.
+// /api/v1/export/finanziamento?id=<uuid>&dal=2026-01-01&al=2026-06-30
+async function grantReport(supabase: Sb, req: NextRequest, fr: boolean, wb: ExcelJS.Workbook, role: string) {
+  if (!['super_admin', 'admin', 'responsabile', 'read_only'].includes(role)) return { error: 'non disponibile per questo ruolo', status: 403 };
+  const sp = req.nextUrl.searchParams;
+  const id = sp.get('id') ?? '';
+  const iso = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+  const { data: g, error: ge } = await supabase.from('grants')
+    .select('id, title, code, currency, amount, start_date, end_date, donor:counterparties(name), project:projects(name)').eq('id', id).maybeSingle();
+  if (ge || !g) return { error: 'finanziamento non trovato', status: 404 };
+  const from = iso(sp.get('dal')) ?? g.start_date ?? null;
+  const to = iso(sp.get('al')) ?? g.end_date ?? null;
+  if (from && to && from > to) return { error: 'periodo non valido', status: 400 };
+
+  const sel = `id, ref, op_date, doc_date, kind, status, description, amount, currency, fx_rate, amount_eur, sign, no_doc_reason,
+    category:categories(code, name_it, name_fr, group_id), counterparty:counterparties(name), docs:movement_documents(document:documents(file_name, doc_number))`;
+  let q = supabase.from('movements').select(sel).eq('grant_id', id).neq('status', 'draft').in('kind', ['income', 'expense']);
+  if (from) q = q.gte('op_date', from);
+  if (to) q = q.lte('op_date', to);
+  const [{ data: moves, error: me }, { data: allExp }, { data: groups }, { data: budget }] = await Promise.all([
+    q.order('op_date').order('ref').limit(20000),
+    // speso dall'inizio fino alla fine del periodo, per il residuo
+    (to ? supabase.from('movements').select('amount_eur, sign, category:categories(group_id)').lte('op_date', to)
+      : supabase.from('movements').select('amount_eur, sign, category:categories(group_id)'))
+      .eq('grant_id', id).eq('kind', 'expense').neq('status', 'draft').limit(50000),
+    supabase.from('category_groups').select('id, code, name_it, name_fr, sort').eq('direction', 'out').order('sort'),
+    supabase.from('budget_lines').select('group_id, amount_eur').eq('grant_id', id),
+  ]);
+  if (me) return { error: me.message, status: 400 };
+  type Cat = { code: string; name_it: string; name_fr: string | null; group_id: string | null } | null;
+  type Doc = { document: { file_name: string | null; doc_number: string | null } | null };
+  const L = (o: Nm) => (!o ? '' : fr && o.name_fr ? o.name_fr : o.name_it);
+  const S = fr ? { recorded: 'À vérifier', verified: 'Vérifié' } : { recorded: 'Da verificare', verified: 'Verificato' };
+  const rows = (moves ?? []).map((m) => ({ ...m, cat: m.category as unknown as Cat, docs: (m.docs ?? []) as unknown as Doc[] }));
+  const exp = rows.filter((m) => m.kind === 'expense');
+  const inc = rows.filter((m) => m.kind === 'income');
+  const eur = (m: { amount_eur: string | number | null; sign: number }) => (m.amount_eur === null ? 0 : Number(m.amount_eur) * m.sign);
+  const sum = (a: { amount_eur: string | number | null; sign: number }[]) => Math.round(a.reduce((s, m) => s + eur(m), 0) * 100) / 100;
+  const gname = new Map((groups ?? []).map((x) => [x.id, `${x.code} ${L(x)}`]));
+  const day = (d: string | null) => (d ? d.split('-').reverse().join('/') : '–');
+  const donor = (g.donor as unknown as { name: string } | null)?.name ?? '';
+  const project = (g.project as unknown as { name: string } | null)?.name ?? '';
+
+  // ---- riepilogo
+  const ws = sheet(wb, fr ? 'Synthèse' : 'Riepilogo', [
+    { header: fr ? 'Groupe de dépenses' : 'Gruppo di spesa', key: 'g', width: 44 },
+    { header: fr ? 'Budget EUR' : 'Preventivo EUR', key: 'b', width: 16, fmt: '#,##0.00' },
+    { header: fr ? 'Dépensé sur la période EUR' : 'Speso nel periodo EUR', key: 'p', width: 20, fmt: '#,##0.00' },
+    { header: fr ? 'Dépensé cumulé EUR' : 'Speso dall’inizio EUR', key: 'c', width: 21, fmt: '#,##0.00' },
+    { header: fr ? '% du budget' : '% del preventivo', key: 'pc', width: 17, fmt: '0.0%' },
+    { header: fr ? 'Reste EUR' : 'Residuo EUR', key: 'r', width: 16, fmt: '#,##0.00' },
+  ]);
+  ws.spliceRows(1, 0, [], [], [], [], [], [], [], [], [], []);
+  ws.views = [{ state: 'frozen', ySplit: 11 }];
+  const info: [string, string | number][] = [
+    [fr ? 'Financement' : 'Finanziamento', `${g.title}${g.code ? ` (${g.code})` : ''}`],
+    [fr ? 'Bailleur' : 'Finanziatore', donor || '–'],
+    [fr ? 'Projet' : 'Progetto', project || '–'],
+    [fr ? 'Durée du financement' : 'Durata del finanziamento', `${day(g.start_date)} – ${day(g.end_date)}`],
+    [fr ? 'Période du rapport' : 'Periodo del rendiconto', `${day(from)} – ${day(to)}`],
+    [fr ? `Montant accordé (${g.currency})` : `Importo concesso (${g.currency})`, g.amount ? Number(g.amount) : '–'],
+    [fr ? 'Reçu sur la période EUR' : 'Ricevuto nel periodo EUR', sum(inc)],
+    [fr ? 'Dépensé sur la période EUR' : 'Speso nel periodo EUR', sum(exp)],
+  ];
+  info.forEach(([k, v], i) => {
+    const row = ws.getRow(i + 1);
+    row.getCell(1).value = k; row.getCell(1).font = { bold: true, color: { argb: 'FF16324F' } };
+    row.getCell(2).value = v; row.getCell(2).alignment = { horizontal: 'left' };
+    if (typeof v === 'number') row.getCell(2).numFmt = '#,##0.00';
+  });
+  const bud = new Map<string, number>();
+  for (const b of budget ?? []) bud.set(b.group_id, (bud.get(b.group_id) ?? 0) + Number(b.amount_eur));
+  const per = new Map<string, number>(); const cum = new Map<string, number>();
+  for (const m of exp) { const k = m.cat?.group_id ?? '-'; per.set(k, (per.get(k) ?? 0) + eur(m)); }
+  for (const m of allExp ?? []) {
+    const k = (m.category as unknown as { group_id: string | null } | null)?.group_id ?? '-';
+    cum.set(k, (cum.get(k) ?? 0) + eur(m as { amount_eur: string | number | null; sign: number }));
+  }
+  const keys = [...(groups ?? []).map((x) => x.id), '-'].filter((k) => bud.has(k) || per.has(k) || cum.has(k));
+  let tb = 0, tp = 0, tc = 0;
+  for (const k of keys) {
+    const b = bud.get(k) ?? 0, p = per.get(k) ?? 0, c = cum.get(k) ?? 0;
+    tb += b; tp += p; tc += c;
+    ws.addRow({ g: k === '-' ? (fr ? 'Sans code' : 'Senza codice') : gname.get(k) ?? k, b: b || null, p, c,
+      pc: b ? c / b : null, r: b ? b - c : null });
+  }
+  const tr = ws.addRow({ g: fr ? 'Total' : 'Totale', b: tb || null, p: tp, c: tc, pc: tb ? tc / tb : null, r: tb ? tb - tc : null });
+  tr.font = { bold: true }; tr.eachCell((c) => { c.fill = SECT; });
+  ws.addRow({});
+  const nd = exp.filter((m) => m.docs.length === 0).length;
+  const nv = rows.filter((m) => m.status !== 'verified').length;
+  const notes = [
+    fr ? 'Montants en EUR au taux enregistré sur chaque mouvement; les extournes sont déduites.'
+      : 'Importi in EUR al tasso registrato su ciascun movimento; gli storni sono sottratti.',
+    nv ? (fr ? `${nv} mouvement(s) pas encore vérifié(s) : voir la colonne Statut.` : `${nv} movimento/i non ancora verificato/i: vedi la colonna Stato.`) : '',
+    nd ? (fr ? `${nd} dépense(s) sans pièce justificative jointe : voir la colonne Justificatifs.` : `${nd} spesa/e senza giustificativo allegato: vedi la colonna Giustificativi.`) : '',
+    fr ? 'Document préparé par YouCount : à contrôler avant l’envoi au bailleur.' : 'Documento preparato da YouCount: da controllare prima dell’invio al finanziatore.',
+  ].filter(Boolean);
+  for (const n of notes) ws.addRow({ g: n }).font = { color: { argb: 'FF5E6B7C' } };
+
+  // ---- spese ed entrate
+  const detail = (name: string, list: typeof rows, withDocs: boolean) => {
+    const d = sheet(wb, name, [
+      { header: 'N.', key: 'n', width: 5 }, { header: fr ? 'Réf.' : 'Rif.', key: 'ref', width: 14 },
+      { header: fr ? 'Date (caisse)' : 'Data (cassa)', key: 'date', width: 12, fmt: 'dd/mm/yyyy' },
+      { header: fr ? 'Date du document' : 'Data documento', key: 'dd', width: 13, fmt: 'dd/mm/yyyy' },
+      { header: fr ? 'Description' : 'Descrizione', key: 'desc', width: 38 }, { header: fr ? 'Tiers' : 'Controparte', key: 'cp', width: 22 },
+      { header: fr ? 'Code' : 'Codice', key: 'code', width: 8 }, { header: fr ? 'Libellé' : 'Voce', key: 'cn', width: 30 },
+      ...(withDocs ? [{ header: fr ? 'Groupe' : 'Gruppo', key: 'grp', width: 26 }] : []),
+      { header: fr ? 'Devise' : 'Valuta', key: 'cur', width: 7 }, { header: fr ? 'Montant' : 'Importo', key: 'amt', width: 15, fmt: '#,##0.00' },
+      { header: fr ? 'Taux' : 'Tasso', key: 'rate', width: 9, fmt: '#,##0' }, { header: fr ? 'Montant EUR' : 'Importo EUR', key: 'eur', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Statut' : 'Stato', key: 'st', width: 13 },
+      ...(withDocs ? [{ header: fr ? 'Justificatifs' : 'Giustificativi', key: 'docs', width: 44 }] : []),
+    ]);
+    list.forEach((m, i) => {
+      const files = m.docs.map((x) => x.document?.file_name || x.document?.doc_number).filter(Boolean).join(' · ');
+      d.addRow({
+        n: i + 1, ref: m.ref ?? '', date: new Date(m.op_date), dd: m.doc_date ? new Date(m.doc_date) : null,
+        desc: m.description + (m.sign < 0 ? (fr ? ' (extourne)' : ' (storno)') : ''),
+        cp: (m.counterparty as unknown as { name: string } | null)?.name ?? '', code: m.cat?.code ?? '', cn: L(m.cat),
+        grp: m.cat?.group_id ? gname.get(m.cat.group_id) ?? '' : '', cur: m.currency, amt: Number(m.amount) * m.sign,
+        rate: m.fx_rate ? Number(m.fx_rate) : null, eur: eur(m), st: S[m.status as keyof typeof S] ?? m.status,
+        docs: files || (m.no_doc_reason ? `${fr ? 'manquant' : 'manca'}: ${m.no_doc_reason}` : fr ? 'aucun' : 'nessuno'),
+      });
+    });
+    const t = d.addRow({ desc: fr ? 'Total' : 'Totale', eur: sum(list) });
+    t.font = { bold: true };
+    d.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: d.columnCount } };
+  };
+  detail(fr ? 'Dépenses' : 'Spese', exp, true);
+  detail(fr ? 'Recettes' : 'Entrate', inc, false);
+  // stampa: orizzontale, tutte le colonne in una pagina di larghezza
+  for (const w of wb.worksheets) w.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+  const slug = (g.code || g.title).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'finanziamento';
+  return { file: `${fr ? 'rapport' : 'rendiconto'}-${slug}-${from ?? 'inizio'}_${to ?? 'oggi'}.xlsx` };
 }

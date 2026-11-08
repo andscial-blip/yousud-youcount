@@ -180,6 +180,8 @@ const it = {
   rec_tick_none: 'Togli tutte le spunte', rec_neg: 'Saldo negativo: scrivi il segno meno davanti.', rec_chip: 'Spuntato',
   rec_cash_hint: 'Le casse si controllano con la conta di cassa, nella pagina Conti.', rec_fill: 'Inserisci data e saldo dell’estratto.',
   err_unbalanced: 'Il saldo non quadra con l’estratto.',
+  gr_title: 'Rendiconto al finanziatore', gr_from: 'Dal', gr_to: 'Al', gr_download: 'Scarica il rendiconto (Excel)',
+  gr_text: 'Entrate e spese collegate a questo finanziamento nel periodo scelto: riepilogo per gruppo di spesa con preventivo e residuo, elenco delle spese con i giustificativi, elenco delle entrate. Solo movimenti registrati o verificati.',
   err_reconciled: 'Movimento spuntato in una riconciliazione bancaria: importo, conto, data e stato non si modificano. Un amministratore può annullare l’ultima riconciliazione.',
 };
 
@@ -344,6 +346,8 @@ const fr: Record<Key, string> = {
   rec_tick_none: 'Tout décocher', rec_neg: 'Solde négatif : écrivez le signe moins devant.', rec_chip: 'Coché',
   rec_cash_hint: 'Les caisses se contrôlent avec le comptage de caisse, dans la page Comptes.', rec_fill: 'Saisissez la date et le solde du relevé.',
   err_unbalanced: 'Le solde ne correspond pas au relevé.',
+  gr_title: 'Rapport au bailleur', gr_from: 'Du', gr_to: 'Au', gr_download: 'Télécharger le rapport (Excel)',
+  gr_text: 'Recettes et dépenses liées à ce financement sur la période choisie : synthèse par groupe de dépenses avec budget et reste, liste des dépenses avec les justificatifs, liste des recettes. Seulement les mouvements comptabilisés ou vérifiés.',
   err_reconciled: 'Mouvement coché dans un rapprochement bancaire : montant, compte, date et statut ne se modifient pas. Un administrateur peut annuler le dernier rapprochement.',
 };
 

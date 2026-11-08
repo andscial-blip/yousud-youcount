@@ -43,6 +43,19 @@ export default async function GrantDetail({ params, searchParams }: {
         </dl>
       </Panel>
       {staff && (
+        <Panel title={t('gr_title')} pad>
+          <p className="muted" style={{ marginTop: 0 }}>{t('gr_text')}</p>
+          <form className="gr-form" method="get" action="/api/v1/export/finanziamento">
+            <input type="hidden" name="id" value={g.id} />
+            <label className="field"><span className="flabel">{t('gr_from')}</span>
+              <input className="input" type="date" name="dal" defaultValue={g.start_date ?? ''} /></label>
+            <label className="field"><span className="flabel">{t('gr_to')}</span>
+              <input className="input" type="date" name="al" defaultValue={g.end_date ?? ''} /></label>
+            <button className="btn primary" type="submit">{t('gr_download')}</button>
+          </form>
+        </Panel>
+      )}
+      {staff && (
         <Panel title={t('b_title')} pad>
           <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang}
                        edit={can(me, RESP) ? { scope: 'grant', id, back: `/finanziamenti/${id}` } : undefined} />
