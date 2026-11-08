@@ -14,13 +14,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const { anno, pw } = await searchParams;
   const year = Number(anno) || new Date().getFullYear();
   const { supabase, me, t, lang } = await requireMe();
-  const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }] = await Promise.all([
+  const isAdmin = ['super_admin', 'admin'].includes(me!.role);
+  const [{ data, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id),
     supabase.from('v_ledger').select('month, kind, amount_eur, project_id, project_name').eq('year', year).neq('kind', 'transfer')
       .limit(50000).returns<L[]>(),
+    isAdmin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  // piano gratuito di Supabase senza backup automatici: promemoria settimanale per gli amministratori
+  const backupAt = (lastBackup?.value as { at?: string } | null)?.at;
+  const backupDays = backupAt ? Math.floor((Date.now() - new Date(backupAt).getTime()) / 86400000) : null;
+  const backupDue = isAdmin && (backupDays === null || backupDays >= 7);
   const months = Array.from({ length: 12 }, () => ({ inc: 0, out: 0 }));
   const byProject = new Map<string, { label: string; value: number; href: string }>();
   for (const l of ledger ?? []) {
@@ -51,6 +57,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       </PageHead>
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
+      {backupDue && (
+        <div className="note warn">
+          {backupDays === null ? t('bk_never') : t('bk_due').replace('{n}', String(backupDays))}{' '}
+          <Link href="/admin/impostazioni">{t('bk_go')}</Link>
+        </div>
+      )}
       <ErrorNote prefix={t('error_load')} error={error} />
       <section className="kpis">
         <div className="kpi it"><span className="kh"><span className="ki"><Ico name="wallet" size={18} /></span><span className="l">{t('dash_it')}</span> <Place loc="IT" label={t('italy')} /></span>

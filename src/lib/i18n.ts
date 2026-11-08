@@ -155,7 +155,9 @@ const it = {
   q_edit_offline: 'Per modificare un movimento già registrato serve la rete.', q_files: 'giustificativi',
   q_signout_warn: 'Ci sono movimenti salvati sul telefono e non ancora inviati. Se esci adesso andranno persi. Uscire comunque?',
   q_server_log: 'Ultimi invii ricevuti dal server', q_no_ai: 'Senza rete la lettura IA non è disponibile: compila i campi a mano.',
-  bk_title: 'Backup dei dati', bk_btn: 'Scarica backup completo',
+  bk_title: 'Backup dei dati', bk_btn: 'Scarica backup completo', bk_go: 'Scarica il backup',
+  bk_never: 'Non è ancora stato fatto un backup dei dati: scaricalo e salvalo nel Drive condiviso di YouSud.',
+  bk_due: 'Ultimo backup dei dati {n} giorni fa: scaricane uno nuovo e salvalo nel Drive condiviso di YouSud.', bk_last: 'Ultimo backup',
   bk_text: 'Tutti i dati dell’app (movimenti, conti, piano dei conti, progetti, controparti, registro delle modifiche) in un file Excel, un foglio per tabella. Conservalo nel Drive condiviso di YouSud. I file dei giustificativi restano nell’archivio dell’app: il foglio documents ne elenca percorso e impronta.',
 };
 
@@ -295,7 +297,9 @@ const fr: Record<Key, string> = {
   q_edit_offline: 'Pour modifier un mouvement déjà enregistré, il faut le réseau.', q_files: 'pièces',
   q_signout_warn: 'Des mouvements enregistrés sur le téléphone n’ont pas encore été envoyés. Si vous vous déconnectez maintenant, ils seront perdus. Se déconnecter quand même ?',
   q_server_log: 'Derniers envois reçus par le serveur', q_no_ai: 'Sans réseau, la lecture IA n’est pas disponible : remplissez les champs à la main.',
-  bk_title: 'Sauvegarde des données', bk_btn: 'Télécharger la sauvegarde complète',
+  bk_title: 'Sauvegarde des données', bk_btn: 'Télécharger la sauvegarde complète', bk_go: 'Télécharger la sauvegarde',
+  bk_never: 'Aucune sauvegarde des données n’a encore été faite : téléchargez-la et conservez-la dans le Drive partagé de YouSud.',
+  bk_due: 'Dernière sauvegarde des données il y a {n} jours : téléchargez-en une nouvelle et conservez-la dans le Drive partagé de YouSud.', bk_last: 'Dernière sauvegarde',
   bk_text: 'Toutes les données de l’app (mouvements, comptes, plan comptable, projets, tiers, journal des modifications) dans un fichier Excel, une feuille par table. Conservez-le dans le Drive partagé de YouSud. Les fichiers des pièces restent dans l’archive de l’app : la feuille documents indique leur chemin et leur empreinte.',
 };
 

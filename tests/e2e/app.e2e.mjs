@@ -413,6 +413,8 @@ try {
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 0);
   });
   await check('backup completo: righe identiche al database per ogni tabella; vietato agli operatori', async () => {
+    await sa.page.goto(`${base}/`);
+    await sa.page.getByText('Non è ancora stato fatto un backup', { exact: false }).waitFor();
     const res = await sa.page.request.get(`${base}/api/v1/backup`);
     assert.equal(res.status(), 200);
     assert.match(res.headers()['content-disposition'], /YouCount-backup-\d{8}-\d{4}\.xlsx/);
@@ -425,12 +427,18 @@ try {
       const n = info.getRow(r).getCell(2).value;
       if (typeof n !== 'number') break;
       const db = (await pool.query(`select count(*)::int n from public.${table}`)).rows[0].n;
-      assert.equal(n, db, `righe di ${table}`);
+      // la data del backup (settings, e la sua traccia in audit_log) si registra dopo l'esportazione
+      assert.ok(n === db || (['settings', 'audit_log'].includes(table) && n === db - 1), `righe di ${table}: ${n} contro ${db}`);
       assert.equal(Math.max(0, wb.getWorksheet(table).rowCount - 1), n, `foglio ${table}`);
       tables++;
     }
     assert.equal(tables, 22);
     assert.equal((await op.page.request.get(`${base}/api/v1/backup`)).status(), 403);
+    // dopo il backup il promemoria sparisce e Impostazioni mostra la data
+    await sa.page.goto(`${base}/`);
+    assert.equal(await sa.page.getByText('backup dei dati', { exact: false }).count(), 0);
+    await sa.page.goto(`${base}/admin/impostazioni`);
+    await sa.page.getByText('Ultimo backup:', { exact: false }).waitFor();
   });
   await check('super admin: pagine di amministrazione e lingua francese', async () => {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],

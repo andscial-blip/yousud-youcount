@@ -14,13 +14,14 @@ const ROWS: { key: string; label: Key; def: boolean }[] = [
 
 export default async function Settings({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
   const { ok, err } = await searchParams;
-  const { supabase, me, t } = await requireMe();
+  const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
   const { data } = await supabase.from('settings').select('key, value');
   const val = (k: string, def: boolean) => {
     const v = (data ?? []).find((s) => s.key === k)?.value;
     return v === undefined || v === null ? def : v === true;
   };
+  const lastBackup = (data ?? []).find((s) => s.key === 'last_backup')?.value as { at?: string; by?: string } | undefined;
   return (
     <div className="stack" style={{ maxWidth: 920 }}>
       <PageHead title={t('nav_settings')} />
@@ -50,6 +51,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       <Panel title={t('bk_title')}>
         <div className="panel-b stack" style={{ gap: 12 }}>
           <p className="muted" style={{ margin: 0 }}>{t('bk_text')}</p>
+          {lastBackup?.at && <p style={{ margin: 0 }}>{t('bk_last')}: <b>{new Date(lastBackup.at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })}</b> · {lastBackup.by}</p>}
           <div><a className="btn primary" href="/api/v1/backup"><Ico name="download" />{t('bk_btn')}</a></div>
         </div>
       </Panel>

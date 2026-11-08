@@ -13,6 +13,11 @@
 | Coda offline, backup scaricabile, schermata d'apertura, scansione nuova | online |
 | Email (inviti, reimpostazione password) | mittente predefinito Supabase: arriva solo ai membri del progetto; serve un SMTP |
 
+## Da fare prima del lancio al team
+
+- Email: oggi partono dal Gmail di Andrea (SMTP smtp.gmail.com, password per le app). **Dopo i test completi: passare a un mittente con dominio yousud** (es. Resend con DNS di yousud.it, mittente no-reply@yousud.it).
+- Piano Supabase gratuito: niente backup automatici → scaricare ogni settimana il backup da Impostazioni e salvarlo nel Drive condiviso di YouSud (la dashboard lo ricorda agli amministratori).
+
 ## Prove automatiche
 
 `npm run test:db` (29) · `test:unit` (16) · `test:e2e` (24) · `test:offline` (6, build di produzione) ·

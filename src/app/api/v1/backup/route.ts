@@ -27,7 +27,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return NextResponse.json({ error: 'non autenticato' }, { status: 401 });
-  const { data: me } = await supabase.from('profiles').select('role, active').eq('id', auth.user.id).maybeSingle();
+  const { data: me } = await supabase.from('profiles').select('role, active, org_id').eq('id', auth.user.id).maybeSingle();
   if (!me?.active || !['super_admin', 'admin'].includes(me.role)) return NextResponse.json({ error: 'solo amministratori' }, { status: 403 });
 
   const wb = new ExcelJS.Workbook();
@@ -66,6 +66,9 @@ export async function GET() {
   info.addRow({ table: 'Nota', rows: null, sha256: 'I file dei giustificativi non sono inclusi: il foglio documents ne elenca percorso nello Storage e impronta.' });
 
   const buf = await wb.xlsx.writeBuffer();
+  // data dell'ultimo backup: la dashboard ricorda agli amministratori di rifarlo dopo 7 giorni
+  await supabase.from('settings').upsert({ org_id: me.org_id, key: 'last_backup', value: { at: now.toISOString(), by: auth.user.email },
+    updated_by: auth.user.id, updated_at: now.toISOString() });
   const stamp = now.toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/^(\d{8})(\d{4})$/, '$1-$2');
   return new NextResponse(buf as ArrayBuffer, {
     headers: {
