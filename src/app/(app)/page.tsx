@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireMe } from '@/lib/session';
+import { STAFF, can, requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { ErrorNote, PageHead, Panel, Empty } from '@/components/Page';
 import { BalancesTable, type Balance } from '@/components/Balances';
@@ -42,10 +42,28 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       }
     }
   }
+  // autonomia di cassa (solo staff): liquidità meno rimborsi dovuti, divisa per la spesa media degli ultimi 3 mesi chiusi
+  const staff = can(me, STAFF);
+  const now = new Date();
+  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const cfFrom = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+  const cfTo = new Date(now.getFullYear(), now.getMonth(), 0);
+  const [{ data: rate }, { data: spent3 }, { data: dueRows }] = staff ? await Promise.all([
+    supabase.rpc('fx_rate_for', { p_date: ymd(now) }),
+    supabase.from('v_ledger').select('amount_eur').eq('kind', 'expense').gte('op_date', ymd(cfFrom)).lte('op_date', ymd(cfTo)).limit(50000),
+    supabase.from('movements').select('amount, currency, amount_eur').eq('reimb_status', 'due').limit(5000),
+  ]) : [{ data: null }, { data: null }, { data: null }];
+  const fx = rate ? Number(rate) : null;
   const projects = [...byProject.values()].filter((p) => p.value > 0).sort((a, b) => b.value - a.value).slice(0, 8);
   const rows = (data ?? []) as Balance[];
   const total = (cur: string) => rows.filter((r) => r.currency === cur && r.kind !== 'advance')
     .reduce((s, r) => s + Number(r.balance), 0);
+  const toEur = (v: number, cur: string) => (cur === 'EUR' ? v : fx ? v / fx : 0);
+  const liq = total('EUR') + toEur(total('MGA'), 'MGA');
+  const due = (dueRows ?? []).reduce((s, d) => s + (d.amount_eur !== null ? Number(d.amount_eur) : toEur(Number(d.amount), d.currency)), 0);
+  const burn = (spent3 ?? []).reduce((s, l) => s + Number(l.amount_eur ?? 0), 0) / 3;
+  const runway = burn > 0 ? (liq - due) / burn : null;
+  const mon = (d: Date) => d.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'it-IT', { month: 'short', year: 'numeric' });
 
   return (
     <div className="stack">
@@ -90,6 +108,20 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {projects.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <HBars rows={projects} lang={lang} />}
         </Panel>
       </div>
+      {staff && (
+        <Panel title={t('cf_title')}>
+          <div className="figs">
+            <div><span>{t('cf_liq')}</span><b className="num">{money(liq, 'EUR', lang)}</b></div>
+            <div><span>{t('cf_due')}</span><b className="num">{due ? `−${money(due, 'EUR', lang)}` : money(0, 'EUR', lang)}</b></div>
+            <div><span>{t('cf_burn')}</span><b className="num">{money(burn, 'EUR', lang)}</b></div>
+            <div className={runway === null ? '' : runway < 3 ? 'bad' : 'ok'}><span>{t('cf_runway')}</span>
+              <b className="num">{runway === null ? '–' : new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 }).format(runway)}</b></div>
+          </div>
+          <p className="panel-b muted" style={{ margin: 0, fontSize: 13 }}>
+            {fx ? t('cf_note').replace('{rate}', `${money(fx, 'MGA', lang).replace(/\s?MGA$/, '')} MGA/EUR`)
+              .replace('{from}', mon(cfFrom)).replace('{to}', mon(cfTo)) : t('cf_norate')}</p>
+        </Panel>
+      )}
       <Panel title={t('balances')}>
         {rows.length === 0 ? <Empty text={t('none')} /> : <BalancesTable rows={rows} t={t} lang={lang} />}
       </Panel>

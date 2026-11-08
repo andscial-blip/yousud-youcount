@@ -457,6 +457,14 @@ try {
     await p.goto(`${base}/`);
     assert.ok(await p.locator('figure svg rect').count() >= 24, 'barre mensili');
     assert.match(await p.locator('main').innerText(), /Uscite per progetto/);
+    // autonomia di cassa: spesa media degli ultimi 3 mesi chiusi uguale al database
+    const panel = p.locator('section.panel', { hasText: 'Autonomia di cassa' });
+    const [{ burn }] = (await pool.query(`select coalesce(sum(amount_eur), 0)::float / 3 burn from v_ledger where kind = 'expense'
+      and op_date >= date_trunc('month', current_date) - interval '3 months' and op_date < date_trunc('month', current_date)`)).rows;
+    const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
+    assert.match(await panel.innerText(), new RegExp(`Spesa media mensile\\s*${fmtEur.format(burn).replace(/[.\u00a0\u202f ]/g, '.?\\s?')}`));
+    const opDash = await op.page.goto(`${base}/`).then(() => op.page.locator('main').innerText());
+    assert.doesNotMatch(opDash, /Autonomia di cassa/, 'operatore: non vede l\'autonomia di cassa');
     await p.screenshot({ path: `${SHOTS}/resp_dashboard.png`, fullPage: true });
     await p.goto(`${base}/rendiconto?anno=${year}&modello=E`);
     const txt = await p.locator('main').innerText();

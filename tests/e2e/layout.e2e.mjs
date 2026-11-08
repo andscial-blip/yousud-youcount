@@ -132,9 +132,9 @@ try {
     '/verifica', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro'];
-  // ONLY_PATHS=/a,/b: controlla solo le pagine il cui percorso inizia così (prova rapida di una sezione nuova)
+  // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri) — prova rapida di una sezione nuova
   const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
-  if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x.startsWith(o))));
+  if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`))));
   for (const lang of LANGS) {
     await pool.query('update profiles set lang = $1 where id = $2', [lang, S.sa]);
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
