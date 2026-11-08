@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ADMIN, can, requireMe } from '@/lib/session';
 import { nm } from '@/lib/format';
-import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Denied, ErrorNote, PageHead, Panel, SearchBox } from '@/components/Page';
 import { EditRow, F, Flash, Hidden, SaveBar } from '@/components/Admin';
 import { saveRow } from '../actions';
 
@@ -14,8 +14,9 @@ type RL = { key: string; section_it: string; name_it: string; name_fr: string };
 
 // Il piano dei conti è quello del Gestionale (versione codici 2): qui si correggono nomi, riga del rendiconto
 // e stato. Il codice di una voce esistente non si cambia.
-export default async function Chart({ searchParams }: { searchParams: Promise<{ dir?: string; ok?: string; err?: string }> }) {
-  const { dir: d, ok, err } = await searchParams;
+export default async function Chart({ searchParams }: { searchParams: Promise<{ dir?: string; ok?: string; err?: string; q?: string }> }) {
+  const { dir: d, ok, err, q: q0 = '' } = await searchParams;
+  const term = q0.trim().slice(0, 60).toLowerCase();
   const dir = d === 'in' ? 'in' : 'out';
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
@@ -26,7 +27,8 @@ export default async function Chart({ searchParams }: { searchParams: Promise<{ 
     supabase.from('category_groups').select('id, code, name_it, name_fr').eq('direction', dir).order('sort').returns<G[]>(),
     supabase.from('report_lines').select('key, section_it, name_it, name_fr').eq('direction', dir).order('sort').returns<RL[]>(),
   ]);
-  const groups = Object.values((data ?? []).reduce<Record<string, C[]>>((acc, c) => {
+  const groups = Object.values((data ?? []).filter((c) => !term || [c.code, c.name_it, c.name_fr, c.group?.name_it].some((x) => x?.toLowerCase().includes(term)))
+    .reduce<Record<string, C[]>>((acc, c) => {
     (acc[c.group?.code ?? '-'] ||= []).push(c);
     return acc;
   }, {}));
@@ -46,6 +48,8 @@ export default async function Chart({ searchParams }: { searchParams: Promise<{ 
         </div>
       </PageHead>
       <p className="muted" style={{ margin: 0 }}>{t('admin_readonly')}</p>
+      <SearchBox action="/admin/piano-conti" value={q0} placeholder={t('search_chart')} clearLabel={t('search_clear')} hidden={{ dir }} />
+      {term && groups.length === 0 && <p className="muted" style={{ margin: 0 }}>{t('empty_search_generic')}</p>}
       <Flash ok={ok} err={err} okText={t('saved')} />
       <ErrorNote prefix={t('error_load')} error={error} />
       {groups.map((g) => (

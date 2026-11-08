@@ -345,6 +345,21 @@ select.input { appearance: auto; }
 .search { display: flex; align-items: center; gap: 8px; position: relative; }
 .search > svg { position: absolute; left: 11px; color: var(--muted); pointer-events: none; }
 .search .input { padding-left: 34px; max-width: 460px; }
+.filters { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px; }
+.filters > .search { flex: 1 1 260px; }
+.filters .search .input { max-width: none; }
+.filters .more { flex: 1 1 100%; order: 3; }
+.filters .more > summary { list-style: none; display: inline-flex; }
+.filters .more > summary::-webkit-details-marker { display: none; }
+.filter-grid { display: grid; gap: 10px 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-top: 8px; }
+tr.row-next td { background: color-mix(in srgb, var(--sky-bg) 60%, transparent); }
+.todo { border: 1px solid var(--line-2); border-left: 4px solid var(--sky); background: var(--surface); border-radius: var(--r); padding: 10px 16px; }
+.todo h2 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.todo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.todo li { display: flex; align-items: flex-start; gap: 8px; }
+.todo li > svg { color: var(--slate-2); margin-top: 2px; }
+.todo a { font-weight: 600; }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 /* dettaglio movimento: importo in evidenza, dati, poi a lato giustificativi, storno e storico */
 .detail { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 1000px) { .detail { grid-template-columns: minmax(0, 1fr) minmax(0, 380px); } }

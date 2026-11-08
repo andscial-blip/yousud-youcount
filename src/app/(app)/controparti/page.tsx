@@ -1,5 +1,5 @@
 import { can, requireMe, RESP, type Role } from '@/lib/session';
-import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Empty, ErrorNote, PageHead, Panel, SearchBox } from '@/components/Page';
 import { EditRow, F, Flash, Hidden, SaveBar } from '@/components/Admin';
 import { saveCounterpartyPrivate, saveRow } from '../admin/actions';
 
@@ -13,15 +13,17 @@ type Priv = { counterparty_id: string; tax_code: string | null; email: string | 
 
 // Il nome è visibile a tutti; codice fiscale, contatti e IBAN stanno in una tabella separata
 // che vedono e modificano solo responsabili e amministratori.
-export default async function Counterparties({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
-  const { ok, err } = await searchParams;
+export default async function Counterparties({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; q?: string }> }) {
+  const { ok, err, q: q0 = '' } = await searchParams;
+  const term = q0.trim().slice(0, 60).toLowerCase();
   const { supabase, me, t } = await requireMe();
   const resp = can(me, RESP);
-  const [{ data, error }, { data: priv }] = await Promise.all([
+  const [{ data: all, error }, { data: priv }] = await Promise.all([
     supabase.from('counterparties').select('id, name, kind, vat_number, country, active').order('name').limit(1000).returns<Cp[]>(),
     resp ? supabase.from('counterparty_private').select('counterparty_id, tax_code, email, phone, address, iban, notes').returns<Priv[]>()
          : Promise.resolve({ data: [] as Priv[] }),
   ]);
+  const data = (all ?? []).filter((c) => !term || [c.name, c.vat_number, c.country].some((x) => x?.toLowerCase().includes(term)));
   const pv = new Map((priv ?? []).map((p) => [p.counterparty_id, p]));
   const kindSel = (v: string) => (
     <select className="input" name="kind" defaultValue={v}>{KINDS.map((k) => <option key={k} value={k}>{t(`cp_kind_${k}`)}</option>)}</select>
@@ -34,11 +36,12 @@ export default async function Counterparties({ searchParams }: { searchParams: P
   return (
     <div className="stack">
       <PageHead title={t('nav_counterparties')} />
+      {(all ?? []).length > 8 && <SearchBox action="/controparti" value={q0} placeholder={t('search_cp')} clearLabel={t('search_clear')} />}
       {resp && <p className="muted" style={{ margin: 0 }}>{t('admin_readonly')}</p>}
       <Flash ok={ok} err={err} okText={t('saved')} />
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {(data ?? []).length === 0 ? <Empty text={t('none')} /> : data!.map((c) => resp ? (
+        {data.length === 0 ? <Empty text={term ? t('empty_search_generic') : t('none')} /> : data.map((c) => resp ? (
           <EditRow key={c.id} inactive={!c.active} summary={summary(c)}>
             <form action={saveRow} className="fgrid">
               <Hidden v={{ _table: 'counterparties', id: c.id }} />

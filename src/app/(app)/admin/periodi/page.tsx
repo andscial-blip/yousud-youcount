@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ADMIN, can, requireMe } from '@/lib/session';
 import { dateTime } from '@/lib/format';
 import { Denied, PageHead, Panel } from '@/components/Page';
@@ -33,6 +34,9 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     return { y: d.getFullYear(), m: d.getMonth() + 1 };
   });
+  const next = [...months].reverse().map(({ y, m }) => `${y}-${String(m).padStart(2, '0')}`)
+    .find((key) => !(periods ?? []).some((x) => `${x.year}-${String(x.month).padStart(2, '0')}` === key && x.closed_at)
+      && !toVerify.get(key) && key !== `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const fmt = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { month: 'long', year: 'numeric' });
   const errText = err?.startsWith('unverified_movements') ? t('closed_err') : err;
   return (
@@ -40,39 +44,47 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
       <PageHead title={t('nav_periods')} />
       <p className="muted" style={{ margin: 0 }}>{t('close_hint')}</p>
       <Flash ok={ok} err={errText} okText={t('saved')} />
-      <Panel>
-        <table className="t">
-          <thead><tr><th>{t('period')}</th><th>{t('status')}</th><th className="hm">{t('closed_at')}</th><th /></tr></thead>
-          <tbody>
-            {months.map(({ y, m }) => {
-              const key = `${y}-${String(m).padStart(2, '0')}`;
-              const p = (periods ?? []).find((x) => x.year === y && x.month === m);
-              const closed = Boolean(p?.closed_at);
-              const open = toVerify.get(key) ?? 0;
-              const current = y === now.getFullYear() && m === now.getMonth() + 1;
-              return (
-                <tr key={key}>
-                  <td>{fmt.format(new Date(y, m - 1, 1))}</td>
-                  <td>{closed ? <span className="chip ok">{t('closed')}</span>
-                    : open > 0 ? <span className="chip warn">{open} {t('to_verify_short')}</span>
-                    : <span className="chip">{t('open')}</span>}</td>
-                  <td className="num hm">{closed ? `${dateTime(p!.closed_at, lang)} · ${name.get(p!.closed_by) ?? '–'}` : '–'}</td>
-                  <td className="r">
-                    {!closed && !current && (
-                      <form action={closeMonth}><input type="hidden" name="ym" value={key} />
-                        <button className="btn" type="submit" disabled={open > 0}><Ico name="verified" />{t('close_month')}</button></form>
-                    )}
-                    {closed && me!.role === 'super_admin' && (
-                      <form action={closeMonth}><input type="hidden" name="ym" value={key} /><input type="hidden" name="reopen" value="1" />
-                        <button className="btn ghost" type="submit">{t('reopen_month')}</button></form>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Panel>
+      {[...new Set(months.map((x) => x.y))].map((year) => {
+        const ms = months.filter((x) => x.y === year);
+        const st = (y: number, m: number) => {
+          const key = `${y}-${String(m).padStart(2, '0')}`;
+          const p = (periods ?? []).find((x) => x.year === y && x.month === m);
+          return { key, p, closed: Boolean(p?.closed_at), open: toVerify.get(key) ?? 0, current: y === now.getFullYear() && m === now.getMonth() + 1 };
+        };
+        const nClosed = ms.filter(({ y, m }) => st(y, m).closed).length;
+        return (
+          <Panel key={year} title={`${year} · ${t('closed_n').replace('{n}', String(nClosed)).replace('{m}', String(ms.length))}`}>
+            <table className="t">
+              <thead><tr><th>{t('period')}</th><th>{t('status')}</th><th className="hm">{t('closed_at')}</th><th /></tr></thead>
+              <tbody>
+                {ms.map(({ y, m }) => {
+                  const { key, p, closed, open, current } = st(y, m);
+                  return (
+                    <tr key={key} className={key === next ? 'row-next' : undefined}>
+                      <td>{fmt.format(new Date(y, m - 1, 1))}</td>
+                      <td>{closed ? <span className="chip ok">{t('closed')}</span>
+                        : open > 0 ? <Link className="chip warn" href="/verifica">{open} {t('to_verify_short')}</Link>
+                        : current ? <span className="chip">{t('period_current')}</span>
+                        : <span className="chip">{t('open')}</span>}</td>
+                      <td className="num hm">{closed ? `${dateTime(p!.closed_at, lang)} · ${name.get(p!.closed_by) ?? '–'}` : '–'}</td>
+                      <td className="r">
+                        {!closed && !current && open === 0 && (
+                          <form action={closeMonth}><input type="hidden" name="ym" value={key} />
+                            <button className={`btn ${key === next ? 'primary' : 'ghost'}`} type="submit"><Ico name="verified" />{t('close_month')}</button></form>
+                        )}
+                        {closed && me!.role === 'super_admin' && (
+                          <form action={closeMonth}><input type="hidden" name="ym" value={key} /><input type="hidden" name="reopen" value="1" />
+                            <button className="btn ghost" type="submit">{t('reopen_month')}</button></form>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Panel>
+        );
+      })}
     </div>
   );
 }

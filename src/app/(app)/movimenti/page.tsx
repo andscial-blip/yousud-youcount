@@ -14,44 +14,94 @@ type Row = {
   project: { name: string } | null;
 };
 
-export default async function Movements({ searchParams }: { searchParams: Promise<{ stato?: string; q?: string }> }) {
-  const { stato = '', q: q0 = '' } = await searchParams;
+const PAGE = 100;
+const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+const isId = (v: string) => /^[0-9a-f-]{36}$/.test(v);
+
+type SP = { stato?: string; q?: string; progetto?: string; conto?: string; dal?: string; al?: string; p?: string };
+
+export default async function Movements({ searchParams }: { searchParams: Promise<SP> }) {
+  const sp = await searchParams;
+  const stato = sp.stato ?? '';
   // ricerca per descrizione o numero MOV: tolti i caratteri che hanno un significato nei filtri del database
-  const term = q0.replace(/[%,()*\\]/g, ' ').trim().slice(0, 60);
+  const term = (sp.q ?? '').replace(/[%,()*\\]/g, ' ').trim().slice(0, 60);
+  const prj = isId(sp.progetto ?? '') ? sp.progetto! : '';
+  const acc = isId(sp.conto ?? '') ? sp.conto! : '';
+  const from = isDate(sp.dal ?? '') ? sp.dal! : '';
+  const to = isDate(sp.al ?? '') ? sp.al! : '';
+  const page = Math.max(1, Math.min(1000, Number(sp.p) || 1));
   const { supabase, t, lang } = await requireMe();
   let q = supabase
     .from('movements')
     .select(`id, ref, op_date, kind, status, description, amount, currency, sign, reverses_id, no_doc_reason, reimb_status, paid_by, docs:movement_documents(count),
-             account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name)`)
+             account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name)`, { count: 'exact' })
     .order('op_date', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(200);
+    .range((page - 1) * PAGE, page * PAGE - 1);
   if (['draft', 'recorded', 'verified'].includes(stato)) q = q.eq('status', stato);
   if (stato === 'nodoc') q = q.not('no_doc_reason', 'is', null);
   if (term) q = q.or(`description.ilike.%${term}%,ref.ilike.%${term}%`);
-  const { data, error } = await q.returns<Row[]>();
+  if (prj) q = q.eq('project_id', prj);
+  if (acc) q = q.or(`account_id.eq.${acc},to_account_id.eq.${acc}`);
+  if (from) q = q.gte('op_date', from);
+  if (to) q = q.lte('op_date', to);
+  const [{ data, error, count }, { data: projects }, { data: accounts }] = await Promise.all([
+    q.returns<Row[]>(),
+    supabase.from('projects').select('id, name').order('name'),
+    supabase.from('accounts').select('id, name_it, name_fr').order('sort'),
+  ]);
+  const total = count ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE));
   const filters = [['', t('all')], ['draft', t('drafts')], ['recorded', t('st_recorded')], ['verified', t('verified')], ['nodoc', t('f_nodoc_filter')]];
-  const qs = (v: string) => { const u = new URLSearchParams(); if (v) u.set('stato', v); if (term) u.set('q', term); const x = u.toString(); return x ? `/movimenti?${x}` : '/movimenti'; };
+  // un indirizzo con tutti i filtri attivi: si può salvare o mandare a un collega
+  const href = (over: Partial<SP>) => {
+    const v = { stato, q: term, progetto: prj, conto: acc, dal: from, al: to, p: '', ...over };
+    const u = new URLSearchParams();
+    for (const [k, x] of Object.entries(v)) if (x) u.set(k, String(x));
+    const s = u.toString();
+    return s ? `/movimenti?${s}` : '/movimenti';
+  };
+  const active = [prj, acc, from, to].filter(Boolean).length;
 
   return (
     <div className="stack">
       <PageHead title={t('nav_movements')}>
-        <a className="btn" href={`/api/v1/export/movimenti?anno=${new Date().getFullYear()}${stato ? `&stato=${stato}` : ''}`}><Ico name="download" />{t('exp_xlsx')}</a>
+        <a className="btn" href={`/api/v1/export/movimenti?anno=${(from || to || String(new Date().getFullYear())).slice(0, 4)}${stato ? `&stato=${stato}` : ''}`}><Ico name="download" />{t('exp_xlsx')}</a>
         <div className="seg scroll">
           {filters.map(([v, l]) => (
-            <Link key={v} href={qs(v)} aria-current={(stato === v) ? 'true' : undefined}>{l}</Link>
+            <Link key={v} href={href({ stato: v })} aria-current={(stato === v) ? 'true' : undefined}>{l}</Link>
           ))}
         </div>
       </PageHead>
-      <form className="search" method="get" action="/movimenti" role="search">
+      <form className="filters" method="get" action="/movimenti" role="search">
         {stato && <input type="hidden" name="stato" value={stato} />}
-        <Ico name="search" />
-        <input className="input" type="search" name="q" defaultValue={term} placeholder={t('search_mov')} aria-label={t('search_mov')} />
-        {term && <Link className="btn ghost" href={stato ? `/movimenti?stato=${stato}` : '/movimenti'}>{t('search_clear')}</Link>}
+        <div className="search">
+          <Ico name="search" />
+          <input className="input" type="search" name="q" defaultValue={term} placeholder={t('search_mov')} aria-label={t('search_mov')} />
+        </div>
+        <details className="more" open={active > 0}>
+          <summary className="btn ghost">{t('f_more_filters')}{active > 0 ? ` · ${active}` : ''}</summary>
+          <div className="filter-grid">
+            <label className="field"><span className="flabel">{t('project')}</span>
+              <select className="input" name="progetto" defaultValue={prj}><option value="">{t('all')}</option>
+                {(projects ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+            <label className="field"><span className="flabel">{t('account')}</span>
+              <select className="input" name="conto" defaultValue={acc}><option value="">{t('all')}</option>
+                {(accounts ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
+            <label className="field"><span className="flabel">{t('gr_from')}</span>
+              <input className="input" type="date" name="dal" defaultValue={from} /></label>
+            <label className="field"><span className="flabel">{t('gr_to')}</span>
+              <input className="input" type="date" name="al" defaultValue={to} /></label>
+          </div>
+        </details>
+        <button className="btn primary" type="submit">{t('f_apply')}</button>
+        {(term || active > 0) && <Link className="btn ghost" href={stato ? `/movimenti?stato=${stato}` : '/movimenti'}>{t('search_clear')}</Link>}
       </form>
+      {total > 0 && <p className="muted" style={{ margin: 0 }} aria-live="polite">
+        {t('f_count').replace('{n}', total.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT'))}{pages > 1 ? ` · ${t('f_page')} ${page}/${pages}` : ''}</p>}
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {(data ?? []).length === 0 && (term || stato) ? <p className="panel-b muted" style={{ margin: 0 }}>{t('empty_search')}</p>
+        {(data ?? []).length === 0 && (term || stato || active > 0 || page > 1) ? <p className="panel-b muted" style={{ margin: 0 }}>{t('empty_search')}</p>
           : (data ?? []).length === 0 ? <EmptyState title={t('empty_mov')} text={t('empty_mov_t')} badge="plus"
             action={<Link className="btn primary" href="/nuovo"><Ico name="plus" />{t('nav_new_long').replace('+ ', '')}</Link>} /> : (
           <table className="t">
@@ -87,6 +137,13 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           </table>
         )}
       </Panel>
+      {pages > 1 && (
+        <nav className="pager" aria-label={t('f_pages')}>
+          {page > 1 ? <Link className="btn" href={href({ p: String(page - 1) })} rel="prev">← {t('f_prev')}</Link> : <span />}
+          <span className="muted num">{page} / {pages}</span>
+          {page < pages ? <Link className="btn" href={href({ p: String(page + 1) })} rel="next">{t('f_next')} →</Link> : <span />}
+        </nav>
+      )}
     </div>
   );
 }

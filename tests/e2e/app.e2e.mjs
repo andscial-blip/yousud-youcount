@@ -466,9 +466,24 @@ try {
     assert.equal(await p.locator('main tbody tr').count(), 1, 'ricerca per numero MOV');
     await p.goto(`${base}/movimenti?stato=nodoc`);
     const [{ n }] = (await pool.query(`select count(*)::int n from movements where no_doc_reason is not null`)).rows;
-    assert.equal(await p.locator('main tbody tr').count(), Math.min(n, 200));
+    assert.equal(await p.locator('main tbody tr').count(), Math.min(n, 100));
     await p.goto(`${base}/movimenti?q=zzz-niente`);
     await p.getByText('Nessun movimento corrisponde alla ricerca.').waitFor();
+  });
+  await check('documenti: movimento collegato, ricerca, filtro «Non collegati»', async () => {
+    const p = rs.page;
+    const [d] = (await pool.query(`select m.ref, m.description from movement_documents md join movements m on m.id = md.movement_id
+      where m.ref is not null order by m.ref limit 1`)).rows;
+    assert.ok(d, 'un giustificativo collegato a un movimento numerato');
+    await p.goto(`${base}/documenti`);
+    assert.match(await p.locator('main table').innerText(), new RegExp(d.ref));
+    await p.goto(`${base}/documenti?q=${encodeURIComponent(d.ref)}`);
+    assert.ok(await p.locator('main tbody tr').count() >= 1);
+    for (const row of await p.locator('main tbody tr').allInnerTexts()) assert.match(row, new RegExp(d.ref));
+    const [{ n }] = (await pool.query(`select count(*)::int n from documents d where not exists (select 1 from movement_documents md where md.document_id = d.id)`)).rows;
+    await p.goto(`${base}/documenti?f=orfani`);
+    if (n === 0) await p.getByText('Nessun documento corrisponde alla ricerca.').waitFor();
+    else assert.equal(await p.locator('main tbody tr').count(), n);
   });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;

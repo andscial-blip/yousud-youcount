@@ -76,14 +76,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       </PageHead>
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
-      {Boolean(dueCount) && (
-        <div className="note info"><Link href="/rimborsi">{dueCount} {t(dueCount === 1 ? 'dash_reimb_one' : 'dash_reimb')}</Link></div>
-      )}
-      {backupDue && (
-        <div className="note warn">
-          {backupDays === null ? t('bk_never') : t('bk_due').replace('{n}', String(backupDays))}{' '}
-          <Link href="/admin/impostazioni">{t('bk_go')}</Link>
-        </div>
+      {(Boolean(dueCount) || backupDue) && (
+        <section className="todo" aria-label={t('todo_title')}>
+          <h2>{t('todo_title')}</h2>
+          <ul>
+            {Boolean(dueCount) && <li><Ico name="wallet" /><Link href="/rimborsi">{dueCount} {t(dueCount === 1 ? 'dash_reimb_one' : 'dash_reimb')}</Link></li>}
+            {backupDue && <li><Ico name="download" /><span>{backupDays === null ? t('bk_never') : t('bk_due').replace('{n}', String(backupDays))}{' '}
+              <Link href="/admin/impostazioni">{t('bk_go')}</Link></span></li>}
+          </ul>
+        </section>
       )}
       <ErrorNote prefix={t('error_load')} error={error} />
       <section className="kpis">

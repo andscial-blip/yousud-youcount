@@ -1,6 +1,8 @@
 import { ADMIN, can, requireMe } from '@/lib/session';
 import { dateTime } from '@/lib/format';
+import Link from 'next/link';
 import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Ico } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,12 +21,19 @@ const TABLE: Record<string, [string, string]> = {
   bank_reconciliations: ['Riconciliazioni bancarie', 'Rapprochements bancaires'],
 };
 
-export default async function Audit() {
+export default async function Audit({ searchParams }: { searchParams: Promise<{ tab?: string; chi?: string; q?: string }> }) {
+  const sp = await searchParams;
+  const tab = sp.tab && sp.tab in TABLE ? sp.tab : '';
+  const who = /^[0-9a-f-]{36}$/.test(sp.chi ?? '') ? sp.chi! : sp.chi === 'sistema' ? 'sistema' : '';
+  const term = (sp.q ?? '').trim().slice(0, 60).toLowerCase();
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
-  const [{ data, error }, { data: users }] = await Promise.all([
-    supabase.from('audit_log').select('id, at, table_name, action, actor, row_id, new_row, old_row')
-      .order('at', { ascending: false }).limit(200).returns<A[]>(),
+  let q = supabase.from('audit_log').select('id, at, table_name, action, actor, row_id, new_row, old_row')
+    .order('at', { ascending: false }).limit(term ? 1000 : 300);
+  if (tab) q = q.eq('table_name', tab);
+  if (who === 'sistema') q = q.is('actor', null); else if (who) q = q.eq('actor', who);
+  const [{ data: raw, error }, { data: users }] = await Promise.all([
+    q.returns<A[]>(),
     supabase.rpc('user_directory'),
   ]);
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
@@ -34,17 +43,34 @@ export default async function Audit() {
     if (a.table_name === 'bank_reconciliations' && r.statement_date) return String(r.statement_date).split('-').reverse().join('/');
     return String(r.ref ?? r.title ?? r.name ?? r.name_it ?? r.file_name ?? r.code ?? r.full_name ?? r.key ?? '');
   };
+  const data = (raw ?? []).filter((a) => !term || what(a).toLowerCase().includes(term)).slice(0, 300);
+  const L = lang === 'fr' ? 1 : 0;
   return (
     <div className="stack">
       <PageHead title={t('nav_audit')} />
+      <form className="filters" method="get" action="/admin/registro" role="search">
+        <div className="search"><Ico name="search" />
+          <input className="input" type="search" name="q" defaultValue={sp.q ?? ''} placeholder={t('search_audit')} aria-label={t('search_audit')} /></div>
+        <select className="input" name="tab" defaultValue={tab} aria-label={t('audit_table')} style={{ width: 'auto' }}>
+          <option value="">{t('audit_table')}: {t('all').toLowerCase()}</option>
+          {Object.entries(TABLE).sort((x, y) => x[1][L].localeCompare(y[1][L])).map(([k, v]) => <option key={k} value={k}>{v[L]}</option>)}
+        </select>
+        <select className="input" name="chi" defaultValue={who} aria-label={t('audit_who')} style={{ width: 'auto' }}>
+          <option value="">{t('audit_who')}: {t('all').toLowerCase()}</option>
+          <option value="sistema">{t('audit_system')}</option>
+          {((users ?? []) as { id: string; full_name: string }[]).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+        </select>
+        <button className="btn primary" type="submit">{t('f_apply')}</button>
+        {(tab || who || term) && <Link className="btn ghost" href="/admin/registro">{t('search_clear')}</Link>}
+      </form>
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
+        {data.length === 0 ? <Empty text={tab || who || term ? t('empty_search_generic') : t('none')} /> : (
           <table className="t">
             <thead><tr><th>{t('audit_when')} (MG)</th><th>{t('audit_who')}</th><th>{t('audit_table')}</th>
               <th>{t('audit_what')}</th><th /></tr></thead>
             <tbody>
-              {data!.map((a) => (
+              {data.map((a) => (
                 <tr key={a.id}>
                   <td className="num">{dateTime(a.at, lang)}</td>
                   <td>{a.actor ? name.get(a.actor) ?? '–' : (lang === 'fr' ? 'système' : 'sistema')}</td>
