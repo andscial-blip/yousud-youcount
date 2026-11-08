@@ -500,6 +500,23 @@ try {
     await p2.getByText('Il link non è valido o è scaduto', { exact: false }).waitFor();
     await ctx.close(); await ctx2.close();
   });
+  await check('link email dei modelli YouCount (token_hash verso l\'app): un solo uso, poi «Imposta la password»', async () => {
+    const [{ id }] = (await pool.query(`select id from auth.users where email = 'lettore@test.local'`)).rows;
+    // un antispam che scarica la pagina senza eseguirla non consuma il link
+    const scan = await fetch(`${base}/auth/callback?token_hash=th.${id}&type=invite`);
+    assert.equal(scan.status, 200);
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    await p.goto(`${base}/auth/callback?token_hash=th.${id}&type=invite`);
+    await p.waitForURL(/\/account\/password$/, { timeout: 30000 });
+    await p.getByText('Imposta la password').first().waitFor();
+    // seconda apertura dello stesso link: già usato
+    const ctx2 = await browser.newContext();
+    const p2 = await ctx2.newPage();
+    await p2.goto(`${base}/auth/callback?token_hash=th.${id}&type=invite`);
+    await p2.getByText('Il link non è valido o è scaduto', { exact: false }).waitFor();
+    await ctx.close(); await ctx2.close();
+  });
 } finally {
   await browser.close();
   try { process.kill(-next.p.pid); } catch {}

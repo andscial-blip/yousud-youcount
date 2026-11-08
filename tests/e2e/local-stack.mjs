@@ -52,6 +52,7 @@ function send(res, status, body) {
   res.end(body === undefined ? '' : JSON.stringify(body));
 }
 
+const USED_TOKENS = new Set();
 async function auth(req, res, url) {
   const path = url.pathname.replace('/auth/v1', '');
   if (req.method === 'POST' && path === '/token') {
@@ -66,6 +67,15 @@ async function auth(req, res, url) {
     const claims = verify((req.headers.authorization ?? '').replace(/^Bearer /, ''));
     const u = claims?.sub && (await userBy('id', claims.sub));
     return u ? send(res, 200, userJson(u)) : send(res, 401, { msg: 'invalid JWT' });
+  }
+  // link delle email con token_hash (modelli personalizzati): "th.<id utente>", valido una sola volta
+  if (req.method === 'POST' && path === '/verify') {
+    const body = JSON.parse((await readBody(req)).toString() || '{}');
+    const th = String(body.token_hash ?? '');
+    const u = th.startsWith('th.') && !USED_TOKENS.has(th) && (await userBy('id', th.slice(3)));
+    if (!u) return send(res, 403, { code: 403, error_code: 'otp_expired', msg: 'Email link is invalid or has expired' });
+    USED_TOKENS.add(th);
+    return send(res, 200, session(u));
   }
   if (path === '/logout') return send(res, 204);
   return send(res, 404, { msg: 'not implemented in local stack' });
