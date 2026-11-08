@@ -55,7 +55,7 @@ export default async function BudgetPage({ searchParams }: {
   const CL = (c: { name_it: string; name_fr: string }) => (lang === 'fr' && c.name_fr ? c.name_fr : c.name_it);
   const m = (v: number | string) => money(v, 'EUR', lang);
 
-  const fr = rows.filter((r) => !prj || r.project_id === prj);
+  const fr = rows.filter((r) => (!prj || r.project_id === prj) && (Number(r.budget_eur) || Number(r.actual_eur) || Number(r.committed_eur)));
   const sum = (d: 'in' | 'out', k: 'budget_eur' | 'actual_eur' | 'committed_eur') => fr.filter((r) => r.direction === d).reduce((s, r) => s + Number(r[k]), 0);
   const inB = sum('in', 'budget_eur'), outB = sum('out', 'budget_eur'), inA = sum('in', 'actual_eur'), outA = sum('out', 'actual_eur'), outC = sum('out', 'committed_eur');
   // voci di uscita aggregate per codice (sui progetti filtrati): base degli avvisi
@@ -203,7 +203,7 @@ export default async function BudgetPage({ searchParams }: {
 
           {view === 'confronto' ? (
             <Panel title={`${L('Confronto', 'Comparaison')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
-              <form className="filters panel-b" method="get" action="/preventivo">
+              <form className="inline-form panel-b" method="get" action="/preventivo">
                 <input type="hidden" name="anno" value={year} />{shown && <input type="hidden" name="v" value={shown.id} />}
                 <label className="vh" htmlFor="bprj">{L('Progetto', 'Projet')}</label>
                 <select className="input" id="bprj" name="progetto" defaultValue={prj}>

@@ -91,7 +91,7 @@ export function buildModel(d: DocData, org: Org): Model {
     const lines = ((x.lines as NotLine[]) ?? []).filter((r) => r.d || num(r.p));
     const T = notTotals(lines, num(x.ritenuta));
     P((l) => l === 'it'
-      ? `${J('Prestatore', 'Prestataire')}: ${party(l)}. Committente: ${org.name}${org.tax_id ? ` (C.F. ${org.tax_id})` : ''}. Prestazione di lavoro autonomo occasionale (art. 2222 c.c.)${prj(l)}${x.period ? `, svolta nel periodo ${x.period}` : ''}.`
+      ? `Prestatore: ${party(l)}. Committente: ${org.name}${org.tax_id ? ` (C.F. ${org.tax_id})` : ''}. Prestazione di lavoro autonomo occasionale (art. 2222 c.c.)${prj(l)}${x.period ? `, svolta nel periodo ${x.period}` : ''}.`
       : `Prestataire : ${party(l)}. Donneur d'ordre : ${org.name}. Prestation de travail indépendant occasionnelle${prj(l)}${x.period ? `, réalisée sur la période ${x.period}` : ''}.`);
     blocks.push({ k: 'table', head: [J('Descrizione', 'Description'), J('Q.tà', 'Qté'), J('Prezzo', 'Prix'), J('Importo', 'Montant')],
       rows: lines.map((r) => [r.d, String(num(r.q)), m(r.p), m(num(r.q) * num(r.p))]), num: [1, 2, 3] });

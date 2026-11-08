@@ -679,3 +679,7 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); padding: 10px 18
 .cc-den { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 2px 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface-2); }
 .cc-den > span { font-family: var(--f-ui); font-weight: 600; text-align: right; }
 .cc-den small { grid-column: 2; font-size: 12px; min-height: 14px; }
+.side-link { min-height: 36px; }
+.side-nav { gap: 10px; }
+.inline-form select.input { flex: 1; min-width: 200px; max-width: 420px; }
+@media (max-width: 760px) { .segs { flex-wrap: wrap; width: 100%; } .segs a { flex: 1 1 auto; justify-content: center; } }

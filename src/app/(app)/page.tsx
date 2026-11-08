@@ -69,9 +69,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   ]);
   const savedBy = new Map((dls ?? []).filter((d) => d.rule_key).map((d) => [d.rule_key as string, d]));
   const upcoming = [
-    ...(dls ?? []).filter((d) => !d.rule_key && d.status === 'open').map((d) => ({ k: d.id, date: d.due_date as string, title: d.title as string })),
+    ...(dls ?? []).filter((d) => !d.rule_key && d.status === 'open' && d.due_date >= ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 45))).map((d) => ({ k: d.id, date: d.due_date as string, title: d.title as string })),
     ...(staff ? ruleItems([now.getFullYear()], () => Number(incPrev ?? 0)) : []).filter((r) => r.applies && r.date <= in30)
-      .map((r) => ({ r, s: savedBy.get(r.rule_key) })).filter(({ r, s }) => (s ? s.status === 'open' : true) && (s?.due_date ?? r.date) >= `${now.getFullYear()}-01-01`)
+      .map((r) => ({ r, s: savedBy.get(r.rule_key) })).filter(({ r, s }) => (s ? s.status === 'open' : true) && (s?.due_date ?? r.date) >= ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 45)))
       .map(({ r, s }) => ({ k: r.rule_key, date: (s?.due_date ?? r.date) as string, title: lang === 'fr' ? r.fr : r.it })),
   ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 6);
   type Cm = { direction: string; category_id: string; budget_eur: string; actual_eur: string };

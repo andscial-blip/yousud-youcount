@@ -128,7 +128,7 @@ try {
     const txt = await op.page.locator('main').innerText();
     assert.match(txt, /2\.500,00\s?€/, 'saldo Banca Italia');
     assert.match(txt, /-?1\.010\.000\s?MGA|MGA\s?-1\.010\.000/, 'saldo Cassa Missione');
-    assert.match(await op.page.locator('header').innerText(), /Operatore di prova · Operatore/);
+    assert.match(await op.page.locator('aside.side').innerText(), /Operatore di prova · Operatore/);
     await op.page.screenshot({ path: `${SHOTS}/op_cruscotto.png`, fullPage: true });
   });
   await check('operatore: elenco movimenti, la propria bozza visibile', async () => {
@@ -294,6 +294,7 @@ try {
     assert.equal(await p.getByRole('button', { name: /Registra il rimborso/ }).count(), 0);
   });
   const rs = await login('resp@test.local');
+  const sa = await login('andrea@test.local');
   await check('responsabile: rimborsa la spesa → registrata con la data del rimborso e il conto scelto', async () => {
     const p = rs.page;
     await p.goto(`${base}/`);
@@ -392,7 +393,13 @@ try {
     const p = op.page;
     await p.goto(`${base}/conti`);
     await p.selectOption('#cc-account', { label: 'Cassa Madagascar (contanti) · MGA' });
-    await p.fill('#cc-counted', '0');
+    // conta per tagli: 2 × 20.000 + 3 × 500 = 41.500 MGA, differenza calcolata subito
+    await p.getByLabel('Quantità del taglio 20.000', { exact: true }).fill('2');
+    await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('3');
+    assert.match((await p.locator('.rec-sum').innerText()).replace(/[\u00a0\u202f]/g, ' '), /41\.500 MGA/);
+    await p.getByLabel('Quantità del taglio 20.000', { exact: true }).fill('');
+    await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('');
+    await p.fill('#cc-manual', '0');
     await p.getByRole('button', { name: 'Registra la conta' }).click();
     await p.waitForURL(/ok=cash/);
     const row = await p.locator('table.t').last().innerText();
@@ -526,6 +533,8 @@ try {
     // nel modulo: «Con l'anticipo» propone solo i conti anticipi e mette la persona in «Pagato da»
     const o = op.page;
     await o.goto(`${base}/nuovo`);
+    await o.locator('#account').waitFor();
+    if (!(await o.getByRole('radio', { name: 'Con l’anticipo' }).count())) await o.reload();
     await o.getByRole('radio', { name: 'Con l’anticipo' }).click();
     await o.locator('#account').selectOption({ label: 'Hery · MGA' });
     assert.equal(await o.locator('#paidby').inputValue(), 'Hery');
@@ -561,6 +570,125 @@ try {
     assert.match(txt, /200\.000 MGA[\s\S]*50\.000 MGA[\s\S]*150\.000 MGA/);
     await p.screenshot({ path: `${SHOTS}/resp_anticipi.png`, fullPage: true });
   });
+  await check('preventivo: bozza, righe in euro e ariary, approvazione con delibera, confronto con il consuntivo, Excel', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/preventivo?anno=${year}`);
+    await p.getByRole('button', { name: 'Nuovo preventivo vuoto' }).click();
+    await p.waitForURL(/vista=righe/);
+    await p.selectOption('#bi-cat', { label: '401 · Materiali di consumo' });
+    await p.selectOption('#bi-prj', { label: 'École Piccolino' });
+    await p.fill('#bi-desc', 'Quaderni e penne');
+    await p.fill('#bi-qty', '10');
+    await p.fill('#bi-unit', 'kit');
+    await p.fill('#bi-cost', '100.000');
+    await p.selectOption('#bi-cur', 'MGA');
+    await p.fill('#bi-rate', '5000');
+    await p.getByRole('button', { name: 'Aggiungi la riga' }).click();
+    await p.locator('td', { hasText: 'Quaderni e penne' }).waitFor();
+    await p.selectOption('#bi-cat', { label: 'E101 · Donazioni da privati' });
+    await p.fill('#bi-cost', '3.000');
+    await p.getByRole('button', { name: 'Aggiungi la riga' }).click();
+    await p.locator('td', { hasText: 'Donazioni da privati' }).waitFor();
+    const [{ n, eur }] = (await pool.query(`select count(*)::int n, sum(amount_eur)::text eur from budget_items`)).rows;
+    assert.deepEqual([n, eur], [2, '3200.00']);
+    // il responsabile non approva: lo fa un amministratore con la delibera
+    assert.equal(await p.getByRole('button', { name: /^Approva/ }).count(), 0);
+    const a = sa.page;
+    await a.goto(`${base}/preventivo?anno=${year}`);
+    await a.fill('#apref', 'Delibera CdA di prova');
+    await a.getByRole('button', { name: /^Approva/ }).click();
+    await a.waitForURL(/ok=1/);
+    assert.equal((await pool.query(`select status from budgets`)).rows[0].status, 'approved');
+    const txt = (await a.locator('main').innerText()).replace(/[  ]/g, ' ');
+    assert.match(txt, /In vigore/);
+    assert.match(txt, /Preventivo e consuntivo/);
+    assert.match(txt, /401/);
+    // la spesa in ariary dei dati di prova (1.010.000 MGA ≈ 200 €) supera i 200 € previsti
+    assert.match(txt, /Oltre il preventivo|Vicino al limite|In linea/);
+    const x = await a.request.get(`${base}/api/v1/export/budget?anno=${year}`);
+    assert.equal(x.status(), 200);
+    assert.equal(await op.page.request.get(`${base}/api/v1/export/budget?anno=${year}`).then((r) => r.status()), 403);
+    await a.screenshot({ path: `${SHOTS}/sa_preventivo.png`, fullPage: true });
+  });
+  await check('scadenze: nuova scadenza, segnata fatta, adempimenti ETS, calendario, file .ics', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/scadenze?nuovo=1`);
+    await p.fill('#dl-t', 'PROVA pagare affitto sede');
+    await p.fill('#dl-d', today);
+    await p.fill('#dl-a', '450');
+    await p.selectOption('#dl-pr', 'high');
+    await p.getByRole('button', { name: 'Salva' }).click();
+    await p.waitForURL(/ok=1/);
+    const li = p.locator('ul.dl li', { hasText: 'PROVA pagare affitto sede' });
+    await li.getByText('Oggi').waitFor();
+    await li.getByRole('button', { name: 'Fatta' }).click();
+    await p.locator('ul.dl li', { hasText: 'PROVA pagare affitto sede' }).getByRole('button', { name: 'Riapri' }).waitFor();
+    assert.equal((await pool.query(`select status from deadlines where title = 'PROVA pagare affitto sede'`)).rows[0].status, 'done');
+    await p.goto(`${base}/scadenze?periodo=all`);
+    assert.match(await p.locator('main').innerText(), /RUNTS/);
+    await p.goto(`${base}/scadenze?vista=calendario`);
+    await p.locator('.cal').waitFor();
+    const ics = await p.request.get(`${base}/api/v1/scadenze.ics`);
+    assert.equal(ics.status(), 200);
+    assert.match(await ics.text(), /BEGIN:VCALENDAR[\s\S]*BEGIN:VEVENT/);
+  });
+  await check('documenti emessi: ricevuta dal movimento, anteprima, emissione numerata, PDF, annullamento', async () => {
+    const p = rs.page;
+    const [{ id: inc }] = (await pool.query(`select id from movements where description = 'PROVA donazione'`)).rows;
+    await p.goto(`${base}/movimenti/${inc}`);
+    await p.getByRole('link', { name: 'Ricevuta' }).click();
+    await p.waitForURL(/documenti-emessi\/nuovo\?tipo=RIC/);
+    assert.equal(await p.inputValue('#df-amount'), '2500');
+    await p.fill('#df-party_name', 'Mario Rossi');
+    await p.getByRole('button', { name: /Salva la bozza/ }).click();
+    await p.waitForURL(/ok=saved/);
+    assert.match(await p.locator('.docprev').innerText(), /BOZZA[\s\S]*Mario Rossi[\s\S]*2\.500,00/);
+    await p.getByRole('button', { name: 'Emetti e genera il PDF' }).click();
+    await p.waitForURL(/ok=issued/);
+    const [d] = (await pool.query(`select number, status, document_id from issued_docs`)).rows;
+    assert.match(d.number, new RegExp(`^RIC-${year}-001$`));
+    assert.ok(d.document_id);
+    assert.equal((await pool.query('select count(*)::int n from movement_documents where movement_id = $1 and document_id = $2', [inc, d.document_id])).rows[0].n, 1);
+    const href = await p.getByRole('link', { name: 'Scarica il PDF' }).getAttribute('href');
+    const pdf = await p.request.get(href.startsWith('http') ? href : `${base}${href}`);
+    assert.equal((await pdf.body()).subarray(0, 5).toString(), '%PDF-');
+    await p.fill('#cr', 'prova di annullamento');
+    await p.getByRole('button', { name: 'Annulla il documento' }).click();
+    await p.waitForURL(/ok=cancelled/);
+    await p.goto(`${base}/documenti-emessi`);
+    assert.match(await p.locator('main').innerText(), new RegExp(`${d.number}[\\s\\S]*Annullato`));
+  });
+  await check('report: mensile, per codice, senza giustificativo; Excel con gli stessi numeri', async () => {
+    const p = rs.page;
+    for (const k of ['mensile', 'categorie', 'fornitori', 'utenti', 'nodoc', 'cassa', 'scadenze']) {
+      await p.goto(`${base}/report?tipo=${k}&anno=${year}`);
+      await p.locator('main section.panel').first().waitFor();
+      assert.doesNotMatch(await p.locator('main').innerText(), /Errore nel caricamento/);
+    }
+    await p.goto(`${base}/report?tipo=mensile&anno=${year}`);
+    const ExcelJS = require('exceljs');
+    const r = await p.request.get(`${base}/api/v1/export/report?tipo=mensile&anno=${year}`);
+    const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await r.body());
+    const ws = wb.worksheets[0];
+    const tot = ws.getRow(ws.rowCount - 1).values.filter((v) => typeof v === 'number');
+    const [{ s }] = (await pool.query(`select coalesce(sum(amount_eur * sign), 0)::float s from movements where kind = 'income' and status <> 'draft' and extract(year from op_date) = $1`, [year])).rows;
+    assert.ok(Math.abs(tot[0] + tot[1] - s) < 0.01, `entrate ${tot[0] + tot[1]} = ${s}`);
+  });
+  await check('riconciliazione: estratto CSV letto nel browser, movimenti abbinati e spuntati', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/riconciliazione`);
+    await p.locator('tr', { hasText: 'Banca Italia' }).getByRole('link', { name: 'Riconcilia' }).click();
+    await p.waitForURL(/\/riconciliazione\?conto=/);
+    await p.locator('.rec-import').waitFor();
+    const legs = await p.locator('tbody input[type=checkbox]').count();
+    assert.ok(legs > 0);
+    const [{ amt, d }] = (await pool.query(`select amount::text amt, to_char(op_date, 'DD/MM/YYYY') d from movements where description = 'PROVA donazione'`)).rows;
+    const csv = `Data;Descrizione;Importo;Saldo\n${d};Donazione;${amt.replace('.', ',')};\n${d};Riga sconosciuta;-1.234,00;\n`;
+    await p.locator('.rec-import input[type=file]').setInputFiles({ name: 'estratto.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await p.getByText(/Righe dell'estratto: 2; movimenti abbinati e spuntati: 1/).waitFor();
+    await p.getByText(/Righe senza movimento in YouCount: 1/).waitFor();
+    assert.equal(await p.locator('tbody input[type=checkbox]:checked').count(), 1);
+  });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;
     await p.goto(`${base}/`);
@@ -581,7 +709,6 @@ try {
     assert.doesNotMatch(txt, /4\) Erogazioni liberali/, 'nel modello E solo le sezioni');
   });
 
-  const sa = await login('andrea@test.local');
   await check('super admin: modifica conti, progetti, piano dei conti, controparti e chiude un mese', async () => {
     const p = sa.page;
     const row = (text) => p.locator('details.erow', { hasText: text });
@@ -700,7 +827,7 @@ try {
     await sa.page.goto(`${base}/`);
     const header = await sa.page.locator('header').innerText();
     assert.match(header, /Chaque dépense, sa pièce justificative/);
-    assert.match(await sa.page.locator('nav.nav').innerText(), /Tableau de bord/);
+    assert.match(await sa.page.locator('nav.side-nav').innerText(), /Tableau de bord/);
     assert.match(await sa.page.locator('main').innerText(), /Trésorerie en Italie/);
     await sa.page.screenshot({ path: `${SHOTS}/sa_dashboard_fr.png`, fullPage: true });
     const [{ lang }] = (await pool.query(`select lang from profiles where email = 'andrea@test.local'`)).rows;

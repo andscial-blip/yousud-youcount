@@ -57,7 +57,8 @@ export default async function Deadlines({ searchParams }: {
   const byRule = new Map(sv.filter((d) => d.rule_key).map((d) => [d.rule_key!, d]));
 
   // 1) adempimenti ricorrenti (le date spostate o segnate fatte vengono dalla riga salvata)
-  const items: Item[] = staff ? ruleItems([Y - 1, Y, Y + 1], inc).map((r) => {
+  // come nel Gestionale: gli adempimenti dell'app non segnati restano in elenco fino a 120 giorni dopo la data
+  const items: Item[] = staff ? ruleItems([Y - 1, Y, Y + 1], inc).filter((r) => byRule.has(r.rule_key) || r.date >= addDays(td, -120)).map((r) => {
     const s = byRule.get(r.rule_key);
     return { key: r.rule_key, id: s?.id, rule_key: r.rule_key, date: s?.due_date ?? r.date, cat: r.cat, title: L(r.it, r.fr), sub: L(r.dit, r.dfr),
       status: s?.status ?? 'open', priority: s?.priority ?? 'normal', applies: r.applies, owner: s?.owner_id ?? null };

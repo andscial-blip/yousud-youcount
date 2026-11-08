@@ -66,11 +66,20 @@ async function seed() {
   const advMov = (await save({ ...base, client_uuid: randomUUID(), kind: 'expense', op_date: today, amount: 87500, currency: 'MGA', fx_rate: 5055.37,
     account_id: advId, paid_by: 'Fanomezantsoa Rakotondrabe', category_id: await id('categories', 'code', '203'), project_id: prj,
     description: 'Pranzo al mercato di Ambanja per la squadra di consegna', no_doc_reason: 'venditrice ambulante senza ricevute' })).id;
+  // preventivo in bozza con righe lunghe, una scadenza con titolo lungo, una ricevuta in bozza
+  const Y = Number(today.slice(0, 4));
+  const bd = (await as(sa, 'select public.budget_draft($1, null, $2) r', [Y, 'Preventivo di prova con un titolo abbastanza lungo']))[0].r;
+  for (const [code, cur, cost, rate] of [['401', 'MGA', 2500000, 5055.37], ['201', 'EUR', 1250, null], ['E101', 'EUR', 25000, null]])
+    await as(sa, 'select public.budget_item_save($1)', [{ budget_id: bd.id, category_id: await id('categories', 'code', code), project_id: prj, qty: 12, unit: 'mesi',
+      unit_cost: cost, currency: cur, fx_rate: rate, description: 'Materiale didattico e quaderni per tutte le classi della scuola, consegna trimestrale' }]);
+  await as(sa, 'select public.deadline_save($1)', [{ title: 'Rendicontazione intermedia al finanziatore con relazione narrativa e prospetto delle spese ammissibili', category: 'prj', due_date: today, amount: 125000, priority: 'high' }]);
+  const doc0 = (await as(sa, 'select public.issued_doc_save($1) r', [{ type: 'NOT', party_name: 'Fanomezantsoa Rakotondrabe Andriamanantena', party_address: 'Lot II M 89 bis Antananarivo 101',
+    amount: 0, currency: 'EUR', lang: 'both', data: { lines: [{ d: 'Formazione degli insegnanti sulla didattica inclusiva, tre giornate', q: 3, p: 180 }], ritenuta: 20, method: 'Bonifico' } }]))[0].r;
   const movId = typeof mov === 'object' ? (mov.id ?? mov) : mov;
   const org = (await pool.query('select org_id from profiles where id = $1', [sa])).rows[0].org_id;
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
     [org, 'Bando Fondazione per l’istruzione primaria in Madagascar 2026–2028', prj, today])).rows[0].id;
-  return { sa, movId, prj, grant, bi, advMov };
+  return { sa, movId, prj, grant, bi, advMov, doc0: doc0.id };
 }
 
 function startNext(stack) {
@@ -140,7 +149,9 @@ try {
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
     '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
-    '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro'];
+    '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro',
+    '/preventivo', '/preventivo?vista=righe', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,
+    '/documenti-emessi/nuovo?tipo=NRS', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=nodoc', '/report?tipo=cassa'];
   // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri; /a/* = tutte le pagine sotto /a/) — prova rapida
   const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
   if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`) || (o.endsWith('*') && x.startsWith(o.slice(0, -1))))));
@@ -195,6 +206,9 @@ try {
             const ai = p.locator('.docs .btn.primary');
             if (await ai.count()) { await ai.click(); await p.locator('.chip', { hasText: /Proposto|Proposé/ }).first().waitFor({ timeout: 20000 }).catch(() => {}); }
           }
+          // le tabelle diventano schede dopo l'idratazione (TableCards): si misura a trasformazione avvenuta
+          await p.waitForFunction(() => [...document.querySelectorAll('table.t:not(.keep)')].every((t) => t.hasAttribute('data-cards')
+            || !((t.tHead?.rows[0]?.cells.length ?? 0) >= 4) || t.querySelector('th.hm')), null, { timeout: 4000 }).catch(() => {});
           const { bad: bad0, scrollers } = await p.evaluate(audit);
           const bad = [...bad0, ...new Set(cerr)];
           if (process.env.SHOT_PATHS === '*' || (process.env.SHOT_PATHS ?? '').split(',').includes(path)) await p.screenshot({ path: `${SHOTS}/view_${process.env.DARK ? 'dark_' : ''}${lang}_${w}_${path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`, fullPage: true });
