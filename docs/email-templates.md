@@ -14,7 +14,7 @@ Bilingue (italiano e francese), perché all'invio non si sa ancora la lingua di 
   <p>Ciao, sei stato invitato a usare YouCount, la contabilità di YouSud. Apri il link e scegli la tua password.</p>
   <p>Bonjour, vous êtes invité à utiliser YouCount, la comptabilité de YouSud. Ouvrez le lien et choisissez votre mot de passe.</p>
   <p><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#44546A;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Accetta l'invito · Accepter l'invitation</a></p>
-  <p style="color:#5B6472;font-size:13px">Il link vale 24 ore e si usa una sola volta. · Le lien est valable 24 heures et ne sert qu'une fois.</p>
+  <p style="color:#5B6472;font-size:13px">Il link si usa una sola volta e scade dopo un po': se non funziona, chiedi un nuovo invito. · Le lien ne sert qu'une fois et expire : s'il ne marche pas, demandez une nouvelle invitation.</p>
 </div>
 ```
 
