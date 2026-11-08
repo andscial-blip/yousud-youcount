@@ -27,7 +27,7 @@ export async function saveDocDetails(form: FormData) {
   const s = (k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max);
   const now = new Date().toISOString();
   const { error } = await supabase.from('settings').upsert([
-    { org_id: me!.org_id, key: 'org_details', value: { address: s('address', 300), tax_id: s('tax_id', 40) }, updated_by: auth.user!.id, updated_at: now },
+    { org_id: me!.org_id, key: 'org_details', value: { address: s('address', 300), tax_id: s('tax_id', 40), iban: s('iban', 40).replace(/\s+/g, '') }, updated_by: auth.user!.id, updated_at: now },
     { org_id: me!.org_id, key: 'doc_signer', value: { name: s('signer', 120), role: s('signer_role', 120) }, updated_by: auth.user!.id, updated_at: now },
   ]);
   revalidatePath('/', 'layout');

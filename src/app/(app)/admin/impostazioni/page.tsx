@@ -25,7 +25,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     const v = (data ?? []).find((s) => s.key === k)?.value;
     return v === undefined || v === null ? def : v === true;
   };
-  const orgDet = ((data ?? []).find((s) => s.key === 'org_details')?.value ?? {}) as { address?: string; tax_id?: string };
+  const orgDet = ((data ?? []).find((s) => s.key === 'org_details')?.value ?? {}) as { address?: string; tax_id?: string; iban?: string };
   const signer = ((data ?? []).find((s) => s.key === 'doc_signer')?.value ?? {}) as { name?: string; role?: string };
   const lastBackup = (data ?? []).find((s) => s.key === 'last_backup')?.value as { at?: string; by?: string } | undefined;
   return (
@@ -61,7 +61,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             <input className="input" id="d-addr" name="address" maxLength={300} defaultValue={orgDet.address ?? ''} /></div>
           <div className="field"><label htmlFor="d-tax">{t('doc_tax')}</label>
             <input className="input" id="d-tax" name="tax_id" maxLength={40} defaultValue={orgDet.tax_id ?? ''} /></div>
-          <div className="field" />
+          <div className="field"><label htmlFor="d-iban">IBAN</label>
+            <input className="input num" id="d-iban" name="iban" maxLength={40} defaultValue={orgDet.iban ?? ''} /></div>
           <div className="field"><label htmlFor="d-sig">{t('doc_signer')}</label>
             <input className="input" id="d-sig" name="signer" maxLength={120} defaultValue={signer.name ?? ''} /></div>
           <div className="field"><label htmlFor="d-sigr">{t('doc_signer_role')}</label>

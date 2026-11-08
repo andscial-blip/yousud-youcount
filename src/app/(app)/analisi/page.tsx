@@ -24,7 +24,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   if (prj) lq = lq.eq('project_id', prj);
   let bq = supabase.from('budget_lines').select('group_id, amount_eur, project_id').eq('year', year).not('project_id', 'is', null);
   if (prj) bq = bq.eq('project_id', prj);
-  const [{ data: led, error }, { data: cats }, { data: groups }, { data: budget }, { data: cps }, { data: accs }, { data: projects }] = await Promise.all([
+  const [{ data: led, error }, { data: cats }, { data: groups }, { data: budget0 }, { data: cps }, { data: accs }, { data: projects }, { data: cmp }] = await Promise.all([
     lq.returns<Led[]>(),
     supabase.from('categories').select('id, group_id').returns<Cat[]>(),
     supabase.from('category_groups').select('id, code, name_it, name_fr, direction, sort').order('sort').returns<Grp[]>(),
@@ -32,6 +32,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
     supabase.from('counterparties').select('id, name'),
     supabase.from('accounts').select('id, location'),
     supabase.from('projects').select('id, name').order('name'),
+    supabase.rpc('budget_compare', { p_year: year }),
   ]);
   const L = (g: { name_it: string; name_fr: string | null }) => (lang === 'fr' && g.name_fr ? g.name_fr : g.name_it);
   const groupOf = new Map((cats ?? []).map((c) => [c.id, c.group_id]));
@@ -39,6 +40,12 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const val = (r: Led) => Number(r.amount_eur ?? 0);
   const out = rows.filter((r) => r.kind === 'expense'), inc = rows.filter((r) => r.kind === 'income');
   const totOut = out.reduce((s, r) => s + val(r), 0), totIn = inc.reduce((s, r) => s + val(r), 0);
+  // budget di uscita: preventivo approvato (righe per codice, portate al gruppo) più le vecchie righe per gruppo
+  const groupOfCat = new Map((cats ?? []).map((c) => [c.id, c.group_id]));
+  const budget = [...(budget0 ?? []).map((b) => ({ group_id: b.group_id as string, amount_eur: Number(b.amount_eur) })),
+    ...((cmp ?? []) as { direction: string; category_id: string; project_id: string | null; budget_eur: string }[])
+      .filter((r) => r.direction === 'out' && Number(r.budget_eur) > 0 && (!prj || r.project_id === prj))
+      .map((r) => ({ group_id: groupOfCat.get(r.category_id) ?? '', amount_eur: Number(r.budget_eur) }))];
   const totBudget = (budget ?? []).reduce((s, b) => s + Number(b.amount_eur), 0);
   const sumBy = (list: Led[], key: (r: Led) => string | null) => {
     const m = new Map<string, number>();

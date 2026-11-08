@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import { ruleItems } from '@/lib/deadline-rules';
 import { STAFF, can, requireMe } from '@/lib/session';
-import { money } from '@/lib/format';
+import { date, money } from '@/lib/format';
 import { ErrorNote, PageHead, Panel, Empty } from '@/components/Page';
 import { BalancesTable, type Balance } from '@/components/Balances';
-import { HBars, MonthBars } from '@/components/Charts';
+import { BudgetBar, HBars, MonthBars } from '@/components/Charts';
 import { Ico, Place } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,32 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     supabase.from('v_ledger').select('amount_eur').eq('kind', 'expense').gte('op_date', ymd(cfFrom)).lte('op_date', ymd(cfTo)).limit(50000),
     supabase.from('movements').select('amount, currency, amount_eur').eq('reimb_status', 'due').limit(5000),
   ]) : [{ data: null }, { data: null }, { data: null }];
+  // prossime scadenze (salvate e adempimenti dell'app) e preventivo dell'anno
+  const td = ymd(now), in30 = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30));
+  const [{ data: dls }, { data: incPrev }, { data: cmp }, { data: recs }] = await Promise.all([
+    supabase.from('deadlines').select('id, rule_key, title, due_date, status, amount, currency').gte('due_date', `${now.getFullYear() - 1}-01-01`).lte('due_date', in30),
+    staff ? supabase.rpc('income_of_year', { p_year: now.getFullYear() - 1 }) : Promise.resolve({ data: 0 }),
+    staff ? supabase.rpc('budget_compare', { p_year: year }) : Promise.resolve({ data: [] }),
+    staff ? supabase.from('bank_reconciliations').select('account_id, statement_date').order('statement_date', { ascending: false }).limit(20) : Promise.resolve({ data: [] }),
+  ]);
+  const savedBy = new Map((dls ?? []).filter((d) => d.rule_key).map((d) => [d.rule_key as string, d]));
+  const upcoming = [
+    ...(dls ?? []).filter((d) => !d.rule_key && d.status === 'open').map((d) => ({ k: d.id, date: d.due_date as string, title: d.title as string })),
+    ...(staff ? ruleItems([now.getFullYear()], () => Number(incPrev ?? 0)) : []).filter((r) => r.applies && r.date <= in30)
+      .map((r) => ({ r, s: savedBy.get(r.rule_key) })).filter(({ r, s }) => (s ? s.status === 'open' : true) && (s?.due_date ?? r.date) >= `${now.getFullYear()}-01-01`)
+      .map(({ r, s }) => ({ k: r.rule_key, date: (s?.due_date ?? r.date) as string, title: lang === 'fr' ? r.fr : r.it })),
+  ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 6);
+  type Cm = { direction: string; category_id: string; budget_eur: string; actual_eur: string };
+  const cm = (cmp ?? []) as Cm[];
+  const bOut = cm.filter((r) => r.direction === 'out').reduce((x, r) => x + Number(r.budget_eur), 0);
+  const aOut = cm.filter((r) => r.direction === 'out').reduce((x, r) => x + Number(r.actual_eur), 0);
+  const bIn = cm.filter((r) => r.direction === 'in').reduce((x, r) => x + Number(r.budget_eur), 0);
+  const aIn = cm.filter((r) => r.direction === 'in').reduce((x, r) => x + Number(r.actual_eur), 0);
+  const overCodes = new Set<string>();
+  { const agg = new Map<string, { b: number; a: number }>();
+    for (const r of cm.filter((x) => x.direction === 'out')) { const g = agg.get(r.category_id) ?? { b: 0, a: 0 }; g.b += Number(r.budget_eur); g.a += Number(r.actual_eur); agg.set(r.category_id, g); }
+    for (const [k, g] of agg) if (g.a > g.b + 0.005) overCodes.add(k); }
+  const lastRec = (recs ?? [])[0]?.statement_date as string | undefined;
   const fx = rate ? Number(rate) : null;
   const projects = [...byProject.values()].filter((p) => p.value > 0).sort((a, b) => b.value - a.value).slice(0, 8);
   const rows = (data ?? []) as Balance[];
@@ -116,6 +143,29 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <Panel title={`${t('dash_by_project')} · ${year}`} pad>
           {projects.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <HBars rows={projects} lang={lang} />}
         </Panel>
+      </div>
+      <div className="grid2">
+        <Panel title={t('dash_deadlines')}>
+          {upcoming.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('dash_dl_none')}</p> : (
+            <ul className="dl compact">{upcoming.map((u) => (
+              <li key={u.k}><div className="dl-date num"><b>{date(u.date)}</b>{u.date < td ? <span className="chip bad">{t('dash_dl_late')}</span> : null}</div>
+                <div className="dl-body"><div className="dl-t">{u.title}</div></div></li>))}</ul>
+          )}
+          <p className="panel-b" style={{ margin: 0 }}><Link href="/scadenze">{t('dash_dl_all')} →</Link></p>
+        </Panel>
+        {staff && (
+          <Panel title={`${t('nav_budget')} ${year}`}>
+            {bOut + bIn === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('dash_bud_none')}</p> : (
+              <div className="panel-b stack" style={{ gap: 14 }}>
+                <div><div className="thr-r"><span>{t('dash_bud_out')}</span><span className="num">{money(aOut, 'EUR', lang)} / {money(bOut, 'EUR', lang)}</span></div><BudgetBar budget={bOut} spent={aOut} /></div>
+                <div><div className="thr-r"><span>{t('dash_bud_in')}</span><span className="num">{money(aIn, 'EUR', lang)} / {money(bIn, 'EUR', lang)}</span></div><BudgetBar budget={bIn} spent={aIn} /></div>
+                {overCodes.size > 0 && <div className="note err">{t('dash_bud_over').replace('{n}', String(overCodes.size))}</div>}
+              </div>
+            )}
+            <p className="panel-b" style={{ margin: 0 }}><Link href={`/preventivo?anno=${year}`}>{t('dash_bud_go')} →</Link>
+              {lastRec && <span className="muted"> · {t('dash_last_rec')} {date(lastRec)}</span>}</p>
+          </Panel>
+        )}
       </div>
       {staff && (
         <Panel title={t('cf_title')}>

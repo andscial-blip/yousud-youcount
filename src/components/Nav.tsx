@@ -43,3 +43,22 @@ export function BottomNav({ items }: { items: NavLink[] }) {
     </nav>
   );
 }
+
+// Computer e tablet: menu laterale a gruppi (come Cairn); sul tablet diventa una colonna di icone.
+export function SideNav({ groups, label }: { groups: { title: string | null; items: NavLink[] }[]; label: string }) {
+  const path = usePathname();
+  return (
+    <nav className="side-nav" aria-label={label}>
+      {groups.map((g, i) => (
+        <div className="side-grp" key={i}>
+          {g.title && <span className="side-gt">{g.title}</span>}
+          {g.items.map((it) => (
+            <Link key={it.href} href={it.href} className="side-link" aria-current={isActive(path, it.href) ? 'page' : undefined} title={it.label}>
+              <Icon d={it.icon} size={18} /><span>{it.label}</span>
+            </Link>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+}

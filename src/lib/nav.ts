@@ -8,23 +8,28 @@ export type Section = {
   top?: boolean;        // barra in alto (computer)
   bottom?: boolean;     // barra in basso (telefono)
   group?: 'work' | 'admin' | 'me';   // voci della pagina "Altro"
+  side?: 'main' | 'control' | 'treasury' | 'archive';   // menu laterale (computer e tablet)
 };
 
 export const SECTIONS: Section[] = [
-  { href: '/', key: 'nav_dashboard', icon: 'M3 12l9-8 9 8M5 10v10h14V10', top: true, bottom: true },
-  { href: '/movimenti', key: 'nav_movements', icon: 'M4 6h16M4 12h16M4 18h10', top: true, bottom: true },
+  { href: '/', key: 'nav_dashboard', icon: 'M3 12l9-8 9 8M5 10v10h14V10', top: true, bottom: true, side: 'main' },
+  { href: '/movimenti', key: 'nav_movements', icon: 'M4 6h16M4 12h16M4 18h10', top: true, bottom: true, side: 'main' },
   { href: '/nuovo', key: 'nav_new', icon: 'M12 5v14M5 12h14', bottom: true },
-  { href: '/verifica', key: 'nav_verify', icon: 'M5 13l4 4L19 7', roles: RESP, top: true, group: 'work' },
-  { href: '/documenti', key: 'nav_documents', icon: 'M7 3h7l5 5v13H7zM14 3v5h5', top: true, bottom: true },
-  { href: '/progetti', key: 'nav_projects', icon: 'M4 7h16v12H4zM9 7V4h6v3', top: true, group: 'work' },
-  { href: '/conti', key: 'nav_accounts', icon: 'M3 10h18M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18M12 3l9 5H3z', top: true, group: 'work' },
-  { href: '/analisi', key: 'nav_analysis', icon: 'M4 20V4M4 20h16M8 16l4-5 3 3 5-7', roles: STAFF, top: true, group: 'work' },
-  { href: '/rendiconto', key: 'nav_report', icon: 'M5 20V10M12 20V4M19 20v-7', roles: STAFF, top: true, group: 'work' },
-  { href: '/rimborsi', key: 'nav_reimb', icon: 'M4 7h15v12H4zM4 7l11-3v3M15 13h.01', group: 'work' },
-  { href: '/anticipi', key: 'nav_advances', icon: 'M3 8h18v10H3zM7 8V6h10v2M12 11v4M10 13h4', roles: STAFF, group: 'work' },
-  { href: '/riconciliazione', key: 'nav_rec', icon: 'M4 6h11M4 12h7M4 18h7M14 15l3 3 5-6', roles: STAFF, group: 'work' },
-  { href: '/finanziamenti', key: 'nav_grants', icon: 'M12 3v18M7 7h7.5a3.5 3.5 0 0 1 0 7H7', group: 'work' },
-  { href: '/controparti', key: 'nav_counterparties', icon: 'M16 11a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0', group: 'work' },
+  { href: '/verifica', key: 'nav_verify', icon: 'M5 13l4 4L19 7', roles: RESP, top: true, group: 'work', side: 'main' },
+  { href: '/documenti', key: 'nav_documents', icon: 'M7 3h7l5 5v13H7zM14 3v5h5', top: true, bottom: true, side: 'main' },
+  { href: '/scadenze', key: 'nav_deadlines', icon: 'M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 14h2', group: 'work', side: 'main' },
+  { href: '/preventivo', key: 'nav_budget', icon: 'M4 19h16M6 15V9M11 15V5M16 15v-4M4 5h2', roles: STAFF, group: 'work', side: 'control' },
+  { href: '/report', key: 'nav_reports', icon: 'M6 3h9l4 4v14H6zM9 12h7M9 16h7M9 8h3', roles: STAFF, group: 'work', side: 'control' },
+  { href: '/documenti-emessi', key: 'nav_issued', icon: 'M7 3h10v18l-5-3-5 3zM10 8h4M10 12h4', group: 'work', side: 'archive' },
+  { href: '/progetti', key: 'nav_projects', icon: 'M4 7h16v12H4zM9 7V4h6v3', top: true, group: 'work', side: 'control' },
+  { href: '/conti', key: 'nav_accounts', icon: 'M3 10h18M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18M12 3l9 5H3z', top: true, group: 'work', side: 'treasury' },
+  { href: '/analisi', key: 'nav_analysis', icon: 'M4 20V4M4 20h16M8 16l4-5 3 3 5-7', roles: STAFF, top: true, group: 'work', side: 'control' },
+  { href: '/rendiconto', key: 'nav_report', icon: 'M5 20V10M12 20V4M19 20v-7', roles: STAFF, top: true, group: 'work', side: 'control' },
+  { href: '/rimborsi', key: 'nav_reimb', icon: 'M4 7h15v12H4zM4 7l11-3v3M15 13h.01', group: 'work', side: 'treasury' },
+  { href: '/anticipi', key: 'nav_advances', icon: 'M3 8h18v10H3zM7 8V6h10v2M12 11v4M10 13h4', roles: STAFF, group: 'work', side: 'treasury' },
+  { href: '/riconciliazione', key: 'nav_rec', icon: 'M4 6h11M4 12h7M4 18h7M14 15l3 3 5-6', roles: STAFF, group: 'work', side: 'treasury' },
+  { href: '/finanziamenti', key: 'nav_grants', icon: 'M12 3v18M7 7h7.5a3.5 3.5 0 0 1 0 7H7', group: 'work', side: 'control' },
+  { href: '/controparti', key: 'nav_counterparties', icon: 'M16 11a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0', group: 'work', side: 'archive' },
   { href: '/sincronizzazione', key: 'nav_sync', icon: 'M4 12a8 8 0 0 1 14-5l2-2v6h-6M20 12a8 8 0 0 1-14 5l-2 2v-6h6', group: 'work' },
   { href: '/guida', key: 'nav_guide', icon: 'M12 18h.01M9 9a3 3 0 1 1 4 2.8c-.6.3-1 .9-1 1.6V14', group: 'work' },
   { href: '/admin/utenti', key: 'nav_users', icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 11h5M19.5 8.5v5', roles: ADMIN, group: 'admin' },

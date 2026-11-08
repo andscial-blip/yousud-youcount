@@ -11,7 +11,8 @@ export async function recordCashCount(form: FormData) {
   if (counted === null) redirect('/conti?err=invalid');
   const { error } = await supabase.rpc('record_cash_count', {
     p_account: String(form.get('account')), p_date: String(form.get('date')), p_counted: counted,
-    p_notes: String(form.get('notes') ?? '') || null, p_denominations: null,
+    p_notes: String(form.get('notes') ?? '') || null,
+    p_denominations: String(form.get('denominations') ?? '') ? JSON.parse(String(form.get('denominations'))) : null,
   });
   revalidatePath('/conti');
   redirect(error ? `/conti?err=${encodeURIComponent(error.message)}` : '/conti?ok=cash');

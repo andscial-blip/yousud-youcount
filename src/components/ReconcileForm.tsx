@@ -5,12 +5,14 @@ import { parseAmount } from '@/lib/amount';
 import { money } from '@/lib/format';
 import type { Lang } from '@/lib/i18n';
 import { reconcile } from '@/app/(app)/riconciliazione/actions';
+import { detect, match, readCsv, toLines, type StmtLine } from '@/lib/bank-csv';
 
 export type Leg = { movement_id: string; side: 'from' | 'to'; ref: string | null; op_date: string; description: string; amount: number };
 type L = {
   stmt_date: string; stmt_bal: string; prev: string; ticked: string; calc: string; diff: string; ok: string; confirm: string;
   notes: string; after: string; none: string; tick_all: string; tick_none: string; neg: string; fill: string;
   date: string; desc: string; amount: string;
+  imp: string; imp_hint: string; imp_res: string; imp_unm: string; imp_none: string; imp_bad: string; imp_extra: string;
 };
 
 const day = (d: string) => d.split('-').reverse().join('/');
@@ -46,6 +48,25 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
   const diff = balance === null ? null : Math.round((balance - calc) * 100) / 100;
   const dateOk = Boolean(date) && date <= today && (!lastDate || date >= lastDate);
   const canSave = dateOk && diff === 0;
+  // estratto conto CSV: abbina le righe ai movimenti aperti e spunta quelli trovati (nulla viene inviato o salvato)
+  const [imp, setImp] = useState<{ n: number; matched: number; unmatched: StmtLine[]; extra: number } | null>(null);
+  const [impErr, setImpErr] = useState('');
+  const onFile = async (f: File | undefined) => {
+    setImpErr(''); setImp(null);
+    if (!f) return;
+    const { rows, header, hi } = readCsv(await f.text());
+    const lines = hi >= 0 ? toLines(rows, hi, detect(header)) : [];
+    if (!lines.length) { setImpErr(t.imp_bad); return; }
+    const res = match(lines, legs.map((l) => ({ ...l, key: key(l) })), currency === 'MGA' ? 1 : 0.005);
+    const keys = new Set(res.filter((r) => r.leg).map((r) => r.leg!.key));
+    setSel(keys);
+    const last = [...lines].sort((a, b) => a.date.localeCompare(b.date)).at(-1)!;
+    if (last.date <= today && (!lastDate || last.date >= lastDate)) setDate(last.date);
+    if (last.balance !== null) setBalTxt(String(last.balance).replace('.', ','));
+    const lo = lines.reduce((m, l) => (l.date < m ? l.date : m), last.date);
+    setImp({ n: lines.length, matched: keys.size, unmatched: res.filter((r) => !r.leg).map((r) => r.line),
+      extra: legs.filter((l) => !keys.has(key(l)) && l.op_date >= lo && l.op_date <= last.date).length });
+  };
   const toggle = (k: string) => setSel((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   return (
@@ -62,6 +83,23 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
           <input className="input num" inputMode="decimal" required value={balTxt} onChange={(e) => setBalTxt(e.target.value)}
             aria-invalid={balTxt.trim() !== '' && balance === null} />
           <span className="hint">{t.neg}</span></label>
+      </div>
+      <div className="panel-b rec-import">
+        <label className="field"><span className="flabel">{t.imp}</span>
+          <input className="input" type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(e) => onFile(e.target.files?.[0])} />
+          <span className="hint">{t.imp_hint}</span></label>
+        {impErr && <div className="note err">{impErr}</div>}
+        {imp && (
+          <div className="note info" role="status">
+            {t.imp_res.replace('{n}', String(imp.n)).replace('{m}', String(imp.matched))}
+            {imp.extra > 0 && <> {t.imp_extra.replace('{n}', String(imp.extra))}</>}
+            {imp.unmatched.length > 0 ? (
+              <details style={{ marginTop: 6 }}><summary>{t.imp_unm.replace('{n}', String(imp.unmatched.length))}</summary>
+                <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{imp.unmatched.map((u, i) => (
+                  <li key={i}><span className="num">{day(u.date)} · {u.amount >= 0 ? '+' : ''}{fmt(u.amount)}</span> · {u.text}</li>))}</ul></details>
+            ) : <> {t.imp_none}</>}
+          </div>
+        )}
       </div>
       <div className="rec-sum" aria-live="polite">
         <div><span>{t.prev}</span><b className="num">{fmt(previous)}</b></div>

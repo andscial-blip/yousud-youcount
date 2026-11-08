@@ -205,6 +205,16 @@ export default async function MovementDetail({ params, searchParams }: {
             </Panel>
           )}
 
+          {writer && !m.reverses_id && m.kind !== 'transfer' && (
+            <Panel title={t('gen_docs')} pad>
+              <div className="row-actions">
+                {(m.kind === 'income' ? ['RIC', 'NDD'] : ['QUI', 'NOT', 'NRS']).map((k) => (
+                  <Link key={k} className="btn small" href={`/documenti-emessi/nuovo?tipo=${k}&mov=${m.id}`}>{t(`gen_${k}` as Key)}</Link>
+                ))}
+              </div>
+            </Panel>
+          )}
+
           {canReverse && (
             <details className="panel">
               <summary className="panel-h" style={{ cursor: 'pointer' }}><h2>{t('d_reverse')}</h2></summary>

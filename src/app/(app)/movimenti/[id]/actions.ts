@@ -1,5 +1,5 @@
 'use server';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -46,23 +46,26 @@ export async function selfCertAction(form: FormData) {
     place: String(form.get('place') ?? ''), reason: String(form.get('reason') ?? ''), lang: String(form.get('lang') ?? 'it'),
   } });
   if (error) back(id, `err=${encodeURIComponent(error.message)}`);
-  const [{ data: org }, { data: det }] = await Promise.all([
+  const [{ data: org }, { data: det }, { data: mv }] = await Promise.all([
     supabase.from('organizations').select('id, name').single(),
     supabase.from('settings').select('value').eq('key', 'org_details').maybeSingle(),
+    supabase.from('movements').select('ref').eq('id', id).maybeSingle(),
   ]);
-  const d = (det?.value ?? {}) as { address?: string; tax_id?: string };
-  const { selfCertPdf } = await import('@/lib/selfcert-pdf');
-  const bytes = await selfCertPdf(s, { name: org!.name, address: d.address, tax_id: d.tax_id });
-  const hash = createHash('sha256').update(bytes).digest('hex');
-  const path = `${org!.id}/${String(s.exp_date).slice(0, 4)}/${s.number}-${hash.slice(0, 10)}.pdf`;
-  const up = await supabase.storage.from('documents').upload(path, bytes, { contentType: 'application/pdf', upsert: false });
-  if (up.error && !/exists|Duplicate/i.test(up.error.message)) back(id, `err=${encodeURIComponent(up.error.message)}`);
-  const { data: doc, error: dErr } = await supabase.rpc('register_document', { p: {
-    client_uuid: s.id, sha256: hash, original_path: path, mime: 'application/pdf', file_name: `${s.number}.pdf`,
-    size_bytes: bytes.length, pages: 1, doc_type: 'self_cert', doc_number: s.number, doc_date: s.exp_date,
-    total: s.amount, currency: s.currency,
-  } });
-  if (dErr) back(id, `err=${encodeURIComponent(dErr.message)}`);
+  const od = (det?.value ?? {}) as { address?: string; tax_id?: string; iban?: string };
+  const { buildModel } = await import('@/lib/doc-model');
+  const { renderPdf } = await import('@/lib/doc-pdf');
+  const { storePdf } = await import('@/lib/store-pdf');
+  const md = buildModel({ type: 'AUT', number: s.number, lang: s.lang, doc_date: new Date().toISOString().slice(0, 10), party_name: s.declarant,
+    party_tax_id: null, party_address: null, amount: s.amount, currency: s.currency, amount_eur: s.amount_eur, signer_name: s.signer_name,
+    signer_role: s.signer_role, movement_ref: mv?.ref ?? null, project_name: s.project_name,
+    data: { declarant: s.declarant, declarant_role: s.declarant_role, place: s.place, reason: s.reason, exp_date: s.exp_date, supplier: s.supplier,
+      description: s.description, category: s.category_code, category_fr: s.category_fr, method: s.method, method_fr: s.method_fr } },
+    { name: org!.name, address: od.address, tax_id: od.tax_id, iban: od.iban });
+  const bytes = await renderPdf(md);
+  const st = await storePdf(supabase, { orgId: org!.id, bytes, number: s.number, date: String(s.exp_date), clientUuid: s.id, docType: 'self_cert',
+    total: s.amount, currency: s.currency });
+  if (st.error) back(id, `err=${encodeURIComponent(st.error)}`);
+  const doc = { id: st.id! };
   const { error: aErr } = await supabase.rpc('attach_self_cert', { p_id: s.id, p_document_id: doc.id });
   revalidatePath('/', 'layout');
   back(id, aErr ? `err=${encodeURIComponent(aErr.message)}` : 'ok=aut');

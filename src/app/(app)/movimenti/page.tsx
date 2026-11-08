@@ -18,7 +18,7 @@ const PAGE = 100;
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isId = (v: string) => /^[0-9a-f-]{36}$/.test(v);
 
-type SP = { stato?: string; q?: string; progetto?: string; conto?: string; dal?: string; al?: string; p?: string };
+type SP = { stato?: string; q?: string; progetto?: string; conto?: string; dal?: string; al?: string; p?: string; codice?: string; tipo?: string };
 
 export default async function Movements({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
@@ -29,6 +29,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const acc = isId(sp.conto ?? '') ? sp.conto! : '';
   const from = isDate(sp.dal ?? '') ? sp.dal! : '';
   const to = isDate(sp.al ?? '') ? sp.al! : '';
+  const cat = isId(sp.codice ?? '') ? sp.codice! : '';
+  const tipo = ['income', 'expense', 'transfer'].includes(sp.tipo ?? '') ? sp.tipo! : '';
   const page = Math.max(1, Math.min(1000, Number(sp.p) || 1));
   const { supabase, t, lang } = await requireMe();
   let q = supabase
@@ -45,6 +47,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   if (acc) q = q.or(`account_id.eq.${acc},to_account_id.eq.${acc}`);
   if (from) q = q.gte('op_date', from);
   if (to) q = q.lte('op_date', to);
+  if (cat) q = q.eq('category_id', cat);
+  if (tipo) q = q.eq('kind', tipo as 'income' | 'expense' | 'transfer');
   const [{ data, error, count }, { data: projects }, { data: accounts }] = await Promise.all([
     q.returns<Row[]>(),
     supabase.from('projects').select('id, name').order('name'),
@@ -55,13 +59,15 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const filters = [['', t('all')], ['draft', t('drafts')], ['recorded', t('st_recorded')], ['verified', t('verified')], ['nodoc', t('f_nodoc_filter')]];
   // un indirizzo con tutti i filtri attivi: si può salvare o mandare a un collega
   const href = (over: Partial<SP>) => {
-    const v = { stato, q: term, progetto: prj, conto: acc, dal: from, al: to, p: '', ...over };
+    const v = { stato, q: term, progetto: prj, conto: acc, dal: from, al: to, codice: cat, tipo, p: '', ...over };
     const u = new URLSearchParams();
     for (const [k, x] of Object.entries(v)) if (x) u.set(k, String(x));
     const s = u.toString();
     return s ? `/movimenti?${s}` : '/movimenti';
   };
-  const active = [prj, acc, from, to].filter(Boolean).length;
+  const active = [prj, acc, from, to, cat, tipo].filter(Boolean).length;
+  const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthStart = `${ym}-01`, monthEnd = `${ym}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
 
   return (
     <div className="stack">
@@ -92,11 +98,21 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               <input className="input" type="date" name="dal" defaultValue={from} /></label>
             <label className="field"><span className="flabel">{t('gr_to')}</span>
               <input className="input" type="date" name="al" defaultValue={to} /></label>
+            <label className="field"><span className="flabel">{t('type')}</span>
+              <select className="input" name="tipo" defaultValue={tipo}><option value="">{t('all')}</option>
+                {(['expense', 'income', 'transfer'] as const).map((k) => <option key={k} value={k}>{t(`k_${k}`)}</option>)}</select></label>
+            {cat && <input type="hidden" name="codice" value={cat} />}
           </div>
         </details>
         <button className="btn primary" type="submit">{t('f_apply')}</button>
         {(term || active > 0) && <Link className="btn ghost" href={stato ? `/movimenti?stato=${stato}` : '/movimenti'}>{t('search_clear')}</Link>}
       </form>
+      <nav className="quick" aria-label={t('f_quick')}>
+        <Link href={href({ dal: monthStart, al: monthEnd })} aria-current={from === monthStart && to === monthEnd ? 'true' : undefined}>{t('f_this_month')}</Link>
+        <Link href={href({ stato: 'draft' })} aria-current={stato === 'draft' ? 'true' : undefined}>{t('f_to_complete')}</Link>
+        <Link href={href({ tipo: 'transfer' })} aria-current={tipo === 'transfer' ? 'true' : undefined}>{t('f_transfers')}</Link>
+        <Link href={href({ tipo: 'income' })} aria-current={tipo === 'income' ? 'true' : undefined}>{t('f_incomes')}</Link>
+      </nav>
       {total > 0 && <p className="muted" style={{ margin: 0 }} aria-live="polite">
         {t('f_count').replace('{n}', total.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT'))}{pages > 1 ? ` · ${t('f_page')} ${page}/${pages}` : ''}</p>}
       <ErrorNote prefix={t('error_load')} error={error} />

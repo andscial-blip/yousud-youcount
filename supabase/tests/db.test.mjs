@@ -672,3 +672,104 @@ test('anticipi al personale: consegna fuori cassa, spese nel rendiconto, saldo d
   const inc = await rpc(U.op, 'save_movement', mov({ kind: 'income', category_id: R.in['E101'], status: 'recorded', no_doc_reason: 'prova entrata' }));
   await assert.rejects(rpc(U.op, 'create_self_cert', { movement_id: inc.id, declarant: 'X', reason: 'prova motivo' }), /solo per una spesa/);
 });
+
+test('preventivo: versioni, approvazione con delibera, blocco delle righe, revisione, confronto con il consuntivo', async () => {
+  const Y = Number(today.slice(0, 4));
+  await assert.rejects(rpc(U.op, 'budget_draft', Y, null, null), /forbidden/);
+  const d1 = await rpc(U.resp, 'budget_draft', Y, null, 'Preventivo');
+  assert.equal(d1.version, 1);
+  assert.equal((await rpc(U.resp, 'budget_draft', Y, null, null)).outcome, 'exists', 'una sola bozza per anno');
+  const [{ id: prj }] = await sql(`insert into projects(org_id, name) values ($1, 'Prova preventivo') returning id`, [ORG]);
+  const l1 = await rpc(U.resp, 'budget_item_save', { budget_id: d1.id, category_id: R.out['201'], project_id: prj, qty: 12, unit: 'mesi', unit_cost: 100, currency: 'EUR' });
+  assert.equal(Number(l1.amount_eur), 1200);
+  const l2 = await rpc(U.resp, 'budget_item_save', { budget_id: d1.id, category_id: R.out['401'], project_id: prj, qty: 2, unit_cost: 250000, currency: 'MGA', fx_rate: 5000 });
+  assert.equal(Number(l2.amount_eur), 100);
+  await assert.rejects(rpc(U.resp, 'budget_item_save', { budget_id: d1.id, category_id: R.out['401'], unit_cost: 1, currency: 'MGA' }), /tasso/);
+  await rpc(U.resp, 'budget_item_save', { budget_id: d1.id, category_id: R.in['E101'], qty: 1, unit_cost: 5000, currency: 'EUR' });
+  // approvazione: solo amministratori e con la delibera
+  await assert.rejects(rpc(U.resp, 'budget_approve', d1.id, 'CdA 10/01'), /forbidden/);
+  await assert.rejects(rpc(U.admin, 'budget_approve', d1.id, ''), /delibera/);
+  const ap = await rpc(U.admin, 'budget_approve', d1.id, 'Delibera CdA del 10 gennaio');
+  assert.equal(ap.status, 'approved');
+  // approvato = bloccato
+  await assert.rejects(rpc(U.resp, 'budget_item_save', { id: l1.id, budget_id: d1.id, category_id: R.out['201'], unit_cost: 1 }), /approvato/);
+  await assert.rejects(rpc(U.resp, 'budget_item_delete', l1.id), /approvato/);
+  await assert.rejects(rpc(U.resp, 'budget_discard', d1.id), /bozza/);
+  // revisione: copia l'approvata, che diventa superata solo quando si approva la revisione
+  const d2 = await rpc(U.resp, 'budget_draft', Y, null, 'Revisione 1');
+  assert.deepEqual([d2.version, d2.copied], [2, 3]);
+  const [r2] = await sql(`select id from budget_items where budget_id = $1 and category_id = $2`, [d2.id, R.out['201']]);
+  await rpc(U.resp, 'budget_item_save', { id: r2.id, budget_id: d2.id, category_id: R.out['201'], project_id: prj, qty: 12, unit_cost: 150, currency: 'EUR' });
+  assert.equal((await sql(`select status from budgets where id = $1`, [d1.id]))[0].status, 'approved');
+  await rpc(U.admin, 'budget_approve', d2.id, 'Delibera CdA di giugno – revisione');
+  assert.deepEqual((await sql(`select version, status from budgets where year = $1 order by version`, [Y])).map((r) => r.status), ['superseded', 'approved']);
+  assert.equal(Number((await sql(`select sum(amount_eur) s from budget_items where budget_id = $1 and category_id = $2`, [d1.id, R.out['201']]))[0].s), 1200, 'la versione superata non cambia');
+  // consuntivo: una spesa registrata e una bozza (impegnato) nel 2031
+  await rpc(U.op, 'save_movement', mov({ project_id: prj, amount: 300, status: 'recorded', no_doc_reason: 'prova consuntivo' }));
+  await rpc(U.op, 'save_movement', mov({ project_id: prj, amount: 50, status: 'draft' }));
+  const cmp = await as(U.resp, (q) => q('select * from budget_compare($1)', [Y]));
+  const row = cmp.find((r) => r.category_id === R.out['201'] && r.project_id === prj);
+  assert.deepEqual([Number(row.budget_eur), Number(row.actual_eur), Number(row.committed_eur)], [1800, 300, 50]);
+  const v1 = await as(U.resp, (q) => q('select * from budget_compare($1, $2)', [Y, d1.id]));
+  assert.equal(Number(v1.find((r) => r.category_id === R.out['201'] && r.project_id === prj).budget_eur), 1200, 'confronto con una versione scelta');
+  assert.equal((await as(U.op, (q) => q('select * from budget_compare($1)', [Y]))).length, 0, 'l\'operatore non vede il preventivo');
+  // il budget di progetto per anno viene dal preventivo approvato
+  const bva = await as(U.resp, (q) => q('select * from budget_vs_actual($1, $2, null)', [prj, Y]));
+  assert.equal(bva.reduce((s, r) => s + Number(r.budget_eur), 0), 1900);
+  // una bozza vuota si elimina
+  const d3 = await rpc(U.resp, 'budget_draft', Y, null, null);
+  assert.equal((await rpc(U.resp, 'budget_discard', d3.id)).outcome, 'deleted');
+  // copia da un altro anno
+  const n = await rpc(U.resp, 'budget_draft', Y + 1, Y, null);
+  assert.equal(n.copied, 3);
+});
+
+test('scadenziario: scadenze a mano, adempimenti dell\'app, ricorrenza, visibilità', async () => {
+  await assert.rejects(rpc(U.ro, 'deadline_save', { title: 'Prova', due_date: '2031-01-31' }), /forbidden/);
+  const d = await rpc(U.op, 'deadline_save', { title: 'Pagare affitto ufficio', category: 'pay', due_date: '2031-01-31', amount: 450, repeat: 'monthly', priority: 'high' });
+  assert.deepEqual([d.currency, d.status, d.priority], ['EUR', 'open', 'high']);
+  const done = await rpc(U.op, 'deadline_set_status', d.id, 'done');
+  assert.ok(done.done_at);
+  const next = await sql(`select due_date::text d, status from deadlines where title = 'Pagare affitto ufficio' order by due_date`);
+  assert.deepEqual(next.map((r) => r.d), ['2031-01-31', '2031-02-28'], 'la ricorrenza mensile crea la successiva');
+  // adempimento dell'app: una sola riga per chiave, anche se salvato due volte
+  await rpc(U.resp, 'deadline_save', { rule_key: 'runts-2031', title: 'Deposito del bilancio 2030 al RUNTS', category: 'ets', due_date: '2031-06-30' });
+  const r2 = await rpc(U.resp, 'deadline_save', { rule_key: 'runts-2031', title: 'Deposito del bilancio 2030 al RUNTS', due_date: '2031-06-27' });
+  assert.equal(r2.due_date, '2031-06-27');
+  assert.equal((await sql(`select count(*)::int n from deadlines where rule_key = 'runts-2031'`))[0].n, 1);
+  // l'operatore vede solo le sue
+  const mine = await as(U.op, (q) => q('select title from deadlines'));
+  assert.ok(mine.every((r) => r.title !== 'Deposito del bilancio 2030 al RUNTS'));
+  await assert.rejects(rpc(U.op, 'deadline_set_status', r2.id, 'done'), /forbidden/);
+  assert.ok(Number(await rpc(U.resp, 'income_of_year', Number(today.slice(0, 4)))) >= 0);
+});
+
+test('documenti emessi: bozza, emissione numerata e bloccata, PDF collegato al movimento, annullamento con motivo', async () => {
+  const inc = await rpc(U.op, 'save_movement', mov({ kind: 'income', category_id: R.in['E101'], status: 'recorded', no_doc_reason: 'donazione' }));
+  await assert.rejects(rpc(U.op, 'issued_doc_save', { type: 'FAT', party_name: 'X' }), /tipo/);
+  const dr = await rpc(U.op, 'issued_doc_save', { type: 'RIC', movement_id: inc.id, party_name: 'Mario Rossi', party_tax_id: 'RSSMRA80A01H501U',
+    amount: 100, currency: 'EUR', lang: 'it', data: { causale: 'don', method: 'Bonifico' } });
+  assert.equal(dr.status, 'draft');
+  assert.equal(dr.number, null);
+  // dati personali: staff e autore
+  assert.equal((await as(U.ro, (q) => q('select party_tax_id from issued_docs where id = $1', [dr.id])))[0].party_tax_id, 'RSSMRA80A01H501U');
+  const iss = await rpc(U.op, 'issued_doc_issue', dr.id);
+  assert.match(iss.number, new RegExp(`^RIC-${today.slice(0, 4)}-\\d{3}$`));
+  await assert.rejects(rpc(U.op, 'issued_doc_save', { id: dr.id, type: 'RIC', party_name: 'Altro', amount: 1 }), /già emesso/);
+  const d = await doc(U.op);
+  await rpc(U.op, 'issued_doc_attach', dr.id, d);
+  assert.equal((await sql('select count(*)::int n from movement_documents where movement_id = $1 and document_id = $2', [inc.id, d]))[0].n, 1);
+  // annullamento: solo un responsabile, con motivo; il numero resta
+  await assert.rejects(rpc(U.op, 'issued_doc_cancel', dr.id, 'errore di importo'), /forbidden/);
+  await assert.rejects(rpc(U.resp, 'issued_doc_cancel', dr.id, ''), /motivo/);
+  const c = await rpc(U.resp, 'issued_doc_cancel', dr.id, 'errore di importo');
+  assert.deepEqual([c.status, c.number], ['cancelled', iss.number]);
+  // la numerazione prosegue, non riusa
+  const n2 = await rpc(U.op, 'issued_doc_save', { type: 'RIC', party_name: 'Anna', amount: 20, currency: 'EUR' });
+  const i2 = await rpc(U.op, 'issued_doc_issue', n2.id);
+  assert.notEqual(i2.number, iss.number);
+  // bozza incompleta non si emette; una bozza si elimina
+  const n3 = await rpc(U.op, 'issued_doc_save', { type: 'QUI', amount: 0 });
+  await assert.rejects(rpc(U.op, 'issued_doc_issue', n3.id), /controparte/);
+  assert.equal((await rpc(U.op, 'issued_doc_cancel', n3.id, null)).outcome, 'deleted');
+});

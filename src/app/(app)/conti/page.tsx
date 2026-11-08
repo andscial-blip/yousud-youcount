@@ -4,7 +4,7 @@ import { date, money, nm } from '@/lib/format';
 import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
 import { BalancesTable, type Balance } from '@/components/Balances';
-import { recordCashCount } from './actions';
+import { CashCounter } from '@/components/CashCounter';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,19 +43,9 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         <div className="stack" style={{ gap: 14 }}>
           <p className="muted" style={{ margin: 0 }}>{t('cc_intro')}</p>
           {me?.role !== 'read_only' && cash.length > 0 && (
-            <form action={recordCashCount} className="fgrid" style={{ alignItems: 'end' }}>
-              <div className="field"><label htmlFor="cc-account">{t('account')}</label>
-                <select className="input" id="cc-account" name="account" required>
-                  {cash.map((c) => <option key={c.account_id} value={c.account_id}>{nm(lang, c)} · {c.currency}</option>)}
-                </select></div>
-              <div className="field"><label htmlFor="cc-date">{t('date')}</label>
-                <input className="input" type="date" id="cc-date" name="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-              <div className="field"><label htmlFor="cc-counted">{t('cc_counted')}</label>
-                <input className="input num big" id="cc-counted" name="counted" inputMode="decimal" required /></div>
-              <div className="field"><label htmlFor="cc-notes">{t('f_notes')}</label>
-                <input className="input" id="cc-notes" name="notes" /></div>
-              <div><button className="btn primary" type="submit">{t('cc_save')}</button></div>
-            </form>
+            <CashCounter lang={lang} accounts={cash.map((c) => ({ id: c.account_id, label: nm(lang, c), currency: c.currency, balance: Number(c.balance) }))}
+              L={{ account: t('account'), date: t('date'), den: t('cc_den'), qty: t('cc_qty'), total: t('cc_total'), counted: t('cc_counted'),
+                expected: t('cc_expected'), diff: t('cc_diff'), notes: t('f_notes'), save: t('cc_save'), manual: t('cc_manual'), hint: t('cc_hint') }} />
           )}
           {(counts ?? []).length > 0 && (
             <table className="t">

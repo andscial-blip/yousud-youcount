@@ -106,7 +106,8 @@ export default async function Reconciliation({ searchParams }: {
             labels={{ stmt_date: t('rec_stmt_date'), stmt_bal: t('rec_stmt_bal'), prev: t('rec_prev'), ticked: t('rec_ticked'),
               calc: t('rec_calc'), diff: t('rec_diff'), ok: t('rec_ok'), confirm: t('rec_confirm'), notes: t('rec_notes'),
               after: t('rec_after'), none: t('rec_none'), tick_all: t('rec_tick_all'), tick_none: t('rec_tick_none'), neg: t('rec_neg'),
-              fill: t('rec_fill'), date: t('date'), desc: t('description'), amount: t('amount') }} />
+              fill: t('rec_fill'), date: t('date'), desc: t('description'), amount: t('amount'), imp: t('rec_imp'), imp_hint: t('rec_imp_hint'),
+              imp_res: t('rec_imp_res'), imp_unm: t('rec_imp_unm'), imp_none: t('rec_imp_none'), imp_bad: t('rec_imp_bad'), imp_extra: t('rec_imp_extra') }} />
         </Panel>
       ) : (
         <Panel pad><p style={{ margin: 0 }}>{t('rec_balance')}: <b className="num">{money(s.balance, acc.currency, lang)}</b>

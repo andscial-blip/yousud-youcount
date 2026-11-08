@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { normLang } from '@/lib/i18n';
+import { buildReport, REPORTS, type ReportKind } from '@/lib/reports';
 
 // Esportazioni Excel con i permessi dell'utente collegato (la RLS filtra le righe).
 // /api/v1/export/movimenti?anno=2026&stato=verified   ·   /api/v1/export/rendiconto?anno=2026
@@ -110,6 +111,54 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const r = await grantReport(supabase, req, fr, wb, me.role);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
     file = r.file;
+  } else if (kind === 'report') {
+    const tipo = (REPORTS.find((r) => r.k === req.nextUrl.searchParams.get('tipo'))?.k ?? 'mensile') as ReportKind;
+    let tables;
+    try { tables = await buildReport(supabase, tipo, year, fr ? 'fr' : 'it'); } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : 'errore' }, { status: 400 });
+    }
+    tables.forEach((tb, i) => {
+      const ws = sheet(wb, tb.title.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || `Report ${i + 1}`,
+        tb.head.map((h, j) => ({ header: h.h, key: `c${j}`, width: h.num ? 16 : j === 0 ? 22 : 30, fmt: h.num ? '#,##0.00' : undefined })));
+      const put = (cells: typeof tb.rows[number]) => ws.addRow(Object.fromEntries(cells.map((c, j) => [`c${j}`,
+        c.t === 'date' && c.v ? new Date(String(c.v)) : c.v])));
+      tb.rows.forEach((r) => put(r));
+      if (tb.foot) put(tb.foot).font = { bold: true };
+      if (tb.note) ws.addRow([]).getCell(1).value = tb.note;
+    });
+    file = `report-${tipo}-${year}.xlsx`;
+  } else if (kind === 'budget') {
+    if (!['super_admin', 'admin', 'responsabile', 'read_only'].includes(me.role)) return NextResponse.json({ error: 'non autorizzato' }, { status: 403 });
+    const vid = req.nextUrl.searchParams.get('v');
+    const { data: b } = vid ? await supabase.from('budgets').select('id, version, status, approval_ref').eq('id', vid).maybeSingle()
+      : await supabase.from('budgets').select('id, version, status, approval_ref').eq('year', year).eq('status', 'approved').maybeSingle();
+    const [{ data: items }, { data: cmp }] = await Promise.all([
+      b ? supabase.from('budget_items').select('description, qty, unit, unit_cost, currency, fx_rate, amount, amount_eur, notes, category:categories(code, name_it, name_fr, direction), project:projects(name)').eq('budget_id', b.id).order('sort')
+        : Promise.resolve({ data: [] }),
+      supabase.rpc('budget_compare', { p_year: year, p_budget: b && b.status !== 'approved' ? b.id : null }),
+    ]);
+    type It = { description: string | null; qty: string; unit: string | null; unit_cost: string; currency: string; fx_rate: string | null; amount: string; amount_eur: string; notes: string | null;
+      category: { code: string; name_it: string; name_fr: string; direction: string } | null; project: { name: string } | null };
+    const w1 = sheet(wb, fr ? 'Lignes' : 'Righe', [
+      { header: fr ? 'Type' : 'Tipo', key: 'd', width: 10 }, { header: 'Code', key: 'c', width: 8 }, { header: fr ? 'Poste' : 'Voce', key: 'n', width: 32 },
+      { header: fr ? 'Projet' : 'Progetto', key: 'p', width: 22 }, { header: 'Description', key: 'ds', width: 32 }, { header: fr ? 'Quantité' : 'Quantità', key: 'q', width: 10, fmt: '#,##0.##' },
+      { header: fr ? 'Unité' : 'Unità', key: 'u', width: 10 }, { header: fr ? 'Coût unitaire' : 'Costo unitario', key: 'uc', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Devise' : 'Valuta', key: 'cur', width: 8 }, { header: fr ? 'Taux' : 'Tasso', key: 'r', width: 10, fmt: '#,##0.####' },
+      { header: fr ? 'Montant' : 'Importo', key: 'a', width: 14, fmt: '#,##0.00' }, { header: 'EUR', key: 'e', width: 14, fmt: '#,##0.00' }]);
+    for (const i of (items ?? []) as unknown as It[]) w1.addRow({ d: i.category?.direction === 'in' ? (fr ? 'Recette' : 'Entrata') : (fr ? 'Dépense' : 'Uscita'),
+      c: i.category?.code, n: fr && i.category?.name_fr ? i.category.name_fr : i.category?.name_it, p: i.project?.name ?? (fr ? 'Général' : 'Generale'), ds: i.description,
+      q: Number(i.qty), u: i.unit, uc: Number(i.unit_cost), cur: i.currency, r: i.fx_rate ? Number(i.fx_rate) : null, a: Number(i.amount), e: Number(i.amount_eur) });
+    type Cm = { direction: string; category_code: string; cat_it: string; cat_fr: string; project_name: string | null; budget_eur: string; actual_eur: string; committed_eur: string };
+    const w2 = sheet(wb, fr ? 'Budget vs réalisé' : 'Prev. vs cons.', [
+      { header: fr ? 'Type' : 'Tipo', key: 'd', width: 10 }, { header: 'Code', key: 'c', width: 8 }, { header: fr ? 'Poste' : 'Voce', key: 'n', width: 32 },
+      { header: fr ? 'Projet' : 'Progetto', key: 'p', width: 22 }, { header: fr ? 'Budget' : 'Preventivo', key: 'b', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Réalisé' : 'Consuntivo', key: 'a', width: 14, fmt: '#,##0.00' }, { header: fr ? 'Engagé' : 'Impegnato', key: 'k', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Reste' : 'Residuo', key: 'r', width: 14, fmt: '#,##0.00' }, { header: '%', key: 'pc', width: 8, fmt: '0%' }]);
+    for (const r of (cmp ?? []) as Cm[]) w2.addRow({ d: r.direction === 'in' ? (fr ? 'Recette' : 'Entrata') : (fr ? 'Dépense' : 'Uscita'), c: r.category_code,
+      n: fr && r.cat_fr ? r.cat_fr : r.cat_it, p: r.project_name ?? (fr ? 'Général' : 'Generale'), b: Number(r.budget_eur), a: Number(r.actual_eur),
+      k: Number(r.committed_eur), r: Number(r.budget_eur) - Number(r.actual_eur), pc: Number(r.budget_eur) ? Number(r.actual_eur) / Number(r.budget_eur) : null });
+    if (b) w2.addRow([]).getCell(1).value = `${fr ? 'Version' : 'Versione'} ${b.version} · ${b.status}${b.approval_ref ? ` · ${b.approval_ref}` : ''}`;
+    file = `${fr ? 'budget' : 'preventivo'}-${year}.xlsx`;
   } else {
     return NextResponse.json({ error: 'esportazione sconosciuta' }, { status: 404 });
   }
