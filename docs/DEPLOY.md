@@ -11,7 +11,7 @@
 | Super amministratore | creato (Andrea) |
 | Lettura IA (`ANTHROPIC_API_KEY`) | attiva, verificata su documenti reali |
 | Coda offline, backup scaricabile, schermata d'apertura, scansione nuova | online |
-| Email (inviti, reimpostazione password) | mittente predefinito Supabase: arriva solo ai membri del progetto; serve un SMTP |
+| Email (inviti, reimpostazione password) | SMTP Gmail di Andrea attivo (limite 30/ora), testi IT/FR; reimpostazione password verificata l'8/11 (richiesta → link → nuova password) |
 
 ## Da fare prima del lancio al team
 
@@ -48,4 +48,4 @@
 
 ## Non ancora verificato sull'ambiente reale
 
-Inviti e reimpostazione della password via email (manca l'SMTP), uso offline su un telefono reale.
+Invito di un collega via email, uso offline su un telefono reale.
