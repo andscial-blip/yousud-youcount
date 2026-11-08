@@ -1,18 +1,22 @@
 # Messa online di YouCount
 
-## Stato (7 novembre 2026)
+## Stato (8 novembre 2026)
 
 | Elemento | Stato |
 |---|---|
-| Progetto Supabase `youcount` (ref `uxzeonwmakanumlojfax`, eu-central-1) | creato |
-| Migrazioni 0100–0800 | applicate |
-| Seed (piano dei conti del Gestionale) | caricato: 8 conti, 51 righe di rendiconto, 15 gruppi, 89 codici, 14 metodi, 10 progetti |
-| Bucket `documents` privato + 2 policy | creati |
-| Accesso anonimo a tabelle e funzioni | revocato (verificato con `has_table_privilege` / `has_function_privilege`) |
-| Repository GitHub `andscial-blip/yousud-youcount` (privato) | creato, codice caricato |
-| Progetto Vercel `youcount` (fra1), collegato al repository | online: https://youcount-gold.vercel.app (protezione Vercel solo sulle anteprime) |
-| Configurazione Auth (Site URL, iscrizioni chiuse, modelli email) | da fare dal pannello Supabase |
-| Primo super amministratore | da creare dopo il primo deploy |
+| Supabase `youcount` (ref `uxzeonwmakanumlojfax`, eu-central-1) | online, piano **gratuito** (pausa dopo 7 giorni senza attività, nessun backup automatico) |
+| Migrazioni 0100–1100, seed, Storage privato, accesso anonimo revocato | applicati |
+| Dati del Gestionale (178 movimenti) | importati e verificati: saldi, rendiconto per codice, numerazione |
+| Vercel `youcount` (fra1), deploy automatico da `main` | online: https://youcount-gold.vercel.app |
+| Super amministratore | creato (Andrea) |
+| Lettura IA (`ANTHROPIC_API_KEY`) | attiva, verificata su documenti reali |
+| Coda offline, backup scaricabile, schermata d'apertura, scansione nuova | online |
+| Email (inviti, reimpostazione password) | mittente predefinito Supabase: arriva solo ai membri del progetto; serve un SMTP |
+
+## Prove automatiche
+
+`npm run test:db` (29) · `test:unit` (16) · `test:e2e` (24) · `test:offline` (6, build di produzione) ·
+`test:layout` (30 pagine, IT/FR, 320–1280 px). Prima di `test:db` serve `npm run db:reset`.
 
 ## Variabili d'ambiente per Vercel
 
@@ -39,5 +43,4 @@
 
 ## Non ancora verificato sull'ambiente reale
 
-Accesso e inviti via Supabase Auth, caricamento file nello Storage, lettura IA con chiave Anthropic vera.
-In locale passano: database 29/29, unit 8/8, end-to-end 19/19 (con Auth e Storage simulati), build di produzione.
+Inviti e reimpostazione della password via email (manca l'SMTP), uso offline su un telefono reale.
