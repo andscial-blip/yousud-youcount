@@ -136,7 +136,7 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
           <div className="scan-stage">
             <div className="seg" role="radiogroup" aria-label={t.scan_title} style={{ marginBottom: 10 }}>
               {MODES.map((m) => (
-                <button key={m} type="button" role="radio" aria-checked={mode === m} aria-pressed={mode === m} disabled={busy}
+                <button key={m} type="button" role="radio" aria-checked={mode === m} disabled={busy}
                         onClick={() => render(m)}>{L[m]}</button>
               ))}
             </div>

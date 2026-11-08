@@ -236,7 +236,7 @@ h3.grp { font-size: 13px; color: var(--muted); text-transform: uppercase; letter
 .seg { flex: none; display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .seg button, .seg a { border: 0; background: var(--surface); padding: 6px 12px; font-family: var(--f-ui); font-weight: 600;
                       cursor: pointer; color: var(--muted); text-decoration: none; }
-.seg [aria-pressed="true"], .seg [aria-current="true"] { background: var(--slate); color: #fff; }
+.seg [aria-pressed="true"], .seg [aria-current="true"], .seg [aria-checked="true"] { background: var(--slate); color: #fff; }
 .h1row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .h1row h1 { font-size: 22px; }
 .org-logo { display: block; flex: none; width: 64px; height: 64px; object-fit: contain; }
