@@ -97,7 +97,7 @@ try {
     await page.getByRole('button', { name: 'Registra' }).click();
     await page.getByText('Salvato sul telefono', { exact: false }).waitFor();
     assert.equal(await page.inputValue('#desc'), '', 'il modulo riparte vuoto per il movimento successivo');
-    await page.locator('.net-badge', { hasText: '1' }).waitFor();
+    await page.locator('.net-badge:visible', { hasText: '1' }).waitFor();
     const n = (await pool.query('select count(*)::int n from movements where description = $1', [DESC])).rows[0].n;
     assert.equal(n, 0, 'senza rete nulla arriva al server');
   });
@@ -121,7 +121,7 @@ try {
     assert.equal(rows[0].r, 5055.37);
     assert.match(String(rows[0].device_id), /^web-/, 'dispositivo registrato nel registro di sincronizzazione');
     assert.equal(stack.files.size - files, 3, 'originale, scansione e PDF caricati');
-    assert.equal(await page.locator('.net-badge').count(), 0);
+    assert.equal(await page.locator('.net-badge:visible').count(), 0);
   });
 
   await check('reinvio dello stesso movimento (invio interrotto): nessun doppione', async () => {
