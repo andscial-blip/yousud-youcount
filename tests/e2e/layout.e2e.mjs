@@ -210,7 +210,11 @@ try {
           await p.waitForFunction(() => [...document.querySelectorAll('table.t:not(.keep)')].every((t) => t.hasAttribute('data-cards')
             || !((t.tHead?.rows[0]?.cells.length ?? 0) >= 4) || t.querySelector('th.hm')), null, { timeout: 4000 }).catch(() => {});
           const { bad: bad0, scrollers } = await p.evaluate(audit);
-          const bad = [...bad0, ...new Set(cerr)];
+          // pagina caricata male (dati non disponibili, errore del database nell'indirizzo): conta come problema
+          const loadErr = [];
+          const mainTxt = await p.locator('main').innerText().catch(() => '');
+          if (/Dati non disponibili|Données indisponibles|schema cache|Could not find the function/i.test(mainTxt) || /[?&]err=/.test(p.url())) loadErr.push(`errore di caricamento: ${p.url().replace(base, '')}`);
+          const bad = [...bad0, ...new Set(cerr), ...loadErr];
           if (process.env.SHOT_PATHS === '*' || (process.env.SHOT_PATHS ?? '').split(',').includes(path)) await p.screenshot({ path: `${SHOTS}/view_${process.env.DARK ? 'dark_' : ''}${lang}_${w}_${path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`, fullPage: true });
           if (scrollers.length && w <= 412) scrolling.set(path, [...(scrolling.get(path) ?? []), `${lang} ${w}: ${scrollers.join('; ')}`]);
           if (bad.length) {

@@ -889,8 +889,9 @@ try {
     const p = op.page;
     await p.goto(`${base}/nuovo`);
     await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
-    assert.equal(await p.inputValue('#rate'), String(Number(fx_rate)).replace('.', ','));
+    // il tasso arriva dal database dopo la scelta del conto: prima si attende l'avviso, poi si controlla il valore
     await p.getByText('ultimo tasso usato, inserito in automatico').waitFor();
+    assert.equal(await p.inputValue('#rate'), String(Number(fx_rate)).replace('.', ','));
   });
   await check('uscita: chiude la sessione', async () => {
     await ro.page.goto(`${base}/altro`);
