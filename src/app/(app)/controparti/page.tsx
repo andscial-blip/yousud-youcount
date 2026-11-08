@@ -41,7 +41,7 @@ export default async function Counterparties({ searchParams }: { searchParams: P
       <Flash ok={ok} err={err} okText={t('saved')} />
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {data.length === 0 ? <Empty text={term ? t('empty_search_generic') : t('none')} /> : data.map((c) => resp ? (
+        {data.length === 0 ? <Empty text={term ? t('empty_search_generic') : t('cp_empty')} /> : data.map((c) => resp ? (
           <EditRow key={c.id} inactive={!c.active} summary={summary(c)}>
             <form action={saveRow} className="fgrid">
               <Hidden v={{ _table: 'counterparties', id: c.id }} />

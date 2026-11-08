@@ -72,7 +72,7 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
       </div>
       {legs.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t.none}</p> : (
         <>
-          <div className="panel-b" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 0 }}>
+          <div className="panel-b rec-tools">
             <button type="button" className="btn ghost" onClick={() => setSel(new Set(legs.filter(usable).map(key)))}>{t.tick_all}</button>
             <button type="button" className="btn ghost" onClick={() => setSel(new Set())}>{t.tick_none}</button>
           </div>

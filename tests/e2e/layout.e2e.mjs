@@ -129,7 +129,7 @@ let total = 0;
 try {
   await waitFor(`${base}/login`);
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
-    '/verifica', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
+    '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro'];
   // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri) — prova rapida di una sezione nuova

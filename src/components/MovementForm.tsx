@@ -23,7 +23,7 @@ export type Initial = {
   no_doc_reason: string | null; docs: { id: string; label: string }[];
   paid_by?: string | null; reimb_status?: 'due' | 'paid' | null;
 };
-type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err' | 'local'; id?: string };
+type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err' | 'local'; id?: string; preview?: string };
 type AiKey = 'amount' | 'opDate' | 'docDate' | 'description' | 'category' | 'cp' | 'method';
 type AiMark = { status: string; confidence: number; source: string | null; confirmed: boolean };
 type AiField = { value: string | number | null; source: string | null; confidence: number; status: string; note?: string | null };
@@ -156,7 +156,10 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
         original: file, enhanced: r.enhanced ?? null, pdf: r.pdf ?? null });
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'local' } : x)));
     };
-    setDocs((d) => [...d, { key, label: file.name, state: 'uploading' }]);
+    // anteprima dell'immagine (scansione migliorata se c'è): si controlla il giustificativo mentre si compilano i campi
+    const img = r.enhanced ?? (file.type.startsWith('image/') ? file : null);
+    const preview = img ? URL.createObjectURL(img) : undefined;
+    setDocs((d) => [...d, { key, label: file.name, state: 'uploading', preview }]);
     // senza rete (solo per un movimento nuovo): il file resta sul telefono e parte con il movimento
     if (!navigator.onLine && !initial) { keepLocal(); return; }
     try {
@@ -346,6 +349,10 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
         </label>
       </div>
       {R.aiEnabled && docs.some((d) => d.state === 'local') && <div className="note">{t.q_no_ai}</div>}
+      {docs.find((d) => d.preview) && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="doc-prev" src={docs.find((d) => d.preview)!.preview} alt={t.f_doc} />
+      )}
       {docs.length > 0 && (
         <ul className="docs">
           {docs.map((d) => (

@@ -48,10 +48,9 @@ export default async function GrantDetail({ params, searchParams }: {
       <Panel pad>
         <dl className="kv">
           <dt>{t('g_code')}</dt><dd>{g.code ?? '–'}</dd>
-          <dt>{t('g_donor')}</dt><dd>{donor?.name ?? '–'}</dd>
+          <dt>{t('g_donor')}</dt><dd>{donor?.name ?? <span className="muted">{t('g_no_donor')}</span>}</dd>
           <dt>{t('project')}</dt><dd>{project ? <Link href={`/progetti/${project.id}`}>{project.name}</Link> : t('g_none_project')}</dd>
           <dt>{t('g_period')}</dt><dd>{g.start_date ? `${date(g.start_date)} – ${date(g.end_date)}` : '–'}</dd>
-          <dt>{t('g_amount')}</dt><dd>{g.amount ? money(g.amount, g.currency, lang) : '–'}</dd>
           {g.notes && <><dt>{t('f_notes')}</dt><dd>{g.notes}</dd></>}
         </dl>
       </Panel>

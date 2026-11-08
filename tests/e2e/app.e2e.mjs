@@ -485,6 +485,21 @@ try {
     if (n === 0) await p.getByText('Nessun documento corrisponde alla ricerca.').waitFor();
     else assert.equal(await p.locator('main tbody tr').count(), n);
   });
+  await check('analisi: totali dell\'anno uguali al database, gruppi con preventivo, filtro per progetto; vietata agli operatori', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/analisi`);
+    const [{ out }] = (await pool.query(`select coalesce(sum(amount_eur), 0)::float out from v_ledger where kind = 'expense' and year = $1`, [year])).rows;
+    const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
+    const figs = await p.locator('.figs').innerText();
+    assert.ok(figs.replace(/\s/g, '').includes(fmtEur.format(out).replace(/\s/g, '')), `uscite ${fmtEur.format(out)} in ${figs}`);
+    await p.getByText('Uscite per gruppo di spesa e preventivo').waitFor();
+    const [{ id: prj }] = (await pool.query(`select project_id id from v_ledger where kind = 'expense' and year = $1 and project_id is not null limit 1`, [year])).rows;
+    await p.goto(`${base}/analisi?anno=${year}&progetto=${prj}`);
+    assert.equal(await p.locator('select[name=progetto]').inputValue(), prj);
+    await op.page.goto(`${base}/analisi`);
+    await op.page.getByText('Questa sezione è visibile a responsabili', { exact: false }).waitFor();
+    await p.screenshot({ path: `${SHOTS}/resp_analisi.png`, fullPage: true });
+  });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;
     await p.goto(`${base}/`);

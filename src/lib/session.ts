@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -20,7 +21,8 @@ export async function guestLang(): Promise<Lang> {
 }
 
 // Utente, profilo, lingua e traduttore per le pagine dell'app. Senza sessione → login.
-export async function requireMe() {
+// una sola lettura di utente e profilo per richiesta: layout e pagina la condividono (prima erano due giri al database)
+export const requireMe = cache(async function requireMe() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect('/login');
@@ -31,6 +33,6 @@ export async function requireMe() {
     .maybeSingle<Me>();
   const lang = me ? normLang(me.lang) : await guestLang();
   return { supabase, user: auth.user, me, lang, t: translator(lang) };
-}
+});
 
 export const can = (me: Me | null, roles: Role[]) => Boolean(me && me.active && roles.includes(me.role));
