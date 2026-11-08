@@ -13,8 +13,9 @@ type Line = {
   name_it: string; name_fr: string; amount_eur: string; amount_eur_prev: string; rows_count: number; missing_rate: number;
 };
 
-export default async function Report({ searchParams }: { searchParams: Promise<{ anno?: string; modello?: string }> }) {
-  const { anno, modello } = await searchParams;
+export default async function Report({ searchParams }: { searchParams: Promise<{ anno?: string; modello?: string; compatto?: string }> }) {
+  const { anno, modello, compatto } = await searchParams;
+  const compact = compatto === '1';
   const modelE = modello === 'E';
   const year = Number(anno) || new Date().getFullYear();
   const { supabase, me, t, lang } = await requireMe();
@@ -25,7 +26,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
     supabase.from('report_lines').select('direction, key, section_fr, name_fr'),
     supabase.rpc('member_fees', { p_year: year }),
   ]);
-  const q = (y: number, m = modelE) => `/rendiconto?anno=${y}${m ? '&modello=E' : ''}`;
+  const q = (y: number, m = modelE, c = compact) => `/rendiconto?anno=${y}${m ? '&modello=E' : ''}${c ? '&compatto=1' : ''}`;
   const fr = new Map((labels ?? []).map((l) => [`${l.direction}/${l.key}`, l]));
   const lines = ((data ?? []) as Line[]).map((l) => ({ ...l, ...(fr.get(`${l.direction}/${l.key}`) ?? {}) }));
   const sections = (dir: 'in' | 'out') =>
@@ -51,6 +52,10 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <Link href={q(year, false)} aria-current={(!modelE) ? 'true' : undefined}>{t('rep_modelD')}</Link>
           <Link href={q(year, true)} aria-current={(modelE) ? 'true' : undefined}>{t('rep_modelE')}</Link>
         </div>
+        {!modelE && <div className="seg">
+          <Link href={q(year, false, false)} aria-current={!compact ? 'true' : undefined}>{t('rep_all_lines')}</Link>
+          <Link href={q(year, false, true)} aria-current={compact ? 'true' : undefined}>{t('rep_compact')}</Link>
+        </div>}
         <div className="spacer" />
         <a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}><Ico name="download" />{t('rep_xlsx')}</a>
         <PrintButton label={t('rep_print')} />
@@ -65,7 +70,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <table className="t keep">
             <thead><tr><th>{t('rep_item')}</th><th className="r">{year}</th><th className="r">{year - 1}</th></tr></thead>
             <tbody>
-              {sections(dir).map((sec) => <SectionRows key={sec[0].section} sec={sec} lang={lang} aggregated={modelE} />)}
+              {sections(dir).map((sec) => <SectionRows key={sec[0].section} sec={sec} lang={lang} aggregated={modelE} compact={compact} />)}
               <tr>
                 <td style={{ fontWeight: 700 }}>{dir === 'out' ? t('rep_total_out') : t('rep_total_in')}</td>
                 <td className="r num" style={{ fontWeight: 700 }}>{money(tot(dir), 'EUR', lang)}</td>
@@ -102,7 +107,7 @@ function Result({ t, lang, year, value }: { t: T; lang: Lang; year: number; valu
   );
 }
 
-function SectionRows({ sec, lang, aggregated }: { sec: Line[]; lang: Lang; aggregated: boolean }) {
+function SectionRows({ sec, lang, aggregated, compact = false }: { sec: Line[]; lang: Lang; aggregated: boolean; compact?: boolean }) {
   const sum = (k: 'amount_eur' | 'amount_eur_prev') => sec.reduce((s, l) => s + Number(l[k]), 0);
   const L = (it: string, fr?: string) => (lang === 'fr' && fr ? fr : it);
   return (
@@ -112,7 +117,7 @@ function SectionRows({ sec, lang, aggregated }: { sec: Line[]; lang: Lang; aggre
         <td className="r num" style={{ fontWeight: 600 }}>{money(sum('amount_eur'), 'EUR', lang)}</td>
         <td className="r num" style={{ fontWeight: 600 }}>{money(sum('amount_eur_prev'), 'EUR', lang)}</td>
       </tr>
-      {!aggregated && sec.map((l) => (
+      {!aggregated && sec.filter((l) => !compact || Number(l.amount_eur) || Number(l.amount_eur_prev)).map((l) => (
         <tr key={l.key}>
           <td style={{ paddingLeft: 22 }}>{L(l.name_it, l.name_fr)}</td>
           <td className="r num">{Number(l.amount_eur) ? money(l.amount_eur, 'EUR', lang) : '–'}</td>

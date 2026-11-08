@@ -6,7 +6,11 @@ import type { Dict, Lang } from '@/lib/i18n';
 import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
 import { parseAmount } from '@/lib/amount';
-import { ScanEditor, type ScanResult } from './ScanEditor';
+import dynamic from 'next/dynamic';
+import type { ScanResult } from './ScanEditor';
+// l'editor della foto (con pdf-lib) si carica a parte: la pagina si apre prima; viene comunque scaricato
+// poco dopo l'apertura, così il service worker lo conserva e funziona anche senza rete
+const ScanEditor = dynamic(() => import('./ScanEditor').then((m) => m.ScanEditor), { ssr: false });
 import { deviceId, isNetworkError, putOutbox, uploadDocument, type OutFile } from '@/lib/outbox';
 import { Ico } from './Ui';
 
@@ -113,6 +117,8 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
     return month ? { rate: month.rate, src: 'month' as const } : null;
   }, [opDate, R.rates, R.lastRate]);
   const suggested = rateSugg?.rate ?? null;
+  // scarica l'editor della foto appena la pagina è pronta (resta in cache per l'uso senza rete)
+  useEffect(() => { const id = setTimeout(() => { void import('./ScanEditor'); }, 800); return () => clearTimeout(id); }, []);
   useEffect(() => {
     if (!rateTouched && suggested) setRateTxt(String(suggested).replace('.', ','));
   }, [suggested, rateTouched]);

@@ -359,6 +359,8 @@ tr.row-next td { background: color-mix(in srgb, var(--sky-bg) 60%, transparent);
 .todo li { display: flex; align-items: flex-start; gap: 8px; }
 .todo li > svg { color: var(--slate-2); margin-top: 2px; }
 .todo a { font-weight: 600; }
+tr.tot td { font-family: var(--f-ui); font-weight: 700; border-top: 1px solid var(--line); background: var(--surface-2); }
+details.idle > summary { cursor: pointer; border-top: 1px solid var(--line-2); }
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 /* dettaglio movimento: importo in evidenza, dati, poi a lato giustificativi, storno e storico */
 .detail { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }
