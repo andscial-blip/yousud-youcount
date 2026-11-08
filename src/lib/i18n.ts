@@ -49,7 +49,7 @@ const it = {
   doc_name: 'Nome', doc_uploaded: 'Caricato', doc_number: 'Numero', doc_total: 'Totale',
   // account
   f_nodoc_filter: 'Senza giustificativo', search_mov: 'Cerca per descrizione o numero MOV', search_clear: 'Annulla ricerca', empty_search: 'Nessun movimento corrisponde alla ricerca.',
-  lang_code: 'it', acc_lang: 'Lingua', sign_out: 'Esci', save: 'Salva',
+  rec_in_statement: 'estratto conto del', skip_main: 'Vai al contenuto', lang_code: 'it', acc_lang: 'Lingua', sign_out: 'Esci', save: 'Salva',
   // login
   login_title: 'Accedi', login_btn: 'Accedi', login_busy: 'Accesso…', password: 'Password',
   login_bad: 'Email o password non corretti.', login_offline: 'Serve una connessione per il primo accesso.',
@@ -229,7 +229,7 @@ const fr: Record<Key, string> = {
   rep_result_s: 'recettes moins dépenses, investissements et impôts compris',
   doc_name: 'Nom', doc_uploaded: 'Chargé le', doc_number: 'Numéro', doc_total: 'Total',
   f_nodoc_filter: 'Sans pièce', search_mov: 'Rechercher par description ou numéro MOV', search_clear: 'Effacer la recherche', empty_search: 'Aucun mouvement ne correspond à la recherche.',
-  lang_code: 'fr', acc_lang: 'Langue', sign_out: 'Se déconnecter', save: 'Enregistrer',
+  rec_in_statement: 'relevé du', skip_main: 'Aller au contenu', lang_code: 'fr', acc_lang: 'Langue', sign_out: 'Se déconnecter', save: 'Enregistrer',
   login_title: 'Connexion', login_btn: 'Se connecter', login_busy: 'Connexion…', password: 'Mot de passe',
   login_bad: 'E-mail ou mot de passe incorrect.', login_offline: 'Une connexion est nécessaire pour le premier accès.',
   login_invite: 'L\'accès se fait uniquement sur invitation. Pour un nouveau compte, adressez-vous à l\'administrateur de YouSud.',

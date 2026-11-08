@@ -137,7 +137,7 @@ try {
   if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`))));
   for (const lang of LANGS) {
     await pool.query('update profiles set lang = $1 where id = $2', [lang, S.sa]);
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: process.env.DARK ? 'dark' : 'light' });
     await ctx.addCookies([{ name: 'lang', value: lang, url: base }]);
     const page = await ctx.newPage();
     await page.goto(`${base}/`);
@@ -168,7 +168,7 @@ try {
       for (const w of WIDTHS) {
         const anon = path === '/login' || path === '/offline';
         // pagina nuova per ogni controllo: il browser non accumula memoria in centinaia di caricamenti
-        const c = anon ? await browser.newContext({ viewport: { width: w, height: 860 } }) : ctx;
+        const c = anon ? await browser.newContext({ viewport: { width: w, height: 860 }, colorScheme: process.env.DARK ? 'dark' : 'light' }) : ctx;
         let p;
         try {
           p = await c.newPage();
@@ -188,7 +188,7 @@ try {
           }
           const { bad: bad0, scrollers } = await p.evaluate(audit);
           const bad = [...bad0, ...new Set(cerr)];
-          if (process.env.SHOT_PATHS === '*' || (process.env.SHOT_PATHS ?? '').split(',').includes(path)) await p.screenshot({ path: `${SHOTS}/view_${lang}_${w}_${path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`, fullPage: true });
+          if (process.env.SHOT_PATHS === '*' || (process.env.SHOT_PATHS ?? '').split(',').includes(path)) await p.screenshot({ path: `${SHOTS}/view_${process.env.DARK ? 'dark_' : ''}${lang}_${w}_${path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`, fullPage: true });
           if (scrollers.length && w <= 412) scrolling.set(path, [...(scrolling.get(path) ?? []), `${lang} ${w}: ${scrollers.join('; ')}`]);
           if (bad.length) {
             total += bad.length;

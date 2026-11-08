@@ -45,13 +45,17 @@ export default async function MovementDetail({ params, searchParams }: {
       category:categories(code, name_it, name_fr), project:projects(name), grant:grants(id, title), counterparty:counterparties(name),
       method:payment_methods(name_it, name_fr)`).eq('id', id).maybeSingle<M>();
   if (!m) notFound();
-  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }] = await Promise.all([
+  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }] = await Promise.all([
     supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
     supabase.rpc('user_directory'),
     supabase.from('movements').select('id, ref').eq('reverses_id', id).maybeSingle(),
     supabase.from('settings').select('value').eq('key', 'four_eyes').maybeSingle(),
+    // spunte nella riconciliazione bancaria (spiegano perché importo, conto e data non si modificano più)
+    supabase.from('reconciliation_items').select('side, rec:bank_reconciliations(statement_date, account_id)').eq('movement_id', id),
   ]);
+  const recDates = ((recs ?? []) as unknown as { side: string; rec: { statement_date: string } | null }[])
+    .map((r) => r.rec?.statement_date).filter(Boolean) as string[];
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   type D = { id: string; original_path: string; pdf_path: string | null; mime: string; file_name: string | null; created_at: string };
   const docs = ((links ?? []) as unknown as { seq: number; document: D | null }[])
@@ -111,6 +115,7 @@ export default async function MovementDetail({ params, searchParams }: {
                 {m.doc_date && row(t('f_doc_date'), date(m.doc_date))}
                 {m.notes && row(t('f_notes'), m.notes)}
                 {m.reverses_id && row(t('d_reverses'), <><Link href={`/movimenti/${m.reverses_id}`}>{t('d_open')}</Link> · {m.reversal_reason}</>)}
+                {recDates.length > 0 && row(t('rec_chip'), <span className="chip ok">{t('rec_in_statement')} {recDates.map((d) => date(d)).join(', ')}</span>)}
                 {row(t('d_created'), `${dateTime(m.created_at, lang)} · ${name.get(m.created_by) ?? '–'}`)}
                 {m.recorded_at && row(t('d_recorded'), `${dateTime(m.recorded_at, lang)} · ${name.get(m.recorded_by ?? '') ?? '–'}`)}
                 {m.verified_at && row(t('d_verified'), `${dateTime(m.verified_at, lang)} · ${name.get(m.verified_by ?? '') ?? '–'}`)}

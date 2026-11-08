@@ -38,6 +38,7 @@ function Shell({ t, who, top, bottom, children }: {
     <>
       {/* lingua della pagina per lettori di schermo e sillabazione: quella scelta dall'utente */}
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(t('lang_code'))}` }} />
+      <a className="skip" href="#main">{t('skip_main')}</a>
       <Splash tagline={t('app_tagline')} />
       <header className="top">
         <div className="wrap">
@@ -52,7 +53,7 @@ function Shell({ t, who, top, bottom, children }: {
         </div>
       </header>
       {top.length > 0 && <TopNav items={top} />}
-      <main className="wrap">{children}</main>
+      <main className="wrap" id="main" tabIndex={-1}>{children}</main>
       <TableCards />
       {bottom.length > 0 && <BottomNav items={bottom} />}
     </>

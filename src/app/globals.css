@@ -11,7 +11,7 @@
   --cost: #2e3d52; --cyan: #0094c9; --sky: #7fafd9;
   --bg: #eef1f5; --surface: #ffffff; --surface-2: #f3f4f6; --band: #dae3f3;
   --line: #d0d7de; --line-2: #e4e8ed;
-  --fg: #1c2633; --muted: #5e6b7c; --faint: #6b7788;
+  --fg: #1c2633; --muted: #5e6b7c; --faint: #626e7f;
   --pink: #fce3e6; --pink-fg: #a3121e; --ok-bg: #e5f4ea; --warn-bg: #fff4d6;
   --on-slate: #ffffff;
   /* palette approvata dal panel di design: paese, tipo, dati */
@@ -31,7 +31,7 @@
     --green: #5cc685; --red: #ff7b72; --amber: #f2b632; --cost: #c9d6e8; --cyan: #4cc3f0; --sky: #8dbbe4;
     --bg: #12171e; --surface: #1a212b; --surface-2: #212a36; --band: #24324a;
     --line: #334052; --line-2: #2a3442;
-    --fg: #e7ecf2; --muted: #9aa7b6; --faint: #6f7c8b;
+    --fg: #e7ecf2; --muted: #9aa7b6; --faint: #8a97a6;
     --pink: #3a1e24; --pink-fg: #ff9aa5; --ok-bg: #1c3326; --warn-bg: #3a3018;
     --aqua: #6CC9B8; --aqua-fg: #8FD9CB; --aqua-bg: #173A35;
     --lilac: #B3A6E6; --lilac-fg: #C7BCF0; --lilac-bg: #2B2645;
@@ -67,6 +67,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; }
 :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
+.skip { position: absolute; left: 12px; top: -60px; z-index: 100; background: var(--surface); color: var(--fg); padding: 8px 14px;
+  border-radius: var(--r); font-family: var(--f-ui); font-weight: 600; text-decoration: none; box-shadow: 0 2px 10px rgb(0 0 0 / .2); }
+.skip:focus { top: 12px; }
+main:focus { outline: none; }
 .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; }
 
 /* intestazione */
@@ -204,6 +208,7 @@ table.t td.r, table.t th.r { text-align: right; }
 /* le parole lunghe vanno a capo anche nelle celle, così la tabella non supera lo schermo */
 table.t td:not(.nw):not(.num) { overflow-wrap: anywhere; }
 table.t td .chip.wrap { white-space: normal; max-width: 100%; }
+.chip.wrap { -webkit-box-decoration-break: clone; box-decoration-break: clone; line-height: 1.75; }
 table.t td.num { white-space: nowrap; }
 /* pulsanti: mai più larghi del contenitore; su schermi stretti il testo va a capo */
 .btn { max-width: 100%; }
@@ -250,7 +255,11 @@ table.t td.num { white-space: nowrap; }
 .menu a:hover { border-color: var(--slate-2); }
 .menu a svg { color: var(--slate-2); flex: none; }
 h3.grp { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 4px 0 -6px; }
-.seg { flex: none; display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.seg { flex: none; display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; max-width: 100%; }
+/* filtri con molte voci: su schermi stretti scorrono dentro il riquadro invece di allargare la pagina */
+.seg.scroll { overflow-x: auto; scrollbar-width: none; }
+.seg.scroll::-webkit-scrollbar { display: none; }
+.seg.scroll a { white-space: nowrap; flex: none; }
 .seg button, .seg a { border: 0; background: var(--surface); padding: 6px 12px; font-family: var(--f-ui); font-weight: 600;
                       cursor: pointer; color: var(--muted); text-decoration: none; }
 .seg [aria-pressed="true"], .seg [aria-current="true"], .seg [aria-checked="true"] { background: var(--slate); color: #fff; }
