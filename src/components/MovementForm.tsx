@@ -36,7 +36,9 @@ type Dup = { id: string; ref: string | null; op_date: string; amount: string; cu
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-type Props = { refData: RefData; t: Dict; initial?: Initial };
+// Precompilazione di un movimento nuovo (es. da una riga dell'estratto conto senza corrispondenza)
+export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string };
+type Props = { refData: RefData; t: Dict; initial?: Initial; prefill?: Prefill };
 
 // Dopo un salvataggio senza rete il modulo riparte vuoto (nuova chiave) per il movimento successivo.
 export function MovementForm(props: Props) {
@@ -45,23 +47,24 @@ export function MovementForm(props: Props) {
   return (
     <>
       {queued && <div className="note ok" role="status" style={{ marginBottom: 14 }}>{props.t.q_saved}</div>}
-      <Form key={round} {...props} onQueued={() => { setQueued(true); setRound((r) => r + 1); window.scrollTo(0, 0); }} />
+      <Form key={round} {...props} prefill={round === 0 ? props.prefill : undefined} onQueued={() => { setQueued(true); setRound((r) => r + 1); window.scrollTo(0, 0); }} />
     </>
   );
 }
 
-function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => void }) {
+function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueued: () => void }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const clientUuid = useRef<string>(initial ? '' : crypto.randomUUID());
   // giustificativi rimasti sul telefono (senza rete): partono con il movimento dalla coda
   const localFiles = useRef(new Map<string, OutFile>());
 
-  const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense');
-  const [opDate, setOpDate] = useState(initial?.op_date ?? today());
+  const [kind, setKind] = useState<Kind>(initial?.kind ?? P?.kind ?? 'expense');
+  const [opDate, setOpDate] = useState(initial?.op_date ?? P?.op_date ?? today());
   const [docDate, setDocDate] = useState(initial?.doc_date ?? '');
-  const [amountTxt, setAmountTxt] = useState(initial ? String(Number(initial.amount)).replace('.', ',') : '');
-  const [accountId, setAccountId] = useState(initial?.account_id ?? '');
+  const [amountTxt, setAmountTxt] = useState(initial ? String(Number(initial.amount)).replace('.', ',')
+    : P?.amount ? String(P.amount).replace('.', ',') : '');
+  const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? '');
   // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
   // come è stata pagata una spesa: dall'ente (conto), di tasca propria (da rimborsare) o con l'anticipo di una persona
@@ -85,7 +88,7 @@ function Form({ refData: R, t, initial, onQueued }: Props & { onQueued: () => vo
   const [cpId, setCpId] = useState(initial?.counterparty_id ?? '');
   const [cpNew, setCpNew] = useState('');
   const [methodId, setMethodId] = useState(initial?.payment_method_id ?? '');
-  const [description, setDescription] = useState(initial?.description ?? '');
+  const [description, setDescription] = useState(initial?.description ?? P?.description ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [noDoc, setNoDoc] = useState(Boolean(initial?.no_doc_reason));
   const [noDocReason, setNoDocReason] = useState(initial?.no_doc_reason ?? '');

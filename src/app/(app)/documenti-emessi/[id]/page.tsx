@@ -1,3 +1,4 @@
+import { loadOrg } from '@/lib/org';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RESP, can, requireMe } from '@/lib/session';
@@ -21,13 +22,12 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
   const { data: d } = await supabase.from('issued_docs')
     .select('*, movement:movements(id, ref, amount, currency, amount_eur), project:projects(name), file:documents(original_path, file_name)').eq('id', id).maybeSingle();
   if (!d) notFound();
-  const [{ data: org }, { data: det }, { data: projects }, { data: pms }] = await Promise.all([
-    supabase.from('organizations').select('name').single(), supabase.from('settings').select('value').eq('key', 'org_details').maybeSingle(),
+  const [org, { data: projects }, { data: pms }] = await Promise.all([
+    loadOrg(supabase),
     supabase.from('projects').select('id, name').eq('active', true).order('name'), supabase.from('payment_methods').select('name_it, name_fr').order('sort')]);
-  const od = (det?.value ?? {}) as { address?: string; tax_id?: string; iban?: string };
   const eur = d.movement && d.movement.currency === d.currency && Number(d.movement.amount) === Number(d.amount) ? d.movement.amount_eur : null;
   const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur },
-    { name: org?.name ?? 'YouSud ODV', address: od.address, tax_id: od.tax_id, iban: od.iban });
+    org);
   const pdf = d.file?.original_path ? (await supabase.storage.from('documents').createSignedUrl(d.file.original_path, 600, { download: d.file.file_name ?? `${d.number}.pdf` })).data?.signedUrl : null;
   const writer = me?.role !== 'read_only';
   const editing = d.status === 'draft' && writer && sp.edit === '1';

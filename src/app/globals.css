@@ -290,7 +290,8 @@ a.rowlink:hover { color: var(--slate); text-decoration: underline; }
 .hbars { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
 .hbar { display: grid; grid-template-columns: minmax(110px, 200px) 1fr max-content; align-items: center; gap: 10px; }
 .hbar .hl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hbar .hl a { color: var(--fg); text-decoration: none; }
+.hbar .hl a { color: var(--fg); text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 520px) { .hbar { grid-template-columns: minmax(0, 1fr) max-content; row-gap: 4px; } .hbar .hl { grid-column: 1 / -1; } }
 .hbar .hl a:hover { text-decoration: underline; }
 .hbar .ht { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
 .hbar .ht i { display: block; height: 100%; border-radius: 6px; }
@@ -683,3 +684,19 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); padding: 10px 18
 .side-nav { gap: 10px; }
 .inline-form select.input { flex: 1; min-width: 200px; max-width: 420px; }
 @media (max-width: 760px) { .segs { flex-wrap: wrap; width: 100%; } .segs a { flex: 1 1 auto; justify-content: center; } }
+
+/* Preventivo nello schema del rendiconto */
+.stmt tr.sub td { background: var(--surface-2); border-top: 1px solid var(--line); }
+.stmt tr.warn td { background: var(--warn-bg); }
+table.stmt tr.sec th { background: var(--band); text-align: left; font-size: 13px; }
+.stmt td:first-child { width: 56px; }
+.rchart { border-bottom: 1px solid var(--line-2); }
+.rchart .mbars { max-height: 240px; }
+@media print { .rchart { break-inside: avoid; } }
+.docprev header.has-logo { position: relative; padding-right: 150px; min-height: 52px; }
+.docprev .dp-logo { position: absolute; right: 0; top: 0; max-width: 130px; max-height: 48px; object-fit: contain; }
+.logo-up { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+.logo-up .logo-prev { max-width: 160px; max-height: 60px; object-fit: contain; border: 1px solid var(--line-2); border-radius: 8px; padding: 6px; background: #fff; }
+.logo-up.has { grid-template-columns: auto 1fr; }
+@media (max-width: 600px) { .logo-up.has { grid-template-columns: 1fr; } }
+.rchart .legend { justify-content: center; }

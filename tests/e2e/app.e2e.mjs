@@ -558,7 +558,8 @@ try {
     assert.deepEqual([sc.amount, sc.lang, sc.doc_type, sc.mime], ['50000.00', 'both', 'self_cert', 'application/pdf']);
     const href = await p.locator('ul.docs a', { hasText: 'Apri' }).first().getAttribute('href');
     const pdf = await p.request.get(href.startsWith('http') ? href : `${base}${href}`);
-    assert.equal((await pdf.body()).subarray(0, 5).toString(), '%PDF-');
+    const pb = await pdf.body();
+    assert.equal(pb.subarray(0, 5).toString(), '%PDF-');
     await p.locator('section.panel', { hasText: sc.number }).getByText('Da firmare').waitFor();
     await p.getByRole('button', { name: 'Copia firmata vista' }).click();
     await p.waitForURL(/ok=aut_signed/);
@@ -605,8 +606,15 @@ try {
     assert.match(txt, /401/);
     // la spesa in ariary dei dati di prova (1.010.000 MGA ≈ 200 €) supera i 200 € previsti
     assert.match(txt, /Oltre il preventivo|Vicino al limite|In linea/);
+    // schema del rendiconto: totale uscite previste = righe del preventivo in uscita
+    await a.goto(`${base}/preventivo?anno=${year}&vista=schema`);
+    const st = (await a.locator('table.stmt').innerText()).replace(/[  ]/g, ' ');
+    assert.match(st, /Totale uscite\s+200,00/);
+    assert.match(st, /Totale entrate\s+3\.000,00/);
     const x = await a.request.get(`${base}/api/v1/export/budget?anno=${year}`);
     assert.equal(x.status(), 200);
+    { const ExcelJS = require('exceljs'); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await x.body());
+      assert.ok(wb.getWorksheet('Schema rendiconto'), 'foglio schema del rendiconto'); }
     assert.equal(await op.page.request.get(`${base}/api/v1/export/budget?anno=${year}`).then((r) => r.status()), 403);
     await a.screenshot({ path: `${SHOTS}/sa_preventivo.png`, fullPage: true });
   });
@@ -632,6 +640,22 @@ try {
     assert.equal(ics.status(), 200);
     assert.match(await ics.text(), /BEGIN:VCALENDAR[\s\S]*BEGIN:VEVENT/);
   });
+  await check('impostazioni: logo dell\'ente caricato (ridimensionato nel browser), visibile nell\'anteprima', async () => {
+    const p = sa.page;
+    await p.goto(`${base}/admin/impostazioni`);
+    // logo 900×300 px: il browser lo riduce a 480×160
+    const big = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 900; c.height = 300;
+      const g = c.getContext('2d'); g.fillStyle = '#2E3D52'; g.fillRect(0, 0, 900, 300); g.fillStyle = '#9fd6cf'; g.fillRect(60, 60, 300, 180);
+      return c.toDataURL('image/png').split(',')[1]; });
+    await p.locator('.logo-up input[type=file]').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from(big, 'base64') });
+    await p.getByRole('button', { name: 'Salva il logo' }).click();
+    await p.waitForURL(/ok=1/);
+    const [{ v }] = (await pool.query(`select value v from settings where key = 'org_logo'`)).rows;
+    assert.equal(v.mime, 'image/png');
+    const img = Buffer.from(v.data, 'base64');
+    assert.deepEqual([img.readUInt32BE(16), img.readUInt32BE(20)], [480, 160], 'ridimensionato');
+    await p.locator('.logo-prev').waitFor();
+  });
   await check('documenti emessi: ricevuta dal movimento, anteprima, emissione numerata, PDF, annullamento', async () => {
     const p = rs.page;
     const [{ id: inc }] = (await pool.query(`select id from movements where description = 'PROVA donazione'`)).rows;
@@ -651,7 +675,10 @@ try {
     assert.equal((await pool.query('select count(*)::int n from movement_documents where movement_id = $1 and document_id = $2', [inc, d.document_id])).rows[0].n, 1);
     const href = await p.getByRole('link', { name: 'Scarica il PDF' }).getAttribute('href');
     const pdf = await p.request.get(href.startsWith('http') ? href : `${base}${href}`);
-    assert.equal((await pdf.body()).subarray(0, 5).toString(), '%PDF-');
+    const pb = await pdf.body();
+    assert.equal(pb.subarray(0, 5).toString(), '%PDF-');
+    assert.match(pb.toString('latin1'), /\/Subtype\s*\/Image/, 'il PDF contiene il logo');
+    await p.locator('.docprev .dp-logo').waitFor();
     await p.fill('#cr', 'prova di annullamento');
     await p.getByRole('button', { name: 'Annulla il documento' }).click();
     await p.waitForURL(/ok=cancelled/);
@@ -688,6 +715,27 @@ try {
     await p.getByText(/Righe dell'estratto: 2; movimenti abbinati e spuntati: 1/).waitFor();
     await p.getByText(/Righe senza movimento in YouCount: 1/).waitFor();
     assert.equal(await p.locator('tbody input[type=checkbox]:checked').count(), 1);
+    // la riga non trovata apre il nuovo movimento precompilato
+    const add = p.locator('.rec-import a', { hasText: 'Registra' });
+    const href = await add.getAttribute('href');
+    assert.match(href, /\/nuovo\?tipo=expense&data=\d{4}-\d{2}-\d{2}&importo=1234&conto=/);
+    await p.goto(`${base}${href}`);
+    await p.getByText(/Dati presi dalla riga dell'estratto conto/).waitFor();
+    assert.equal(await p.inputValue('input[inputmode=decimal]'), '1234');
+    // estratto in Excel: stesso risultato
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Estratto');
+    ws.addRow(['Banca Italia - movimenti']); ws.addRow(['Data operazione', 'Descrizione', 'Importo']);
+    const [dd, mm, yy] = d.split('/');
+    ws.addRow([new Date(Date.UTC(+yy, +mm - 1, +dd)), 'Donazione', Number(amt)]);
+    await p.goto(`${base}/riconciliazione`);
+    await p.locator('tr', { hasText: 'Banca Italia' }).getByRole('link', { name: 'Riconcilia' }).click();
+    await p.locator('.rec-import').waitFor();
+    await p.locator('.rec-import input[type=file]').setInputFiles({ name: 'estratto.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(await wb.xlsx.writeBuffer()) });
+    await p.getByText(/Righe dell'estratto: 1; movimenti abbinati e spuntati: 1/).waitFor();
+    // vecchio .xls binario: messaggio chiaro
+    await p.locator('.rec-import input[type=file]').setInputFiles({ name: 'vecchio.xls', mimeType: 'application/vnd.ms-excel', buffer: Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]) });
+    await p.getByText(/vecchio formato \(\.xls\)/).waitFor();
   });
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;

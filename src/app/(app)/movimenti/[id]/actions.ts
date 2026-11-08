@@ -46,12 +46,11 @@ export async function selfCertAction(form: FormData) {
     place: String(form.get('place') ?? ''), reason: String(form.get('reason') ?? ''), lang: String(form.get('lang') ?? 'it'),
   } });
   if (error) back(id, `err=${encodeURIComponent(error.message)}`);
-  const [{ data: org }, { data: det }, { data: mv }] = await Promise.all([
-    supabase.from('organizations').select('id, name').single(),
-    supabase.from('settings').select('value').eq('key', 'org_details').maybeSingle(),
+  const { loadOrg } = await import('@/lib/org');
+  const [org, { data: mv }] = await Promise.all([
+    loadOrg(supabase),
     supabase.from('movements').select('ref').eq('id', id).maybeSingle(),
   ]);
-  const od = (det?.value ?? {}) as { address?: string; tax_id?: string; iban?: string };
   const { buildModel } = await import('@/lib/doc-model');
   const { renderPdf } = await import('@/lib/doc-pdf');
   const { storePdf } = await import('@/lib/store-pdf');
@@ -60,9 +59,9 @@ export async function selfCertAction(form: FormData) {
     signer_role: s.signer_role, movement_ref: mv?.ref ?? null, project_name: s.project_name,
     data: { declarant: s.declarant, declarant_role: s.declarant_role, place: s.place, reason: s.reason, exp_date: s.exp_date, supplier: s.supplier,
       description: s.description, category: s.category_code, category_fr: s.category_fr, method: s.method, method_fr: s.method_fr } },
-    { name: org!.name, address: od.address, tax_id: od.tax_id, iban: od.iban });
+    org);
   const bytes = await renderPdf(md);
-  const st = await storePdf(supabase, { orgId: org!.id, bytes, number: s.number, date: String(s.exp_date), clientUuid: s.id, docType: 'self_cert',
+  const st = await storePdf(supabase, { orgId: org.id, bytes, number: s.number, date: String(s.exp_date), clientUuid: s.id, docType: 'self_cert',
     total: s.amount, currency: s.currency });
   if (st.error) back(id, `err=${encodeURIComponent(st.error)}`);
   const doc = { id: st.id! };

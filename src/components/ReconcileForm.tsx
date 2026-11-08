@@ -5,14 +5,15 @@ import { parseAmount } from '@/lib/amount';
 import { money } from '@/lib/format';
 import type { Lang } from '@/lib/i18n';
 import { reconcile } from '@/app/(app)/riconciliazione/actions';
-import { detect, match, readCsv, toLines, type StmtLine } from '@/lib/bank-csv';
+import { detect, fileRows, fromRows, match, toLines, type StmtLine } from '@/lib/bank-csv';
+
 
 export type Leg = { movement_id: string; side: 'from' | 'to'; ref: string | null; op_date: string; description: string; amount: number };
 type L = {
   stmt_date: string; stmt_bal: string; prev: string; ticked: string; calc: string; diff: string; ok: string; confirm: string;
   notes: string; after: string; none: string; tick_all: string; tick_none: string; neg: string; fill: string;
   date: string; desc: string; amount: string;
-  imp: string; imp_hint: string; imp_res: string; imp_unm: string; imp_none: string; imp_bad: string; imp_extra: string;
+  imp: string; imp_hint: string; imp_res: string; imp_unm: string; imp_none: string; imp_bad: string; imp_extra: string; imp_add: string; imp_add_t: string; imp_xls: string;
 };
 
 const day = (d: string) => d.split('-').reverse().join('/');
@@ -54,7 +55,10 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
   const onFile = async (f: File | undefined) => {
     setImpErr(''); setImp(null);
     if (!f) return;
-    const { rows, header, hi } = readCsv(await f.text());
+    let got: string[][] | 'xls';
+    try { got = await fileRows(f); } catch { setImpErr(t.imp_bad); return; }
+    if (got === 'xls') { setImpErr(t.imp_xls); return; }
+    const { rows, header, hi } = fromRows(got);
     const lines = hi >= 0 ? toLines(rows, hi, detect(header)) : [];
     if (!lines.length) { setImpErr(t.imp_bad); return; }
     const res = match(lines, legs.map((l) => ({ ...l, key: key(l) })), currency === 'MGA' ? 1 : 0.005);
@@ -67,6 +71,10 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
     setImp({ n: lines.length, matched: keys.size, unmatched: res.filter((r) => !r.leg).map((r) => r.line),
       extra: legs.filter((l) => !keys.has(key(l)) && l.op_date >= lo && l.op_date <= last.date).length });
   };
+  // riga senza movimento: nuovo movimento precompilato (in un'altra scheda, per non perdere l'import)
+  const addHref = (u: StmtLine) => '/nuovo?' + new URLSearchParams({
+    tipo: u.amount > 0 ? 'income' : 'expense', data: u.date, importo: String(Math.abs(u.amount)), conto: accountId,
+    desc: u.text.slice(0, 300) }).toString();
   const toggle = (k: string) => setSel((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   return (
@@ -86,7 +94,7 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
       </div>
       <div className="panel-b rec-import">
         <label className="field"><span className="flabel">{t.imp}</span>
-          <input className="input" type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(e) => onFile(e.target.files?.[0])} />
+          <input className="input" type="file" accept=".csv,.txt,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={(e) => onFile(e.target.files?.[0])} />
           <span className="hint">{t.imp_hint}</span></label>
         {impErr && <div className="note err">{impErr}</div>}
         {imp && (
@@ -96,7 +104,8 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
             {imp.unmatched.length > 0 ? (
               <details style={{ marginTop: 6 }}><summary>{t.imp_unm.replace('{n}', String(imp.unmatched.length))}</summary>
                 <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{imp.unmatched.map((u, i) => (
-                  <li key={i}><span className="num">{day(u.date)} · {u.amount >= 0 ? '+' : ''}{fmt(u.amount)}</span> · {u.text}</li>))}</ul></details>
+                  <li key={i}><span className="num">{day(u.date)} · {u.amount >= 0 ? '+' : ''}{fmt(u.amount)}</span> · {u.text}
+                    {u.amount !== 0 && <> · <a href={addHref(u)} target="_blank" rel="noopener" title={t.imp_add_t}>{t.imp_add}</a></>}</li>))}</ul></details>
             ) : <> {t.imp_none}</>}
           </div>
         )}

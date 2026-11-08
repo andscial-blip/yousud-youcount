@@ -35,7 +35,7 @@ export default async function BudgetPage({ searchParams }: {
   const approved = vs.find((b) => b.status === 'approved') ?? null;
   const draft = vs.find((b) => b.status === 'draft') ?? null;
   const shown = vs.find((b) => b.id === sp.v) ?? draft ?? approved ?? vs[vs.length - 1] ?? null;
-  const view = sp.vista === 'righe' || (!approved && shown?.status === 'draft') ? 'righe' : 'confronto';
+  const view = sp.vista === 'schema' ? 'schema' : sp.vista === 'righe' || (!approved && shown?.status === 'draft') ? 'righe' : 'confronto';
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : '';
 
   const [{ data: items }, { data: cmp, error }, { data: cats }, { data: groups }, { data: projects }, { data: rate }, { data: prev }] = await Promise.all([
@@ -48,6 +48,11 @@ export default async function BudgetPage({ searchParams }: {
     supabase.rpc('fx_rate_for', { p_date: `${year}-01-01` }),
     supabase.from('budgets').select('id').eq('year', year - 1).limit(1),
   ]);
+  // schema del rendiconto per cassa: preventivo e consuntivo per voce (solo quando si apre questa vista)
+  const [{ data: stB }, { data: stA }] = view === 'schema' ? await Promise.all([
+    supabase.rpc('budget_statement', { p_year: year, p_budget: shown && shown.status !== 'approved' ? shown.id : null }),
+    supabase.rpc('report_cash_statement', { p_year: year }),
+  ]) : [{ data: null }, { data: null }];
   const rows = (cmp ?? []) as Cmp[];
   const its = items ?? [];
   const catBy = new Map((cats ?? []).map((c) => [c.id, c]));
@@ -197,11 +202,19 @@ export default async function BudgetPage({ searchParams }: {
 
           <div className="segs" role="tablist" aria-label={L('Vista', 'Vue')}>
             <Link role="tab" aria-selected={view === 'confronto'} href={href({ v: shown?.id, vista: 'confronto', progetto: prj })}>{L('Preventivo e consuntivo', 'Budget et réalisé')}</Link>
+            <Link role="tab" aria-selected={view === 'schema'} href={href({ v: shown?.id, vista: 'schema' })}>{L('Schema del rendiconto', 'Schéma du compte rendu')}</Link>
             <Link role="tab" aria-selected={view === 'righe'} href={href({ v: shown?.id, vista: 'righe' })}>{L('Righe del preventivo', 'Lignes du budget')} · {its.length}</Link>
             <a href={`/api/v1/export/budget?anno=${year}${shown ? `&v=${shown.id}` : ''}`}>{L('Excel', 'Excel')}</a>
           </div>
 
-          {view === 'confronto' ? (
+          {view === 'schema' ? (
+            <Panel title={`${L('Schema del rendiconto per cassa', 'Schéma du compte rendu de caisse')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
+              <StatementTable budget={(stB ?? []) as StLine[]} actual={(stA ?? []) as StAct[]} lang={lang} />
+              <p className="hint panel-b" style={{ margin: 0 }}>{L(
+                'Voci del modello D (rendiconto per cassa, DM 5 marzo 2020) con la stessa regola del consuntivo: le uscite dei progetti di struttura vanno nella sezione E. Il preventivo nello schema ETS è uno strumento interno: la legge non ne impone il formato.',
+                'Postes du modèle D (compte rendu de caisse, DM du 5 mars 2020) avec la même règle que le réalisé : les dépenses des projets de structure vont en section E. Le budget au schéma ETS est un outil interne : la loi n\'en impose pas le format.')}</p>
+            </Panel>
+          ) : view === 'confronto' ? (
             <Panel title={`${L('Confronto', 'Comparaison')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
               <form className="inline-form panel-b" method="get" action="/preventivo">
                 <input type="hidden" name="anno" value={year} />{shown && <input type="hidden" name="v" value={shown.id} />}
@@ -319,6 +332,56 @@ export default async function BudgetPage({ searchParams }: {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+type StLine = { direction: 'in' | 'out'; section: string; section_it: string; section_fr: string; key: string | null; name_it: string; name_fr: string; sort: number; budget_eur: string };
+type StAct = { direction: 'in' | 'out'; key: string; amount_eur: string };
+
+// Preventivo e consuntivo per voce del rendiconto, con subtotali per sezione e avanzo/disavanzo.
+function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: StAct[]; lang: 'it' | 'fr' }) {
+  const L = (it: string, fr: string) => (lang === 'fr' && fr ? fr : it);
+  const m = (v: number) => money(v, 'EUR', lang);
+  const act = new Map(actual.map((a) => [`${a.direction}|${a.key}`, Number(a.amount_eur)]));
+  const rows = budget.map((b) => ({ ...b, b: Number(b.budget_eur), a: b.key ? act.get(`${b.direction}|${b.key}`) ?? 0 : 0 }));
+  const tot = (d: 'in' | 'out', k: 'a' | 'b') => rows.filter((r) => r.direction === d).reduce((s, r) => s + r[k], 0);
+  if (!rows.some((r) => r.b || r.a)) return <Empty text={L('Nessuna voce: il preventivo è vuoto e non ci sono movimenti nell\'anno.', 'Aucun poste : le budget est vide et il n\'y a pas de mouvements dans l\'année.')} />;
+  const block = (d: 'in' | 'out') => {
+    const secs: StLine['section'][] = [...new Set(rows.filter((r) => r.direction === d).map((r) => r.section))];
+    return secs.map((sec) => {
+      const rs = rows.filter((r) => r.direction === d && r.section === sec);
+      const sb = rs.reduce((s, r) => s + r.b, 0), sa = rs.reduce((s, r) => s + r.a, 0);
+      if (!sb && !sa) return null;
+      return (
+        <tbody key={`${d}${sec}`}>
+          <tr className="sub"><td colSpan={2}><b>{L(rs[0].section_it, rs[0].section_fr)}</b></td>
+            <td className="r num"><b>{m(sb)}</b></td><td className="r num"><b>{m(sa)}</b></td><td className="r num"><b>{m(sb - sa)}</b></td></tr>
+          {rs.filter((r) => r.b || r.a).map((r) => (
+            <tr key={`${d}${r.key ?? 'x'}`} className={r.key ? undefined : 'warn'}>
+              <td className="nw muted">{r.key ?? '–'}</td><td>{L(r.name_it, r.name_fr)}</td>
+              <td className="r num">{m(r.b)}</td><td className="r num">{r.key ? m(r.a) : '–'}</td><td className="r num">{r.key ? m(r.b - r.a) : '–'}</td>
+            </tr>
+          ))}
+        </tbody>
+      );
+    });
+  };
+  const inB = tot('in', 'b'), outB = tot('out', 'b'), inA = tot('in', 'a'), outA = tot('out', 'a');
+  return (
+    <div className="tscroll">
+      <table className="t keep stmt">
+        <thead><tr><th>{L('Voce', 'Poste')}</th><th /><th className="r">{L('Preventivo', 'Budget')}</th><th className="r">{L('Consuntivo', 'Réalisé')}</th><th className="r">{L('Differenza', 'Écart')}</th></tr></thead>
+        <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Uscite', 'Dépenses')}</th></tr></tbody>
+        {block('out')}
+        <tbody><tr className="tot"><td colSpan={2}>{L('Totale uscite', 'Total des dépenses')}</td><td className="r num">{m(outB)}</td><td className="r num">{m(outA)}</td><td className="r num">{m(outB - outA)}</td></tr></tbody>
+        <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Entrate', 'Recettes')}</th></tr></tbody>
+        {block('in')}
+        <tbody>
+          <tr className="tot"><td colSpan={2}>{L('Totale entrate', 'Total des recettes')}</td><td className="r num">{m(inB)}</td><td className="r num">{m(inA)}</td><td className="r num">{m(inB - inA)}</td></tr>
+          <tr className="tot"><td colSpan={2}>{L('Avanzo (disavanzo)', 'Excédent (déficit)')}</td><td className="r num">{m(inB - outB)}</td><td className="r num">{m(inA - outA)}</td><td /></tr>
+        </tbody>
+      </table>
     </div>
   );
 }

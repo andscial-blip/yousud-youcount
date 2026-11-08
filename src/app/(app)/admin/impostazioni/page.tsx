@@ -2,8 +2,10 @@ import { ADMIN, can, requireMe } from '@/lib/session';
 import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
-import { saveDocDetails, toggleSetting } from './actions';
+import { removeLogo, saveLogo, saveDocDetails, toggleSetting } from './actions';
 import { ApiKeys } from '@/components/ApiKeys';
+import { LogoUpload } from '@/components/LogoUpload';
+import { LOGO_MAX } from '@/lib/org';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +29,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   };
   const orgDet = ((data ?? []).find((s) => s.key === 'org_details')?.value ?? {}) as { address?: string; tax_id?: string; iban?: string };
   const signer = ((data ?? []).find((s) => s.key === 'doc_signer')?.value ?? {}) as { name?: string; role?: string };
+  const lg = ((data ?? []).find((s) => s.key === 'org_logo')?.value ?? {}) as { mime?: string; data?: string };
+  const logoUrl = lg.mime && lg.data ? `data:${lg.mime};base64,${lg.data}` : null;
   const lastBackup = (data ?? []).find((s) => s.key === 'last_backup')?.value as { at?: string; by?: string } | undefined;
   return (
     <div className="stack" style={{ maxWidth: 920 }}>
@@ -69,6 +73,9 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             <input className="input" id="d-sigr" name="signer_role" maxLength={120} defaultValue={signer.role ?? ''} /></div>
           <div className="span2"><button className="btn primary" type="submit">{t('save')}</button></div>
         </form>
+        <h3 style={{ margin: '18px 0 8px' }}>{t('logo_title')}</h3>
+        <LogoUpload current={logoUrl} action={saveLogo} removeAction={removeLogo} max={LOGO_MAX}
+          labels={{ pick: t('logo_pick'), hint: t('logo_hint'), save: t('logo_save'), remove: t('logo_remove'), big: t('logo_big'), bad: t('logo_bad') }} />
       </Panel>
       <Panel title={t('bk_title')}>
         <div className="panel-b stack" style={{ gap: 12 }}>

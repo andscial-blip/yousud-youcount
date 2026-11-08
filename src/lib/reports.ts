@@ -5,7 +5,15 @@ import type { createClient } from './supabase/server';
 // così i numeri a schermo e nel file sono gli stessi. Solo movimenti registrati e verificati, salvo dove detto.
 type Sb = Awaited<ReturnType<typeof createClient>>;
 export type Cell = { v: number | string | null; t?: 'eur' | 'int' | 'date' | 'text' | 'cur'; cur?: string; href?: string };
-export type Table = { title: string; head: { h: string; num?: boolean }[]; rows: Cell[][]; foot?: Cell[]; note?: string };
+// Grafico facoltativo accanto alla tabella (stessi numeri): mesi affiancati o barre orizzontali delle voci principali.
+export type Chart = { kind: 'months'; data: { inc: number; out: number }[]; hrefs?: string[] }
+  | { kind: 'bars'; dir: 'in' | 'out'; rows: { label: string; value: number; href?: string }[]; more: number };
+export type Table = { title: string; head: { h: string; num?: boolean }[]; rows: Cell[][]; foot?: Cell[]; note?: string; chart?: Chart };
+const TOP = 8;
+const bars = (dir: 'in' | 'out', rows: { label: string; value: number; href?: string }[]): Chart | undefined => {
+  const r = rows.filter((x) => x.value > 0).sort((a, b) => b.value - a.value);
+  return r.length ? { kind: 'bars', dir, rows: r.slice(0, TOP), more: Math.max(0, r.length - TOP) } : undefined;
+};
 export type ReportKind = 'mensile' | 'categorie' | 'fornitori' | 'utenti' | 'nodoc' | 'cassa' | 'scadenze';
 export const REPORTS: { k: ReportKind; it: string; fr: string }[] = [
   { k: 'mensile', it: 'Mensile Italia / Madagascar', fr: 'Mensuel Italie / Madagascar' },
@@ -61,6 +69,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
           { h: L('Uscite Italia', 'Dépenses Italie'), num: true }, { h: L('Uscite Madagascar', 'Dépenses Madagascar'), num: true }, { h: L('Saldo del mese', 'Solde du mois'), num: true }],
         rows: by.map((r, i) => [txt(MONTHS[lang][i], `/movimenti?dal=${year}-${String(i + 1).padStart(2, '0')}-01&al=${year}-${String(i + 1).padStart(2, '0')}-${String(new Date(year, i + 1, 0).getDate()).padStart(2, '0')}`), ...row(r)]),
         foot: [txt(L('Totale', 'Total')), ...row(tot)],
+        chart: { kind: 'months', data: by.map((r) => ({ inc: r.iIT + r.iMG, out: r.oIT + r.oMG })) },
         note: L('Il paese è quello del conto del movimento. In euro al cambio di ciascun movimento.', 'Le pays est celui du compte du mouvement. En euros au taux de chaque mouvement.'),
       }];
     }
@@ -79,6 +88,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
         head: [{ h: L('Codice', 'Code') }, { h: L('Voce', 'Poste') }, { h: 'Italia', num: true }, { h: 'Madagascar', num: true }, { h: L('Totale', 'Total'), num: true }, { h: L('Movimenti', 'Mouvements'), num: true }],
         rows: cs.map((c) => { const r = by.get(c.id)!; return [txt(c.code, `/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}`), txt(nm(c)), eur(r.IT), eur(r.MG), eur(r.IT + r.MG), int(r.n)]; }),
         foot: [txt(L('Totale', 'Total')), txt(''), eur(tot.IT), eur(tot.MG), eur(tot.IT + tot.MG), int(tot.n)],
+        chart: bars(d, cs.map((c) => { const r = by.get(c.id)!; return { label: `${c.code} · ${nm(c)}`, value: r.IT + r.MG, href: `/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}` }; })),
       });
     }
     return tables;
@@ -101,6 +111,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
       head: [{ h: L('Controparte', 'Contrepartie') }, { h: L('Uscite', 'Dépenses'), num: true }, { h: L('Entrate', 'Recettes'), num: true }, { h: L('Movimenti', 'Mouvements'), num: true }],
       rows: list.map(([k, r]) => [txt(k ? cpn.get(k) ?? '–' : L('(senza controparte)', '(sans contrepartie)')), eur(r.o), eur(r.i), int(r.n)]),
       foot: [txt(L('Totale', 'Total')), eur(tot.o), eur(tot.i), int(tot.n)],
+      chart: bars('out', list.filter(([k]) => k).map(([k, r]) => ({ label: cpn.get(k) ?? '–', value: r.o }))),
     }];
   }
 

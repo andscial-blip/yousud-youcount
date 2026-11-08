@@ -42,9 +42,28 @@ export async function renderPdf(md: Model): Promise<Uint8Array> {
   };
   const hr = () => { page.drawLine({ start: { x: M, y }, end: { x: M + W, y }, thickness: 0.6, color: rule }); y -= 14; };
 
-  put(md.org.name, { size: 14, font: bold });
-  const sub = [md.org.address, md.org.tax_id ? `C.F. ${md.org.tax_id}` : null].filter(Boolean).join(' · ');
-  if (sub) put(sub, { size: 9, color: soft });
+  // logo dell'ente in alto a destra (al massimo 130 × 48 pt), testo dell'intestazione a sinistra
+  let logoW = 0;
+  if (md.org.logo) {
+    try {
+      const bytes = Uint8Array.from(atob(md.org.logo.data), (c) => c.charCodeAt(0));
+      const img = md.org.logo.mime === 'image/png' ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
+      const k = Math.min(130 / img.width, 48 / img.height, 1);
+      const w = img.width * k, h = img.height * k;
+      page.drawImage(img, { x: M + W - w, y: y - h + 2, width: w, height: h });
+      logoW = w + 16;
+      const top = y;
+      put(md.org.name, { size: 14, font: bold, w: W - logoW });
+      const sub = [md.org.address, md.org.tax_id ? `C.F. ${md.org.tax_id}` : null].filter(Boolean).join(' · ');
+      if (sub) put(sub, { size: 9, color: soft, w: W - logoW });
+      y = Math.min(y, top - h);
+    } catch { logoW = 0; }
+  }
+  if (!logoW) {
+    put(md.org.name, { size: 14, font: bold });
+    const sub = [md.org.address, md.org.tax_id ? `C.F. ${md.org.tax_id}` : null].filter(Boolean).join(' · ');
+    if (sub) put(sub, { size: 9, color: soft });
+  }
   y -= 6; hr();
   put(md.title.toUpperCase(), { size: 13, font: bold, gap: 4 });
   put(md.meta.map(([k, v]) => `${k} ${v}`).join('   ·   '), { size: 9.5, color: soft, gap: 12 });

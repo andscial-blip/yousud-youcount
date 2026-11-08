@@ -42,3 +42,35 @@ test('abbinamento: stesso importo, data più vicina entro 7 giorni, un movimento
     { date: '2026-11-04', amount: 100, text: '', balance: null }], legs);
   assert.deepEqual(r.map((x) => x.leg?.key ?? null), ['b', 'a', null]);
 });
+
+import { fromRows, sniff } from '../../src/lib/bank-csv.ts';
+import { decodeText, xlsxRows } from '../../src/lib/bank-csv.ts';
+import ExcelJS from 'exceljs';
+
+test('riconosce il tipo di file dai primi byte', () => {
+  assert.equal(sniff(new Uint8Array([0x50, 0x4b, 3, 4])), 'xlsx');
+  assert.equal(sniff(new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1])), 'xls');
+  assert.equal(sniff(new TextEncoder().encode('  <html><table><tr><td>Data</td></tr></table>')), 'html');
+  assert.equal(sniff(new TextEncoder().encode('Data;Importo\n01/11/2026;5,00')), 'text');
+});
+
+test('CSV in codifica Windows (accenti) si legge correttamente', () => {
+  const buf = new Uint8Array([0x44, 0x61, 0x74, 0x61, 0x3b, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x7a, 0x69, 0x6f, 0x6e, 0x65, 0x0a, 0x50, 0x65, 0x72, 0xf2]).buffer;
+  assert.match(decodeText(buf), /Però$/);
+});
+
+test('estratto in Excel: intestazione dopo righe di titolo, date e numeri come celle', async () => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Movimenti');
+  ws.addRow(['Banca di prova']);
+  ws.addRow([]);
+  ws.addRow(['Data operazione', 'Descrizione', 'Importo', 'Saldo']);
+  ws.addRow([new Date(Date.UTC(2026, 10, 3)), 'Bonifico affitto', -450, 1550]);
+  ws.addRow([new Date(Date.UTC(2026, 10, 4)), { richText: [{ text: 'Dona' }, { text: 'zione' }] }, 100.5, { formula: 'D4+C5', result: 1650.5 }]);
+  const buf = await wb.xlsx.writeBuffer();
+  const rows = await xlsxRows(buf as ArrayBuffer);
+  const { rows: r, header, hi } = fromRows(rows);
+  const lines = toLines(r, hi, detect(header));
+  assert.deepEqual(lines.map((l) => [l.date, l.amount, l.text, l.balance]),
+    [['2026-11-03', -450, 'Bonifico affitto', 1550], ['2026-11-04', 100.5, 'Donazione', 1650.5]]);
+});

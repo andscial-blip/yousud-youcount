@@ -724,6 +724,30 @@ test('preventivo: versioni, approvazione con delibera, blocco delle righe, revis
   assert.equal(n.copied, 3);
 });
 
+test('preventivo nello schema del rendiconto: stesse voci del consuntivo, struttura in E, codici da classificare', async () => {
+  const Y = Number(today.slice(0, 4)) + 3;
+  const d = await rpc(U.resp, 'budget_draft', Y, null, null);
+  const [{ id: prj }] = await sql(`insert into projects(org_id, name) values ($1, 'Prova schema') returning id`, [ORG]);
+  const add = (category_id, project_id, unit_cost) => rpc(U.resp, 'budget_item_save', { budget_id: d.id, category_id, project_id, qty: 1, unit_cost, currency: 'EUR' });
+  await add(R.out['101'], R.gen, 300);     // struttura -> E4
+  await add(R.out['101'], prj, 200);       // progetto -> A4
+  await add(R.out['999'], prj, 15);        // senza voce
+  await add(R.in['E101'], null, 1000);     // entrata A4
+  const draft = await as(U.ro, (q) => q('select * from budget_statement($1, $2)', [Y, d.id]));
+  const line = (rows, dir, k) => Number(rows.find((r) => r.direction === dir && r.key === k)?.budget_eur ?? NaN);
+  assert.equal(line(draft, 'out', 'E4'), 300);
+  assert.equal(line(draft, 'out', 'A4'), 200);
+  assert.equal(line(draft, 'in', 'A4'), 1000);
+  assert.equal(Number(draft.find((r) => r.direction === 'out' && r.key === null).budget_eur), 15, 'riga da classificare');
+  const tot = draft.filter((r) => r.direction === 'out').reduce((s, r) => s + Number(r.budget_eur), 0);
+  assert.equal(tot, 515, 'il totale torna con le righe del preventivo');
+  // senza versione: l'approvata (qui nessuna, quindi zero)
+  assert.equal((await as(U.ro, (q) => q('select * from budget_statement($1)', [Y]))).reduce((s, r) => s + Number(r.budget_eur), 0), 0);
+  await rpc(U.admin, 'budget_approve', d.id, 'Delibera di prova');
+  assert.equal(line(await as(U.ro, (q) => q('select * from budget_statement($1)', [Y])), 'out', 'E4'), 300);
+  assert.equal((await as(U.op, (q) => q('select * from budget_statement($1)', [Y]))).length, 0, 'solo staff');
+});
+
 test('scadenziario: scadenze a mano, adempimenti dell\'app, ricorrenza, visibilità', async () => {
   await assert.rejects(rpc(U.ro, 'deadline_save', { title: 'Prova', due_date: '2031-01-31' }), /forbidden/);
   const d = await rpc(U.op, 'deadline_save', { title: 'Pagare affitto ufficio', category: 'pay', due_date: '2031-01-31', amount: 450, repeat: 'monthly', priority: 'high' });

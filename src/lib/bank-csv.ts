@@ -48,9 +48,23 @@ export function readCsv(text: string): { rows: string[][]; header: string[]; hi:
   if (!L.length) return { rows: [], header: [], hi: -1 };
   const probe = L.slice(0, 15).join('\n');
   const sep = [';', '\t', ','].map((c) => [c, (probe.match(new RegExp(c === '\t' ? '\\t' : c, 'g')) ?? []).length] as const).sort((a, b) => b[1] - a[1])[0][0];
-  const rows = L.map((l) => splitCsv(l, sep));
+  return fromRows(L.map((l) => splitCsv(l, sep)));
+}
+
+// Tabella già divisa in celle (CSV, foglio Excel, tabella HTML): trova la riga d'intestazione.
+export function fromRows(rows: string[][]): { rows: string[][]; header: string[]; hi: number } {
+  rows = rows.filter((r) => r.some((c) => c.trim()));
+  if (!rows.length) return { rows: [], header: [], hi: -1 };
   const hi = rows.findIndex((r) => r.some((c) => /data|date|booking/i.test(c)) && r.some((c) => /importo|amount|montant|dare|avere|debit|credit|débit|crédit|uscit|entrat|addebit|accredit/i.test(c)));
   return { rows, header: hi >= 0 ? rows[hi] : rows[0].map((_, i) => `Col ${i + 1}`), hi };
+}
+
+// Che cosa contiene il file, dai primi byte: molte banche chiamano «.xls» una tabella HTML o un testo.
+export function sniff(b: Uint8Array): 'xlsx' | 'xls' | 'html' | 'text' {
+  if (b[0] === 0x50 && b[1] === 0x4b) return 'xlsx';
+  if (b[0] === 0xd0 && b[1] === 0xcf && b[2] === 0x11 && b[3] === 0xe0) return 'xls';
+  const head = new TextDecoder().decode(b.slice(0, 512)).replace(/^\uFEFF/, '').trimStart().toLowerCase();
+  return head.startsWith('<') && /<(html|table|!doctype)/.test(head) ? 'html' : 'text';
 }
 
 export function detect(header: string[]): Mapping {
@@ -61,7 +75,9 @@ export function detect(header: string[]): Mapping {
     date,
     amount: (() => { const i = f(/^(?!.*(data|date|saldo|solde|balance))(importo|amount|montant)/); return i >= 0 ? i : f(/^(?!.*(data|date|saldo))valore/); })(),
     debit: f(/dare|addebit|uscit|debit|débit/), credit: f(/avere|accredit|entrat|credit|crédit/),
-    text: f(/descr|causale|libell|details|motivo|operaz|note|wording/), balance: f(/saldo|solde|balance/),
+    // descrizione: mai la colonna della data («Data operazione»); prima i nomi più espliciti
+    text: (() => { const i = f(/^(?!.*(data|date)).*(descr|causale|libell|details|wording)/); return i >= 0 ? i : f(/^(?!.*(data|date)).*(motivo|operaz|note)/); })(),
+    balance: f(/saldo|solde|balance/),
   };
 }
 
@@ -97,4 +113,60 @@ export function match<T extends { key: string; amount: number; op_date: string }
     if (best) used.add(best.leg.key);
     return { line: l, leg: best?.leg ?? null };
   });
+}
+
+// ---- Estratto in Excel (.xlsx) o tabella HTML salvata come .xls (exceljs si carica solo quando serve)
+type Cell = { value: unknown; text?: string };
+
+function cellText(c: Cell): string {
+  const v = c.value as unknown;
+  if (v == null) return '';
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+  if (typeof v === 'object') {
+    const o = v as { result?: unknown; richText?: { text: string }[]; text?: string };
+    if (o.result !== undefined) return cellText({ value: o.result });
+    if (o.richText) return o.richText.map((r) => r.text).join('');
+    if (o.text) return String(o.text);
+  }
+  return String(v).trim();
+}
+
+export async function xlsxRows(buf: ArrayBuffer): Promise<string[][]> {
+  const ExcelJS = (await import('exceljs')).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  // il primo foglio con una riga d'intestazione riconoscibile, altrimenti il primo
+  let best: string[][] = [];
+  for (const ws of wb.worksheets) {
+    const rows: string[][] = [];
+    ws.eachRow({ includeEmpty: false }, (row) => {
+      const out: string[] = [];
+      row.eachCell({ includeEmpty: true }, (cell, col) => { out[col - 1] = cellText(cell as unknown as Cell); });
+      rows.push(Array.from(out, (x) => x ?? ''));
+    });
+    if (fromRows(rows).hi >= 0) return rows;
+    if (!best.length) best = rows;
+  }
+  return best;
+}
+
+export function htmlRows(html: string): string[][] {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return [...doc.querySelectorAll('tr')].map((tr) => [...tr.querySelectorAll('th,td')].map((td) => (td.textContent ?? '').replace(/\s+/g, ' ').trim()));
+}
+
+// Testo in UTF-8 o, se non lo è, nella codifica di Windows usata da molte banche italiane e francesi.
+export function decodeText(buf: ArrayBuffer): string {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch { return new TextDecoder('windows-1252').decode(buf); }
+}
+
+// Righe del file (CSV, .xlsx, tabella HTML) oppure 'xls' se è un vecchio Excel binario (da salvare come .xlsx o CSV).
+export async function fileRows(f: File): Promise<string[][] | 'xls'> {
+  const buf = await f.arrayBuffer();
+  const kind = sniff(new Uint8Array(buf));
+  if (kind === 'xls') return 'xls';
+  if (kind === 'xlsx') return xlsxRows(buf);
+  const text = decodeText(buf);
+  return kind === 'html' ? htmlRows(text) : readCsv(text).rows;
 }

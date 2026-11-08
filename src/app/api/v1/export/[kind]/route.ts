@@ -132,10 +132,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const vid = req.nextUrl.searchParams.get('v');
     const { data: b } = vid ? await supabase.from('budgets').select('id, version, status, approval_ref').eq('id', vid).maybeSingle()
       : await supabase.from('budgets').select('id, version, status, approval_ref').eq('year', year).eq('status', 'approved').maybeSingle();
-    const [{ data: items }, { data: cmp }] = await Promise.all([
+    const [{ data: items }, { data: cmp }, { data: stB }, { data: stA }] = await Promise.all([
       b ? supabase.from('budget_items').select('description, qty, unit, unit_cost, currency, fx_rate, amount, amount_eur, notes, category:categories(code, name_it, name_fr, direction), project:projects(name)').eq('budget_id', b.id).order('sort')
         : Promise.resolve({ data: [] }),
       supabase.rpc('budget_compare', { p_year: year, p_budget: b && b.status !== 'approved' ? b.id : null }),
+      supabase.rpc('budget_statement', { p_year: year, p_budget: b && b.status !== 'approved' ? b.id : null }),
+      supabase.rpc('report_cash_statement', { p_year: year }),
     ]);
     type It = { description: string | null; qty: string; unit: string | null; unit_cost: string; currency: string; fx_rate: string | null; amount: string; amount_eur: string; notes: string | null;
       category: { code: string; name_it: string; name_fr: string; direction: string } | null; project: { name: string } | null };
@@ -158,6 +160,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       n: fr && r.cat_fr ? r.cat_fr : r.cat_it, p: r.project_name ?? (fr ? 'Général' : 'Generale'), b: Number(r.budget_eur), a: Number(r.actual_eur),
       k: Number(r.committed_eur), r: Number(r.budget_eur) - Number(r.actual_eur), pc: Number(r.budget_eur) ? Number(r.actual_eur) / Number(r.budget_eur) : null });
     if (b) w2.addRow([]).getCell(1).value = `${fr ? 'Version' : 'Versione'} ${b.version} · ${b.status}${b.approval_ref ? ` · ${b.approval_ref}` : ''}`;
+    // schema del rendiconto per cassa (modello D): stesse voci del rendiconto, preventivo e consuntivo
+    type St = { direction: string; section_it: string; section_fr: string; key: string | null; name_it: string; name_fr: string; budget_eur: string };
+    const act = new Map(((stA ?? []) as { direction: string; key: string; amount_eur: string }[]).map((a) => [`${a.direction}|${a.key}`, Number(a.amount_eur)]));
+    const w3 = sheet(wb, fr ? 'Schéma compte rendu' : 'Schema rendiconto', [
+      { header: fr ? 'Type' : 'Tipo', key: 'd', width: 10 }, { header: 'Section', key: 's', width: 34 }, { header: fr ? 'Poste' : 'Voce', key: 'k', width: 8 },
+      { header: fr ? 'Libellé' : 'Descrizione', key: 'n', width: 48 }, { header: fr ? 'Budget' : 'Preventivo', key: 'b', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Réalisé' : 'Consuntivo', key: 'a', width: 14, fmt: '#,##0.00' }, { header: fr ? 'Écart' : 'Differenza', key: 'x', width: 14, fmt: '#,##0.00' }]);
+    for (const r of (stB ?? []) as St[]) {
+      const a = r.key ? act.get(`${r.direction}|${r.key}`) ?? 0 : null;
+      if (!Number(r.budget_eur) && !a) continue;
+      w3.addRow({ d: r.direction === 'in' ? (fr ? 'Recette' : 'Entrata') : (fr ? 'Dépense' : 'Uscita'), s: fr && r.section_fr ? r.section_fr : r.section_it,
+        k: r.key ?? '', n: fr && r.name_fr ? r.name_fr : r.name_it, b: Number(r.budget_eur), a, x: a === null ? null : Number(r.budget_eur) - a });
+    }
     file = `${fr ? 'budget' : 'preventivo'}-${year}.xlsx`;
   } else {
     return NextResponse.json({ error: 'esportazione sconosciuta' }, { status: 404 });

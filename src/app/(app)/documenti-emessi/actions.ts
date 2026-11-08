@@ -1,6 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { loadOrg } from '@/lib/org';
 import { createClient } from '@/lib/supabase/server';
 import { parseAmount } from '@/lib/amount';
 import { buildModel, notTotals, type DocType, type NotLine, type NrsLine } from '@/lib/doc-model';
@@ -50,14 +51,12 @@ export async function issueDoc(f: FormData) {
   const { error } = await sb.rpc('issued_doc_issue', { p_id: id });
   if (error) redirect(`/documenti-emessi/${id}?err=${encodeURIComponent(error.message)}`);
   const { data: d } = await sb.from('issued_docs').select('*, movement:movements(ref, amount_eur, currency, amount), project:projects(name)').eq('id', id).single();
-  const [{ data: org }, { data: det }] = await Promise.all([
-    sb.from('organizations').select('id, name').single(), sb.from('settings').select('value').eq('key', 'org_details').maybeSingle()]);
-  const od = (det?.value ?? {}) as { address?: string; tax_id?: string; iban?: string };
+  const org = await loadOrg(sb);
   const eur = d.movement && d.movement.currency === d.currency && Number(d.movement.amount) === Number(d.amount) ? d.movement.amount_eur : null;
   const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur },
-    { name: org!.name, address: od.address, tax_id: od.tax_id, iban: od.iban });
+    org);
   const bytes = await renderPdf(md);
-  const st = await storePdf(sb, { orgId: org!.id, bytes, number: d.number, date: d.doc_date, clientUuid: d.id,
+  const st = await storePdf(sb, { orgId: org.id, bytes, number: d.number, date: d.doc_date, clientUuid: d.id,
     docType: d.type === 'RIC' || d.type === 'QUI' ? 'receipt' : 'other', total: d.amount, currency: d.currency });
   if (st.error) redirect(`/documenti-emessi/${id}?err=${encodeURIComponent(st.error)}`);
   const { error: aErr } = await sb.rpc('issued_doc_attach', { p_id: id, p_document_id: st.id });

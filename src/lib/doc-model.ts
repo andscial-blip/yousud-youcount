@@ -5,7 +5,7 @@ import { date, money } from './format';
 // e dalle norme indicate: la conformità va confermata dal commercialista.
 export type DocType = 'AUT' | 'RIC' | 'QUI' | 'NOT' | 'NRS' | 'ASP' | 'NDD';
 export type Lang3 = 'it' | 'fr' | 'both';
-export type Org = { name: string; address?: string | null; tax_id?: string | null; iban?: string | null };
+export type Org = { name: string; address?: string | null; tax_id?: string | null; iban?: string | null; logo?: { mime: 'image/png' | 'image/jpeg'; data: string } | null };
 export type Block =
   | { k: 'p'; text: string; soft?: boolean; strong?: boolean }
   | { k: 'table'; head: string[]; rows: string[][]; num: number[] }

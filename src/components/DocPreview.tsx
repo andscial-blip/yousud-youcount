@@ -4,7 +4,9 @@ import type { Model } from '@/lib/doc-model';
 export function DocPreview({ md }: { md: Model }) {
   return (
     <article className="docprev" aria-label={md.title}>
-      <header>
+      <header className={md.org.logo ? 'has-logo' : undefined}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- immagine incorporata (data URL) */}
+        {md.org.logo && <img className="dp-logo" src={`data:${md.org.logo.mime};base64,${md.org.logo.data}`} alt="" />}
         <b className="dp-org">{md.org.name}</b>
         {(md.org.address || md.org.tax_id) && <small>{[md.org.address, md.org.tax_id ? `C.F. ${md.org.tax_id}` : null].filter(Boolean).join(' · ')}</small>}
       </header>

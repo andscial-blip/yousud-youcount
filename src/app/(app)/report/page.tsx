@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { buildReport, REPORTS, type Cell, type ReportKind, type Table } from '@/lib/reports';
+import { C_IN, C_OUT, HBars, MonthBars } from '@/components/Charts';
+
+const TOPN = 8;
 import { Denied, PageHead } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
 import { Ico } from '@/components/Ui';
@@ -40,6 +43,16 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
       {tables.map((tb, i) => (
         <section className="panel" key={i}>
           <div className="panel-h"><h2>{tb.title}</h2></div>
+          {tb.chart && tb.rows.length > 0 && (
+            <div className="panel-b rchart">
+              {tb.chart.kind === 'months'
+                ? <MonthBars data={tb.chart.data} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }} />
+                : <>
+                    <HBars rows={tb.chart.rows} lang={lang} color={tb.chart.dir === 'in' ? C_IN : C_OUT} />
+                    {tb.chart.more > 0 && <p className="hint" style={{ margin: '6px 0 0' }}>{L(`Le ${TOPN} voci più alte; altre ${tb.chart.more} nella tabella.`, `Les ${TOPN} postes les plus élevés ; ${tb.chart.more} autres dans le tableau.`)}</p>}
+                  </>}
+            </div>
+          )}
           {tb.rows.length === 0 ? <div className="panel-b muted">{L('Nessun dato.', 'Aucune donnée.')}</div> : (
             <div className="tscroll">
               <table className="t">
