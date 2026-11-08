@@ -191,7 +191,7 @@ begin
     (v_org, 'Carta prepagata', 'Carta prepagata', 'Carte prépayée', 130),
     (v_org, 'Altro', 'Altro', 'Autre', 140);
   insert into public.projects(org_id, name, kind, legacy_name) values
-    (v_org, 'Spese generali (fuori progetto)', 'structure', 'General'),
+    (v_org, 'Spese generali', 'structure', 'General'),
     (v_org, 'École Piccolino', 'project', 'École Piccolino'),
     (v_org, 'École Antanetibe', 'project', 'École Antanetibe'),
     (v_org, 'École Bonne Semence', 'project', 'École Bonne Semence'),

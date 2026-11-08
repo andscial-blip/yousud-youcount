@@ -123,7 +123,7 @@ w(",\n".join(rows) + ";")
 rows = []
 for p in dump["PROJECTS_DEF"]:
     if p == "General":
-        rows.append("    (v_org, 'Spese generali (fuori progetto)', 'structure', 'General')")
+        rows.append("    (v_org, 'Spese generali', 'structure', 'General')")
     else:
         rows.append("    (v_org, %s, 'project', %s)" % (q(p), q(p)))
 w("  insert into public.projects(org_id, name, kind, legacy_name) values")

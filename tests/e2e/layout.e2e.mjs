@@ -6,6 +6,7 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import pg from 'pg';
 import { startStack, TEST_PASSWORD } from './local-stack.mjs';
@@ -139,6 +140,18 @@ try {
     await page.fill('#password', TEST_PASSWORD);
     await page.click('button[type=submit]');
     await page.waitForURL(`${base}/`, { timeout: 60000 });
+    if (process.env.SPLASH_SHOT) {
+      // schermata d'apertura: subito dopo il caricamento (prima che sfumi), su telefono e PC
+      for (const w of [390, 1280]) {
+        const sp = await ctx.newPage();
+        await sp.setViewportSize({ width: w, height: 800 });
+        await sp.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+        await sp.screenshot({ path: `${SHOTS}/splash_${lang}_${w}.png` });
+        await sp.waitForTimeout(1800);
+        assert(!(await sp.locator('#splash').isVisible()), 'la schermata d\'apertura sparisce da sola');
+        await sp.close();
+      }
+    }
     await page.close();
     for (const path of PAGES) {
       for (const w of WIDTHS) {

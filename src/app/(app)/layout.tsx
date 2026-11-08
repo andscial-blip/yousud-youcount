@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Logo, Wordmark } from '@/components/Logo';
+import { Logo, Splash, Wordmark } from '@/components/Logo';
 import { BottomNav, TopNav, Icon } from '@/components/Nav';
 import { NetStatus } from '@/components/NetStatus';
 import { TableCards } from '@/components/TableCards';
@@ -36,6 +36,7 @@ function Shell({ t, who, top, bottom, children }: {
 }) {
   return (
     <>
+      <Splash tagline={t('app_tagline')} />
       <header className="top">
         <div className="wrap">
           <Link href="/" aria-label={t('nav_dashboard')} style={{ display: 'flex' }}><Logo /></Link>

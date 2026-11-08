@@ -79,7 +79,7 @@ before(async () => {
   R.out = Object.fromEntries((await sql(`select code, id from categories where direction='out'`)).map((r) => [r.code, r.id]));
   R.in = Object.fromEntries((await sql(`select code, id from categories where direction='in'`)).map((r) => [r.code, r.id]));
   R.prj = Object.fromEntries((await sql('select name, id from projects')).map((r) => [r.name, r.id]));
-  R.gen = R.prj['Spese generali (fuori progetto)'];
+  R.gen = R.prj['Spese generali'];
 });
 after(() => pool.end());
 
@@ -91,7 +91,7 @@ test('seed: piano dei conti ripreso dal Gestionale', async () => {
   assert.deepEqual(c, { o: 64, i: 25, n: 3 });
   const unmapped = await sql(`select code from categories where report_line_key is null order by code`);
   assert.deepEqual(unmapped.map((r) => r.code), ['999', 'E904', 'E999']);
-  const [g] = await sql(`select kind, legacy_name from projects where name = 'Spese generali (fuori progetto)'`);
+  const [g] = await sql(`select kind, legacy_name from projects where name = 'Spese generali'`);
   assert.deepEqual(g, { kind: 'structure', legacy_name: 'General' });
 });
 

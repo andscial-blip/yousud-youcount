@@ -83,6 +83,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand > span { font-size: 12px; opacity: .82; letter-spacing: .01em; }
 /* «You» nel verde YouSud, «Count» in blu notte; sull'intestazione ardesia versioni chiare */
 .wm-you { color: #00A060; }
+/* schermata d'apertura (Splash): sempre bianca, anche col tema scuro */
+#splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; background: #FFFFFF; pointer-events: none; animation: splash-out .45s ease 1.1s forwards; }
+#splash b { font-family: var(--f-ui); font-size: 34px; font-weight: 700; letter-spacing: .005em; margin-top: 8px; }
+#splash .sp-you { color: #00A060; }
+#splash .sp-count { color: #16324F; }
+#splash > span { font-family: var(--f-ui); font-size: 15px; color: #5B6472; }
+.nosplash #splash { display: none; }
+@keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { #splash { animation-duration: .01s; animation-delay: .8s; } }
 .wm-count { color: var(--navy); }
 .top .wm-you { color: #7FD3A6; }
 .top .wm-count { color: #FFFFFF; }

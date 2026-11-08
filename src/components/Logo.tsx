@@ -13,3 +13,21 @@ export function Wordmark({ tagline }: { tagline: string }) {
     </div>
   );
 }
+
+// Schermata d'apertura: fondo bianco, marchio, nome e frase al centro. Solo al primo caricamento della
+// sessione (lo script la nasconde subito alle aperture successive), poi sfuma da sola via CSS:
+// nessun JavaScript da attendere, e non intercetta i tocchi.
+export function Splash({ tagline }: { tagline: string }) {
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html:
+        "try{if(sessionStorage.getItem('yc-splash'))document.documentElement.classList.add('nosplash');else sessionStorage.setItem('yc-splash','1')}catch(e){}" }} />
+      <div id="splash" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/youcount-mark.svg" alt="" width={112} height={112} />
+        <b><span className="sp-you">You</span><span className="sp-count">Count</span></b>
+        <span>{tagline}</span>
+      </div>
+    </>
+  );
+}
