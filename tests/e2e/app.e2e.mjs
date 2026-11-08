@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import pg from 'pg';
+import ExcelJS from 'exceljs';
 import { startStack, TEST_PASSWORD } from './local-stack.mjs';
 
 const require = createRequire(import.meta.url);
@@ -403,6 +404,26 @@ try {
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 1);
     await submit(p.locator('tbody tr').last().getByRole('button', { name: 'Riapri' }));
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 0);
+  });
+  await check('backup completo: righe identiche al database per ogni tabella; vietato agli operatori', async () => {
+    const res = await sa.page.request.get(`${base}/api/v1/backup`);
+    assert.equal(res.status(), 200);
+    assert.match(res.headers()['content-disposition'], /YouCount-backup-\d{8}-\d{4}\.xlsx/);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await res.body());
+    const info = wb.getWorksheet('LEGGIMI');
+    let tables = 0;
+    for (let r = 2; info.getRow(r).getCell(1).value && info.getRow(r).getCell(2).value !== null; r++) {
+      const table = info.getRow(r).getCell(1).value;
+      const n = info.getRow(r).getCell(2).value;
+      if (typeof n !== 'number') break;
+      const db = (await pool.query(`select count(*)::int n from public.${table}`)).rows[0].n;
+      assert.equal(n, db, `righe di ${table}`);
+      assert.equal(Math.max(0, wb.getWorksheet(table).rowCount - 1), n, `foglio ${table}`);
+      tables++;
+    }
+    assert.equal(tables, 22);
+    assert.equal((await op.page.request.get(`${base}/api/v1/backup`)).status(), 403);
   });
   await check('super admin: pagine di amministrazione e lingua francese', async () => {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],

@@ -1,6 +1,7 @@
 import { ADMIN, can, requireMe } from '@/lib/session';
 import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
+import { Ico } from '@/components/Ui';
 import { toggleSetting } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             })}
           </tbody>
         </table>
+      </Panel>
+      <Panel title={t('bk_title')}>
+        <div className="panel-b stack" style={{ gap: 12 }}>
+          <p className="muted" style={{ margin: 0 }}>{t('bk_text')}</p>
+          <div><a className="btn primary" href="/api/v1/backup"><Ico name="download" />{t('bk_btn')}</a></div>
+        </div>
       </Panel>
     </div>
   );
