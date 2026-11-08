@@ -61,7 +61,7 @@ async function seed() {
   const org = (await pool.query('select org_id from profiles where id = $1', [sa])).rows[0].org_id;
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
     [org, 'Bando Fondazione per l’istruzione primaria in Madagascar 2026–2028', prj, today])).rows[0].id;
-  return { sa, movId, prj, grant };
+  return { sa, movId, prj, grant, bi };
 }
 
 function startNext(stack) {
@@ -130,8 +130,11 @@ try {
   await waitFor(`${base}/login`);
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
     '/verifica', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
-    '/controparti', '/rimborsi', '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
+    '/controparti', '/rimborsi', '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro'];
+  // ONLY_PATHS=/a,/b: controlla solo le pagine il cui percorso inizia così (prova rapida di una sezione nuova)
+  const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
+  if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x.startsWith(o))));
   for (const lang of LANGS) {
     await pool.query('update profiles set lang = $1 where id = $2', [lang, S.sa]);
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });

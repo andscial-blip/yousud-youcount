@@ -307,6 +307,30 @@ try {
     assert.match(m.ref, new RegExp(`^MOV-${year}-\\d{3}$`));
     await p.screenshot({ path: `${SHOTS}/resp_rimborsi.png`, fullPage: true });
   });
+  await check('responsabile: riconciliazione bancaria con l\'estratto (quadra solo al centesimo)', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/riconciliazione`);
+    await p.locator('tr', { hasText: 'Satispay' }).getByRole('link', { name: 'Riconcilia' }).click();
+    await p.waitForURL(/\/riconciliazione\?conto=/);
+    const [{ bal, n }] = (await pool.query(`select a.opening_balance + coalesce(sum(case when m.id is null then 0
+        when m.account_id = a.id then (case when m.kind = 'income' then m.amount else -m.amount end) * m.sign
+        else m.to_amount * m.sign end), 0) as bal, count(m.id)::int n
+      from accounts a left join movements m on (m.account_id = a.id or m.to_account_id = a.id) and m.status <> 'draft' and m.op_date <= current_date
+      where a.code = 'Satispay' group by a.opening_balance`)).rows;
+    const it = (v) => `${v < 0 ? '-' : ''}${Math.abs(v).toFixed(2).replace('.', ',')}`;
+    const confirm = p.getByRole('button', { name: 'Conferma la riconciliazione' });
+    await p.getByLabel(/Saldo dell’estratto/).fill(it(Number(bal) + 1));
+    assert.equal(await confirm.isDisabled(), true, 'non quadra: conferma disattivata');
+    await p.getByLabel(/Saldo dell’estratto/).fill(Number(bal) === 0 ? '0' : it(Number(bal)));
+    await p.getByText('Quadra').waitFor();
+    await confirm.click();
+    await p.waitForURL(/ok=1/);
+    await p.getByText('Riconciliazione registrata.').waitFor();
+    await p.getByText('Riconciliazioni fatte').waitFor();
+    const [r] = (await pool.query(`select items_count, statement_balance from bank_reconciliations b join accounts a on a.id = b.account_id where a.code = 'Satispay'`)).rows;
+    assert.deepEqual([r.items_count, Number(r.statement_balance)], [n, Number(bal)]);
+    await p.screenshot({ path: `${SHOTS}/resp_riconciliazione.png`, fullPage: true });
+  });
   await check('responsabile: verifica il movimento inserito dall\'operatore, non il proprio', async () => {
     await rs.page.goto(`${base}/verifica`);
     const rowOp = rs.page.locator('tr', { hasText: 'PROVA materiale scolastico' });
@@ -474,7 +498,9 @@ try {
       assert.equal(Math.max(0, wb.getWorksheet(table).rowCount - 1), n, `foglio ${table}`);
       tables++;
     }
-    assert.equal(tables, 22);
+    // ogni tabella del database è nel backup: una tabella nuova dimenticata fa fallire la prova
+    const { rows: all } = await pool.query(`select count(*)::int n from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'`);
+    assert.equal(tables, all[0].n);
     assert.equal((await op.page.request.get(`${base}/api/v1/backup`)).status(), 403);
     // dopo il backup il promemoria sparisce e Impostazioni mostra la data
     await sa.page.goto(`${base}/`);

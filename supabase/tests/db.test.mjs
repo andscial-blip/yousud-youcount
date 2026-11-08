@@ -507,3 +507,67 @@ test('spese da rimborsare: senza conto e fuori dai saldi; il rimborso le registr
       /manca il tasso di cambio/);
   }
 });
+
+test('riconciliazione bancaria: spunta dell\'estratto, quadratura al centesimo, movimenti bloccati, annullo', async () => {
+  const acc = R.acc['Banca Missione'];
+  const mga = (over) => mov({ status: 'recorded', currency: 'MGA', fx_rate: 5000, account_id: acc, no_doc_reason: 'prova riconciliazione',
+    op_date: '2025-05-05', ...over });
+  const inc = await rpc(U.resp, 'save_movement', mga({ kind: 'income', amount: 1000000, category_id: R.in['E101'], project_id: null }));
+  const exp = await rpc(U.resp, 'save_movement', mga({ amount: 150000 }));
+  const chq = await rpc(U.resp, 'save_movement', mga({ amount: 70000, description: 'assegno non incassato' }));
+  // giroconto dalla cassa alla banca: il lato «to» si spunta sulla banca
+  const tr = await rpc(U.resp, 'save_movement', mga({ kind: 'transfer', amount: 200000, account_id: R.acc['Cassa Missione'],
+    to_account_id: acc, to_amount: 200000, category_id: null, project_id: null, no_doc_reason: null }));
+  const later = await rpc(U.resp, 'save_movement', mga({ amount: 5000, op_date: '2025-06-10' }));
+  const rows = await as(U.resp, (q) => q('select * from public.account_legs($1)', [acc]));
+  const leg = (id) => rows.find((r) => r.movement_id === id);
+  assert.deepEqual([Number(leg(inc.id).amount), Number(leg(exp.id).amount), leg(tr.id).side, Number(leg(tr.id).amount)],
+    [1000000, -150000, 'to', 200000]);
+  assert.equal((await as(U.op, (q) => q('select * from public.account_legs($1)', [acc]))).length, 0, 'operatore: non vede la riconciliazione');
+
+  const items = [inc, exp, tr].map((m) => ({ movement_id: m.id, side: m.id === tr.id ? 'to' : 'from' }));
+  const base = { account_id: acc, statement_date: '2025-05-31', items };
+  const [{ opening_balance }] = await sql('select opening_balance from accounts where id = $1', [acc]);
+  const expected = Number(opening_balance) + 1000000 - 150000 + 200000;
+  // operatore no; cassa no; saldo che non quadra no; movimento dopo la data dell'estratto no
+  await assert.rejects(rpc(U.op, 'reconcile_account', { ...base, client_uuid: randomUUID(), statement_balance: expected }), /forbidden/);
+  await assert.rejects(rpc(U.resp, 'reconcile_account', { ...base, account_id: R.acc['Cassa Missione'], client_uuid: randomUUID(),
+    statement_balance: expected }), /conta di cassa/);
+  await assert.rejects(rpc(U.resp, 'reconcile_account', { ...base, client_uuid: randomUUID(), statement_balance: expected - 70000 }),
+    /unbalanced.*differenza/);
+  await assert.rejects(rpc(U.resp, 'reconcile_account', { ...base, client_uuid: randomUUID(), statement_balance: expected - 5000,
+    items: [...items, { movement_id: later.id, side: 'from' }] }), /data successiva/);
+  assert.equal(Number((await sql('select count(*) n from bank_reconciliations'))[0].n), 0, 'nessuna riconciliazione a metà');
+
+  const client = randomUUID();
+  const r = await rpc(U.resp, 'reconcile_account', { ...base, client_uuid: client, statement_balance: expected });
+  assert.deepEqual([r.outcome, r.count], ['applied', 3]);
+  assert.equal((await rpc(U.resp, 'reconcile_account', { ...base, client_uuid: client, statement_balance: expected })).outcome, 'duplicate');
+  // il movimento spuntato non cambia importo; quello non spuntato sì
+  const [e] = await sql('select version from movements where id = $1', [exp.id]);
+  await assert.rejects(rpc(U.resp, 'save_movement', { id: exp.id, expected_version: e.version, amount: 151000 }), /reconciled/);
+  const [c] = await sql('select version from movements where id = $1', [chq.id]);
+  await rpc(U.resp, 'save_movement', { id: chq.id, expected_version: c.version, notes: 'modificabile', amount: 70000 });
+  // il lato «from» del giroconto (cassa) non è spuntato: la cassa non si riconcilia qui, il giroconto però è bloccato
+  const [t] = await sql('select version from movements where id = $1', [tr.id]);
+  await assert.rejects(rpc(U.resp, 'save_movement', { id: tr.id, expected_version: t.version, op_date: '2025-05-06' }), /reconciled/);
+  // seconda riconciliazione: parte dal saldo riconciliato; data precedente rifiutata; già spuntato rifiutato
+  await assert.rejects(rpc(U.resp, 'reconcile_account', { account_id: acc, statement_date: '2025-05-20', client_uuid: randomUUID(),
+    statement_balance: expected, items: [] }), /successiva/);
+  await assert.rejects(rpc(U.resp, 'reconcile_account', { account_id: acc, statement_date: '2025-06-30', client_uuid: randomUUID(),
+    statement_balance: expected - 150000, items: [items[1]] }), /già spuntato/);
+  const r2 = await rpc(U.resp, 'reconcile_account', { account_id: acc, statement_date: '2025-06-30', client_uuid: randomUUID(),
+    statement_balance: expected - 70000 - 5000, items: [{ movement_id: chq.id, side: 'from' }, { movement_id: later.id, side: 'from' }] });
+  assert.equal(Number(r2.previous), expected);
+  // annullo: solo amministratori, solo l'ultima, con motivo; poi i movimenti tornano modificabili
+  await assert.rejects(rpc(U.resp, 'cancel_reconciliation', r2.id, 'errore di prova'), /forbidden/);
+  await assert.rejects(rpc(U.admin, 'cancel_reconciliation', r.id, 'errore di prova'), /ultima/);
+  await assert.rejects(rpc(U.admin, 'cancel_reconciliation', r2.id, 'no'), /motivo/);
+  await rpc(U.admin, 'cancel_reconciliation', r2.id, 'estratto sbagliato');
+  const [c2] = await sql('select version from movements where id = $1', [chq.id]);
+  await rpc(U.resp, 'save_movement', { id: chq.id, expected_version: c2.version, amount: 71000 });
+  const [h] = await sql('select cancelled_at is not null as x, cancel_reason from bank_reconciliations where id = $1', [r2.id]);
+  assert.deepEqual([h.x, h.cancel_reason], [true, 'estratto sbagliato']);
+  // lo storico non si cancella dall'app
+  await assert.rejects(as(U.admin, (q) => q('delete from public.bank_reconciliations where id = $1', [r.id])), /permission denied/);
+});

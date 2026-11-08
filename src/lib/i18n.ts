@@ -167,6 +167,20 @@ const it = {
   reimb_none: 'Nessuna spesa da rimborsare.', reimb_date: 'Data del rimborso', reimb_pay: 'Registra il rimborso', reimb_all: 'Seleziona tutte',
   reimb_no_doc: 'manca il giustificativo', reimb_selected: 'spese', reimb_one: 'spesa', reimb_recent: 'Ultimi rimborsi', reimb_done: 'Rimborso registrato:',
   dash_reimb: 'spese da rimborsare',
+  nav_rec: 'Riconciliazione bancaria',
+  rec_text: 'Confronta i movimenti dell’app con l’estratto conto. Inserisci data e saldo dell’estratto e spunta i movimenti che vi compaiono: si conferma quando la differenza è zero. I movimenti non spuntati (per esempio un assegno non ancora incassato) restano per l’estratto successivo.',
+  rec_last: 'Ultimo estratto', rec_balance: 'Saldo riconciliato', rec_open: 'Da spuntare', rec_go: 'Riconcilia', rec_never: 'mai',
+  rec_stmt_date: 'Data dell’estratto', rec_stmt_bal: 'Saldo dell’estratto', rec_prev: 'Saldo riconciliato precedente',
+  rec_ticked: 'Movimenti spuntati', rec_calc: 'Saldo calcolato', rec_diff: 'Differenza', rec_ok: 'Quadra',
+  rec_confirm: 'Conferma la riconciliazione', rec_notes: 'Note', rec_after: 'dopo la data dell’estratto',
+  rec_none: 'Nessun movimento da spuntare.', rec_history: 'Riconciliazioni fatte', rec_items: 'Movimenti', rec_by: 'Fatta da',
+  rec_cancel: 'Annulla', rec_cancel_reason: 'Motivo dell’annullamento', rec_cancelled: 'annullata', rec_done: 'Riconciliazione registrata.',
+  rec_cancel_done: 'Riconciliazione annullata: i movimenti tornano da spuntare.',
+  rec_no_accounts: 'Nessun conto da riconciliare.', rec_back: 'Tutti i conti', rec_tick_all: 'Spunta tutto fino alla data',
+  rec_tick_none: 'Togli tutte le spunte', rec_neg: 'Saldo negativo: scrivi il segno meno davanti.', rec_chip: 'Spuntato',
+  rec_cash_hint: 'Le casse si controllano con la conta di cassa, nella pagina Conti.', rec_fill: 'Inserisci data e saldo dell’estratto.',
+  err_unbalanced: 'Il saldo non quadra con l’estratto.',
+  err_reconciled: 'Movimento spuntato in una riconciliazione bancaria: importo, conto, data e stato non si modificano. Un amministratore può annullare l’ultima riconciliazione.',
 };
 
 export type Key = keyof typeof it;
@@ -317,6 +331,20 @@ const fr: Record<Key, string> = {
   reimb_none: 'Aucune dépense à rembourser.', reimb_date: 'Date du remboursement', reimb_pay: 'Enregistrer le remboursement', reimb_all: 'Tout sélectionner',
   reimb_no_doc: 'pièce manquante', reimb_selected: 'dépenses', reimb_one: 'dépense', reimb_recent: 'Derniers remboursements', reimb_done: 'Remboursement enregistré :',
   dash_reimb: 'dépenses à rembourser',
+  nav_rec: 'Rapprochement bancaire',
+  rec_text: 'Comparez les mouvements de l’app avec le relevé de compte. Saisissez la date et le solde du relevé et cochez les mouvements qui y figurent : on valide quand l’écart est nul. Les mouvements non cochés (par exemple un chèque pas encore encaissé) restent pour le relevé suivant.',
+  rec_last: 'Dernier relevé', rec_balance: 'Solde rapproché', rec_open: 'À cocher', rec_go: 'Rapprocher', rec_never: 'jamais',
+  rec_stmt_date: 'Date du relevé', rec_stmt_bal: 'Solde du relevé', rec_prev: 'Solde rapproché précédent',
+  rec_ticked: 'Mouvements cochés', rec_calc: 'Solde calculé', rec_diff: 'Écart', rec_ok: 'Équilibré',
+  rec_confirm: 'Valider le rapprochement', rec_notes: 'Notes', rec_after: 'après la date du relevé',
+  rec_none: 'Aucun mouvement à cocher.', rec_history: 'Rapprochements effectués', rec_items: 'Mouvements', rec_by: 'Fait par',
+  rec_cancel: 'Annuler', rec_cancel_reason: 'Motif de l’annulation', rec_cancelled: 'annulé', rec_done: 'Rapprochement enregistré.',
+  rec_cancel_done: 'Rapprochement annulé : les mouvements sont de nouveau à cocher.',
+  rec_no_accounts: 'Aucun compte à rapprocher.', rec_back: 'Tous les comptes', rec_tick_all: 'Tout cocher jusqu’à la date',
+  rec_tick_none: 'Tout décocher', rec_neg: 'Solde négatif : écrivez le signe moins devant.', rec_chip: 'Coché',
+  rec_cash_hint: 'Les caisses se contrôlent avec le comptage de caisse, dans la page Comptes.', rec_fill: 'Saisissez la date et le solde du relevé.',
+  err_unbalanced: 'Le solde ne correspond pas au relevé.',
+  err_reconciled: 'Mouvement coché dans un rapprochement bancaire : montant, compte, date et statut ne se modifient pas. Un administrateur peut annuler le dernier rapprochement.',
 };
 
 const DICT: Record<Lang, Record<Key, string>> = { it, fr };
