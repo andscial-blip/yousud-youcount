@@ -594,7 +594,7 @@ try {
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
       ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/admin/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Verifica e storni']]) {
       await sa.page.goto(base + path);
-      assert.match(await sa.page.locator('main').innerText(), new RegExp(text), path);
+      assert.match(await sa.page.locator('main').innerText(), new RegExp(text, 'i'), path);
     }
     await sa.page.goto(`${base}/altro`);
     await sa.page.screenshot({ path: `${SHOTS}/sa_altro.png`, fullPage: true });

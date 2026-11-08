@@ -21,8 +21,9 @@ function niceMax(v: number) {
   return [1, 2, 4, 8, 10].map((k) => k * p).find((x) => x >= v) ?? v;
 }
 
-export function MonthBars({ data, lang, labels }: {
+export function MonthBars({ data, lang, labels, hrefFor }: {
   data: { inc: number; out: number }[]; lang: Lang; labels: { in: string; out: string };
+  hrefFor?: (month: number) => string;   // approfondimento: il mese apre i suoi movimenti
 }) {
   const W = 560, H = 220, L = 46, B = 26, T = 10;
   const max = niceMax(Math.max(...data.map((d) => Math.max(d.inc, d.out)), 0));
@@ -41,7 +42,7 @@ export function MonthBars({ data, lang, labels }: {
         ))}
         {data.map((d, i) => {
           const x = L + i * cw + cw / 2;
-          return (
+          const bars = (
             <g key={i}>
               <rect x={x - bw - 1} y={y(d.inc)} width={bw} height={Math.max(0, y(0) - y(d.inc))} rx="3" fill={C_IN}>
                 <title>{`${months[i]} · ${labels.in}: ${full(d.inc, lang)}`}</title></rect>
@@ -49,6 +50,13 @@ export function MonthBars({ data, lang, labels }: {
                 <title>{`${months[i]} · ${labels.out}: ${full(d.out, lang)}`}</title></rect>
               <text x={x} y={H - 8} textAnchor="middle" fontSize="12" fill="var(--muted)">{months[i]}</text>
             </g>
+          );
+          if (!hrefFor || (!d.inc && !d.out)) return bars;
+          return (
+            <a key={i} href={hrefFor(i + 1)} className="mlink" aria-label={`${months[i]}: ${labels.in} ${full(d.inc, lang)}, ${labels.out} ${full(d.out, lang)}`}>
+              <rect x={L + i * cw} y={T} width={cw} height={H - T} fill="transparent" />
+              {bars}
+            </a>
           );
         })}
       </svg>

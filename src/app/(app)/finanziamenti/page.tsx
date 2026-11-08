@@ -12,12 +12,16 @@ type G = { id: string; title: string; code: string | null; currency: string; amo
 export default async function Grants({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
   const { err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
-  const [{ data, error }, { data: donors }, { data: projects }] = await Promise.all([
+  const [{ data, error }, { data: donors }, { data: projects }, { data: moves }] = await Promise.all([
     supabase.from('grants').select('id, title, code, currency, amount, start_date, end_date, status, donor:counterparties(name), project:projects(name)')
       .order('status').order('start_date', { ascending: false }).returns<G[]>(),
     supabase.from('counterparties').select('id, name').in('kind', ['donor', 'other']).order('name'),
     supabase.from('projects').select('id, name').eq('active', true).order('name'),
+    supabase.from('movements').select('grant_id, kind, amount_eur, sign').not('grant_id', 'is', null).neq('status', 'draft').limit(50000),
   ]);
+  // speso per finanziamento (EUR, storni sottratti): avanzamento rispetto all'importo concesso
+  const spent = new Map<string, number>();
+  for (const m of moves ?? []) if (m.kind === 'expense') spent.set(m.grant_id!, (spent.get(m.grant_id!) ?? 0) + Number(m.amount_eur ?? 0) * m.sign);
   return (
     <div className="stack">
       <PageHead title={t('nav_grants')} />
@@ -27,14 +31,19 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
         {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
           <table className="t">
             <thead><tr><th>{t('g_title')}</th><th className="hm">{t('g_donor')}</th><th className="hm">{t('project')}</th>
-              <th className="hm">{t('g_period')}</th><th className="r">{t('g_amount')}</th><th /></tr></thead>
+              <th className="hm">{t('g_period')}</th><th className="r">{t('g_amount')}</th><th className="r">{t('g_spent')}</th><th /></tr></thead>
             <tbody>
               {data!.map((g) => (
                 <tr key={g.id}>
                   <td><Link className="rowlink" href={`/finanziamenti/${g.id}`}>{g.title}</Link>{g.code && <span className="muted"> · {g.code}</span>}</td>
-                  <td className="hm">{g.donor?.name ?? '–'}</td><td className="hm">{g.project?.name ?? t('g_none_project')}</td>
+                  <td className="hm">{g.donor?.name ?? <span className="muted">{t('g_no_donor')}</span>}</td><td className="hm">{g.project?.name ?? t('g_none_project')}</td>
                   <td className="hm num nw">{g.start_date ? `${date(g.start_date)} – ${date(g.end_date)}` : '–'}</td>
                   <td className="r num nw">{g.amount ? money(g.amount, g.currency, lang) : '–'}</td>
+                  <td className="r num nw">{money(spent.get(g.id) ?? 0, 'EUR', lang)}
+                    {g.currency === 'EUR' && Number(g.amount) > 0 && (() => {
+                      const pct = Math.round((spent.get(g.id) ?? 0) / Number(g.amount) * 100);
+                      return <span className="meter-row" title={`${pct}%`}><span className={`meter ${pct > 100 ? 'over' : ''}`}><i style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} /></span><span className="muted">{pct}%</span></span>;
+                    })()}</td>
                   <td><span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? t('g_active') : t('g_closed')}</span></td>
                 </tr>
               ))}

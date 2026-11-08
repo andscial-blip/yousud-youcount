@@ -103,7 +103,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </section>
       <div className="grid2">
         <Panel title={`${t('dash_chart')} · ${year}`} pad>
-          <MonthBars data={months} lang={lang} labels={{ in: t('legend_in'), out: t('legend_out') }} />
+          <MonthBars data={months} lang={lang} labels={{ in: t('legend_in'), out: t('legend_out') }}
+            hrefFor={(m) => `/movimenti?dal=${year}-${String(m).padStart(2, '0')}-01&al=${year}-${String(m).padStart(2, '0')}-${String(new Date(year, m, 0).getDate()).padStart(2, '0')}`} />
         </Panel>
         <Panel title={`${t('dash_by_project')} · ${year}`} pad>
           {projects.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <HBars rows={projects} lang={lang} />}

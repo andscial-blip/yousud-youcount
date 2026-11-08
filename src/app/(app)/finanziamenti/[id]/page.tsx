@@ -18,11 +18,15 @@ export default async function GrantDetail({ params, searchParams }: {
     .eq('id', id).maybeSingle();
   if (!g) notFound();
   const staff = can(me, STAFF);
-  const [{ data: budget }, { data: moves }] = await Promise.all([
+  const [{ data: budget }, { data: moves }, { data: totals }] = await Promise.all([
     staff ? supabase.rpc('budget_vs_actual', { p_project: null, p_year: null, p_grant: id }) : Promise.resolve({ data: [] }),
     supabase.from('movements').select('id, op_date, kind, description, amount, currency, sign').eq('grant_id', id)
       .neq('status', 'draft').order('op_date', { ascending: false }).limit(50),
+    supabase.from('movements').select('kind, amount_eur, sign').eq('grant_id', id).neq('status', 'draft').limit(50000),
   ]);
+  const sumK = (k: string) => (totals ?? []).filter((m) => m.kind === k).reduce((s, m) => s + Number(m.amount_eur ?? 0) * m.sign, 0);
+  const received = sumK('income'), spentEur = sumK('expense');
+  const granted = g.currency === 'EUR' && g.amount ? Number(g.amount) : null;
   const donor = g.donor as unknown as { name: string } | null;
   const project = g.project as unknown as { id: string; name: string } | null;
   return (
@@ -32,6 +36,15 @@ export default async function GrantDetail({ params, searchParams }: {
         <span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? t('g_active') : t('g_closed')}</span></div>
       {sp.ok === 'budget' && <div className="note ok" role="status">{t('b_saved')}</div>}
       {sp.err && <div className="note err">{sp.err}</div>}
+      <section className="panel">
+        <div className="figs">
+          <div><span>{t('g_amount')}</span><b className="num">{g.amount ? money(g.amount, g.currency, lang) : '–'}</b></div>
+          <div><span>{t('g_received')}</span><b className="num">{money(received, 'EUR', lang)}</b></div>
+          <div><span>{t('g_spent')}</span><b className="num">{money(spentEur, 'EUR', lang)}</b></div>
+          <div className={granted === null ? '' : granted - spentEur < 0 ? 'bad' : 'ok'}><span>{t('g_left')}</span>
+            <b className="num">{granted === null ? '–' : money(granted - spentEur, 'EUR', lang)}</b></div>
+        </div>
+      </section>
       <Panel pad>
         <dl className="kv">
           <dt>{t('g_code')}</dt><dd>{g.code ?? '–'}</dd>

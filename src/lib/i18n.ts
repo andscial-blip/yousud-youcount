@@ -50,7 +50,7 @@ const it = {
   // account
   f_nodoc_filter: 'Senza giustificativo', search_mov: 'Cerca per descrizione o numero MOV', search_clear: 'Annulla ricerca', empty_search: 'Nessun movimento corrisponde alla ricerca.',
   search_cp: 'Cerca per nome, P.IVA o paese', search_chart: 'Cerca per codice o voce', search_audit: 'Cerca nel registro', audit_system: 'Sistema', empty_search_generic: 'Nessun risultato per questa ricerca.',
-  rec_app_balance: 'Saldo nell’app', prj_idle: '{n} progetti senza movimenti nel {y}', prj_none_year: 'Nessun movimento sui progetti nel {y}.', total: 'Totale', rep_all_lines: 'Tutte le voci', rep_compact: 'Solo voci con importi',
+  g_spent: 'Speso', g_received: 'Ricevuto', g_left: 'Residuo', g_no_donor: 'da indicare', rec_app_balance: 'Saldo nell’app', prj_idle: '{n} progetti senza movimenti nel {y}', prj_none_year: 'Nessun movimento sui progetti nel {y}.', total: 'Totale', rep_all_lines: 'Tutte le voci', rep_compact: 'Solo voci con importi',
   closed_n: '{n} di {m} mesi chiusi', todo_title: 'Da fare', period_current: 'In corso', f_more_filters: 'Altri filtri', f_apply: 'Cerca', f_count: '{n} movimenti', f_page: 'pagina', f_pages: 'Pagine', f_prev: 'Precedenti', f_next: 'Successivi',
   doc_movement: 'Movimento', doc_orphan: 'non collegato', doc_orphans: 'Non collegati', search_docs: 'Cerca per nome, numero MOV o descrizione', empty_search_docs: 'Nessun documento corrisponde alla ricerca.',
   rec_in_statement: 'estratto conto del', skip_main: 'Vai al contenuto', lang_code: 'it', acc_lang: 'Lingua', sign_out: 'Esci', save: 'Salva',
@@ -234,7 +234,7 @@ const fr: Record<Key, string> = {
   doc_name: 'Nom', doc_uploaded: 'Chargé le', doc_number: 'Numéro', doc_total: 'Total',
   f_nodoc_filter: 'Sans pièce', search_mov: 'Rechercher par description ou numéro MOV', search_clear: 'Effacer la recherche', empty_search: 'Aucun mouvement ne correspond à la recherche.',
   search_cp: 'Rechercher par nom, NIF ou pays', search_chart: 'Rechercher par code ou libellé', search_audit: 'Rechercher dans le journal', audit_system: 'Système', empty_search_generic: 'Aucun résultat pour cette recherche.',
-  rec_app_balance: 'Solde dans l’app', prj_idle: '{n} projets sans mouvement en {y}', prj_none_year: 'Aucun mouvement sur les projets en {y}.', total: 'Total', rep_all_lines: 'Tous les postes', rep_compact: 'Postes avec montants',
+  g_spent: 'Dépensé', g_received: 'Reçu', g_left: 'Reste', g_no_donor: 'à préciser', rec_app_balance: 'Solde dans l’app', prj_idle: '{n} projets sans mouvement en {y}', prj_none_year: 'Aucun mouvement sur les projets en {y}.', total: 'Total', rep_all_lines: 'Tous les postes', rep_compact: 'Postes avec montants',
   closed_n: '{n} mois clôturés sur {m}', todo_title: 'À faire', period_current: 'En cours', f_more_filters: 'Autres filtres', f_apply: 'Rechercher', f_count: '{n} mouvements', f_page: 'page', f_pages: 'Pages', f_prev: 'Précédents', f_next: 'Suivants',
   doc_movement: 'Mouvement', doc_orphan: 'non lié', doc_orphans: 'Non liés', search_docs: 'Rechercher par nom, numéro MOV ou description', empty_search_docs: 'Aucun document ne correspond à la recherche.',
   rec_in_statement: 'relevé du', skip_main: 'Aller au contenu', lang_code: 'fr', acc_lang: 'Langue', sign_out: 'Se déconnecter', save: 'Enregistrer',
