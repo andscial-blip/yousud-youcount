@@ -181,6 +181,13 @@ try {
     await p.fill('#desc', 'Testo scritto prima del file');
     await p.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
     await p.getByText('Ritaglia e migliora').waitFor();
+    await p.getByRole('button', { name: 'Avanti' }).click();
+    for (const m of ['Bianco e nero', 'Foto', 'Documento']) {
+      await p.getByRole('radio', { name: m }).click();
+      await p.getByRole('radio', { name: m, checked: true }).waitFor();
+    }
+    await p.locator('.scan-busy').waitFor({ state: 'detached' });
+    await p.screenshot({ path: `${SHOTS}/op_scan.png` });
     await p.getByRole('button', { name: 'Usa la scansione' }).click();
     await p.getByText('caricato', { exact: true }).waitFor({ timeout: 20000 });
     assert.equal(stack.files.size - before, 3, 'originale, scansione migliorata e PDF');

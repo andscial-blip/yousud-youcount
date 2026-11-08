@@ -87,6 +87,11 @@ try {
     await page.selectOption('#category', { index: 1 });
     await page.selectOption('#project', { index: 1 });
     await page.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByRole('radio', { name: 'Documento', checked: true }).waitFor();
+    await page.locator('canvas').last().waitFor();
+    await page.locator('.scan-busy').waitFor({ state: 'detached' });
+    await page.screenshot({ path: '/tmp/scan_phone.png' });
     await page.getByRole('button', { name: 'Usa la scansione' }).click();
     await page.getByText('sul telefono, sarà inviato con il movimento').waitFor();
     await page.getByRole('button', { name: 'Registra' }).click();

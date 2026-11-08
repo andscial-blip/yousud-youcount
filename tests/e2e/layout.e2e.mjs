@@ -145,10 +145,13 @@ try {
       for (const w of [390, 1280]) {
         const sp = await ctx.newPage();
         await sp.setViewportSize({ width: w, height: 800 });
+        const errs = [];
+        sp.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 160)); });
         await sp.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
         await sp.screenshot({ path: `${SHOTS}/splash_${lang}_${w}.png` });
         await sp.waitForTimeout(1800);
         assert(!(await sp.locator('#splash').isVisible()), 'la schermata d\'apertura sparisce da sola');
+        assert.deepEqual(errs.filter((e) => /hydrat|did not match|mismatch/i.test(e)), [], 'nessun errore di idratazione');
         await sp.close();
       }
     }
