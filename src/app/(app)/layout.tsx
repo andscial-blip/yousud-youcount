@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Logo, Splash, Wordmark } from '@/components/Logo';
 import { SyncBadge, SyncEngine } from '@/components/NetStatus';
 import { TableCards } from '@/components/TableCards';
+import { PerfBeacon } from '@/components/PerfBeacon';
 import { Tooltip } from '@/components/Tooltip';
 import { CIcon } from '@/components/CIcon';
 import { SignOut } from '@/components/SignOut';
@@ -57,6 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <TableCards />
       <Tooltip />
+      <PerfBeacon />
     </>
   );
 }

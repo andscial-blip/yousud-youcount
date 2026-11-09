@@ -986,9 +986,11 @@ try {
     await p.fill('#email', 'andrea@test.local'); await p.fill('#password', TEST_PASSWORD);
     await p.click('button[type=submit]');
     await p.waitForURL(`${base}/`, { timeout: 60000 });
-    await p.locator('#yc-splash').waitFor({ state: 'visible' });
-    const st = await p.locator('#yc-splash').evaluate((e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.animationDelay, c.animationDuration]; });
-    assert.deepEqual(st, ['rgb(255, 255, 255)', '2.65s', '0.35s'], 'bianca, 2,65 s ferma + 0,35 s di dissolvenza = 3 s');
+    await p.locator('#yc-splash').waitFor({ state: 'attached' });
+    const st = await p.locator('#yc-splash').evaluate((e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.animationDuration, parseFloat(c.animationDelay) * (c.animationDelay.endsWith('ms') ? 1 : 1000)]; });
+    assert.deepEqual(st.slice(0, 2), ['rgb(255, 255, 255)', '0.35s'], 'bianca, con 0,35 s di dissolvenza');
+    // 3 s in tutto contati dall'apertura: l'attesa residua è al massimo 2,65 s (meno il tempo già passato)
+    assert.ok(st[2] >= 0 && st[2] <= 2650, `attesa residua ${st[2]} ms`);
     await p.locator('#yc-splash').waitFor({ state: 'hidden', timeout: 6000 });
     // alla pagina successiva della stessa sessione non ricompare
     await p.goto(`${base}/movimenti`);

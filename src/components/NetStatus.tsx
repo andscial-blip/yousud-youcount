@@ -33,19 +33,26 @@ export function SyncEngine() {
     const count = () => listOutbox().then((l) => set({ pending: l.length })).catch(() => {});
     upd();
     // una volta per sessione, con la rete: pagine principali salvate per l'uso offline
+    // al massimo ogni 12 ore e 10 secondi dopo l'apertura, per non rubare banda e server alla prima pagina
+    let warmT: ReturnType<typeof setTimeout> | undefined;
     try {
-      if (navigator.onLine && 'serviceWorker' in navigator && !sessionStorage.getItem('yc-warm')) {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.active?.postMessage({ type: 'warm', urls: ['/', '/nuovo', '/movimenti', '/sincronizzazione', '/offline'] });
-          sessionStorage.setItem('yc-warm', '1');
-        }).catch(() => {});
+      const last = Number(localStorage.getItem('yc-warm-at') ?? 0);
+      const slow = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+      if (navigator.onLine && 'serviceWorker' in navigator && Date.now() - last > 12 * 3600e3 && !slow?.saveData && slow?.effectiveType !== '2g') {
+        warmT = setTimeout(() => {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.active?.postMessage({ type: 'warm', urls: ['/nuovo', '/movimenti', '/sincronizzazione', '/offline'] });
+            localStorage.setItem('yc-warm-at', String(Date.now()));
+          }).catch(() => {});
+        }, 10000);
       }
-    } catch { /* sessionStorage non disponibile */ }
+    } catch { /* localStorage non disponibile */ }
     window.addEventListener('online', upd);
     window.addEventListener('offline', upd);
     window.addEventListener(OUTBOX_EVENT, count);
     const timer = setInterval(() => { if (navigator.onLine) listOutbox().then((l) => { if (l.some((x) => x.state === 'pending')) sync(); }).catch(() => {}); }, 30000);
     return () => {
+      if (warmT) clearTimeout(warmT);
       window.removeEventListener('online', upd);
       window.removeEventListener('offline', upd);
       window.removeEventListener(OUTBOX_EVENT, count);

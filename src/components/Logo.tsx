@@ -18,7 +18,9 @@ export function Splash({ tagline }: { tagline: string }) {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html:
-        "try{if(sessionStorage.getItem('yc-splash'))document.documentElement.classList.add('nosplash');else sessionStorage.setItem('yc-splash','1')}catch(e){}" }} />
+        // 3 secondi in tutto contati dall'apertura dell'app, non dall'arrivo della pagina: se il server ha
+        // impiegato 2 secondi, la schermata resta solo un altro secondo
+        "try{var h=document.documentElement;if(sessionStorage.getItem('yc-splash'))h.classList.add('nosplash');else{sessionStorage.setItem('yc-splash','1');h.style.setProperty('--yc-sd',Math.max(0,Math.round(2650-performance.now()))+'ms')}}catch(e){}" }} />
       <div id="yc-splash" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/youcount-mark.svg" alt="" width={88} height={88} />
@@ -26,5 +28,16 @@ export function Splash({ tagline }: { tagline: string }) {
         <p>{tagline}</p>
       </div>
     </>
+  );
+}
+
+// Schermata mostrata subito, mentre il server prepara la prima pagina (al posto del bianco vuoto).
+export function Boot() {
+  return (
+    <div className="yc-boot" aria-busy="true">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/youcount-mark.svg" alt="" width={88} height={88} />
+      <b className="yc-wm" style={{ fontSize: 24 }}><span className="wm-you">You</span><span className="wm-count">Count</span></b>
+    </div>
   );
 }
