@@ -3,22 +3,29 @@ import { Ico } from './Ui';
 import { PageHeadRow } from './PageHeadRow';
 import { CIcon } from './CIcon';
 import type { ReactNode } from 'react';
+import { titleIcon } from '@/lib/title-icon';
 
 export function PageHead({ title, lead, children }: { title: string; lead?: ReactNode; children?: ReactNode }) {
   return (
     <PageHeadRow>
       {lead}
-      <h2>{title}</h2>
+      <H2 text={title} />
       <div className="spacer" />
       {children}
     </PageHeadRow>
   );
 }
 
-export function Panel({ title, children, pad = false, right, className = '' }: { title?: string; children: ReactNode; pad?: boolean; right?: ReactNode; className?: string }) {
+// Titolo di pannello con la sua icona (ricavata dal testo se non è indicata; icon={null} per nessuna).
+export function H2({ text, icon, children }: { text?: string; icon?: string | null; children?: ReactNode }) {
+  const ic = icon === undefined ? titleIcon(text) : icon;
+  return <h2 className={ic ? 'h-ic' : undefined}>{ic && <span className="hic"><CIcon name={ic} size={15} /></span>}{children ?? text}</h2>;
+}
+
+export function Panel({ title, icon, children, pad = false, right, className = '' }: { title?: string; icon?: string | null; children: ReactNode; pad?: boolean; right?: ReactNode; className?: string }) {
   return (
     <section className={`panel ${className}`}>
-      {(title || right) && <div className="panel-h">{title && <h2>{title}</h2>}{right && <><div className="spacer" />{right}</>}</div>}
+      {(title || right) && <div className="panel-h">{title && <H2 text={title} icon={icon} />}{right && <><div className="spacer" />{right}</>}</div>}
       {pad ? <div className="panel-b">{children}</div> : children}
     </section>
   );
@@ -30,7 +37,7 @@ export function Help({ summary, children }: { summary: string; children: ReactNo
 }
 
 export function Empty({ text }: { text: string }) {
-  return <div className="empty">{text}</div>;
+  return <div className="empty"><CIcon name="inbox" size={22} /><span>{text}</span></div>;
 }
 
 export function Denied({ text }: { text: string }) {

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { can, requireMe, RESP } from '@/lib/session';
 import { date, money } from '@/lib/format';
-import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { createGrant } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -53,7 +53,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
       </Panel>
       {can(me, RESP) && (
         <details className="panel">
-          <summary className="panel-h" style={{ cursor: 'pointer' }}><h2>{t('g_new')}</h2></summary>
+          <summary className="panel-h" style={{ cursor: 'pointer' }}><H2 text={t('g_new')} /></summary>
           <form action={createGrant} className="panel-b fgrid">
             <div className="field span2"><label htmlFor="title">{t('g_title')}</label><input className="input" id="title" name="title" required minLength={2} /></div>
             <div className="field"><label htmlFor="code">{t('g_code')}</label><input className="input" id="code" name="code" /></div>

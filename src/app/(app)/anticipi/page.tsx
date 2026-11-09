@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
-import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { createAdvanceAccount, moveAdvance } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -133,7 +133,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
 
       {resp && (
         <details className="panel">
-          <summary className="panel-h" style={{ cursor: 'pointer' }}><h2>{t('adv_new_person')}</h2></summary>
+          <summary className="panel-h" style={{ cursor: 'pointer' }}><H2 text={t('adv_new_person')} /></summary>
           <div className="panel-b">
             <p className="muted" style={{ marginTop: 0 }}>{t('adv_new_text')}</p>
             <form action={createAdvanceAccount} className="fgrid">

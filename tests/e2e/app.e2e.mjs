@@ -80,7 +80,10 @@ async function waitFor(url, ms = 90000) {
 }
 
 const results = [];
+// ONLY="testo1|testo2": esegue solo i controlli il cui nome contiene uno dei testi (per rieseguire quelli falliti)
+const ONLY = (process.env.ONLY ?? '').split('|').filter(Boolean);
 async function check(name, fn) {
+  if (ONLY.length && !ONLY.some((o) => name.includes(o))) return;
   try { await fn(); results.push(['ok', name]); } catch (e) { results.push(['FAIL', name, e.message.replace(/\s+/g, ' ').slice(0, 700)]); }
 }
 
@@ -881,6 +884,13 @@ try {
     await sa.page.screenshot({ path: `${SHOTS}/sa_dashboard_fr.png`, fullPage: true });
     const [{ lang }] = (await pool.query(`select lang from profiles where email = 'andrea@test.local'`)).rows;
     assert.equal(lang, 'fr');
+    // il pulsante della lingua nell'intestazione riporta all'italiano restando sulla stessa pagina
+    await sa.page.goto(`${base}/analisi`);
+    await sa.page.getByRole('button', { name: 'Lingua: IT' }).click();
+    await sa.page.waitForURL(/\/analisi/);
+    await sa.page.locator('header').getByText('Analisi').first().waitFor();
+    const [{ lang: back }] = (await pool.query(`select lang from profiles where email = 'andrea@test.local'`)).rows;
+    assert.equal(back, 'it');
   });
 
   await check('tasso automatico: senza tasso del mese usa l’ultimo tasso usato in un movimento', async () => {

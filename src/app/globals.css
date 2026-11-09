@@ -680,3 +680,14 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 .side-who .side-role { color: inherit; opacity: .7; font-size: 12px; }
 .danger-panel { border-color: color-mix(in srgb, var(--tax) 45%, var(--line)); }
 .reset-list { margin: 0 0 10px; padding-left: 18px; line-height: 1.7; }
+
+/* Icone dei titoli di pannello e delle cifre principali */
+h2.h-ic { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.hic { display: inline-grid; place-items: center; flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px;
+  background: var(--mist); color: var(--slate); }
+.hic .ic { width: 15px; height: 15px; }
+.hero-nums span { display: inline-flex; align-items: center; gap: 6px; }
+.hero-nums span .ic { color: var(--muted); }
+.empty > .ic { color: var(--muted); opacity: .7; }
+.langsw { display: inline-flex; }
+.langsw button { min-width: 40px; font-weight: 600; letter-spacing: .03em; }

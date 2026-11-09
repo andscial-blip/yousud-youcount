@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { can, requireMe, STAFF } from '@/lib/session';
 import { money } from '@/lib/format';
 import type { Lang, T } from '@/lib/i18n';
-import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Denied, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
 import { Ico } from '@/components/Ui';
 
@@ -66,7 +66,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       {(unclassified ?? []).length > 0 && <div className="note err">{unclassified!.length} {t('rep_unclassified')}</div>}
       {(['out', 'in'] as const).map((dir) => (
         <section className="panel" key={dir} style={{ overflowX: 'auto' }}>
-          <div className="panel-h"><h2>{dir === 'out' ? t('out') : t('in')}</h2></div>
+          <div className="panel-h"><H2 text={dir === 'out' ? t('out') : t('in')} /></div>
           <table className="t keep">
             <thead><tr><th>{t('rep_item')}</th><th className="r">{year}</th><th className="r">{year - 1}</th></tr></thead>
             <tbody>

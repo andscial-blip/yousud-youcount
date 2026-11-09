@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { requireMe, RESP } from '@/lib/session';
 import { date, dateTime, money, nm } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
-import { Panel } from '@/components/Page';
+import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
 import { deleteDemoAction, discardAction, reverseAction, selfCertAction, signSelfCertAction, verifyAction } from './actions';
 
@@ -225,7 +225,7 @@ export default async function MovementDetail({ params, searchParams }: {
 
           {canReverse && (
             <details className="panel">
-              <summary className="panel-h" style={{ cursor: 'pointer' }}><h2>{t('d_reverse')}</h2></summary>
+              <summary className="panel-h" style={{ cursor: 'pointer' }}><H2 text={t('d_reverse')} /></summary>
               <form action={reverseAction} className="panel-b stack" style={{ gap: 10 }}>
                 <input type="hidden" name="id" value={m.id} />
                 <input type="hidden" name="client_uuid" value={randomUUID()} />

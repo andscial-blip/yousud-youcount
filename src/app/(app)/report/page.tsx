@@ -5,7 +5,7 @@ import { buildReport, REPORTS, type Cell, type ReportKind, type Table } from '@/
 import { C_IN, C_OUT, HBars, MonthBars } from '@/components/Charts';
 
 const TOPN = 8;
-import { Denied, PageHead } from '@/components/Page';
+import { Denied, PageHead, H2 } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
 import { Ico } from '@/components/Ui';
 
@@ -42,7 +42,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
       {err && <div className="note err">{t('error_load')}: {err}</div>}
       {tables.map((tb, i) => (
         <section className="panel" key={i}>
-          <div className="panel-h"><h2>{tb.title}</h2></div>
+          <div className="panel-h"><H2 text={tb.title} /></div>
           {tb.chart && tb.rows.length > 0 && (
             <div className="panel-b rchart">
               {tb.chart.kind === 'months'

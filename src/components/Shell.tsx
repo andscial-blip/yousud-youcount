@@ -1,5 +1,6 @@
 'use client';
 import { InfoButton } from './InfoButton';
+import { LangSwitch } from './LangSwitch';
 // Cornice dell'app come Cairn (src/components/shell.tsx): menu laterale; intestazione con icona della sezione, titolo,
 // sottotitolo, Cerca, anno e «Nuovo movimento»; sotto-schede. Tablet: colonna di icone. Telefono: barra in alto e in basso.
 import Link from 'next/link';
@@ -70,6 +71,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
           <button type="button" className="btn ghost searchbtn" onClick={() => setCmd(true)} aria-label={`${labels.search} (⌘K)`} title={`${labels.search} (⌘K)`}>
             <CIcon name="search" size={16} /><span className="not-phone">{labels.search}</span><kbd className="not-phone">⌘K</kbd>
           </button>
+          <LangSwitch lang={labels.lang ?? 'it'} />
           <InfoButton path={path} lang={labels.lang ?? 'it'} />
           {showYear && (
             <label className="yearsel"><span className="vh">{labels.year}</span>

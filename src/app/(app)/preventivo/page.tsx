@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, dateTime, money } from '@/lib/format';
-import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { BudgetBar } from '@/components/Charts';
 import { deleteBudget, approveBudget, deleteItem, discardBudget, draftBudget, saveItem } from './actions';
 
@@ -150,7 +150,7 @@ export default async function BudgetPage({ searchParams }: {
       ) : (
         <>
           <section className="panel">
-            <div className="panel-h"><h2>{L('Versioni', 'Versions')}</h2></div>
+            <div className="panel-h"><H2 text={L('Versioni', 'Versions')} /></div>
             <ol className="versions">
               {vs.map((b) => (
                 <li key={b.id} aria-current={b.id === shown?.id ? 'true' : undefined}>
