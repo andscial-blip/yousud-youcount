@@ -593,3 +593,8 @@ svg[data-kbd]:focus{outline:none}svg[data-kbd]:focus-visible{outline:2px solid v
 .h-note textarea::placeholder{color:var(--faint)}
 .h-note:focus-within{border-color:var(--c-soft)}
 @media (max-width:1099px){.home.v2 .h-note{grid-column:1/-1;min-height:0}.h-note textarea{min-height:180px}}
+
+/* Bottom bar in the dark theme taken from the phone setting: the current tab stays bright, as in the explicit dark theme */
+@media (prefers-color-scheme: dark) and (max-width:760px){
+  :root:not([data-theme="light"]) .bnav a[aria-current="page"],:root:not([data-theme="light"]) .bnav>button[aria-current="page"]{color:var(--navy)}
+}
