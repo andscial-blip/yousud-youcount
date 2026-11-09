@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, RESP, STAFF } from '@/lib/session';
 import { date, money } from '@/lib/format';
-import { Empty, Help, PageHead, Panel } from '@/components/Page';
+import { Empty, PageHead, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
 import { MonthBars } from '@/components/Charts';
 import { DOC_TYPES } from '@/lib/doc-model';
@@ -120,10 +120,6 @@ export default async function ProjectDetail({ params, searchParams }: {
           </Panel>
         </div>
       </div>
-      <Help summary={L('Come si calcolano questi numeri', 'Comment ces chiffres sont calculés')}>
-        <p>{L('Uscite ed entrate: movimenti registrati e verificati del progetto nell\'anno, in euro al tasso salvato su ciascun movimento. Preventivo: righe del preventivo approvato dell\'anno assegnate al progetto. Residuo = preventivo − uscite. La tacca sulla barra è la parte dell\'anno già trascorsa.',
-          'Dépenses et recettes : mouvements enregistrés et vérifiés du projet dans l\'année, en euros au taux enregistré sur chaque mouvement. Budget : lignes du budget approuvé de l\'année affectées au projet. Reste = budget − dépenses. Le repère sur la barre est la part de l\'année écoulée.')}</p>
-      </Help>
     </div>
   );
 }

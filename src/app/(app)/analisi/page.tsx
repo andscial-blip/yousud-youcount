@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
-import { Denied, ErrorNote, Help, PageHead, Panel } from '@/components/Page';
+import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { BudgetBar, HBars, Lines, MonthBars } from '@/components/Charts';
 import { MESI } from '@/lib/viz';
 
@@ -207,8 +207,8 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
             <Lines lang={lang} cats={MESI[lang]} label={lg('Uscite cumulate', 'Dépenses cumulées')}
               refs={totBudget ? [{ v: totBudget, color: 'var(--tax)', label: lg('preventivo', 'budget') }] : undefined}
               series={[{ name: String(year), color: 'var(--vz-real)', vals: cum(months.map((m) => m.out), lastM) as number[] },
-                { name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.out)) as number[] }]} />
-            <div className="legend"><span><i style={{ background: 'var(--vz-real)' }} />{year}</span><span><i style={{ background: 'var(--vz-hyp)' }} />{year - 1} · {money(prevOut, 'EUR', lang)}</span>
+                ...(prevOut ? [{ name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.out)) as number[] }] : [])]} />
+            <div className="legend"><span><i style={{ background: 'var(--vz-real)' }} />{year}</span>{prevOut ? <span><i style={{ background: 'var(--vz-hyp)' }} />{year - 1} · {money(prevOut, 'EUR', lang)}</span> : <span className="muted">{lg(`nessun movimento nel ${year - 1}`, `aucun mouvement en ${year - 1}`)}</span>}
               {totBudget > 0 && <span><i style={{ background: 'none', height: 0, width: 16, borderRadius: 0, borderTop: '2px dashed var(--tax)', verticalAlign: 3 }} />{lg('preventivo', 'budget')} {money(totBudget, 'EUR', lang)}</span>}</div>
           </div>
         </Panel>
@@ -216,8 +216,8 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           <div className="panel-b">
             <Lines lang={lang} cats={MESI[lang]} label={lg('Entrate cumulate', 'Recettes cumulées')}
               series={[{ name: String(year), color: 'var(--c-in)', vals: cum(months.map((m) => m.inc), lastM) as number[] },
-                { name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.inc)) as number[] }]} />
-            <div className="legend"><span><i style={{ background: 'var(--c-in)' }} />{year}</span><span><i style={{ background: 'var(--vz-hyp)' }} />{year - 1} · {money(prevIn, 'EUR', lang)}</span></div>
+                ...(prevIn ? [{ name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.inc)) as number[] }] : [])]} />
+            <div className="legend"><span><i style={{ background: 'var(--c-in)' }} />{year}</span>{prevIn ? <span><i style={{ background: 'var(--vz-hyp)' }} />{year - 1} · {money(prevIn, 'EUR', lang)}</span> : <span className="muted">{lg(`nessun movimento nel ${year - 1}`, `aucun mouvement en ${year - 1}`)}</span>}</div>
           </div>
         </Panel>
       </>}
@@ -227,12 +227,6 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <p className="muted" style={{ margin: 0 }}><Link href={`/preventivo?anno=${year}&vista=confronto`}>{lg('Confronto per singolo codice nel Preventivo', 'Comparaison par code dans le Budget')} →</Link></p>
       </>}
 
-      <Help summary={lg('Come leggere le analisi', 'Comment lire les analyses')}>
-        <p>{lg('Tutte le cifre sono in euro e contano i movimenti registrati e verificati dell\'anno scelto in alto (bozze e giroconti esclusi; storni già sottratti). Il filtro progetto vale per tutte le schede. «Anno prima, stessi mesi» confronta lo stesso periodo dell\'anno precedente.',
-          'Tous les montants sont en euros et comptent les mouvements enregistrés et vérifiés de l\'année choisie en haut (hors brouillons et virements ; contre-passations déduites). Le filtre projet vaut pour tous les onglets. « Année précédente, mêmes mois » compare la même période de l\'année précédente.')}</p>
-        <p>{lg('Il preventivo è annuale: per capire se la spesa corre troppo si confronta la quota usata con la parte di anno trascorsa («oltre il ritmo» = più del 10% sopra).',
-          'Le budget est annuel : pour savoir si la dépense va trop vite, on compare la part utilisée à la part de l\'année écoulée (« au-delà du rythme » = plus de 10 % au-dessus).')}</p>
-      </Help>
       <p className="muted" style={{ margin: 0 }}>{t('an_note')} <Link href={mov({})}>{t('an_open_moves')}</Link></p>
     </div>
   );

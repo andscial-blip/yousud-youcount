@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { RESP, can, requireMe } from '@/lib/session';
 import { date, dateTime } from '@/lib/format';
 import { MESI_L } from '@/lib/viz';
-import { ErrorNote, Help, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { Lines } from '@/components/Charts';
 import { saveRate } from './actions';
 
@@ -59,14 +59,6 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="stack">
       <PageHead title={t('nav_fx')} />
-      <Help summary={L('Come funzionano i tassi di cambio', 'Comment fonctionnent les taux de change')}>
-        <p>{L('Si inserisce un tasso per mese, in ariary per 1 euro, con la fonte (banca, BFM, cambio effettivo dell\'operazione). Quando si registra un movimento in ariary l\'app propone il tasso del mese della data dell\'operazione; si può correggere sul singolo movimento.',
-          'On saisit un taux par mois, en ariary pour 1 euro, avec sa source (banque, BFM, taux effectif de l\'opération). Pour un mouvement en ariary, l\'application propose le taux du mois de l\'opération ; il peut être corrigé sur le mouvement.')}</p>
-        <p>{L('Ogni movimento conserva il tasso con cui è stato registrato (tasso applicato). Se si corregge il tasso di un mese, i movimenti già registrati non cambiano; la modifica resta nel registro modifiche.',
-          'Chaque mouvement garde le taux avec lequel il a été enregistré (taux appliqué). Si l\'on corrige le taux d\'un mois, les mouvements déjà enregistrés ne changent pas ; la modification reste dans l\'historique.')}</p>
-        <p>{L('Tasso corrente = ultimo mese disponibile fino a oggi. Tasso applicato = media dei tassi salvati sui movimenti del mese, pesata sugli importi.',
-          'Taux courant = dernier mois disponible jusqu\'à aujourd\'hui. Taux appliqué = moyenne des taux enregistrés sur les mouvements du mois, pondérée par les montants.')}</p>
-      </Help>
       {sp.ok && <div className="note ok" role="status">{t('fx_saved')}</div>}
       {sp.err && <div className="note err">{sp.err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />

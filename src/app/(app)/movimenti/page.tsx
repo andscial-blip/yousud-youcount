@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
 import { date, money, nm } from '@/lib/format';
-import { ErrorNote, Help, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
 import { SavedFilters } from '@/components/SavedFilters';
 
@@ -96,14 +96,6 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   return (
     <div className="stack">
       <PageHead title={t('nav_movements')} />
-      <Help summary={L('Come funziona il registro', 'Comment fonctionne le registre')}>
-        <p>{L('Ogni movimento nasce come bozza (non conta nei saldi), viene registrato (riceve il numero MOV e conta) e poi verificato da un responsabile. «Da verificare» mostra i registrati non ancora controllati.',
-          'Chaque mouvement naît comme brouillon (il ne compte pas), puis il est enregistré (il reçoit son numéro MOV et compte) et enfin vérifié par un responsable. « À vérifier » montre les enregistrés pas encore contrôlés.')}</p>
-        <p>{L('I filtri si combinano e restano nell\'indirizzo della pagina: puoi salvarli con un nome («Salva questo filtro») o mandare il link a un collega. I totali in alto riguardano tutti i movimenti filtrati (bozze e giroconti esclusi), in euro.',
-          'Les filtres se combinent et restent dans l\'adresse de la page : vous pouvez les enregistrer avec un nom ou envoyer le lien à un collègue. Les totaux portent sur tous les mouvements filtrés (hors brouillons et virements internes), en euros.')}</p>
-        <p>{L('Un movimento registrato non si cancella: si corregge con uno storno, così il registro resta completo. Si eliminano solo le bozze e i dati dimostrativi (DEMO).',
-          'Un mouvement enregistré ne se supprime pas : on le corrige par une contre-passation, pour que le registre reste complet. On supprime seulement les brouillons et les données de démonstration (DEMO).')}</p>
-      </Help>
 
       <Panel>
         <form className="filters panel-h" method="get" action="/movimenti" role="search">

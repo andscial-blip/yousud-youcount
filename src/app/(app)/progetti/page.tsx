@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
-import { Empty, ErrorNote, Help, PageHead } from '@/components/Page';
+import { Empty, ErrorNote, PageHead } from '@/components/Page';
 import { ProjectIcon } from '@/components/ProjectIcon';
 import { THEMES, themeOf } from '@/lib/project-theme';
 
@@ -38,12 +38,6 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   return (
     <div className="stack">
       <PageHead title={`${t('nav_projects')} ${year}`} />
-      <Help summary={L('Come leggere le schede dei progetti', 'Comment lire les fiches des projets')}>
-        <p>{L('Ogni scheda mostra il preventivo approvato dell\'anno per il progetto, le uscite e le entrate registrate, il saldo (entrate meno uscite) e il residuo (preventivo meno uscite). La barra indica la quota di preventivo usata; la tacca, quanta parte dell\'anno è passata.',
-          'Chaque fiche montre le budget approuvé de l\'année pour le projet, les dépenses et recettes enregistrées, le solde (recettes moins dépenses) et le reste (budget moins dépenses). La barre indique la part du budget utilisée ; le repère, la part de l\'année écoulée.')}</p>
-        <p>{L('Un solo avviso per scheda: oltre il preventivo, spesa più veloce del tempo trascorso (oltre 15 punti), oppure spese senza preventivo. Apri la scheda per il cruscotto completo.',
-          'Une seule alerte par fiche : au-delà du budget, dépense plus rapide que le temps écoulé (plus de 15 points), ou dépenses sans budget. Ouvrez la fiche pour le tableau de bord complet.')}</p>
-      </Help>
       <ErrorNote prefix={t('error_load')} error={error} />
       <div className="sstrip prj-sum">
         <div><span>{L('Progetti attivi', 'Projets actifs')}</span><b className="num">{shown.length}</b></div>

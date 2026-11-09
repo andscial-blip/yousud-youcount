@@ -164,7 +164,7 @@ try {
     '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/cambi', '/admin/impostazioni', '/admin/registro',
     '/preventivo', '/preventivo?vista=righe', '/preventivo?vista=schema', '/nuovo?tipo=expense&data=2026-11-03&importo=1234&desc=Riga%20estratto', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,
-    '/documenti-emessi/nuovo?tipo=NRS', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=fornitori', '/report?tipo=nodoc', '/report?tipo=cassa'];
+    '/documenti-emessi/nuovo?tipo=NRS', '/documenti-emessi/nuovo', '/documenti-emessi/nuovo?tipo=DIC', '/documenti-emessi/nuovo?tipo=BDC', '/analisi?vista=andamento', '/analisi?vista=uscite', '/analisi?vista=entrate', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=fornitori', '/report?tipo=nodoc', '/report?tipo=cassa'];
   // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri; /a/* = tutte le pagine sotto /a/) — prova rapida
   const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
   if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`) || (o.endsWith('*') && x.startsWith(o.slice(0, -1))))));

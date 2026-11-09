@@ -3,7 +3,7 @@ import { ruleItems } from '@/lib/deadline-rules';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { MESI_L } from '@/lib/viz';
-import { ErrorNote, Help } from '@/components/Page';
+import { ErrorNote } from '@/components/Page';
 import { type Balance } from '@/components/Balances';
 import { MonthBars } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
@@ -234,12 +234,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
                 <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
           </section>
-          <Help summary={L('Come leggere la Dashboard', 'Comment lire le tableau de bord')}>
-            <p>{L('I numeri contano i movimenti registrati e verificati (non le bozze), convertiti in euro al tasso salvato su ciascun movimento. Gli storni sono già sottratti e i giroconti tra conti non sono né entrate né uscite.',
-              'Les chiffres comptent les mouvements enregistrés et vérifiés (pas les brouillons), convertis en euros au taux enregistré sur chaque mouvement. Les contre-passations sont déjà déduites et les virements internes ne sont ni recettes ni dépenses.')}</p>
-            <p>{L('Clic su un mese del grafico per vedere i suoi movimenti, su un progetto per il suo cruscotto. La tacca sulla barra del preventivo indica quanta parte dell\'anno è passata: se la barra la supera di molto, la spesa corre più del previsto.',
-              'Cliquez sur un mois du graphique pour voir ses mouvements, sur un projet pour son tableau de bord. Le repère sur la barre du budget indique la part de l\'année écoulée : si la barre la dépasse nettement, la dépense va plus vite que prévu.')}</p>
-          </Help>
         </div>
       </div>
     </div>

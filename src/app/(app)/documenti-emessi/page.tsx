@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { DOC_GROUPS, DOC_TYPES } from '@/lib/doc-model';
-import { ErrorNote, Help, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, PageHead, Panel } from '@/components/Page';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,14 +63,6 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
       <PageHead title={L('Documenti', 'Documents')}>
         {writer && <Link className="btn primary" href="/documenti-emessi/nuovo">+ {L('Emetti nuovo documento', 'Émettre un nouveau document')}</Link>}
       </PageHead>
-      <Help summary={L('Come funziona l\'archivio documenti', 'Comment fonctionnent les documents')}>
-        <p>{L('Qui ci sono solo i documenti generati e salvati da YouSud, non i modelli. Ogni documento nasce come bozza senza numero: la controlli nell\'anteprima, la correggi quanto vuoi, poi la emetti. All\'emissione riceve il numero definitivo (es. RIC-2026-004) e il PDF viene archiviato e collegato al movimento.',
-          'Ici se trouvent seulement les documents générés et enregistrés par YouSud, pas les modèles. Chaque document naît comme brouillon sans numéro : vous le vérifiez dans l\'aperçu, le corrigez autant que nécessaire, puis l\'émettez. À l\'émission il reçoit son numéro définitif (ex. RIC-2026-004) et le PDF est archivé et lié au mouvement.')}</p>
-        <p>{L('Un documento emesso non si modifica: se contiene un errore lo si annulla con il motivo (resta in elenco, barrato) e se ne emette uno nuovo. «Archivia» toglie dall\'elenco corrente i documenti chiusi senza cancellarli.',
-          'Un document émis ne se modifie pas : s\'il contient une erreur, on l\'annule avec un motif (il reste dans la liste) et on en émet un nouveau. « Archiver » retire de la liste courante les documents clos sans les supprimer.')}</p>
-        <p>{L('Gli importi sono mostrati in euro (grande) e in ariary (piccolo) al tasso fissato quando il documento è stato salvato.',
-          'Les montants sont affichés en euros (grand) et en ariary (petit) au taux fixé à l\'enregistrement du document.')}</p>
-      </Help>
       {sp.ok === 'deleted' && <div className="note ok" role="status">{L('Bozza eliminata.', 'Brouillon supprimé.')}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
       <nav className="quick" aria-label={L('Sezioni', 'Sections')}>

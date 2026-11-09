@@ -862,7 +862,7 @@ try {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
       ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto|da verificare'], ['/admin/impostazioni', 'Quattro occhi'],
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
-      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Verifica e storni']]) {
+      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Verifica in blocco']]) {
       await sa.page.goto(base + path);
       assert.match(await sa.page.locator('main').innerText(), new RegExp(text, 'i'), path);
     }
