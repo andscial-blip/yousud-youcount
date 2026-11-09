@@ -3,7 +3,6 @@ import type { Role } from './session';
 
 // stessi insiemi di session.ts (qui ripetuti: questo file si usa anche nel browser)
 const ADMIN: Role[] = ['super_admin', 'admin'];
-const RESP: Role[] = ['super_admin', 'admin', 'responsabile'];
 const STAFF: Role[] = ['super_admin', 'admin', 'responsabile', 'read_only'];
 
 // Architettura come Cairn: sette sezioni nel menu laterale, ognuna con le sue sotto-schede sotto il titolo.

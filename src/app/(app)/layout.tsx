@@ -39,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <SideNav secs={secs} label={t('nav_sections')} />
           <div className="side-foot">
             <SyncBadge labels={syncL} lang={lang} />
-            <Link className="side-who" href="/account" title={t('nav_account')}><CIcon name="user" size={16} /><span>{me.full_name || t('nav_account')}</span></Link>
+            <Link className="side-who" href="/account" title={t('nav_account')}><CIcon name="user" size={16} /><span>{me.full_name || t('nav_account')}<small className="side-role"> · {t(`r_${me.role}` as 'r_operator')}</small></span></Link>
             <SignOut variant="side" label={t('sign_out_short')} warn={warn} icon={<CIcon name="logout" size={18} />} />
           </div>
         </aside>

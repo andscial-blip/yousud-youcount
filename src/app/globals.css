@@ -677,3 +677,4 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
   .vf-cards .vf-c { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 12px 14px; }
   .vf-cards .mc-m form { margin-top: 6px; }
 }
+.side-who .side-role { color: inherit; opacity: .7; font-size: 12px; }
