@@ -1,98 +1,138 @@
 import type { Lang } from '@/lib/i18n';
+import { donut, eur0, MESI, monthChart, svgBars, svgLines, VZ, type Ref, type Series } from '@/lib/viz';
 
-// Grafici in SVG disegnati sul server: niente librerie, leggibili anche senza JavaScript.
-// Colori tenui: verde acqua per le entrate, blu notte per le uscite, lilla per i budget.
-// colori come variabili del tema: contrasto corretto anche nel tema scuro (revisione del panel, A1-A2)
-export const C_IN = 'var(--c-in)';
-export const C_OUT = 'var(--c-out)';
-export const C_BUDGET = 'var(--c-budget)';
-export const C_OVER = 'var(--c-over)';
+// Componenti grafici con gli stessi disegni di Cairn (src/lib/viz.ts). Sul computer la versione larga,
+// sul telefono quella stretta e alta (si sceglie con il CSS, nessun JavaScript).
+// Colori con lo stesso significato di Cairn: blu notte = reale, blu = previsto, lilla = ipotesi,
+// giallo = spese, verde acqua = netto, salmone = oltre il limite.
+export const C_IN = 'var(--vz-real)';
+export const C_OUT = 'var(--amber-soft)';
+export const C_PLAN = 'var(--vz-plan)';
+export const C_HYP = 'var(--vz-hyp)';
+export const C_NET = 'var(--green-soft)';
+export const C_OVER = 'var(--tax)';
+export const C_BUDGET = 'var(--band)';
+export const PAL = ['var(--dn1)', 'var(--dn2)', 'var(--dn3)', 'var(--dn4)', 'var(--dn5)', 'var(--dn6)'];
 
-const short = (n: number, lang: Lang) =>
-  new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
-const full = (n: number, lang: Lang) =>
-  new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0,
-    useGrouping: 'always' } as Intl.NumberFormatOptions).format(n);
+const Svg = ({ html, className }: { html: string; className?: string }) =>
+  <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 
-function niceMax(v: number) {
-  if (v <= 0) return 100;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  // massimi «tondi» divisibili per 4: tacche pulite (0, 1.000, 2.000…)
-  return [1, 2, 4, 8, 10].map((k) => k * p).find((x) => x >= v) ?? v;
+export function Legend({ items, className = '' }: { items: { label: string; color: string; value?: string; dashed?: boolean; line?: boolean }[]; className?: string }) {
+  return (
+    <div className={`legend ${className}`}>
+      {items.map((x) => (
+        <span key={x.label}>
+          <i style={x.line ? { background: 'none', height: 0, width: 16, borderRadius: 0, borderTop: `2px dashed ${x.color}`, verticalAlign: 3 }
+            : x.dashed ? { background: 'var(--band)', border: `1px dashed ${x.color}` } : { background: x.color }} />
+          {x.label}{x.value && <b className="num">{x.value}</b>}
+        </span>
+      ))}
+    </div>
+  );
 }
 
-export function MonthBars({ data, lang, labels, hrefFor }: {
-  data: { inc: number; out: number }[]; lang: Lang; labels: { in: string; out: string };
-  hrefFor?: (month: number) => string;   // approfondimento: il mese apre i suoi movimenti
+// Barre per mese o per anno (affiancate o impilate).
+export function Bars({ cats, series, lang, stacked, labels, refs, label, h, hrefs }: {
+  cats: string[]; series: Series[]; lang: Lang; stacked?: boolean; labels?: boolean; refs?: Ref[]; label?: string; h?: number; hrefs?: (string | null)[];
 }) {
-  const W = 560, H = 220, L = 46, B = 26, T = 10;
-  const max = niceMax(Math.max(...data.map((d) => Math.max(d.inc, d.out)), 0));
-  const cw = (W - L) / 12, bw = Math.min(16, cw / 3);
-  const y = (v: number) => T + (H - B - T) * (1 - v / max);
-  const months = Array.from({ length: 12 }, (_, i) =>
-    new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { month: 'short' }).format(new Date(2026, i, 1)));
+  return (
+    <div className="chart-wrap">
+      <Svg className="ch-d" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs })} />
+      <Svg className="ch-m" html={svgBars(cats, series, { stacked, labels: false, refs, label, lang, hrefs, phone: true })} />
+    </div>
+  );
+}
+
+export function Lines({ cats, series, lang, refs, label, h }: {
+  cats: string[]; series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[]; lang: Lang; refs?: Ref[]; label?: string; h?: number;
+}) {
+  return (
+    <div className="chart-wrap">
+      <Svg className="ch-d" html={svgLines(cats, series, { refs, label, h, lang })} />
+      <Svg className="ch-m" html={svgLines(cats, series, { refs, label, lang, phone: true })} />
+    </div>
+  );
+}
+
+// Grafico mensile della dashboard (come «Il tuo 2026» di Cairn): reale, previsto e ipotesi impilati.
+export function MonthChart({ a, b, c, curM, names, lang, hrefs }: {
+  a: number[]; b: number[]; c: number[]; curM: number; names: [string, string, string]; lang: Lang; hrefs?: (string | null)[];
+}) {
+  return (
+    <div className="hero-chart chart">
+      <Svg className="hc-d" html={monthChart(a, b, c, curM, names, lang, 720, false, hrefs)} />
+      <Svg className="hc-m" html={monthChart(a, b, c, curM, names, lang, 380, true, hrefs)} />
+    </div>
+  );
+}
+
+// Entrate e uscite per mese, barre affiancate (stesso disegno delle barre di Cairn).
+export function MonthBars({ data, lang, labels, hrefFor }: {
+  data: { inc: number; out: number }[]; lang: Lang; labels: { in: string; out: string }; hrefFor?: (month: number) => string;
+}) {
+  const tin = data.reduce((s, d) => s + d.inc, 0), tout = data.reduce((s, d) => s + d.out, 0);
   return (
     <figure style={{ margin: 0 }}>
-      <svg className="mbars" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${labels.in} / ${labels.out}`}>
-        {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-          <g key={f}>
-            <line x1={L} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--line-2)" />
-            <text x={L - 6} y={y(max * f) + 4} textAnchor="end" fontSize="12" fill="var(--muted)">{short(max * f, lang)}</text>
-          </g>
-        ))}
-        {data.map((d, i) => {
-          const x = L + i * cw + cw / 2;
-          const bars = (
-            <g key={i}>
-              <rect x={x - bw - 1} y={y(d.inc)} width={bw} height={Math.max(0, y(0) - y(d.inc))} rx="3" fill={C_IN}>
-                <title>{`${months[i]} · ${labels.in}: ${full(d.inc, lang)}`}</title></rect>
-              <rect x={x + 1} y={y(d.out)} width={bw} height={Math.max(0, y(0) - y(d.out))} rx="3" fill={C_OUT}>
-                <title>{`${months[i]} · ${labels.out}: ${full(d.out, lang)}`}</title></rect>
-              <text x={x} y={H - 8} textAnchor="middle" fontSize="12" fill="var(--muted)">{months[i]}</text>
-            </g>
-          );
-          if (!hrefFor || (!d.inc && !d.out)) return bars;
-          return (
-            <a key={i} href={hrefFor(i + 1)} className="mlink" aria-label={`${months[i]}: ${labels.in} ${full(d.inc, lang)}, ${labels.out} ${full(d.out, lang)}`}>
-              <rect x={L + i * cw} y={T} width={cw} height={H - T} fill="transparent" />
-              {bars}
-            </a>
-          );
-        })}
-      </svg>
-      <figcaption className="legend">
-        <span><i style={{ background: C_IN }} />{labels.in} <b className="num">{full(data.reduce((s, d) => s + d.inc, 0), lang)}</b></span>
-        <span><i style={{ background: C_OUT }} />{labels.out} <b className="num">{full(data.reduce((s, d) => s + d.out, 0), lang)}</b></span>
-      </figcaption>
+      <Bars cats={MESI[lang]} lang={lang} label={`${labels.in} / ${labels.out}`}
+        series={[{ name: labels.in, vals: data.map((d) => d.inc), color: C_IN }, { name: labels.out, vals: data.map((d) => d.out), color: C_OUT }]}
+        hrefs={hrefFor ? data.map((_, i) => hrefFor(i + 1)) : undefined} />
+      <figcaption><Legend className="under" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }, { label: labels.out, color: C_OUT, value: eur0(tout, lang) }]} /></figcaption>
     </figure>
   );
 }
 
-export function HBars({ rows, lang, color = C_OUT }: { rows: { label: string; value: number; href?: string }[]; lang: Lang; color?: string }) {
+// Elenco a barre orizzontali (come «Dove vanno le spese» / righe .cbar di Cairn), con percentuale sul totale.
+export function HBars({ rows, lang, color = C_OUT, total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
+  const tot = total ?? rows.reduce((s, r) => s + r.value, 0);
   return (
-    <div className="hbars">
+    <div className="cbars">
       {rows.map((r) => (
-        <div key={r.label} className="hbar">
-          <span className="hl">{r.href ? <a href={r.href}>{r.label}</a> : r.label}</span>
-          <span className="ht"><i style={{ width: `${(r.value / max) * 100}%`, background: color }} /></span>
-          <span className="hv num">{full(r.value, lang)}</span>
+        <div key={r.label} className="cbar">
+          <span className="n" title={r.label}>{r.href ? <a href={r.href}>{r.label}</a> : r.label}</span>
+          <span className="b"><i style={{ width: `${(r.value / max) * 100}%`, background: r.color ?? color }} /></span>
+          <span className="p num">{eur0(r.value, lang)}{tot > 0 && <small>{Math.round((r.value / tot) * 100)}%</small>}</span>
         </div>
       ))}
     </div>
   );
 }
 
-// Barra di avanzamento sul budget: traccia lilla = budget, riempimento = speso, rosso oltre il budget.
+// Striscia proporzionale (come «Dove vanno le spese» di Cairn) con legenda sotto.
+export function ShareStrip({ rows, lang }: { rows: { label: string; value: number; color: string }[]; lang: Lang }) {
+  const tot = rows.reduce((s, r) => s + Math.max(0, r.value), 0) || 1;
+  return (
+    <div className="hbar" role="img" aria-label={rows.map((r) => `${r.label} ${eur0(r.value, lang)}`).join(', ')}>
+      {rows.filter((r) => r.value > 0).map((r) => (
+        <i key={r.label} style={{ width: `${(r.value / tot) * 100}%`, background: r.color }} data-tip={`${r.label}: ${eur0(r.value, lang)} (${Math.round((r.value / tot) * 100)}%)`} />
+      ))}
+    </div>
+  );
+}
+
+export function Donut({ items, center }: { items: { label: string; value: number; color: string; tip?: string }[]; center: { label: string; value: string } }) {
+  return <Svg html={donut(items, center)} />;
+}
+
+// Mini grafici dei riquadri numerici.
+export const Viz = {
+  Stack: (p: { segs: { v: number; c: string }[]; max: number; marks?: { v: number; c: string; dash?: boolean }[]; tip?: string }) =>
+    <Svg html={VZ.stack(p.segs, p.max, p.marks, p.tip)} />,
+  Cols: (p: { vals: number[]; hi?: number[]; tip?: string; colors?: string[] }) =>
+    <Svg html={VZ.cols(p.vals, p.hi ?? [], p.tip, p.colors ? (i) => p.colors![i] ?? 'var(--band)' : undefined)} />,
+  Ring: (p: { p: number; color: string; tip?: string }) => <Svg html={VZ.ring(p.p, p.color, p.tip)} />,
+};
+
+// Barra di avanzamento sul budget: traccia = preventivo, riempimento = speso, salmone oltre il preventivo.
 export function BudgetBar({ budget, spent }: { budget: number; spent: number }) {
   const max = Math.max(budget, spent, 1);
   const over = budget > 0 && spent > budget;
   return (
     <span className="bbar" aria-hidden="true">
       <i className="bb" style={{ width: `${(budget / max) * 100}%`, background: C_BUDGET }} />
-      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: C_OUT }} />
+      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: 'var(--c-ink)', borderRadius: 5 }} />
       {over && <i className="bs" style={{ left: `${(budget / max) * 100}%`, width: `${((spent - budget) / max) * 100}%`, background: C_OVER }} />}
-      {budget > 0 && <i className="bm" style={{ left: `calc(${(budget / max) * 100}% - 2px)` }} />}
+      {budget > 0 && <i className="bm" style={{ left: `calc(${(budget / max) * 100}% - 1px)` }} />}
     </span>
   );
 }

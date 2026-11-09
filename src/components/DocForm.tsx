@@ -83,7 +83,7 @@ export function DocForm({ init, lang, projects, methods, back }: { init: DocInit
           <span className="hint">{L('20% se il prestatore è residente in Italia; 0 per prestazioni rese all\'estero da non residenti. Da confermare con il commercialista.',
             '20 % si le prestataire réside en Italie ; 0 pour des prestations réalisées hors d\'Italie par des non-résidents. À confirmer.')}</span></div>
         <div className="field span2"><span className="flabel">{L('Righe', 'Lignes')}</span>
-          <div className="lines">
+          <div className="dlines">
             <div className="ln lh"><span>{L('Descrizione', 'Description')}</span><span>{L('Quantità', 'Quantité')}</span><span>{L('Prezzo unitario', 'Prix unitaire')}</span></div>
             {Array.from({ length: 6 }, (_, i) => (
               <div className="ln" key={i}>
@@ -98,7 +98,7 @@ export function DocForm({ init, lang, projects, methods, back }: { init: DocInit
         <C k="volunteer" label={L('Il richiedente è un volontario (art. 17 CTS: solo spese effettive; senza giustificativo al massimo 10 € al giorno e 150 € al mese)',
           'Le demandeur est bénévole (art. 17 CTS : seulement des frais réels ; sans justificatif, au maximum 10 € par jour et 150 € par mois)')} />
         <div className="field span2"><span className="flabel">{L('Spese', 'Frais')}</span>
-          <div className="lines">
+          <div className="dlines">
             <div className="ln nrs lh"><span>{L('Data', 'Date')}</span><span>{L('Descrizione', 'Description')}</span><span>{L('Importo', 'Montant')}</span><span>{L('Giustificativo', 'Justificatif')}</span></div>
             {Array.from({ length: 8 }, (_, i) => (
               <div className="ln nrs" key={i}>

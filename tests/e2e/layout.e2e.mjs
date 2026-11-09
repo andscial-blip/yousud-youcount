@@ -183,6 +183,13 @@ try {
     }
     // negli screenshot di controllo niente schermata d'apertura (ogni pagina di prova è una sessione nuova)
     await ctx.addInitScript(() => { try { sessionStorage.setItem('yc-splash', '1'); } catch {} });
+    // SERVE=1: anteprima per il lavoro grafico. Salva la sessione e lascia attivi dati, servizi e app (tests/e2e/shot.mjs)
+    if (process.env.SERVE) {
+      await ctx.storageState({ path: '/tmp/yc-state.json' });
+      fs.writeFileSync('/tmp/yc-preview.json', JSON.stringify({ base, S }));
+      console.log('PREVIEW READY', base);
+      await new Promise(() => {});
+    }
     await page.close();
     for (const path of PAGES) {
       for (const w of WIDTHS) {

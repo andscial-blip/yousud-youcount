@@ -36,14 +36,14 @@ export function LoginForm({ labels: L }: { labels: Labels }) {
     <form onSubmit={onSubmit} className="stack" style={{ gap: 14 }}>
       <div className="field">
         <label htmlFor="email">{L.email}</label>
-        <input className="input" id="email" name="email" type="email" autoComplete="username" required />
+        <input className="input" id="email" name="email" type="email" autoComplete="username" inputMode="email" required />
       </div>
       <div className="field">
         <label htmlFor="password">{L.password}</label>
         <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
       {error && <div className="note err" role="alert">{error}</div>}
-      <button className="btn primary" type="submit" disabled={busy}>{busy ? L.busy : L.btn}</button>
+      <button className="btn primary" type="submit" disabled={busy} style={{ width: '100%', minHeight: 46, marginTop: 4 }}>{busy ? L.busy : L.btn}</button>
     </form>
   );
 }

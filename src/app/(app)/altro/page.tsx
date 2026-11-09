@@ -1,32 +1,28 @@
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
-import { visible } from '@/lib/nav';
-import { Icon } from '@/components/Nav';
-import { PageHead, SearchBox } from '@/components/Page';
+import { navFor } from '@/lib/nav';
+import { CIcon } from '@/components/CIcon';
+import { SearchBox } from '@/components/Page';
 import { SignOut } from '@/components/SignOut';
 
 export const dynamic = 'force-dynamic';
 
-// Tutte le sezioni non presenti nella barra del telefono, raggruppate.
+// Tutte le sezioni e le loro schede (telefono e collegamenti diretti), come l'elenco «Altre sezioni» di Cairn.
 export default async function More() {
   const { me, t } = await requireMe();
-  const secs = visible(me?.role);
-  const groups = [
-    { k: 'grp_work' as const, items: secs.filter((s) => s.group === 'work') },
-    { k: 'grp_admin' as const, items: secs.filter((s) => s.group === 'admin') },
-    { k: 'grp_me' as const, items: secs.filter((s) => s.group === 'me') },
-  ].filter((g) => g.items.length > 0);
+  const secs = navFor(me?.role);
   return (
     <div className="stack">
-      <PageHead title={t('nav_more')} />
       <SearchBox action="/movimenti" value="" placeholder={t('search_mov')} clearLabel={t('search_clear')} />
-      {groups.map((g) => (
-        <div key={g.k} className="stack" style={{ gap: 12 }}>
-          <h3 className="grp">{t(g.k)}</h3>
-          <nav className="menu">
-            {g.items.map((s) => <Link key={s.href} href={s.href}><Icon d={s.icon} />{t(s.key)}</Link>)}
-          </nav>
-        </div>
+      {secs.map((s) => (
+        <section className="panel" key={s.id}>
+          <div className="panel-h"><h2><CIcon name={s.ic} size={18} />{t(s.key)}</h2><div className="spacer" /><span className="eyebrow">{t(s.hint)}</span></div>
+          <div className="panel-b">
+            <ul className="menu-list">
+              {s.subs.map((x) => <li key={x.href}><Link href={x.href}><CIcon name="arrow" size={18} /><span><b>{t(x.key)}</b></span></Link></li>)}
+            </ul>
+          </div>
+        </section>
       ))}
       <div><SignOut label={t('sign_out')} warn={t('q_signout_warn')} /></div>
     </div>
