@@ -14,25 +14,25 @@ export type Sub = { href: string; key: Key; roles?: Role[] };
 export type Section = { id: string; key: Key; hint: Key; ic: string; roles?: Role[]; subs: Sub[]; also?: string[] };
 
 export const SECTIONS: Section[] = [
-  { id: 'home', key: 'nav_dashboard', hint: 'hint_home', ic: 'home', subs: [{ href: '/', key: 'nav_dashboard' }] },
-  { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo'], subs: [
-    { href: '/movimenti', key: 'sub_register' }, { href: '/verifica', key: 'nav_verify', roles: RESP },
-    { href: '/documenti', key: 'sub_receipts' }, { href: '/rimborsi', key: 'nav_reimb' }] },
-  { id: 'cassa', key: 'side_treasury', hint: 'hint_cassa', ic: 'bank', subs: [
+  { id: 'home', key: 'nav_dashboard', hint: 'hint_home', ic: 'home', subs: [
+    { href: '/', key: 'sub_overview' }, { href: '/scadenze', key: 'nav_deadlines' }] },
+  // «Da verificare» non è una scheda: è un filtro del registro e un indicatore della Dashboard (la pagina /verifica resta per la verifica in blocco)
+  { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo', '/verifica'], subs: [
+    { href: '/movimenti', key: 'sub_register' }, { href: '/rimborsi', key: 'nav_reimb' },
+    { href: '/documenti', key: 'sub_receipts' }, { href: '/controparti', key: 'sub_parties' }] },
+  { id: 'cassa', key: 'nav_accounts', hint: 'hint_cassa', ic: 'bank', subs: [
     { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances', roles: STAFF },
-    { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }] },
+    { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }, { href: '/cambi', key: 'sub_fx' }] },
+  { id: 'bud', key: 'nav_budget', hint: 'hint_bud', ic: 'wallet', roles: STAFF, subs: [{ href: '/preventivo', key: 'nav_budget' }] },
   { id: 'prj', key: 'nav_projects', hint: 'hint_prj', ic: 'brief', subs: [
-    { href: '/progetti', key: 'nav_projects' }, { href: '/finanziamenti', key: 'nav_grants' },
-    { href: '/preventivo', key: 'nav_budget', roles: STAFF }] },
+    { href: '/progetti', key: 'nav_projects' }, { href: '/finanziamenti', key: 'nav_grants' }] },
   { id: 'anal', key: 'nav_analysis', hint: 'hint_anal', ic: 'chart', roles: STAFF, subs: [
     { href: '/analisi', key: 'nav_analysis' }, { href: '/rendiconto', key: 'nav_report' }, { href: '/report', key: 'nav_reports' }] },
-  { id: 'adem', key: 'sec_duties', hint: 'hint_adem', ic: 'cal', subs: [
-    { href: '/scadenze', key: 'nav_deadlines' }, { href: '/documenti-emessi', key: 'nav_issued' },
-    { href: '/controparti', key: 'sub_parties' }] },
+  { id: 'docs', key: 'nav_documents', hint: 'hint_docs', ic: 'receipt', subs: [{ href: '/documenti-emessi', key: 'nav_documents' }] },
   { id: 'set', key: 'nav_settings', hint: 'hint_set', ic: 'gear', also: ['/altro'], subs: [
     { href: '/account', key: 'nav_account' },
     { href: '/admin/utenti', key: 'sub_users', roles: ADMIN }, { href: '/admin/conti', key: 'nav_admin_accounts', roles: ADMIN },
-    { href: '/admin/cambi', key: 'nav_fx', roles: RESP }, { href: '/admin/piano-conti', key: 'nav_chart', roles: ADMIN },
+    { href: '/admin/piano-conti', key: 'nav_chart', roles: ADMIN },
     { href: '/admin/progetti', key: 'sub_cost_centres', roles: ADMIN }, { href: '/admin/periodi', key: 'nav_periods', roles: ADMIN },
     { href: '/admin/impostazioni', key: 'sub_org', roles: ADMIN }, { href: '/admin/registro', key: 'nav_audit', roles: ADMIN },
     { href: '/sincronizzazione', key: 'nav_sync' }, { href: '/guida', key: 'nav_guide' }] },
@@ -61,7 +61,7 @@ export function locate(secs: Section[], path: string): { sec: Section | null; su
 }
 
 // Pagine in cui l'anno nell'intestazione cambia ciò che si vede (parametro ?anno=).
-export const YEAR_PATHS = ['/', '/progetti', '/analisi', '/rendiconto', '/report', '/preventivo', '/documenti-emessi'];
+export const YEAR_PATHS = ['/', '/progetti', '/analisi', '/rendiconto', '/report', '/preventivo', '/documenti-emessi', '/cambi'];
 
 // Indirizzi che sono una sotto-scheda: lì il titolo è già nell'intestazione e la pagina non lo ripete.
 export const SUB_HREFS = SECTIONS.flatMap((s) => s.subs.map((x) => x.href));

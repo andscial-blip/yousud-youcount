@@ -534,3 +534,36 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 @media (max-width: 640px) { .filters .input, .filters select.input { flex: 1 1 100%; } }
 .docedit .de-prev .docprev th, .docedit .de-prev .docprev td { padding: 6px 5px; font-size: 12.5px; }
 .docedit .de-prev .docprev th { white-space: normal; }
+
+/* ---- Dashboard (schema home.v2 di Cairn) ---- */
+.home.v2 .hero-chart .chart-wrap { margin: 4px 0 0; }
+.home.v2 .meter.in > i { background: var(--vz-plan); }
+.mini2.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mini2 small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 640px) { .mini2.three { grid-template-columns: 1fr; } }
+.acclist { list-style: none; margin: 0; padding: 4px 0; }
+.acclist li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 18px; border-bottom: 1px solid var(--line-2); font-size: 13.5px; }
+.acclist li:last-child { border-bottom: 0; }
+.acclist .an { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acclist b { white-space: nowrap; font-weight: 600; }
+.tlist .tt a { color: inherit; text-decoration: none; }
+.tlist .tt a:hover { text-decoration: underline; }
+.muted.small, p.small { font-size: 12.5px; }
+.hcat-f a { margin-left: auto; }
+.home.v2 .meter.m-in > i { background: var(--vz-plan); }
+.home.v2 .span2 { grid-column: 1 / -1; }
+.cdp.nolink { text-decoration: none; }
+.hcat.pbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.hcat.pbars .hc-n { white-space: normal; overflow: visible; color: var(--fg); text-decoration: none; font-weight: 500; line-height: 1.3; }
+.hcat.pbars .hc-n:hover { text-decoration: underline; }
+.hcat.pbars b { white-space: nowrap; }
+.hcat.pbars b small { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.hcat.hq .hc-n { white-space: normal; }
+.h3n small { white-space: nowrap; }
+.tlist .ts { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 560px) {
+  .home.v2 .span2 .h3n { grid-template-columns: 1fr 1fr; row-gap: 14px; }
+  .home.v2 .span2 .h3n > div:last-child { grid-column: 1 / -1; }
+  .home.v2 .h3n small { white-space: normal; }
+}
+.acclist .an { white-space: normal; overflow: visible; line-height: 1.3; }

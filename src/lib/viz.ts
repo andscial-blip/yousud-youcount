@@ -25,10 +25,10 @@ export function niceStep(x: number) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
 }
 
-function axis(top: number, step: number, L: number, W: number, R: number, y: (v: number) => number, lang: Lang) {
+function axis(top: number, step: number, L: number, W: number, R: number, y: (v: number) => number, lang: Lang, bottom = 0, full = false) {
   let g = '';
-  for (let t = 0; t <= top + 0.1; t += step)
-    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${t >= 1000 ? (t / 1000).toLocaleString(loc(lang)) + 'k' : Math.round(t)}</text>`;
+  for (let t = bottom; t <= top + 0.1; t += step)
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${t >= 1000 && !full ? (t / 1000).toLocaleString(loc(lang)) + 'k' : Math.round(t).toLocaleString(loc(lang), { useGrouping: 'always' } as Intl.NumberFormatOptions)}</text>`;
   return g;
 }
 
@@ -78,27 +78,30 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
 }
 
 // Linee (cumulati, andamenti), con area tenue facoltativa e punto sull'ultimo valore.
-export function svgLines(cats: string[], series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[], opt: { refs?: Ref[]; h?: number; label?: string; phone?: boolean; lang?: Lang } = {}) {
+// opt.zoom: scala che non parte da zero (per grandezze come i tassi di cambio, dove conta la variazione); opt.fmt: formato dei valori nei tooltip
+export function svgLines(cats: string[], series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[], opt: { refs?: Ref[]; h?: number; label?: string; phone?: boolean; lang?: Lang; zoom?: boolean; fmt?: (v: number) => string } = {}) {
   const lang = opt.lang ?? 'it';
   const ph = !!opt.phone && cats.length <= 24;
   const W = ph ? 380 : 720, H = ph ? 240 : (opt.h ?? 260), L = ph ? 44 : 56, R = 12, T = 16, B = 30, n = cats.length;
   const vals = series.flatMap((s) => s.vals.filter((v): v is number => v != null));
-  const max = Math.max(1000, ...vals, ...(opt.refs ?? []).map((r) => r.v));
-  const step = niceStep(max / 4), top = Math.ceil(max / step) * step, sx = (W - L - R) / (n - 1 || 1);
-  const y = (v: number) => T + (H - T - B) * (1 - v / top), x = (i: number) => L + sx * i;
-  let out = axis(top, step, L, W, R, y, lang);
+  const all = [...vals, ...(opt.refs ?? []).map((r) => r.v)];
+  const max = opt.zoom ? Math.max(...all) : Math.max(1000, ...all), lo = opt.zoom ? Math.min(...all) : 0;
+  const step = niceStep(opt.zoom ? Math.max(1, (max - lo) / 4) : max / 4), top = Math.ceil(max / step) * step + (opt.zoom && max % step === 0 ? step : 0);
+  const bottom = opt.zoom ? Math.max(0, Math.floor(lo / step) * step - (lo % step === 0 ? step : 0)) : 0, sx = (W - L - R) / (n - 1 || 1);
+  const y = (v: number) => T + (H - T - B) * (1 - (v - bottom) / (top - bottom || 1)), x = (i: number) => L + sx * i;
+  let out = axis(top, step, L, W, R, y, lang, bottom, !!opt.zoom);
   (opt.refs ?? []).forEach((r) => { out += `<line x1="${L}" x2="${W - R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label ? `<text class="ref" x="${L + 6}" y="${y(r.v) - 5}" font-size="11" fill="${r.color}">${esc(r.label)}</text>` : ''}`; });
   series.forEach((s) => {
     const pts = s.vals.map((v, i) => (v == null ? null : [x(i), y(v)] as const));
     let d = '';
     pts.forEach((p, i) => { if (!p) return; d += (d && pts[i - 1] ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); });
-    if (s.area) { const idx = pts.map((p, i) => (p ? i : -1)).filter((i) => i >= 0); if (idx.length) out += `<path d="${d}L${x(idx[idx.length - 1]!)} ${y(0)}L${x(idx[0]!)} ${y(0)}Z" fill="${s.color}" opacity=".12"/>`; }
+    if (s.area) { const idx = pts.map((p, i) => (p ? i : -1)).filter((i) => i >= 0); if (idx.length) out += `<path d="${d}L${x(idx[idx.length - 1]!)} ${y(bottom)}L${x(idx[0]!)} ${y(bottom)}Z" fill="${s.color}" opacity=".12"/>`; }
     out += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w ?? 2.4}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''} stroke-linejoin="round"/>`;
     const li = s.vals.map((v, i) => (v != null ? i : -1)).filter((i) => i >= 0).pop();
     if (li != null && li >= 0) out += `<circle cx="${x(li)}" cy="${y(s.vals[li]!)}" r="4" fill="${s.color}"></circle>`;
   });
   cats.forEach((c, i) => {
-    const tl = [c]; series.forEach((s) => { if (s.vals[i] != null) tl.push(`${s.name}: ${eur0(s.vals[i]!, lang)}`); });
+    const tl = [c]; series.forEach((s) => { if (s.vals[i] != null) tl.push(`${s.name}: ${opt.fmt ? opt.fmt(s.vals[i]!) : eur0(s.vals[i]!, lang)}`); });
     const w = sx || W - L - R;
     out += `<rect class="hov" x="${Math.max(L, x(i) - w / 2)}" y="${T}" width="${w}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
   });

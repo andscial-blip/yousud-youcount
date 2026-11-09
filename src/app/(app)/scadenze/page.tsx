@@ -82,7 +82,7 @@ export default async function Deadlines({ searchParams }: {
   const closedKey = lastClosed ? `${lastClosed.year}-${String(lastClosed.month).padStart(2, '0')}` : '';
   if (staff && closedKey < prevMonth) auto('a-close', `${td.slice(0, 7)}-15`, 'int', L(`Chiudere il mese ${prevMonth.split('-').reverse().join('/')}`, `Clôturer le mois ${prevMonth.split('-').reverse().join('/')}`),
     L('Dopo giustificativi, verifica di cassa e tasso del mese.', 'Après justificatifs, contrôle de caisse et taux du mois.'), '/admin/periodi');
-  if (!rate.data) auto('a-rate', td, 'int', L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), L('Serve per le spese in ariary.', 'Nécessaire pour les dépenses en ariary.'), '/admin/cambi');
+  if (!rate.data) auto('a-rate', td, 'int', L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), L('Serve per le spese in ariary.', 'Nécessaire pour les dépenses en ariary.'), '/cambi');
   for (const g of grants.data ?? []) if (g.end_date && daysTo(g.end_date) <= 90 && daysTo(g.end_date) >= -30)
     auto(`a-g-${g.id}`, g.end_date, 'prj', L(`Fine del finanziamento: ${g.title}`, `Fin du financement : ${g.title}`),
       L('Verifica che tutte le spese siano registrate e giustificate; prepara il rendiconto.', 'Vérifiez que toutes les dépenses sont saisies et justifiées ; préparez le rapport.'), `/finanziamenti/${g.id}`);

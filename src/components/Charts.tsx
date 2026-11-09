@@ -43,13 +43,15 @@ export function Bars({ cats, series, lang, stacked, labels, refs, label, h, href
   );
 }
 
-export function Lines({ cats, series, lang, refs, label, h }: {
+export function Lines({ cats, series, lang, refs, label, h, zoom, unit }: {
   cats: string[]; series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[]; lang: Lang; refs?: Ref[]; label?: string; h?: number;
+  zoom?: boolean; unit?: string;
 }) {
+  const fmt = unit ? (v: number) => `${v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 2, useGrouping: 'always' } as Intl.NumberFormatOptions)}\u00a0${unit}` : undefined;
   return (
     <div className="chart-wrap">
-      <Svg className="ch-d" html={svgLines(cats, series, { refs, label, h, lang })} />
-      <Svg className="ch-m" html={svgLines(cats, series, { refs, label, lang, phone: true })} />
+      <Svg className="ch-d" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt })} />
+      <Svg className="ch-m" html={svgLines(cats, series, { refs, label, lang, phone: true, zoom, fmt })} />
     </div>
   );
 }

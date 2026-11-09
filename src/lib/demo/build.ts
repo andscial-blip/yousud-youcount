@@ -92,7 +92,7 @@ export function buildDemo(year: number, mgaRate = 5000) {
       const d = `${year}-${pad(m)}-${pad(Math.min(28, Math.ceil(R() * 28)))}`;
       const field = it.cur === 'MGA' || (it.prj !== STRUCT && R() < 0.8);
       const rate = rateOf(d);
-      const acc = field ? pick(['Cassa Missione', 'Cassa Missione', 'Banca Missione', 'Mvola Telma']) : pick(['Banca Italia', 'Banca Italia', 'Paypal']);
+      const acc = field ? pick(['Cassa Missione', 'Cassa Missione', 'Banca Missione', 'Mvola Telma']) : 'Banca Italia';
       const mga = field && acc !== 'Banca Italia' && acc !== 'Paypal';
       const st = m === lastMonth && R() < 0.35 ? 'recorded' : m === lastMonth && R() < 0.12 ? 'draft' : 'verified';
       movements.push({ k: 'expense', st, d, de: `${it.desc}${months.length > 1 ? ` · ${['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'][m - 1]}` : ''}`,
@@ -117,13 +117,57 @@ export function buildDemo(year: number, mgaRate = 5000) {
     if (m === 4 || m === 9) movements.push({ k: 'income', st: m === lastMonth ? 'recorded' : 'verified', d: d(18), de: 'Crowdfunding Sapone Solidale', a: r2(plan('E303') * 0.35), cur: 'EUR', acc: 'Paypal', code: 'E303', prj: 'Sapone Solidale', cp: 'Donatori privati (demo)', pm: 'PayPal', nd: 'DEMO: dato dimostrativo' });
     if (m === 9) movements.push({ k: 'income', st: 'recorded', d: d(19), de: 'Vendita sapone solidale al mercato', a: 1250000, cur: 'MGA', r: String(rateOf(d(19))), acc: 'Cassa Missione', code: 'E401', prj: 'Sapone Solidale', cp: '', pm: 'Contanti', nd: 'DEMO: dato dimostrativo' });
     void share;
-    // rimesse in Madagascar e prelievi di contanti (giroconti)
-    const r = rateOf(d(3));
-    const eur = Math.round(between(14000, 19000) / 100) * 100;
-    movements.push({ k: 'transfer', st: 'verified', d: d(3), de: `Rimessa mensile in Madagascar · ${m}/${year}`, a: eur, cur: 'EUR', acc: 'Banca Italia', to: 'Banca Missione', ta: Math.round(eur * r * 0.985), pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
-    const cash = Math.round(between(25, 45)) * 1000000;
-    movements.push({ k: 'transfer', st: 'verified', d: d(6), de: 'Prelievo contanti per la cassa', a: cash, cur: 'MGA', r: String(r), acc: 'Banca Missione', to: 'Cassa Missione', ta: cash, pm: 'Contanti', nd: 'DEMO: dato dimostrativo' });
   }
+
+  // Cassa realistica: nessun conto va sotto zero. Si simulano i saldi giorno per giorno: a inizio mese la rimessa
+  // copre il fabbisogno del mese in Madagascar (nei limiti di quanto c'è in Italia), poi prelievi e ricariche;
+  // una spesa che il conto non può coprire non si fa (come accadrebbe davvero).
+  const bal: Record<string, number> = {};
+  const add = (acc: string, v: number) => { bal[acc] = (bal[acc] ?? 0) + v; };
+  // saldo d'apertura simulato: le donazioni della campagna di Natale dell'anno prima, arrivate a inizio gennaio
+  movements.push({ k: 'income', st: 'verified', d: `${year}-01-02`, de: `Donazioni della campagna di Natale ${year - 1} (accreditate a gennaio)`,
+    a: r2(plan('E101') * 0.35), cur: 'EUR', acc: 'Banca Italia', code: 'E101', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+  const planned = movements.splice(0);
+  const out: Record<string, unknown>[] = [];
+  const MG = new Set(['Banca Missione', 'Cassa Missione', 'Mvola Telma']);
+  for (let m = 1; m <= lastMonth; m++) {
+    const inMonth = planned.filter((x) => +String(x.d).slice(5, 7) === m).sort((a, b) => String(a.d).localeCompare(String(b.d)));
+    const need = (acc: string) => inMonth.filter((x) => x.k === 'expense' && x.acc === acc).reduce((t, x) => t + Number(x.a), 0);
+    const cashNeed = Math.max(0, need('Cassa Missione') - (bal['Cassa Missione'] ?? 0));
+    const mvNeed = Math.max(0, need('Mvola Telma') - (bal['Mvola Telma'] ?? 0));
+    const bankNeed = Math.max(0, need('Banca Missione') + cashNeed + mvNeed - (bal['Banca Missione'] ?? 0));
+    const day = (n: number) => `${year}-${pad(m)}-${pad(n)}`;
+    // entrate dei primi giorni (es. 2 gennaio) prima della rimessa
+    for (const x of inMonth.filter((x) => x.k === 'income' && String(x.d) <= day(2))) { add(String(x.acc), Number(x.a)); out.push(x); }
+    // ogni trimestre si girano su Banca Italia i saldi di PayPal, Satispay e i contanti in Italia
+    if (m % 3 === 1 && m > 1) for (const [from, pm] of [['Paypal', 'PayPal'], ['Satispay', 'Satispay'], ['Cassa Italia', 'Contanti']] as const) {
+      const v = Math.floor(((bal[from] ?? 0) - 100) / 100) * 100;
+      if (v < 300) continue;
+      out.push({ k: 'transfer', st: 'verified', d: day(2), de: `Giroconto da ${from} a Banca Italia`, a: v, cur: 'EUR', acc: from, to: 'Banca Italia', ta: v, pm: from === 'Cassa Italia' ? 'Contanti' : 'Giroconto', nd: 'DEMO: dato dimostrativo' });
+      add(from, -v); add('Banca Italia', v); void pm;
+    }
+    const r = rateOf(day(3));
+    const eur = Math.min(Math.ceil((bankNeed / (r * 0.985)) * 1.03 / 100) * 100, Math.floor(((bal['Banca Italia'] ?? 0) - 1500) / 100) * 100);
+    if (eur >= 500) {
+      const mgaIn = Math.round(eur * r * 0.985);
+      out.push({ k: 'transfer', st: 'verified', d: day(3), de: `Rimessa mensile in Madagascar · ${m}/${year}`, a: eur, cur: 'EUR', acc: 'Banca Italia', to: 'Banca Missione', ta: mgaIn, pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+      add('Banca Italia', -eur); add('Banca Missione', mgaIn);
+    }
+    for (const [to, n0, de, pm] of [['Cassa Missione', cashNeed, 'Prelievo contanti per la cassa', 'Contanti'], ['Mvola Telma', mvNeed, 'Ricarica Mvola per i pagamenti sul campo', 'Mobile money']] as const) {
+      const v = Math.min(Math.ceil((n0 * 1.05) / 100000) * 100000, Math.floor((bal['Banca Missione'] ?? 0) / 100000) * 100000);
+      if (v <= 0) continue;
+      out.push({ k: 'transfer', st: 'verified', d: day(4), de, a: v, cur: 'MGA', r: String(r), acc: 'Banca Missione', to, ta: v, pm, nd: 'DEMO: dato dimostrativo' });
+      add('Banca Missione', -v); add(to, v);
+    }
+    for (const x of inMonth) {
+      if (x.k === 'income' && String(x.d) <= day(2)) continue;
+      const acc = String(x.acc), v = Number(x.a);
+      if (x.k === 'expense') { if ((bal[acc] ?? 0) < v) continue; add(acc, -v); } else add(acc, v);
+      out.push(x);
+    }
+    void MG;
+  }
+  movements.push(...out);
 
   const deadlines = [
     { title: 'Rendicontazione intermedia Fondazione Aurora (demo)', cat: 'prj', d: `${year}-${pad(Math.min(12, lastMonth + 1))}-15`, prio: 'high', prj: 'École Piccolino' },
