@@ -2,7 +2,7 @@
 // Base: il foglio Excel «01. Contabilità 2026» (righe di preventivo e tassi di cambio reali, in excel-2026.json).
 // Tutto il resto è INVENTATO e marcato: movimenti DEMO-AAAA-NNN con nota «DEMO», controparti «(demo)», preventivo «DEMO».
 // Deterministico: stessi dati a ogni caricamento (generatore pseudo-casuale con seme fisso).
-import xl from './excel-2026.json';
+import xl from './excel-2026.json' with { type: 'json' };
 
 type Item = { prj: string; dir: 'in' | 'out'; desc: string; code: string | null; unit: string | null; qty: number | null; mga: number | null; eur: number | null; tot: number; note: string | null };
 const X = xl as unknown as { budget: Item[]; fx: { date: string; rate: number }[]; rate_budget: number; budget_date: string; source: string };
@@ -59,10 +59,13 @@ export function buildDemo(year: number, mgaRate = 5000) {
       cur: useMga ? 'MGA' : 'EUR', rate: useMga ? String(X.rate_budget) : '', note: b.tot ? null : 'DEMO: importo inventato (nel foglio la riga non ha importo)',
       eurTot: useMga ? (qty * mga!) / X.rate_budget : qty * eur };
   }).filter((i) => i.qty > 0 && i.cost > 0);
+  // le righe inventate si riportano a un totale plausibile per YouSud (circa 115.000 € sui progetti)
+  { const inv = items.filter((i) => i.note); const sum = inv.reduce((a, i) => a + i.eurTot, 0); const k = sum ? 115000 / sum : 1;
+    for (const i of inv) { i.cost = Math.max(1, Math.round(i.cost * k)); i.eurTot = i.qty * i.cost; } }
   // entrate previste (DEMO, oltre alla riga reale «Donazioni singole»)
-  const inc = [['E101', 'Donazioni da privati – campagna di Natale', 1, 9000], ['E104', 'Quote associative', 120, 30], ['E105', '5x1000', 1, 4200],
-    ['E201', 'Contributo Fondazione Aurora – École Piccolino', 1, 18000], ['E202', 'Bando Comune di Monza – Sport & Inclusione', 1, 7500],
-    ['E301', 'Cena di raccolta fondi', 2, 2500], ['E303', 'Crowdfunding Sapone Solidale', 1, 3000]] as const;
+  const inc = [['E101', 'Donazioni da privati (ricorrenti e campagna di Natale)', 1, 98000], ['E104', 'Quote associative', 120, 30], ['E105', '5x1000', 1, 4200],
+    ['E201', 'Contributo Fondazione Aurora – École Piccolino', 1, 60000], ['E202', 'Bando Comune di Monza – Sport & Inclusione', 1, 25000],
+    ['E301', 'Cene ed eventi di raccolta fondi', 2, 9000], ['E303', 'Crowdfunding Sapone Solidale', 1, 8000]] as const;
   for (const [code, desc, qty, cost] of inc)
     items.push({ prj: code === 'E201' ? 'École Piccolino' : code === 'E202' ? 'Sport & Inclusione' : code === 'E303' ? 'Sapone Solidale' : STRUCT, dir: 'in', code, desc, unit: '', qty, cost,
       cur: 'EUR', rate: '', note: 'DEMO: entrata prevista inventata', eurTot: qty * cost });
@@ -98,23 +101,28 @@ export function buildDemo(year: number, mgaRate = 5000) {
         nd: R() < 0.72 ? 'DEMO: giustificativo non caricato (dato dimostrativo)' : null });
     }
   }
-  // entrate: donazioni ricorrenti e una tantum
+  // entrate: donazioni ricorrenti e una tantum, proporzionate alle entrate previste
+  const plan = (code: string) => items.filter((i) => i.dir === 'in' && i.code === code).reduce((a, i) => a + i.eurTot, 0);
+  const share = lastMonth / 12;
   for (let m = 1; m <= lastMonth; m++) {
     const d = (day: number) => `${year}-${pad(m)}-${pad(day)}`;
-    movements.push({ k: 'income', st: 'verified', d: d(5), de: `Donazioni da privati · ${m}/${year}`, a: r2(between(450, 1400)), cur: 'EUR', acc: 'Banca Italia', code: 'E101', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'Bonifico', nd: 'DEMO' });
-    if (R() < 0.6) movements.push({ k: 'income', st: 'verified', d: d(12), de: 'Donazioni online', a: r2(between(80, 420)), cur: 'EUR', acc: pick(['Paypal', 'Satispay']), code: 'E303', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'PayPal', nd: 'DEMO' });
-    if (m === 3 || m === 4) movements.push({ k: 'income', st: 'verified', d: d(20), de: 'Quote associative', a: r2(between(1200, 1900)), cur: 'EUR', acc: 'Banca Italia', code: 'E104', prj: STRUCT, cp: '', pm: 'Bonifico', nd: 'DEMO' });
-    if (m === 2 || m === 7) movements.push({ k: 'income', st: 'verified', d: d(15), de: `Contributo Fondazione Aurora – ${m === 2 ? 'prima' : 'seconda'} tranche`, a: 9000, cur: 'EUR', acc: 'Banca Italia', code: 'E201', prj: 'École Piccolino', cp: 'Fondazione Aurora (demo)', pm: 'Bonifico', nd: 'DEMO' });
-    if (m === 5) movements.push({ k: 'income', st: 'verified', d: d(28), de: 'Bando Comune di Monza – acconto 60%', a: 4500, cur: 'EUR', acc: 'Banca Italia', code: 'E202', prj: 'Sport & Inclusione', cp: 'Comune di Monza (demo)', pm: 'Bonifico', nd: 'DEMO' });
-    if (m === 6 || m === 11) movements.push({ k: 'income', st: 'verified', d: d(22), de: 'Cena di raccolta fondi', a: r2(between(1800, 3100)), cur: 'EUR', acc: 'Cassa Italia', code: 'E301', prj: STRUCT, cp: 'Parrocchia San Marco (demo)', pm: 'Contanti', nd: 'DEMO' });
-    if (m === 10) movements.push({ k: 'income', st: 'verified', d: d(30), de: '5x1000 anno finanziario precedente', a: 3870.45, cur: 'EUR', acc: 'Banca Italia', code: 'E105', prj: STRUCT, cp: '', pm: 'Bonifico', nd: 'DEMO' });
-    if (m === 9) movements.push({ k: 'income', st: 'recorded', d: d(18), de: 'Vendita sapone solidale al mercato', a: 1250000, cur: 'MGA', r: String(rateOf(d(18))), acc: 'Cassa Missione', code: 'E401', prj: 'Sapone Solidale', cp: '', pm: 'Contanti', nd: 'DEMO' });
+    const xmas = m === 12 ? 2.2 : m === 11 ? 1.4 : 1;
+    movements.push({ k: 'income', st: 'verified', d: d(5), de: `Donazioni da privati · ${m}/${year}`, a: r2((plan('E101') * 0.72 / 12) * xmas * between(0.8, 1.2)), cur: 'EUR', acc: 'Banca Italia', code: 'E101', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+    movements.push({ k: 'income', st: 'verified', d: d(12), de: 'Donazioni online', a: r2((plan('E101') * 0.18 / 12) * between(0.6, 1.4)), cur: 'EUR', acc: pick(['Paypal', 'Satispay']), code: 'E101', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'PayPal', nd: 'DEMO: dato dimostrativo' });
+    if (m === 3 || m === 4) movements.push({ k: 'income', st: 'verified', d: d(20), de: 'Quote associative', a: r2(plan('E104') * between(0.4, 0.5)), cur: 'EUR', acc: 'Banca Italia', code: 'E104', prj: STRUCT, cp: '', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+    if (m === 2 || m === 7) movements.push({ k: 'income', st: 'verified', d: d(15), de: `Contributo Fondazione Aurora – ${m === 2 ? 'prima' : 'seconda'} tranche`, a: r2(plan('E201') * 0.4), cur: 'EUR', acc: 'Banca Italia', code: 'E201', prj: 'École Piccolino', cp: 'Fondazione Aurora (demo)', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+    if (m === 5) movements.push({ k: 'income', st: 'verified', d: d(28), de: 'Bando Comune di Monza – acconto 60%', a: r2(plan('E202') * 0.6), cur: 'EUR', acc: 'Banca Italia', code: 'E202', prj: 'Sport & Inclusione', cp: 'Comune di Monza (demo)', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+    if (m === 6 || m === 11) movements.push({ k: 'income', st: 'verified', d: d(22), de: 'Cena di raccolta fondi', a: r2(plan('E301') * between(0.38, 0.5)), cur: 'EUR', acc: 'Cassa Italia', code: 'E301', prj: STRUCT, cp: 'Parrocchia San Marco (demo)', pm: 'Contanti', nd: 'DEMO: dato dimostrativo' });
+    if (m === 10) movements.push({ k: 'income', st: 'verified', d: d(30), de: '5x1000 anno finanziario precedente', a: r2(plan('E105') * 0.92), cur: 'EUR', acc: 'Banca Italia', code: 'E105', prj: STRUCT, cp: '', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+    if (m === 4 || m === 9) movements.push({ k: 'income', st: m === lastMonth ? 'recorded' : 'verified', d: d(18), de: 'Crowdfunding Sapone Solidale', a: r2(plan('E303') * 0.35), cur: 'EUR', acc: 'Paypal', code: 'E303', prj: 'Sapone Solidale', cp: 'Donatori privati (demo)', pm: 'PayPal', nd: 'DEMO: dato dimostrativo' });
+    if (m === 9) movements.push({ k: 'income', st: 'recorded', d: d(19), de: 'Vendita sapone solidale al mercato', a: 1250000, cur: 'MGA', r: String(rateOf(d(19))), acc: 'Cassa Missione', code: 'E401', prj: 'Sapone Solidale', cp: '', pm: 'Contanti', nd: 'DEMO: dato dimostrativo' });
+    void share;
     // rimesse in Madagascar e prelievi di contanti (giroconti)
     const r = rateOf(d(3));
-    const eur = Math.round(between(5500, 8500) / 100) * 100;
-    movements.push({ k: 'transfer', st: 'verified', d: d(3), de: `Rimessa mensile in Madagascar · ${m}/${year}`, a: eur, cur: 'EUR', acc: 'Banca Italia', to: 'Banca Missione', ta: Math.round(eur * r * 0.985), pm: 'Bonifico', nd: 'DEMO' });
-    const cash = Math.round(between(12, 22)) * 1000000;
-    movements.push({ k: 'transfer', st: 'verified', d: d(6), de: 'Prelievo contanti per la cassa', a: cash, cur: 'MGA', r: String(r), acc: 'Banca Missione', to: 'Cassa Missione', ta: cash, pm: 'Contanti', nd: 'DEMO' });
+    const eur = Math.round(between(14000, 19000) / 100) * 100;
+    movements.push({ k: 'transfer', st: 'verified', d: d(3), de: `Rimessa mensile in Madagascar · ${m}/${year}`, a: eur, cur: 'EUR', acc: 'Banca Italia', to: 'Banca Missione', ta: Math.round(eur * r * 0.985), pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
+    const cash = Math.round(between(25, 45)) * 1000000;
+    movements.push({ k: 'transfer', st: 'verified', d: d(6), de: 'Prelievo contanti per la cassa', a: cash, cur: 'MGA', r: String(r), acc: 'Banca Missione', to: 'Cassa Missione', ta: cash, pm: 'Contanti', nd: 'DEMO: dato dimostrativo' });
   }
 
   const deadlines = [

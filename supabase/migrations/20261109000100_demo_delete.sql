@@ -85,7 +85,8 @@ declare v_st text; v_b uuid := coalesce(new.budget_id, old.budget_id);
 begin
   if tg_op = 'DELETE' and app.bypass() then return old; end if;
   select status into v_st from public.budgets where id = v_b;
-  if v_st is distinct from 'draft' then perform app.fail('immutable', 'preventivo approvato: crea una revisione'); end if;
+  -- eccezione interna: il caricamento dei dati dimostrativi scrive le righe di una versione già approvata
+  if v_st is distinct from 'draft' and not (tg_op = 'INSERT' and app.bypass()) then perform app.fail('immutable', 'preventivo approvato: crea una revisione'); end if;
   if tg_op <> 'DELETE' then
     new.org_id := (select org_id from public.budgets where id = new.budget_id);
     if not exists (select 1 from public.categories c where c.id = new.category_id and c.org_id = new.org_id) then
@@ -232,9 +233,11 @@ begin
     v_y := (p#>>'{budget,year}')::int;
     if not exists (select 1 from public.budgets where org_id = v_org and year = v_y and status = 'approved' and not demo) then
       update public.budgets set status = 'superseded' where org_id = v_org and year = v_y and status = 'approved';
+      -- direttamente approvato (una bozza reale dello stesso anno resta com'è)
+      perform set_config('app.bypass', 'on', true);
       insert into public.budgets(org_id, year, version, status, title, approval_ref, demo, approved_at, approved_by, created_by)
-      values (v_org, v_y, coalesce((select max(version) from public.budgets where org_id = v_org and year = v_y), 0) + 1, 'draft',
-              p#>>'{budget,title}', p#>>'{budget,ref}', true, null, null, v_uid)
+      values (v_org, v_y, coalesce((select max(version) from public.budgets where org_id = v_org and year = v_y), 0) + 1, 'approved',
+              p#>>'{budget,title}', p#>>'{budget,ref}', true, now(), v_uid, v_uid)
       returning id into v_b;
       for x in select * from jsonb_array_elements(p#>'{budget,items}') loop
         select id into v_prj from public.projects where org_id = v_org and lower(name) = lower(x->>'prj');
@@ -245,7 +248,7 @@ begin
                 x->>'cur', nullif(x->>'rate', '')::numeric, left(x->>'note', 500), v_n);
         v_n := v_n + 1;
       end loop;
-      update public.budgets set status = 'approved', approved_at = now(), approved_by = v_uid where id = v_b;
+      perform set_config('app.bypass', 'off', true);
     end if;
   end if;
   -- movimenti
@@ -256,7 +259,7 @@ begin
     v_st := coalesce(x->>'st', 'verified');
     if v_st <> 'draft' and not app.period_open(v_org, (x->>'d')::date) then continue; end if;
     v_seq := v_seq + 1;
-    v_ref := case when v_st = 'draft' then null else 'DEMO-' || extract(year from (x->>'d')::date) || '-' || lpad(v_seq::text, 3, '0') end;
+    v_ref := case when v_st = 'draft' then null else 'DEMO-' || extract(year from (x->>'d')::date) || '-' || lpad(v_seq::text, greatest(3, length(v_seq::text)), '0') end;
     insert into public.movements(org_id, client_uuid, ref, kind, status, op_date, description, amount, currency, fx_rate, account_id,
       to_account_id, to_amount, category_id, project_id, counterparty_id, payment_method_id, notes, no_doc_reason, demo,
       created_by, updated_by, recorded_by, recorded_at, verified_by, verified_at)
@@ -286,3 +289,49 @@ revoke all on function public.movement_delete(uuid), public.budget_delete(uuid, 
 grant execute on function public.movement_delete(uuid), public.budget_delete(uuid, text), public.demo_counts(), public.demo_purge(int),
   public.demo_load(jsonb) to authenticated;
 revoke execute on function app.bypass() from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------------------------------------------
+-- Documenti emessi: due nuovi tipi (Dichiarazione/attestazione, Buono d'ordine) e archiviazione.
+-- Archiviare nasconde dall'elenco corrente senza toccare numero, contenuto o PDF; si può annullare l'archiviazione.
+alter table public.issued_docs drop constraint if exists issued_docs_type_check;
+alter table public.issued_docs add constraint issued_docs_type_check check (type in ('RIC','QUI','NOT','NRS','ASP','NDD','DIC','BDC'));
+alter table public.issued_docs add column if not exists archived_at timestamptz;
+
+do $$
+declare v_src text;
+begin
+  select pg_get_functiondef('public.issued_doc_save(jsonb)'::regprocedure) into v_src;
+  v_src := replace(v_src, $q$not in ('RIC','QUI','NOT','NRS','ASP','NDD')$q$, $q$not in ('RIC','QUI','NOT','NRS','ASP','NDD','DIC','BDC')$q$);
+  execute v_src;
+  -- una dichiarazione può non avere importo (es. attestazione di volontariato)
+  select pg_get_functiondef('public.issued_doc_issue(uuid)'::regprocedure) into v_src;
+  v_src := replace(v_src, $q$if coalesce(v_d.amount, 0) <= 0 then$q$, $q$if v_d.type <> 'DIC' and coalesce(v_d.amount, 0) <= 0 then$q$);
+  execute v_src;
+end $$;
+
+create or replace function public.issued_doc_archive(p_id uuid, p_on boolean) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare v_d public.issued_docs;
+begin
+  if not app.is_staff() then perform app.fail('forbidden'); end if;
+  select * into v_d from public.issued_docs where id = p_id and org_id = app.me_org() for update;
+  if not found then perform app.fail('not_found', 'documento'); end if;
+  if v_d.status = 'draft' then perform app.fail('invalid', 'una bozza non si archivia: si elimina'); end if;
+  update public.issued_docs set archived_at = case when p_on then now() end, updated_at = now() where id = p_id returning * into v_d;
+  return to_jsonb(v_d);
+end $$;
+revoke all on function public.issued_doc_archive(uuid, boolean) from public, anon;
+grant execute on function public.issued_doc_archive(uuid, boolean) to authenticated;
+
+-- Numerazione: lpad(n, 3) tronca i numeri oltre 999 (1000 → «100»), quindi il millesimo movimento (o documento)
+-- dell'anno avrebbe un numero già usato e la registrazione fallirebbe. Si mantiene il minimo di 3 cifre senza troncare.
+do $$
+declare f text; v_src text;
+begin
+  foreach f in array array['app.next_ref(uuid,date)', 'public.issued_doc_issue(uuid)', 'public.create_self_cert(jsonb)'] loop
+    select pg_get_functiondef(f::regprocedure) into v_src;
+    v_src := replace(v_src, $q$lpad(v_n::text, 3, '0')$q$, $q$lpad(v_n::text, greatest(3, length(v_n::text)), '0')$q$);
+    if position('greatest(3, length(v_n::text))' in v_src) = 0 then raise exception 'numerazione non aggiornata in %', f; end if;
+    execute v_src;
+  end loop;
+end $$;

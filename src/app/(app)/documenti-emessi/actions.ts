@@ -3,42 +3,30 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { loadOrg } from '@/lib/org';
 import { createClient } from '@/lib/supabase/server';
-import { parseAmount } from '@/lib/amount';
-import { buildModel, notTotals, type DocType, type NotLine, type NrsLine } from '@/lib/doc-model';
+import { buildModel } from '@/lib/doc-model';
+import { pickRate, readDocForm } from '@/lib/doc-form';
 import { renderPdf } from '@/lib/doc-pdf';
 import { storePdf } from '@/lib/store-pdf';
 
-const n = (s: FormDataEntryValue | null) => parseAmount(String(s ?? '')) ?? 0;
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
+type Sb = Awaited<ReturnType<typeof createClient>>;
 
-// Raccoglie dal modulo i campi comuni e quelli del tipo; per notule e note spese l'importo è il totale delle righe.
-function readForm(f: FormData) {
-  const type = str(f, 'type') as DocType;
-  const data: Record<string, unknown> = {};
-  for (const k of ['causale', 'causale_txt', 'method', 'desc', 'period', 'activity', 'role', 'code', 'supplier', 'need_by', 'reason', 'ref', 'pay_by', 'received_on', 'paid_on'])
-    if (str(f, k)) data[k] = str(f, k);
-  for (const k of ['deduc', 'bollo_exempt', 'volunteer', 'advance']) data[k] = f.get(k) === 'on';
-  let amount: number | null = parseAmount(str(f, 'amount'));
-  if (type === 'NOT') {
-    const lines: NotLine[] = [];
-    for (let i = 0; i < 8; i++) { const d = str(f, `l${i}_d`), p = n(f.get(`l${i}_p`)); if (d || p) lines.push({ d, q: n(f.get(`l${i}_q`)) || 1, p }); }
-    data.lines = lines; data.ritenuta = n(f.get('ritenuta'));
-    amount = notTotals(lines, Number(data.ritenuta)).gross;
+// Tasso del documento fissato al salvataggio: quello del movimento collegato, altrimenti il tasso mensile.
+async function docRate(sb: Sb, docDate: string, movementId: string) {
+  if (movementId) {
+    const { data: m } = await sb.from('movements').select('fx_rate').eq('id', movementId).maybeSingle();
+    if (m?.fx_rate) return Number(m.fx_rate);
   }
-  if (type === 'NRS') {
-    const lines: NrsLine[] = [];
-    for (let i = 0; i < 10; i++) { const d = str(f, `l${i}_d`), a = n(f.get(`l${i}_a`)); if (d || a) lines.push({ date: str(f, `l${i}_date`), d, amt: a, doc: f.get(`l${i}_doc`) === 'on' }); }
-    data.lines = lines;
-    amount = Math.round(lines.reduce((s, l) => s + l.amt, 0) * 100) / 100;
-  }
-  return { id: str(f, 'id') || undefined, type, lang: str(f, 'lang') || 'it', doc_date: str(f, 'doc_date'), movement_id: str(f, 'movement_id'),
-    project_id: str(f, 'project_id'), counterparty_id: str(f, 'counterparty_id'), party_name: str(f, 'party_name'), party_tax_id: str(f, 'party_tax_id'),
-    party_address: str(f, 'party_address'), amount: amount ?? '', currency: str(f, 'currency') || 'EUR', data };
+  const { data } = await sb.from('fx_rates').select('year, month, rate').order('year').order('month');
+  return pickRate(Object.fromEntries((data ?? []).map((r) => [`${r.year}-${String(r.month).padStart(2, '0')}`, Number(r.rate)])), docDate);
 }
 
 export async function saveDoc(f: FormData) {
-  const p = readForm(f);
-  const { data, error } = await (await createClient()).rpc('issued_doc_save', { p });
+  const p = readDocForm(f);
+  const sb = await createClient();
+  const fx = await docRate(sb, p.doc_date, p.movement_id);
+  if (fx) p.data.fx_rate = fx;
+  const { data, error } = await sb.rpc('issued_doc_save', { p });
   if (error) redirect(`/documenti-emessi/${p.id ?? 'nuovo'}?${p.id ? '' : `tipo=${p.type}&`}err=${encodeURIComponent(error.message)}`);
   revalidatePath('/documenti-emessi');
   redirect(`/documenti-emessi/${data.id}?ok=saved`);
@@ -70,4 +58,12 @@ export async function cancelDoc(f: FormData) {
   revalidatePath('/documenti-emessi');
   if (error) redirect(`/documenti-emessi/${id}?err=${encodeURIComponent(error.message)}`);
   redirect(data?.outcome === 'deleted' ? '/documenti-emessi?ok=deleted' : `/documenti-emessi/${id}?ok=cancelled`);
+}
+
+// Archivia (o ripristina) un documento emesso o annullato: resta numerato e scaricabile, esce dall'elenco corrente.
+export async function archiveDoc(f: FormData) {
+  const id = str(f, 'id');
+  const { error } = await (await createClient()).rpc('issued_doc_archive', { p_id: id, p_on: str(f, 'on') === '1' });
+  revalidatePath('/documenti-emessi');
+  redirect(`/documenti-emessi/${id}?${error ? `err=${encodeURIComponent(error.message)}` : `ok=${str(f, 'on') === '1' ? 'archived' : 'restored'}`}`);
 }

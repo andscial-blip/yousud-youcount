@@ -1,11 +1,11 @@
 import 'server-only';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
-import type { Model } from './doc-model';
+import type { Cell, Model } from './doc-model';
 
 // PDF A4 di un documento emesso, dal modello comune (vedi doc-model). Font standard del PDF (Helvetica):
 // i caratteri fuori codifica WinAnsi si sostituiscono, gli spazi speciali dei formati numerici diventano spazi.
 function clean(font: PDFFont, s: string) {
-  const t = s.replace(/[   ]/g, ' ').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/−/g, '-');
+  const t = s.replace(/[\u202f\u2007\u2009]/g, '\u00a0').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/−/g, '-');
   let out = '';
   for (const ch of t) { try { font.encodeText(ch); out += ch; } catch { out += '?'; } }
   return out;
@@ -13,7 +13,7 @@ function clean(font: PDFFont, s: string) {
 function wrap(font: PDFFont, size: number, text: string, width: number) {
   const lines: string[] = [];
   let line = '';
-  for (const w of text.split(/\s+/)) {
+  for (const w of text.split(/[ \t\n]+/)) {   // gli spazi non separabili (NBSP) tengono uniti numero e unità
     const next = line ? `${line} ${w}` : w;
     if (font.widthOfTextAtSize(next, size) > width && line) { lines.push(line); line = w; } else line = next;
   }
@@ -54,15 +54,13 @@ export async function renderPdf(md: Model): Promise<Uint8Array> {
       logoW = w + 16;
       const top = y;
       put(md.org.name, { size: 14, font: bold, w: W - logoW });
-      const sub = [md.org.address, md.org.tax_id ? `C.F. ${md.org.tax_id}` : null].filter(Boolean).join(' · ');
-      if (sub) put(sub, { size: 9, color: soft, w: W - logoW });
+      if (md.orgLine) put(md.orgLine, { size: 9, color: soft, w: W - logoW });
       y = Math.min(y, top - h);
     } catch { logoW = 0; }
   }
   if (!logoW) {
     put(md.org.name, { size: 14, font: bold });
-    const sub = [md.org.address, md.org.tax_id ? `C.F. ${md.org.tax_id}` : null].filter(Boolean).join(' · ');
-    if (sub) put(sub, { size: 9, color: soft });
+    if (md.orgLine) put(md.orgLine, { size: 9, color: soft });
   }
   y -= 6; hr();
   put(md.title.toUpperCase(), { size: 13, font: bold, gap: 4 });
@@ -74,18 +72,24 @@ export async function renderPdf(md: Model): Promise<Uint8Array> {
     else if (b.k === 'table') {
       const cw = [W * 0.52, W * 0.12, W * 0.18, W * 0.18].slice(0, b.head.length);
       if (b.head.length === 4 && b.num.length === 1) cw.splice(0, 4, W * 0.14, W * 0.48, W * 0.18, W * 0.2);
-      const row = (cells: string[], f: PDFFont, fill?: boolean) => {
-        const hs = cells.map((c, i) => wrap(f, 9.5, clean(f, c), cw[i] - 8).length);
+      const row = (cells: Cell[], f: PDFFont, fill?: boolean) => {
+        const main = (c: Cell) => (typeof c === 'string' ? c : c[0]);
+        const hs = cells.map((c, i) => wrap(f, 9.5, clean(f, main(c)), cw[i] - 8).length + (typeof c === 'string' ? 0 : 0.85));
         const h = Math.max(...hs) * 13 + 8;
         need(h);
         if (fill) page.drawRectangle({ x: M, y: y - h, width: W, height: h, color: band });
         let x = M;
         cells.forEach((c, i) => {
-          const ls = wrap(f, 9.5, clean(f, c), cw[i] - 8);
+          const ls = wrap(f, 9.5, clean(f, main(c)), cw[i] - 8);
+          const right = b.num.includes(i);
           ls.forEach((l, j) => {
             const tw = f.widthOfTextAtSize(l, 9.5);
-            page.drawText(l, { x: b.num.includes(i) ? x + cw[i] - 4 - tw : x + 4, y: y - 13 - j * 13, size: 9.5, font: f, color: ink });
+            page.drawText(l, { x: right ? x + cw[i] - 4 - tw : x + 4, y: y - 13 - j * 13, size: 9.5, font: f, color: ink });
           });
+          if (typeof c !== 'string' && c[1]) {   // MGA in piccolo sotto l'importo in €
+            const sv = clean(reg, c[1]), sw = reg.widthOfTextAtSize(sv, 7.5);
+            page.drawText(sv, { x: right ? x + cw[i] - 4 - sw : x + 4, y: y - 13 - ls.length * 13 + 2, size: 7.5, font: reg, color: soft });
+          }
           x += cw[i];
         });
         y -= h;
@@ -96,11 +100,14 @@ export async function renderPdf(md: Model): Promise<Uint8Array> {
       y -= 10;
     } else if (b.k === 'totals') {
       for (const [k, v, strong] of b.rows) {
-        need(16);
-        const f = strong ? bold : reg, kv = clean(f, k), vv = clean(f, v);
+        const sub = typeof v === 'string' ? '' : v[1];
+        need(sub ? 27 : 16);
+        const f = strong ? bold : reg, kv = clean(f, k), vv = clean(f, typeof v === 'string' ? v : v[0]);
+        const size = strong ? 12 : 10.5;
         page.drawText(kv, { x: M + W * 0.45, y: y - 11, size: 10.5, font: f, color: ink });
-        page.drawText(vv, { x: M + W - f.widthOfTextAtSize(vv, 10.5), y: y - 11, size: 10.5, font: f, color: ink });
+        page.drawText(vv, { x: M + W - f.widthOfTextAtSize(vv, size), y: y - 11, size, font: f, color: ink });
         y -= 16;
+        if (sub) { const sv = clean(reg, sub); page.drawText(sv, { x: M + W - reg.widthOfTextAtSize(sv, 8), y: y - 7, size: 8, font: reg, color: soft }); y -= 11; }
       }
       y -= 8;
     } else {
@@ -116,8 +123,12 @@ export async function renderPdf(md: Model): Promise<Uint8Array> {
       });
     }
   }
+  if (md.fxNote) { y -= 6; put(md.fxNote, { size: 8.5, color: soft }); }
   const pages = pdf.getPages();
-  pages.forEach((p, i) => p.drawText(clean(reg, `${md.number ?? 'BOZZA'} · ${md.org.name} · YouCount${pages.length > 1 ? ` · ${i + 1}/${pages.length}` : ''}`),
-    { x: M, y: 30, size: 7.5, font: reg, color: soft }));
+  pages.forEach((p, i) => {
+    if (md.footer) for (const [j, l] of wrap(reg, 7.5, clean(reg, md.footer), W).entries()) p.drawText(l, { x: M, y: 42 - j * 10, size: 7.5, font: reg, color: soft });
+    p.drawText(clean(reg, `${md.number ?? 'BOZZA'} · ${md.org.name} · YouCount${pages.length > 1 ? ` · ${i + 1}/${pages.length}` : ''}`),
+      { x: M, y: 22, size: 7.5, font: reg, color: soft });
+  });
   return pdf.save();
 }

@@ -797,3 +797,76 @@ test('documenti emessi: bozza, emissione numerata e bloccata, PDF collegato al m
   await assert.rejects(rpc(U.op, 'issued_doc_issue', n3.id), /controparte/);
   assert.equal((await rpc(U.op, 'issued_doc_cancel', n3.id, null)).outcome, 'deleted');
 });
+
+test('dati dimostrativi: caricamento marcato DEMO, eliminazione sicura, svuotamento con conferma del numero, reali intatti', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const p = JSON.parse(execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', 'scripts/demo-payload.mjs', String(year)], { maxBuffer: 1 << 26 }).toString());
+  const realBefore = (await sql('select count(*)::int n from movements where not demo'))[0].n;
+  const realBudget = (await sql(`select count(*)::int n from budgets where year = $1 and status = 'approved' and not demo`, [year]))[0].n > 0;
+  await assert.rejects(rpc(U.resp, 'demo_load', p), /forbidden|amministratore/);
+  await rpc(U.admin, 'demo_load', p);
+  await assert.rejects(rpc(U.admin, 'demo_load', p), /già dati dimostrativi/);
+  const c = await rpc(U.admin, 'demo_counts');
+  assert.ok(c.movements > 300, `movimenti demo: ${c.movements}`);
+  // il preventivo demo entra solo se per l'anno non c'è già un preventivo reale approvato (quello reale prevale)
+  if (realBudget) assert.equal(c.budget_items, 0); else assert.ok(c.budget_items > 100);
+  // ogni movimento demo è riconoscibile; i reali non sono stati toccati
+  assert.equal((await sql(`select count(*)::int n from movements where demo and (ref is not null and ref not like 'DEMO-%')`))[0].n, 0);
+  assert.equal((await sql(`select count(*)::int n from movements where demo and notes not like 'DEMO%'`))[0].n, 0);
+  assert.equal((await sql('select count(*)::int n from movements where not demo'))[0].n, realBefore);
+  // i tassi reali del foglio Excel entrano come reali con la fonte
+  assert.ok((await sql(`select count(*)::int n from fx_rates where not demo and source like '%Exchange Rate%'`))[0].n >= 1);
+  // un movimento demo registrato si elimina (responsabile), uno reale registrato no: si storna
+  const dm = (await sql(`select id from movements where demo and status <> 'draft' limit 1`))[0].id;
+  await assert.rejects(rpc(U.op, 'movement_delete', dm), /forbidden/);
+  await rpc(U.resp, 'movement_delete', dm);
+  const real = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova' }));
+  await assert.rejects(rpc(U.resp, 'movement_delete', real.id), /storno/);
+  const draft = await rpc(U.op, 'save_movement', mov({ status: 'draft' }));
+  assert.equal((await rpc(U.op, 'movement_delete', draft.id)).outcome, 'deleted');
+  // l'eliminazione resta nel registro modifiche
+  assert.equal((await sql(`select count(*)::int n from audit_log where table_name = 'movements' and row_id = $1 and action = 'delete' and old_row is not null`, [dm]))[0].n, 1);
+  // svuotamento: numero sbagliato → nulla eliminato; numero giusto → solo i demo
+  const c2 = await rpc(U.admin, 'demo_counts');
+  await assert.rejects(rpc(U.admin, 'demo_purge', c2.movements + 1), /ricarica/);
+  await assert.rejects(rpc(U.resp, 'demo_purge', c2.movements), /forbidden|amministratore/);
+  await rpc(U.admin, 'demo_purge', c2.movements);
+  const c3 = await rpc(U.admin, 'demo_counts');
+  assert.deepEqual([c3.movements, c3.budgets, c3.deadlines, c3.counterparties], [0, 0, 0, 0]);
+  assert.equal((await sql('select count(*)::int n from movements where not demo'))[0].n, realBefore + 1);
+  assert.ok((await sql(`select count(*)::int n from fx_rates where not demo and source like '%Exchange Rate%'`))[0].n >= 1, 'i tassi reali restano');
+});
+
+test('preventivo: eliminazione di una bozza; versione approvata reale solo da amministratore con motivo, torna in vigore la precedente', async () => {
+  const Y = year + 3;
+  const b1 = await rpc(U.resp, 'budget_draft', Y, null, 'Versione 1');
+  await rpc(U.resp, 'budget_item_save', { budget_id: b1.id, category_id: R.out['201'], project_id: R.prj['École Piccolino'], qty: 1, unit_cost: 100, currency: 'EUR' });
+  await rpc(U.admin, 'budget_approve', b1.id, 'delibera di prova 1');
+  const b2 = await rpc(U.resp, 'budget_draft', Y, null, 'Versione 2');
+  await rpc(U.admin, 'budget_approve', b2.id, 'delibera di prova 2');
+  await assert.rejects(rpc(U.resp, 'budget_delete', b2.id, 'errore grave'), /amministratore/);
+  await assert.rejects(rpc(U.admin, 'budget_delete', b2.id, ''), /motivo/);
+  await rpc(U.admin, 'budget_delete', b2.id, 'approvato per errore');
+  assert.equal((await sql('select status from budgets where id = $1', [b1.id]))[0].status, 'approved');
+  const b3 = await rpc(U.resp, 'budget_draft', Y, null, 'Bozza da buttare');
+  assert.equal((await rpc(U.resp, 'budget_delete', b3.id, null)).outcome, 'deleted');
+});
+
+test('documenti emessi: dichiarazione senza importo, buono d\'ordine, archiviazione', async () => {
+  const d = await rpc(U.op, 'issued_doc_save', { type: 'DIC', party_name: 'Volontaria di prova', currency: 'EUR', data: { tpl: 'vol', period: '2026' } });
+  const i = await rpc(U.op, 'issued_doc_issue', d.id);
+  assert.match(i.number, /^DIC-\d{4}-\d{3}$/);
+  const o = await rpc(U.op, 'issued_doc_save', { type: 'BDC', party_name: 'Fornitore', amount: 120, currency: 'EUR', data: { lines: [{ d: 'Quaderni', q: 10, p: 12 }] } });
+  await assert.rejects(rpc(U.op, 'issued_doc_archive', o.id, true), /forbidden/);
+  await assert.rejects(rpc(U.resp, 'issued_doc_archive', o.id, true), /bozza/);
+  await rpc(U.op, 'issued_doc_issue', o.id);
+  assert.ok((await rpc(U.resp, 'issued_doc_archive', o.id, true)).archived_at);
+  assert.equal((await rpc(U.resp, 'issued_doc_archive', o.id, false)).archived_at, null);
+});
+
+test('numerazione oltre 999: MOV-AAAA-1000 non tronca e non duplica', async () => {
+  const Y = year + 5;
+  await sql(`insert into app.ref_counters(org_id, year, last) values ($1, $2, 999) on conflict (org_id, year) do update set last = 999`, [ORG, Y]);
+  const ref = (await sql(`select app.next_ref($1, $2::date) r`, [ORG, `${Y}-03-01`]))[0].r;
+  assert.match(ref, new RegExp(`^MOV-${Y}-\\d{4}$`), ref);
+});

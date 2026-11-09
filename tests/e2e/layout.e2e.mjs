@@ -3,6 +3,7 @@
 // viene tagliato da un contenitore senza i puntini di sospensione. Le tabelle dentro un contenitore che
 // scorre in orizzontale sono ammesse e vengono solo contate.
 // Uso: npm run test:layout   (prepara il database di prova da solo)
+import { readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -77,8 +78,20 @@ async function seed() {
     amount: 0, currency: 'EUR', lang: 'both', data: { lines: [{ d: 'Formazione degli insegnanti sulla didattica inclusiva, tre giornate', q: 3, p: 180 }], ritenuta: 20, method: 'Bonifico' } }]))[0].r;
   const movId = typeof mov === 'object' ? (mov.id ?? mov) : mov;
   const org = (await pool.query('select org_id from profiles where id = $1', [sa])).rows[0].org_id;
+  // dati reali dell'ente (dai documenti di YouSud: rendiconto 2024, risposte RUNTS, Annual Report 2025) e logo, solo nel DB di prova
+  const logo = readFileSync(new URL('./yousud-logo.b64', import.meta.url), 'utf8').trim();
+  for (const [key, value] of [
+    ['org_details', { legal_name: 'YOUSUD ODV', address: 'Viale Carlo III di Borbone 8, Caserta', tax_id: '93126200612', iban: 'IT68W0514274890CC1086036145',
+      runts: 'Iscritta al RUNTS, sez. Organizzazioni di Volontariato, rep. n. 26545 del 15/04/2022', email: 'info@yousud.it', phone: '+39 329 817 0997', web: 'www.yousud.it' }],
+    ['org_logo', { mime: 'image/png', data: logo }], ['doc_signer', { name: 'Pasquale Esposito', role: 'Presidente' }]])
+    await pool.query('insert into settings(org_id, key, value, updated_by) values ($1, $2, $3, $4) on conflict (org_id, key) do update set value = excluded.value', [org, key, value, sa]);
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
     [org, 'Bando Fondazione per l’istruzione primaria in Madagascar 2026–2028', prj, today])).rows[0].id;
+  if (process.env.DEMO) {   // anteprima con un anno di dati dimostrativi (src/lib/demo)
+    const { execFileSync } = await import('node:child_process');
+    const payload = execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', 'scripts/demo-payload.mjs', String(Y)], { maxBuffer: 1 << 26 }).toString();
+    await as(sa, 'select public.demo_load($1)', [payload]);
+  }
   return { sa, movId, prj, grant, bi, advMov, doc0: doc0.id };
 }
 

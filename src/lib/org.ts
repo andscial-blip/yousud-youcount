@@ -11,8 +11,9 @@ export async function loadOrg(sb: Sb): Promise<Org & { id: string }> {
     sb.from('settings').select('key, value').in('key', ['org_details', 'org_logo']),
   ]);
   const get = (k: string) => ((set ?? []) as { key: string; value: unknown }[]).find((s) => s.key === k)?.value;
-  const od = (get('org_details') ?? {}) as { address?: string; tax_id?: string; iban?: string };
+  const od = (get('org_details') ?? {}) as { legal_name?: string; address?: string; tax_id?: string; iban?: string; runts?: string; email?: string; phone?: string; web?: string };
   const lg = get('org_logo') as { mime?: string; data?: string } | undefined;
   const logo = lg?.data && (lg.mime === 'image/png' || lg.mime === 'image/jpeg') && lg.data.length <= LOGO_MAX ? { mime: lg.mime as 'image/png' | 'image/jpeg', data: lg.data } : null;
-  return { id: org?.id ?? '', name: org?.name ?? 'YouSud ODV', address: od.address, tax_id: od.tax_id, iban: od.iban, logo };
+  return { id: org?.id ?? '', name: od.legal_name || org?.name || 'YouSud ODV', address: od.address, tax_id: od.tax_id, iban: od.iban, runts: od.runts,
+    email: od.email, phone: od.phone, web: od.web, logo };
 }
