@@ -807,6 +807,7 @@ table.recent .rc-d { display: block; margin-top: 2px; font-size: 12px; }
   form.filters:has(> input[type="search"], > .search):has(> select) > .btn,
   form.filters:has(> input[type="search"], > .search):has(> select) > details.more > summary { width: 100%; justify-content: center; }
   form.filters:has(> input[type="search"], > .search):has(> select) > label.check { min-height: 44px; }
+  form.filters:has(> input[type="search"], > .search):has(> select):has(> label.check) > .btn { grid-column: 1 / -1; }
 }
 /* Tablet: il titolo ha la precedenza; Cerca diventa solo icona e il sottotitolo si nasconde */
 @media (min-width: 761px) and (max-width: 1100px) {
