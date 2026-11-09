@@ -181,10 +181,12 @@ export const HELP: HelpEntry[] = [
   { href: '/admin/impostazioni', sec: 'set',
     it: ['Ente e impostazioni', [
       'Dati dell\'associazione usati nei documenti (denominazione legale, sede, codice fiscale, IBAN, iscrizione RUNTS, contatti), firmatario e logo.',
-      'Backup completo in Excel da salvare nel Drive condiviso di YouSud; chiavi per collegare altre app. I dati dimostrativi si caricano e si svuotano da qui, con conferma del numero.']],
+      'Backup completo in Excel da salvare nel Drive condiviso di YouSud; chiavi per collegare altre app. I dati dimostrativi si caricano e si svuotano da qui, con conferma del numero.',
+      'Solo il super amministratore, prima dell\'avvio: «Azzera movimenti e preventivi» elimina tutti i movimenti e i preventivi di collaudo. Serve un backup scaricato nelle ultime 24 ore e la parola AZZERA; la numerazione MOV riparte da 001.']],
     fr: ['Organisme et paramètres', [
       'Données de l\'association utilisées dans les documents (dénomination légale, siège, code fiscal, IBAN, inscription RUNTS, contacts), signataire et logo.',
-      'Sauvegarde complète en Excel à enregistrer dans le Drive partagé de YouSud ; clés pour relier d\'autres applications. Les données de démonstration se chargent et se vident ici, avec confirmation du nombre.']] },
+      'Sauvegarde complète en Excel à enregistrer dans le Drive partagé de YouSud ; clés pour relier d\'autres applications. Les données de démonstration se chargent et se vident ici, avec confirmation du nombre.',
+      'Seulement le super administrateur, avant le lancement : « Remettre à zéro » supprime tous les mouvements et budgets de test. Il faut une sauvegarde de moins de 24 heures et le mot AZZERA ; la numérotation MOV repart de 001.']] },
   { href: '/admin/registro', sec: 'set',
     it: ['Registro modifiche', ['Ogni creazione, modifica ed eliminazione con data, ora e autore, filtrabile per tabella e persona.']],
     fr: ['Historique des modifications', ['Chaque création, modification et suppression avec date, heure et auteur, filtrable par table et personne.']] },

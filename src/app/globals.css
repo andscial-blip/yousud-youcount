@@ -678,3 +678,5 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
   .vf-cards .mc-m form { margin-top: 6px; }
 }
 .side-who .side-role { color: inherit; opacity: .7; font-size: 12px; }
+.danger-panel { border-color: color-mix(in srgb, var(--tax) 45%, var(--line)); }
+.reset-list { margin: 0 0 10px; padding-left: 18px; line-height: 1.7; }

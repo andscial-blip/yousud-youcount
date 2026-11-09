@@ -86,3 +86,15 @@ export async function purgeDemo(form: FormData) {
   revalidatePath('/', 'layout');
   redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#demo` : '/admin/impostazioni?ok=demo_purged#demo');
 }
+
+// Azzeramento prima dell'avvio: elimina tutti i movimenti e tutti i preventivi (solo super amministratore,
+// con backup delle ultime 24 ore, numeri confermati e parola «AZZERA»: i controlli veri sono nel database).
+export async function resetAccounting(form: FormData) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('reset_accounting', {
+    p_movements: Number(form.get('movements')), p_budgets: Number(form.get('budgets')), p_word: String(form.get('word') ?? '').trim(),
+  });
+  revalidatePath('/', 'layout');
+  redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#azzera`
+    : `/admin/impostazioni?ok=reset&n=${data?.deleted?.movements ?? 0}&b=${data?.deleted?.budgets ?? 0}#azzera`);
+}

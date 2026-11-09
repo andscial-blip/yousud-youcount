@@ -339,3 +339,86 @@ end $$;
 -- Identità visiva dei progetti (scelta di Andrea: icona per tipo di attività). Vuoto = dedotto dal nome nell'app.
 alter table public.projects add column if not exists theme text
   check (theme is null or theme in ('school','sport','food','soap','agri','health','water','training','other'));
+
+-- ---------------------------------------------------------------------------------------------------------
+-- AZZERAMENTO prima dell'avvio (richiesta di Andrea): elimina TUTTI i movimenti (reali e demo) e TUTTI i preventivi,
+-- per ripartire da zero dopo il collaudo. Protezioni:
+--  · solo il super amministratore;
+--  · backup completo scaricato nelle ultime 24 ore (settings.last_backup, scritto dall'esportazione);
+--  · i numeri di movimenti e preventivi mostrati devono coincidere con quelli reali al momento dell'azzeramento;
+--  · parola di conferma «AZZERA».
+-- Ogni riga eliminata resta nel registro modifiche (old_row) e nel backup. Restano: conti, piano dei conti, progetti,
+-- controparti, utenti, tassi di cambio, impostazioni, giustificativi caricati (scollegati) e documenti emessi (scollegati).
+-- La numerazione MOV riparte da 001.
+create or replace function app.reset_mode() returns boolean language sql stable as $$
+  select coalesce(current_setting('app.reset', true), '') = 'on'
+$$;
+revoke execute on function app.reset_mode() from public, anon, authenticated;
+
+do $$
+declare v_src text;
+begin
+  select pg_get_functiondef('app.movements_guard()'::regprocedure) into v_src;
+  v_src := replace(v_src, $q$if old.status <> 'draft' and not (old.demo and app.bypass()) then$q$,
+                          $q$if old.status <> 'draft' and not (old.demo and app.bypass()) and not app.reset_mode() then$q$);
+  if position('app.reset_mode()' in v_src) = 0 then raise exception 'movements_guard non aggiornata'; end if;
+  execute v_src;
+end $$;
+
+create or replace function app.append_only() returns trigger language plpgsql set search_path = '' as $$
+begin
+  if tg_table_name = 'cash_counts' and tg_op = 'DELETE' and app.reset_mode() then return old; end if;
+  perform app.fail('immutable', tg_table_name || ' non si modifica né si cancella');
+  return null;
+end $$;
+
+create or replace function public.reset_counts() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select case when app.has_role('super_admin') then jsonb_build_object(
+    'movements', (select count(*) from public.movements where org_id = app.me_org()),
+    'movements_demo', (select count(*) from public.movements where org_id = app.me_org() and demo),
+    'budgets', (select count(*) from public.budgets where org_id = app.me_org()),
+    'budget_items', (select count(*) from public.budget_items where org_id = app.me_org()),
+    'budget_lines', (select count(*) from public.budget_lines where org_id = app.me_org()),
+    'reconciliations', (select count(*) from public.bank_reconciliations where org_id = app.me_org()),
+    'cash_counts', (select count(*) from public.cash_counts where org_id = app.me_org()),
+    'self_certs', (select count(*) from public.self_certs where org_id = app.me_org()),
+    'last_backup', (select value->>'at' from public.settings where org_id = app.me_org() and key = 'last_backup')) end
+$$;
+
+create or replace function public.reset_accounting(p_movements int, p_budgets int, p_word text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare v_org uuid := app.me_org(); v_c jsonb; v_bk timestamptz;
+begin
+  if not app.has_role('super_admin') then perform app.fail('forbidden', 'solo il super amministratore'); end if;
+  if coalesce(p_word, '') <> 'AZZERA' then perform app.fail('invalid', 'scrivi AZZERA per confermare'); end if;
+  v_c := public.reset_counts();
+  v_bk := nullif(v_c->>'last_backup', '')::timestamptz;
+  if v_bk is null or v_bk < now() - interval '24 hours' then
+    perform app.fail('invalid', 'scarica prima il backup completo (serve un backup delle ultime 24 ore)');
+  end if;
+  if (v_c->>'movements')::int <> coalesce(p_movements, -1) or (v_c->>'budgets')::int <> coalesce(p_budgets, -1) then
+    perform app.fail('invalid', format('i numeri sono cambiati (movimenti %s, preventivi %s): ricarica la pagina', v_c->>'movements', v_c->>'budgets'));
+  end if;
+  perform set_config('app.bypass', 'on', true);
+  perform set_config('app.reset', 'on', true);
+  update public.issued_docs set movement_id = null where org_id = v_org and movement_id is not null;
+  update public.deadlines set movement_id = null where org_id = v_org and movement_id is not null;
+  delete from public.self_certs where org_id = v_org;
+  delete from public.reconciliation_items where reconciliation_id in (select id from public.bank_reconciliations where org_id = v_org);
+  delete from public.bank_reconciliations where org_id = v_org;
+  delete from public.cash_counts where org_id = v_org;
+  delete from public.movement_documents where org_id = v_org;
+  delete from public.movements where org_id = v_org and reverses_id is not null;
+  delete from public.movements where org_id = v_org;
+  delete from app.ref_counters where org_id = v_org;
+  update public.budgets set based_on = null where org_id = v_org;
+  delete from public.budget_items where org_id = v_org;
+  delete from public.budgets where org_id = v_org;
+  delete from public.budget_lines where org_id = v_org;
+  perform set_config('app.reset', 'off', true);
+  perform set_config('app.bypass', 'off', true);
+  return jsonb_build_object('outcome', 'reset', 'deleted', v_c);
+end $$;
+revoke all on function public.reset_counts(), public.reset_accounting(int, int, text) from public, anon;
+grant execute on function public.reset_counts(), public.reset_accounting(int, int, text) to authenticated;

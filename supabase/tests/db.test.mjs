@@ -870,3 +870,22 @@ test('numerazione oltre 999: MOV-AAAA-1000 non tronca e non duplica', async () =
   const ref = (await sql(`select app.next_ref($1, $2::date) r`, [ORG, `${Y}-03-01`]))[0].r;
   assert.match(ref, new RegExp(`^MOV-${Y}-\\d{4}$`), ref);
 });
+
+test('azzeramento prima dell\'avvio: solo super admin, backup recente, numeri e parola di conferma; poi zero movimenti e preventivi', async () => {
+  const c = await rpc(U.sa, 'reset_counts');
+  assert.ok(c.movements > 0 && c.budgets > 0);
+  await assert.rejects(rpc(U.admin, 'reset_accounting', c.movements, c.budgets, 'AZZERA'), /super amministratore/);
+  await assert.rejects(rpc(U.sa, 'reset_accounting', c.movements, c.budgets, 'azzera'), /AZZERA/);
+  await assert.rejects(rpc(U.sa, 'reset_accounting', c.movements, c.budgets, 'AZZERA'), /backup/);
+  await sql(`insert into settings(org_id, key, value) values ($1, 'last_backup', jsonb_build_object('at', now())) on conflict (org_id, key) do update set value = excluded.value`, [ORG]);
+  await assert.rejects(rpc(U.sa, 'reset_accounting', c.movements + 1, c.budgets, 'AZZERA'), /ricarica/);
+  const auditBefore = (await sql(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete'`))[0].n;
+  await rpc(U.sa, 'reset_accounting', c.movements, c.budgets, 'AZZERA');
+  const after = await rpc(U.sa, 'reset_counts');
+  assert.deepEqual([after.movements, after.budgets, after.budget_items, after.reconciliations, after.cash_counts], [0, 0, 0, 0, 0]);
+  assert.equal((await sql(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete'`))[0].n - auditBefore, c.movements, 'ogni movimento eliminato resta nel registro');
+  // la numerazione riparte da 001
+  const m = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'dopo azzeramento' }));
+  assert.match(m.ref, new RegExp(`^MOV-${year}-001$`));
+  assert.ok((await sql('select count(*)::int n from accounts'))[0].n > 0, 'i conti restano');
+});

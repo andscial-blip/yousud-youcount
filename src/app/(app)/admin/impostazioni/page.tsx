@@ -2,7 +2,7 @@ import { ADMIN, can, requireMe } from '@/lib/session';
 import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
-import { loadDemo, purgeDemo, removeLogo, saveLogo, saveDocDetails, toggleSetting } from './actions';
+import { loadDemo, purgeDemo, resetAccounting, removeLogo, saveLogo, saveDocDetails, toggleSetting } from './actions';
 import { ApiKeys } from '@/components/ApiKeys';
 import { LogoUpload } from '@/components/LogoUpload';
 import { LOGO_MAX } from '@/lib/org';
@@ -19,6 +19,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const { ok, err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   const demo = can(me, ADMIN) ? ((await supabase.rpc('demo_counts')).data as Record<string, number> | null) : null;
+  const reset = me?.role === 'super_admin' ? ((await supabase.rpc('reset_counts')).data as Record<string, number | string | null> | null) : null;
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
   const [{ data }, { data: keys }] = await Promise.all([
     supabase.from('settings').select('key, value'),
@@ -37,7 +38,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     <div className="stack" style={{ maxWidth: 920 }}>
       <PageHead title={t('nav_settings')} />
       {ok && <div className="note ok" role="status">{ok === 'demo_loaded' ? (lang === 'fr' ? 'Données de démonstration chargées.' : 'Dati dimostrativi caricati.')
-        : ok === 'demo_purged' ? (lang === 'fr' ? 'Données de démonstration supprimées.' : 'Dati dimostrativi eliminati.') : '✓'}</div>}
+        : ok === 'demo_purged' ? (lang === 'fr' ? 'Données de démonstration supprimées.' : 'Dati dimostrativi eliminati.')
+        : ok === 'reset' ? (lang === 'fr' ? 'Comptabilité remise à zéro : mouvements et budgets supprimés. La numérotation repart de 001.' : 'Contabilità azzerata: movimenti e preventivi eliminati. La numerazione riparte da 001.') : '✓'}</div>}
       {err && <div className="note err">{err}</div>}
       <Panel>
         <table className="t">
@@ -90,6 +92,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           labels={{ pick: t('logo_pick'), hint: t('logo_hint'), save: t('logo_save'), remove: t('logo_remove'), big: t('logo_big'), bad: t('logo_bad') }} />
       </Panel>
       <DemoPanel lang={lang} counts={demo} />
+      <ResetPanel lang={lang} c={reset} />
       <Panel title={t('bk_title')}>
         <div className="panel-b stack" style={{ gap: 12 }}>
           <p className="muted" style={{ margin: 0 }}>{t('bk_text')}</p>
@@ -135,6 +138,37 @@ function DemoPanel({ lang, counts }: { lang: 'it' | 'fr'; counts: Record<string,
       ) : (
         <form action={loadDemo}><button className="btn" type="submit">{L('Carica i dati dimostrativi', 'Charger les données de démonstration')}</button></form>
       )}
+    </Panel>
+  );
+}
+
+// Azzeramento prima dell'avvio: solo il super amministratore. Mostra cosa verrà eliminato e cosa resta.
+function ResetPanel({ lang, c }: { lang: 'it' | 'fr'; c: Record<string, number | string | null> | null }) {
+  if (!c) return null;
+  const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
+  const bk = c.last_backup ? new Date(String(c.last_backup)) : null;
+  const fresh = !!bk && Date.now() - bk.getTime() < 24 * 3600e3;
+  const n = (k: string) => Number(c[k] ?? 0);
+  return (
+    <Panel title={L('Azzera movimenti e preventivi', 'Remettre à zéro mouvements et budgets')} pad className="danger-panel">
+      <div id="azzera" />
+      <p style={{ marginTop: 0 }}>{L('Da usare una sola volta, prima dell\'avvio, per eliminare i dati di collaudo. Elimina:', 'À utiliser une seule fois, avant le lancement, pour supprimer les données de test. Supprime :')}</p>
+      <ul className="reset-list">
+        <li><b className="num">{n('movements')}</b> {L('movimenti', 'mouvements')} ({n('movements_demo')} DEMO)</li>
+        <li><b className="num">{n('budgets')}</b> {L('preventivi', 'budgets')} {L('con', 'avec')} <b className="num">{n('budget_items')}</b> {L('righe', 'lignes')}{n('budget_lines') ? ` + ${n('budget_lines')} ${L('budget di progetto per gruppo', 'budgets de projet par groupe')}` : ''}</li>
+        <li><b className="num">{n('reconciliations')}</b> {L('riconciliazioni bancarie', 'rapprochements bancaires')}, <b className="num">{n('cash_counts')}</b> {L('conte di cassa', 'comptages de caisse')}, <b className="num">{n('self_certs')}</b> {L('autocertificazioni', 'attestations')}</li>
+      </ul>
+      <p className="muted">{L('Restano: conti, piano dei conti, progetti, controparti, utenti, tassi di cambio, impostazioni; giustificativi e documenti emessi restano in archivio, scollegati. La numerazione MOV riparte da 001. Ogni riga eliminata resta nel registro modifiche e nel backup.',
+        'Restent : comptes, plan comptable, projets, contreparties, utilisateurs, taux de change, paramètres ; justificatifs et documents émis restent archivés, sans lien. La numérotation MOV repart de 001. Chaque ligne supprimée reste dans l\'historique et dans la sauvegarde.')}</p>
+      <p className={fresh ? 'note ok' : 'note err'}>{fresh ? L(`Backup scaricato il ${bk!.toLocaleString('it-IT', { timeZone: 'Indian/Antananarivo' })}.`, `Sauvegarde téléchargée le ${bk!.toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' })}.`)
+        : L('Prima scarica il backup completo (serve un backup delle ultime 24 ore).', 'Téléchargez d\'abord la sauvegarde complète (moins de 24 heures).')} <a href="/api/v1/backup">{L('Scarica il backup', 'Télécharger la sauvegarde')}</a></p>
+      <form action={resetAccounting} className="stack" style={{ gap: 10 }}>
+        <input type="hidden" name="movements" value={n('movements')} /><input type="hidden" name="budgets" value={n('budgets')} />
+        <label className="field" style={{ maxWidth: 320 }}><span className="flabel">{L('Scrivi AZZERA per confermare', 'Écrivez AZZERA pour confirmer')}</span>
+          <input className="input" name="word" required pattern="AZZERA" autoComplete="off" /></label>
+        <label className="check"><input type="checkbox" required /> {L(`Confermo: elimina ${n('movements')} movimenti e ${n('budgets')} preventivi. L'operazione non si annulla dall'app.`, `Je confirme : supprimer ${n('movements')} mouvements et ${n('budgets')} budgets. L'opération ne s'annule pas depuis l'application.`)}</label>
+        <div><button className="btn danger" type="submit" disabled={!fresh}>{L('Azzera movimenti e preventivi', 'Remettre à zéro')}</button></div>
+      </form>
     </Panel>
   );
 }
