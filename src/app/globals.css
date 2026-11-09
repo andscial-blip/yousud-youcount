@@ -1016,3 +1016,7 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
 /* tema scuro: etichette piccole e voce «Altre» del grafico leggibili */
 :root[data-theme="dark"] .chip.tiny { background: #2C3746; color: #C9D6E8; }
 :root[data-theme="dark"] { --dn6: #8A9BB5; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chip.tiny { background: #2C3746; color: #C9D6E8; }
+  :root:not([data-theme="light"]) { --dn6: #8A9BB5; }
+}
