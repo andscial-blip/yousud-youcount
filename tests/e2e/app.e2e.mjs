@@ -133,7 +133,7 @@ try {
   });
   await check('operatore: elenco movimenti, la propria bozza visibile', async () => {
     await op.page.goto(`${base}/movimenti`);
-    await op.page.getByText('PROVA materiale scolastico').waitFor();
+    await op.page.locator('text=PROVA materiale scolastico >> visible=true').first().waitFor();
     const txt = await op.page.locator('main').innerText();
     assert.match(txt, /PROVA bozza operatore/);
     assert.match(txt, new RegExp(`MOV-${year}-\\d{3}`));
@@ -246,7 +246,7 @@ try {
   const ro = await login('lettore@test.local', { width: 390, height: 844 });
   await check('sola lettura: non vede le bozze altrui', async () => {
     await ro.page.goto(`${base}/movimenti`);
-    await ro.page.getByText('PROVA materiale scolastico').waitFor();
+    await ro.page.locator('text=PROVA materiale scolastico >> visible=true').first().waitFor();
     assert.doesNotMatch(await ro.page.locator('main').innerText(), /PROVA bozza operatore/);
     await ro.page.screenshot({ path: `${SHOTS}/ro_movimenti_mobile.png`, fullPage: true });
   });
@@ -262,7 +262,7 @@ try {
     await op.page.goto(`${base}/altro`);
     const txt = await op.page.locator('main').innerText();
     assert.doesNotMatch(txt, /Da verificare|Utenti e ruoli|Registro attività/);
-    assert.match(txt, /Fornitori e donatori/);
+    assert.match(txt, /Controparti/);
     await op.page.goto(`${base}/admin/utenti`);
     assert.match(await op.page.locator('main').innerText(), /riservata agli amministratori/);
   });
@@ -475,9 +475,9 @@ try {
     const [{ ref }] = (await pool.query(`select ref from movements where ref is not null order by ref limit 1`)).rows;
     await p.goto(`${base}/movimenti?q=${ref}`);
     assert.equal(await p.locator('main tbody tr').count(), 1, 'ricerca per numero MOV');
-    await p.goto(`${base}/movimenti?stato=nodoc`);
+    await p.goto(`${base}/movimenti?doc=no`);
     const [{ n }] = (await pool.query(`select count(*)::int n from movements where no_doc_reason is not null`)).rows;
-    assert.equal(await p.locator('main tbody tr').count(), Math.min(n, 100));
+    assert.equal(await p.locator('main .mv-table tbody tr').count(), Math.min(n, 100));
     await p.goto(`${base}/movimenti?q=zzz-niente`);
     await p.getByText('Nessun movimento corrisponde alla ricerca.').waitFor();
   });
@@ -503,6 +503,7 @@ try {
     const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
     const figs = await p.locator('.figs').innerText();
     assert.ok(figs.replace(/\s/g, '').includes(fmtEur.format(out).replace(/\s/g, '')), `uscite ${fmtEur.format(out)} in ${figs}`);
+    await p.goto(`${base}/analisi?vista=uscite`);
     await p.getByText('Uscite per gruppo di spesa e preventivo').waitFor();
     const [{ id: prj }] = (await pool.query(`select project_id id from v_ledger where kind = 'expense' and year = $1 and project_id is not null limit 1`, [year])).rows;
     await p.goto(`${base}/analisi?anno=${year}&progetto=${prj}`);
@@ -514,7 +515,6 @@ try {
   await check('anticipi: nuova persona, consegna, spesa con l\'anticipo, autocertificazione firmata', async () => {
     const p = rs.page;
     await p.goto(`${base}/anticipi`);
-    await p.getByRole('heading', { name: 'Anticipi' }).waitFor();
     await p.getByText('Nuova persona con anticipo').click();
     await p.getByLabel('Nome della persona').fill('Hery');
     await p.getByRole('button', { name: 'Crea', exact: true }).click();
@@ -743,13 +743,14 @@ try {
     assert.ok(await p.locator('figure svg rect').count() >= 24, 'barre mensili');
     assert.match(await p.locator('main').innerText(), /Uscite per progetto/);
     // autonomia di cassa: spesa media degli ultimi 3 mesi chiusi uguale al database
-    const panel = p.locator('section.panel', { hasText: 'Autonomia di cassa' });
+    const panel = p.locator('section.panel', { hasText: 'Cassa e autonomia' });
     const [{ burn }] = (await pool.query(`select coalesce(sum(amount_eur), 0)::float / 3 burn from v_ledger where kind = 'expense'
       and op_date >= date_trunc('month', current_date) - interval '3 months' and op_date < date_trunc('month', current_date)`)).rows;
     const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
-    assert.match(await panel.innerText(), new RegExp(`Spesa media mensile\\s*${fmtEur.format(burn).replace(/[.\u00a0\u202f ]/g, '.?\\s?')}`));
+    const e0 = fmtEur.format(Math.round(burn)).replace(/,00(?=\s?€)/, '');
+    assert.match(await panel.innerText(), new RegExp(`ultimi tre mesi chiusi \\(${e0.replace(/[.\u00a0\u202f ]/g, '.?\\s?')}\\)`));
     const opDash = await op.page.goto(`${base}/`).then(() => op.page.locator('main').innerText());
-    assert.doesNotMatch(opDash, /Autonomia di cassa/, 'operatore: non vede l\'autonomia di cassa');
+    assert.doesNotMatch(opDash, /Cassa e autonomia/, 'operatore: non vede l\'autonomia di cassa');
     await p.screenshot({ path: `${SHOTS}/resp_dashboard.png`, fullPage: true });
     await p.goto(`${base}/rendiconto?anno=${year}&modello=E`);
     const txt = await p.locator('main').innerText();
@@ -830,7 +831,7 @@ try {
   });
   await check('backup completo: righe identiche al database per ogni tabella; vietato agli operatori', async () => {
     await sa.page.goto(`${base}/`);
-    await sa.page.getByText('Non è ancora stato fatto un backup', { exact: false }).waitFor();
+    await sa.page.getByText('Nessun backup scaricato', { exact: false }).waitFor();
     const res = await sa.page.request.get(`${base}/api/v1/backup`);
     assert.equal(res.status(), 200);
     assert.match(res.headers()['content-disposition'], /YouCount-backup-\d{8}-\d{4}\.xlsx/);
@@ -862,7 +863,7 @@ try {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
       ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto|da verificare'], ['/admin/impostazioni', 'Quattro occhi'],
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
-      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/admin/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Verifica e storni']]) {
+      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Verifica in blocco']]) {
       await sa.page.goto(base + path);
       assert.match(await sa.page.locator('main').innerText(), new RegExp(text, 'i'), path);
     }
@@ -874,9 +875,9 @@ try {
     await sa.page.getByText('Mon compte').first().waitFor();
     await sa.page.goto(`${base}/`);
     const header = await sa.page.locator('header').innerText();
-    assert.match(header, /Chaque dépense, sa pièce justificative/);
+    assert.match(header, /Tableau de bord/);
     assert.match(await sa.page.locator('nav.side-nav').innerText(), /Tableau de bord/);
-    assert.match(await sa.page.locator('main').innerText(), /Trésorerie en Italie/);
+    assert.match(await sa.page.locator('main').innerText(), /Trésorerie et autonomie/);
     await sa.page.screenshot({ path: `${SHOTS}/sa_dashboard_fr.png`, fullPage: true });
     const [{ lang }] = (await pool.query(`select lang from profiles where email = 'andrea@test.local'`)).rows;
     assert.equal(lang, 'fr');

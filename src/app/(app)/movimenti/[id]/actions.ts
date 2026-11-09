@@ -36,6 +36,16 @@ export async function discardAction(form: FormData) {
   redirect('/movimenti?stato=draft');
 }
 
+// Elimina un movimento dimostrativo (DEMO). I movimenti reali registrati non si eliminano: si stornano.
+export async function deleteDemoAction(form: FormData) {
+  const id = String(form.get('id'));
+  if (form.get('confirm') !== 'on') back(id, `err=${encodeURIComponent('Spunta la conferma per eliminare il movimento dimostrativo.')}`);
+  const { error } = await (await createClient()).rpc('movement_delete', { p_id: id });
+  revalidatePath('/', 'layout');
+  if (error) back(id, `err=${encodeURIComponent(error.message)}`);
+  redirect('/movimenti?demo=si&ok=deleted');
+}
+
 // Autocertificazione: il database assegna il numero e copia i dati dal movimento; qui si genera il PDF,
 // lo si archivia come giustificativo (impronta SHA-256) e lo si collega al movimento.
 export async function selfCertAction(form: FormData) {

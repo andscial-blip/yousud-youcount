@@ -1,76 +1,79 @@
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
-import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
+import { Empty, ErrorNote, PageHead } from '@/components/Page';
+import { ProjectIcon } from '@/components/ProjectIcon';
+import { THEMES, themeOf } from '@/lib/project-theme';
 
 export const dynamic = 'force-dynamic';
 
-type L = { project_id: string | null; kind: string; amount_eur: string | null };
+type Led = { project_id: string | null; kind: string; amount_eur: string | null };
+type BI = { project_id: string | null; amount_eur: string | null; category: { direction: string } | null };
 
-export default async function Projects({ searchParams }: { searchParams: Promise<{ anno?: string }> }) {
-  const { anno } = await searchParams;
-  const year = Number(anno) || new Date().getFullYear();
+// Progetti come schede: preventivo dell'anno, uscite, entrate, saldo, residuo e quota usata, con un solo avviso
+// quando serve (oltre il preventivo, spesa in anticipo sul tempo, nessun preventivo). Il dettaglio è il cruscotto del progetto.
+export default async function Projects({ searchParams }: { searchParams: Promise<{ anno?: string; tutti?: string }> }) {
+  const sp = await searchParams;
+  const now = new Date();
+  const year = Number(sp.anno) || now.getFullYear();
   const { supabase, t, lang } = await requireMe();
-  const [{ data: projects, error }, { data: ledger }] = await Promise.all([
-    supabase.from('projects').select('id, name, kind, active').order('kind').order('name'),
-    supabase.from('v_ledger').select('project_id, kind, amount_eur').eq('year', year).neq('kind', 'transfer').limit(20000).returns<L[]>(),
+  const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
+  const { data: bud } = await supabase.from('budgets').select('id').eq('year', year).eq('status', 'approved').maybeSingle();
+  const [{ data: projects, error }, { data: ledger }, { data: items }] = await Promise.all([
+    supabase.from('projects').select('id, name, kind, active, demo, theme').order('kind').order('name'),
+    supabase.from('v_ledger').select('project_id, kind, amount_eur').eq('year', year).neq('kind', 'transfer').eq('out_of_report', false).limit(50000).returns<Led[]>(),
+    bud ? supabase.from('budget_items').select('project_id, amount_eur, category:categories(direction)').eq('budget_id', bud.id).returns<BI[]>() : Promise.resolve({ data: [] as BI[] }),
   ]);
-  const agg = new Map<string, { out: number; inc: number; n: number }>();
-  for (const l of ledger ?? []) {
-    const k = l.project_id ?? '-';
-    const a = agg.get(k) ?? { out: 0, inc: 0, n: 0 };
-    if (l.kind === 'expense') a.out += Number(l.amount_eur ?? 0); else a.inc += Number(l.amount_eur ?? 0);
-    a.n += 1;
-    agg.set(k, a);
-  }
-  // prima i progetti con movimenti nell'anno (per uscite), poi gli altri raccolti in fondo
-  const A = (id: string) => agg.get(id) ?? { out: 0, inc: 0, n: 0 };
-  const used = (projects ?? []).filter((p) => A(p.id).n > 0).sort((x, y) => A(y.id).out - A(x.id).out);
-  const idle = (projects ?? []).filter((p) => A(p.id).n === 0);
-  const sum = (k: 'out' | 'inc' | 'n') => used.reduce((s, p) => s + A(p.id)[k], 0);
-  const row = (p: NonNullable<typeof projects>[number]) => {
-    const a = A(p.id);
-    return (
-      <tr key={p.id} style={p.active ? undefined : { opacity: .6 }}>
-        <td><Link className="rowlink" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link> {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}</td>
-        <td className="r num">{a.out ? money(a.out, 'EUR', lang) : '–'}</td>
-        <td className="r num">{a.inc ? money(a.inc, 'EUR', lang) : '–'}</td>
-        <td className="r num">{a.n || '–'}</td>
-      </tr>
-    );
-  };
+  const agg = new Map<string, { out: number; inc: number; n: number; bOut: number; bIn: number }>();
+  const A = (id: string) => { let a = agg.get(id); if (!a) { a = { out: 0, inc: 0, n: 0, bOut: 0, bIn: 0 }; agg.set(id, a); } return a; };
+  for (const l of ledger ?? []) { if (!l.project_id) continue; const a = A(l.project_id); if (l.kind === 'expense') a.out += Number(l.amount_eur ?? 0); else a.inc += Number(l.amount_eur ?? 0); a.n += 1; }
+  for (const i of items ?? []) { if (!i.project_id) continue; const a = A(i.project_id); if (i.category?.direction === 'in') a.bIn += Number(i.amount_eur ?? 0); else a.bOut += Number(i.amount_eur ?? 0); }
+  const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0 : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
+  const all = (projects ?? []).filter((p) => p.active || A(p.id).n > 0);
+  const shown = all.filter((p) => sp.tutti || A(p.id).n > 0 || A(p.id).bOut > 0).sort((x, y) => (y.kind === 'structure' ? 1 : 0) - (x.kind === 'structure' ? 1 : 0) || A(y.id).out - A(x.id).out);
+  const hidden = all.length - shown.length;
+  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const tot = shown.reduce((s, p) => { const a = A(p.id); s.out += a.out; s.inc += a.inc; s.b += a.bOut; return s; }, { out: 0, inc: 0, b: 0 });
+
   return (
     <div className="stack">
-      <PageHead title={`${t('nav_projects')} ${year}`}>
-        <div className="seg">
-          <Link href={`/progetti?anno=${year - 1}`}>{year - 1}</Link>
-          <Link href={`/progetti?anno=${year}`} aria-current="true">{year}</Link>
-          <Link href={`/progetti?anno=${year + 1}`}>{year + 1}</Link>
-        </div>
-      </PageHead>
+      <PageHead title={`${t('nav_projects')} ${year}`} />
       <ErrorNote prefix={t('error_load')} error={error} />
-      <Panel>
-        {(projects ?? []).length === 0 ? <Empty text={t('none')} /> : used.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('prj_none_year').replace('{y}', String(year))}</p> : (
-          <table className="t">
-            <thead><tr><th>{t('project')}</th><th className="r">{t('prj_spent')}</th><th className="r">{t('prj_income')}</th>
-              <th className="r">{t('prj_moves')}</th></tr></thead>
-            <tbody>
-              {used.map((p) => row(p))}
-              {used.length > 1 && (
-                <tr className="tot"><td>{t('total')}</td><td className="r num">{money(sum('out'), 'EUR', lang)}</td>
-                  <td className="r num">{money(sum('inc'), 'EUR', lang)}</td><td className="r num">{sum('n')}</td></tr>
-              )}
-            </tbody>
-          </table>
-        )}
-        {idle.length > 0 && (
-          <details className="idle">
-            <summary className="panel-b muted">{t('prj_idle').replace('{n}', String(idle.length)).replace('{y}', String(year))}</summary>
-            <table className="t"><tbody>{idle.map((p) => row(p))}</tbody></table>
-          </details>
-        )}
-      </Panel>
-      <p className="muted" style={{ margin: 0 }}>{t('prj_note')}</p>
+      <div className="sstrip prj-sum">
+        <div><span>{L('Progetti attivi', 'Projets actifs')}</span><b className="num">{shown.length}</b></div>
+        <div><span>{L('Preventivo uscite', 'Budget dépenses')}</span><b className="num">{e0(tot.b)}</b></div>
+        <div><span>{L('Uscite', 'Dépenses')}</span><b className="num">{e0(tot.out)}</b></div>
+        <div><span>{L('Entrate', 'Recettes')}</span><b className="num">{e0(tot.inc)}</b></div>
+      </div>
+      {shown.length === 0 ? <Empty text={t('prj_none_year').replace('{y}', String(year))} /> : (
+        <div className="pcards">
+          {shown.map((p) => {
+            const a = A(p.id), used = a.bOut ? a.out / a.bOut : 0, res = a.bOut - a.out, bal = a.inc - a.out;
+            const alert = a.bOut && a.out > a.bOut ? { c: 'late', t: L(`oltre il preventivo di ${e0(a.out - a.bOut)}`, `au-delà du budget de ${e0(a.out - a.bOut)}`) }
+              : a.bOut && used > elapsed + 0.15 ? { c: 'soon', t: L('spesa più veloce del previsto', 'dépense plus rapide que prévu') }
+              : !a.bOut && a.out > 0 ? { c: 'mid', t: L('nessun preventivo', 'aucun budget') } : null;
+            return (
+              <Link key={p.id} className="pcard" href={`/progetti/${p.id}?anno=${year}`}>
+                <div className="pc-h"><ProjectIcon p={p} />
+                  <div className="pc-n"><b>{p.name}</b><small>{L(THEMES[themeOf(p)].it, THEMES[themeOf(p)].fr)} · {L(`${a.n} movimenti`, `${a.n} mouvements`)}{p.demo ? ' · DEMO' : ''}</small></div>
+                  {alert && <span className={`cdp ${alert.c}`}>{alert.t}</span>}</div>
+                <div className="pc-big"><span>{L('Uscite', 'Dépenses')}</span><b className="num">{e0(a.out)}</b>{a.bOut > 0 && <small>{L('su', 'sur')} {e0(a.bOut)} {L('previsti', 'prévus')}</small>}</div>
+                {a.bOut > 0 ? (
+                  <div className="pc-meter"><div className="meter" role="img" aria-label={`${Math.round(used * 100)} %`}>
+                    <i style={{ width: `${Math.min(100, used * 100).toFixed(1)}%`, background: a.out > a.bOut ? 'var(--tax)' : undefined }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>
+                    <span className="num">{Math.round(used * 100)}{' '}%</span></div>
+                ) : <div className="pc-meter none">{L('Senza preventivo per l\'anno', 'Sans budget pour l\'année')}</div>}
+                <dl className="pc-f">
+                  <div><dt>{L('Entrate', 'Recettes')}</dt><dd className="num">{e0(a.inc)}</dd></div>
+                  <div><dt>{L('Saldo', 'Solde')}</dt><dd className={`num ${bal < 0 ? 'neg' : ''}`}>{e0(bal)}</dd></div>
+                  <div><dt>{L('Residuo', 'Reste')}</dt><dd className={`num ${a.bOut && res < 0 ? 'neg' : ''}`}>{a.bOut ? e0(res) : '–'}</dd></div>
+                </dl>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+      {hidden > 0 && <p className="muted" style={{ margin: 0 }}><Link href={`/progetti?anno=${year}&tutti=1`}>{L(`Mostra anche ${hidden} progetti senza movimenti né preventivo nel ${year}`, `Afficher aussi ${hidden} projets sans mouvements ni budget en ${year}`)}</Link></p>}
     </div>
   );
 }

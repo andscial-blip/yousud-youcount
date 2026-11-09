@@ -3,12 +3,12 @@ import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, dateTime, money } from '@/lib/format';
 import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { BudgetBar } from '@/components/Charts';
-import { approveBudget, deleteItem, discardBudget, draftBudget, saveItem } from './actions';
+import { deleteBudget, approveBudget, deleteItem, discardBudget, draftBudget, saveItem } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 type Budget = { id: string; year: number; version: number; status: 'draft' | 'approved' | 'superseded'; title: string | null;
-  approval_ref: string | null; approved_at: string | null; created_at: string; based_on: string | null };
+  approval_ref: string | null; approved_at: string | null; created_at: string; based_on: string | null; demo?: boolean };
 type Item = { id: string; project_id: string | null; category_id: string; description: string | null; qty: string; unit: string | null;
   unit_cost: string; currency: string; fx_rate: string | null; amount: string; amount_eur: string; notes: string | null };
 type Cmp = { direction: 'in' | 'out'; group_id: string; group_code: string; category_id: string; category_code: string; cat_it: string;
@@ -21,7 +21,7 @@ const NEAR = 0.9;   // avviso quando l'eseguito arriva al 90% della voce
 // Preventivo annuale: versioni (originale e revisioni), righe per codice e progetto, confronto con il consuntivo.
 // Il preventivo è solo annuale: niente ripartizione mensile (non si sa in che mese avverranno le spese).
 export default async function BudgetPage({ searchParams }: {
-  searchParams: Promise<{ anno?: string; v?: string; vista?: string; progetto?: string; edit?: string; ok?: string; err?: string }>;
+  searchParams: Promise<{ anno?: string; v?: string; vista?: string; progetto?: string; edit?: string; ok?: string; err?: string; n?: string }>;
 }) {
   const sp = await searchParams;
   const year = Number(sp.anno) || new Date().getFullYear();
@@ -30,11 +30,12 @@ export default async function BudgetPage({ searchParams }: {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const resp = can(me, RESP), admin = can(me, ADMIN);
   const { data: versions } = await supabase.from('budgets')
-    .select('id, year, version, status, title, approval_ref, approved_at, created_at, based_on').eq('year', year).order('version').returns<Budget[]>();
+    .select('id, year, version, status, title, approval_ref, approved_at, created_at, based_on, demo').eq('year', year).order('version').returns<Budget[]>();
   const vs = versions ?? [];
   const approved = vs.find((b) => b.status === 'approved') ?? null;
   const draft = vs.find((b) => b.status === 'draft') ?? null;
-  const shown = vs.find((b) => b.id === sp.v) ?? draft ?? approved ?? vs[vs.length - 1] ?? null;
+  // si apre sulla versione in vigore; la bozza (revisione in preparazione) si apre dall'elenco versioni o da «Righe»
+  const shown = vs.find((b) => b.id === sp.v) ?? approved ?? draft ?? vs[vs.length - 1] ?? null;
   const view = sp.vista === 'schema' ? 'schema' : sp.vista === 'righe' || (!approved && shown?.status === 'draft') ? 'righe' : 'confronto';
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : '';
 
@@ -125,13 +126,8 @@ export default async function BudgetPage({ searchParams }: {
 
   return (
     <div className="stack">
-      <PageHead title={`${L('Preventivo', 'Budget')} ${year}`}>
-        <div className="seg" role="group" aria-label={L('Anno', 'Année')}>
-          <Link href={`/preventivo?anno=${year - 1}`} aria-label={String(year - 1)}>← {year - 1}</Link>
-          <Link href={`/preventivo?anno=${year + 1}`} aria-label={String(year + 1)}>{year + 1} →</Link>
-        </div>
-      </PageHead>
-      {sp.ok && <div className="note ok" role="status">{L('Salvato.', 'Enregistré.')}</div>}
+      <PageHead title={`${L('Preventivo', 'Budget')} ${year}`} />
+      {sp.ok && <div className="note ok" role="status">{sp.ok === 'deleted' ? L(`Preventivo eliminato (${sp.n ?? 0} righe).`, `Budget supprimé (${sp.n ?? 0} lignes).`) : L('Salvato.', 'Enregistré.')}</div>}
       {errText && <div className="note err">{errText}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
@@ -160,7 +156,7 @@ export default async function BudgetPage({ searchParams }: {
                 <li key={b.id} aria-current={b.id === shown?.id ? 'true' : undefined}>
                   <Link href={href({ v: b.id })}>
                     <b>{vLabel(b)}</b>{b.title ? ` · ${b.title}` : ''}
-                    <span className={`chip ${b.status === 'approved' ? 'ok' : b.status === 'draft' ? 'warn' : ''}`}>{stLabel(b.status)}</span>
+                    <span className={`chip ${b.status === 'approved' ? 'ok' : b.status === 'draft' ? 'warn' : ''}`}>{stLabel(b.status)}</span>{b.demo && <span className="chip warn">DEMO</span>}
                   </Link>
                   <span className="muted">{b.approved_at ? `${L('Approvato il', 'Approuvé le')} ${dateTime(b.approved_at, lang)} · ${b.approval_ref}` : `${L('Creato il', 'Créé le')} ${date(b.created_at)}`}</span>
                 </li>
@@ -180,6 +176,21 @@ export default async function BudgetPage({ searchParams }: {
                            placeholder={L('Es. delibera CdA del 15/01', 'Ex. délibération du CA du 15/01')} />
                     <button className="btn primary" type="submit">{L(`Approva ${vLabel(draft).toLowerCase()}`, `Approuver ${vLabel(draft).toLowerCase()}`)}</button>
                   </form>
+                )}
+                {shown && shown.status !== 'draft' && (admin || (shown.demo && resp)) && (
+                  <details className="danger-zone">
+                    <summary className="btn ghost">{L(`Elimina ${vLabel(shown).toLowerCase()}…`, `Supprimer ${vLabel(shown).toLowerCase()}…`)}</summary>
+                    <form action={deleteBudget} className="stack" style={{ gap: 8, marginTop: 10 }}>
+                      <input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={shown.id} />
+                      <p className="muted" style={{ margin: 0 }}>{shown.demo
+                        ? L('Versione dimostrativa: si eliminano la versione e tutte le sue righe.', 'Version de démonstration : la version et toutes ses lignes sont supprimées.')
+                        : L('Versione approvata reale: solo un amministratore, con il motivo. Si eliminano la versione e tutte le sue righe; resta traccia nel registro modifiche e torna in vigore la versione precedente, se c\'è.',
+                          'Version approuvée réelle : seulement un administrateur, avec le motif. La version et toutes ses lignes sont supprimées ; la trace reste dans l\'historique et la version précédente redevient en vigueur, s\'il y en a une.')}</p>
+                      {!shown.demo && <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={L('Motivo dell\'eliminazione', 'Motif de la suppression')} aria-label={L('Motivo', 'Motif')} />}
+                      <label className="check"><input type="checkbox" name="confirm" required /> {L(`Confermo: elimina ${vLabel(shown).toLowerCase()} del ${year} con ${(items ?? []).length} righe`, `Je confirme : supprimer ${vLabel(shown).toLowerCase()} ${year} avec ${(items ?? []).length} lignes`)}</label>
+                      <div><button className="btn danger" type="submit">{L('Elimina definitivamente', 'Supprimer définitivement')}</button></div>
+                    </form>
+                  </details>
                 )}
                 {draft && (
                   <form action={discardBudget}><input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={draft.id} />
@@ -226,10 +237,11 @@ export default async function BudgetPage({ searchParams }: {
                 <button className="btn" type="submit">{L('Filtra', 'Filtrer')}</button>
               </form>
               {(over.length > 0 || near.length > 0) && (
-                <div className="panel-b alerts">
+                <details className="panel-b alerts" open={over.length + near.length <= 4}>
+                  <summary className={`note ${over.length ? 'err' : ''}`}>{over.length ? L(`${over.length} codici oltre il preventivo`, `${over.length} codes au-delà du budget`) : ''}{over.length && near.length ? ' · ' : ''}{near.length ? L(`${near.length} vicini al limite`, `${near.length} proches de la limite`) : ''} <span className="muted">{L('· mostra il dettaglio', '· afficher le détail')}</span></summary>
                   {over.map((x) => <div key={x.r.category_id} className="note err">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {L('eseguito', 'réalisé')} {m(x.a)} {L('su', 'sur')} {m(x.b)} {L('previsti', 'prévus')} ({x.b > 0 ? `+${m(x.a - x.b)}` : L('voce non prevista', 'poste non prévu')})</div>)}
                   {near.map((x) => <div key={x.r.category_id} className="note">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {Math.round(((x.a + x.c) / x.b) * 100)}% {L('del previsto, impegni compresi', 'du prévu, engagements compris')}</div>)}
-                </div>
+                </details>
               )}
               {fr.length === 0 ? <Empty text={L('Nessuna voce.', 'Aucun poste.')} /> : (
                 <div className="tscroll">

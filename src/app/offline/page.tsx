@@ -1,16 +1,16 @@
-import { Logo, Wordmark } from '@/components/Logo';
+import { Logo } from '@/components/Logo';
 import { guestLang } from '@/lib/session';
 import { translator } from '@/lib/i18n';
 
 export default async function Offline() {
   const t = translator(await guestLang());
   return (
-    <main className="wrap login" style={{ maxWidth: 480, paddingTop: 48 }}>
-      <div className="login-head">
-        <Logo size={72} /><Wordmark tagline={t('app_tagline')} />
-      </div>
-      <h1 style={{ fontSize: 20, marginBottom: 10 }}>{t('offline_title')}</h1>
-      <div className="note">{t('offline_text')}</div>
+    <main className="auth">
+      <section className="auth-card">
+        <div className="auth-brand"><Logo size={72} /><h1 className="yc-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></h1><p>{t('app_tagline')}</p></div>
+        <h2 style={{ fontSize: 20, margin: '0 0 10px', textAlign: 'center' }}>{t('offline_title')}</h2>
+        <div className="note">{t('offline_text')}</div>
+      </section>
     </main>
   );
 }

@@ -3,6 +3,7 @@
 // viene tagliato da un contenitore senza i puntini di sospensione. Le tabelle dentro un contenitore che
 // scorre in orizzontale sono ammesse e vengono solo contate.
 // Uso: npm run test:layout   (prepara il database di prova da solo)
+import { readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -77,8 +78,20 @@ async function seed() {
     amount: 0, currency: 'EUR', lang: 'both', data: { lines: [{ d: 'Formazione degli insegnanti sulla didattica inclusiva, tre giornate', q: 3, p: 180 }], ritenuta: 20, method: 'Bonifico' } }]))[0].r;
   const movId = typeof mov === 'object' ? (mov.id ?? mov) : mov;
   const org = (await pool.query('select org_id from profiles where id = $1', [sa])).rows[0].org_id;
+  // dati reali dell'ente (dai documenti di YouSud: rendiconto 2024, risposte RUNTS, Annual Report 2025) e logo, solo nel DB di prova
+  const logo = readFileSync(new URL('./yousud-logo.b64', import.meta.url), 'utf8').trim();
+  for (const [key, value] of [
+    ['org_details', { legal_name: 'YOUSUD ODV', address: 'Viale Carlo III di Borbone 8, Caserta', tax_id: '93126200612', iban: 'IT68W0514274890CC1086036145',
+      runts: 'Iscritta al RUNTS, sez. Organizzazioni di Volontariato, rep. n. 26545 del 15/04/2022', email: 'info@yousud.it', phone: '+39 329 817 0997', web: 'www.yousud.it' }],
+    ['org_logo', { mime: 'image/png', data: logo }], ['doc_signer', { name: 'Pasquale Esposito', role: 'Presidente' }]])
+    await pool.query('insert into settings(org_id, key, value, updated_by) values ($1, $2, $3, $4) on conflict (org_id, key) do update set value = excluded.value', [org, key, value, sa]);
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
     [org, 'Bando Fondazione per l’istruzione primaria in Madagascar 2026–2028', prj, today])).rows[0].id;
+  if (process.env.DEMO) {   // anteprima con un anno di dati dimostrativi (src/lib/demo)
+    const { execFileSync } = await import('node:child_process');
+    const payload = execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', 'scripts/demo-payload.mjs', String(Y)], { maxBuffer: 1 << 26 }).toString();
+    await as(sa, 'select public.demo_load($1)', [payload]);
+  }
   return { sa, movId, prj, grant, bi, advMov, doc0: doc0.id };
 }
 
@@ -149,9 +162,9 @@ try {
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
     '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
-    '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/admin/cambi', '/admin/impostazioni', '/admin/registro',
+    '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/cambi', '/admin/impostazioni', '/admin/registro',
     '/preventivo', '/preventivo?vista=righe', '/preventivo?vista=schema', '/nuovo?tipo=expense&data=2026-11-03&importo=1234&desc=Riga%20estratto', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,
-    '/documenti-emessi/nuovo?tipo=NRS', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=fornitori', '/report?tipo=nodoc', '/report?tipo=cassa'];
+    '/documenti-emessi/nuovo?tipo=NRS', '/documenti-emessi/nuovo', '/documenti-emessi/nuovo?tipo=DIC', '/documenti-emessi/nuovo?tipo=BDC', '/analisi?vista=andamento', '/analisi?vista=uscite', '/analisi?vista=entrate', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=fornitori', '/report?tipo=nodoc', '/report?tipo=cassa'];
   // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri; /a/* = tutte le pagine sotto /a/) — prova rapida
   const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
   if (ONLY.length) PAGES.splice(0, PAGES.length, ...PAGES.filter((x) => ONLY.some((o) => x === o || x.startsWith(`${o}?`) || (o.endsWith('*') && x.startsWith(o.slice(0, -1))))));
@@ -183,6 +196,13 @@ try {
     }
     // negli screenshot di controllo niente schermata d'apertura (ogni pagina di prova è una sessione nuova)
     await ctx.addInitScript(() => { try { sessionStorage.setItem('yc-splash', '1'); } catch {} });
+    // SERVE=1: anteprima per il lavoro grafico. Salva la sessione e lascia attivi dati, servizi e app (tests/e2e/shot.mjs)
+    if (process.env.SERVE) {
+      await ctx.storageState({ path: '/tmp/yc-state.json' });
+      fs.writeFileSync('/tmp/yc-preview.json', JSON.stringify({ base, S }));
+      console.log('PREVIEW READY', base);
+      await new Promise(() => {});
+    }
     await page.close();
     for (const path of PAGES) {
       for (const w of WIDTHS) {

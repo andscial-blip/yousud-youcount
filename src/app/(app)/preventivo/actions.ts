@@ -56,3 +56,13 @@ export async function discardBudget(form: FormData) {
   if (error) err(year, error);
   done(year);
 }
+
+// Elimina un'intera versione: bozze e versioni DEMO (responsabile), versione approvata reale solo un amministratore,
+// con motivo; resta traccia nel registro modifiche e torna in vigore la versione precedente, se c'è.
+export async function deleteBudget(form: FormData) {
+  const year = String(form.get('year'));
+  if (form.get('confirm') !== 'on') back(year, `err=${encodeURIComponent('Spunta la conferma per eliminare il preventivo.')}`);
+  const { data, error } = await (await createClient()).rpc('budget_delete', { p_id: String(form.get('id')), p_reason: String(form.get('reason') ?? '') || null });
+  if (error) err(year, error);
+  done(year, `ok=deleted&n=${data?.items ?? 0}`);
+}

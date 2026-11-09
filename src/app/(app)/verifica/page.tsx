@@ -38,41 +38,47 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
       {err && <div className="note err">{err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
-        {(data ?? []).length === 0 ? <EmptyState title={t('empty_verify')} text={t('empty_verify_t')} badge="check" /> : (
-          <table className="t">
-            <thead><tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th className="hm">{t('date')}</th><th className="hm">{t('ref')}</th><th>{t('description')}</th><th className="hm">{t('code')}</th>
-              <th className="hm">{t('project')}</th><th className="hm">{t('account')}</th><th className="r">{t('amount')}</th><th className="hm" style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th className="hm">{t('entered_by')}</th><th className="hm" /></tr></thead>
+        {(data ?? []).length === 0 ? <EmptyState title={t('empty_verify')} text={t('empty_verify_t')} badge="check" /> : (<>
+          <table className="t keep vf-table">
+            <thead><tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th>{t('date')}</th><th>{t('description')}</th>
+              <th>{t('project')} · {t('account')}</th><th className="r">{t('amount')}</th><th style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th /></tr></thead>
             <tbody>
               {data!.map((r) => {
                 const action = mine(r) ? <span className="chip">{t('verify_own')}</span> : (
                   <form action={verifyMovement}>
                     <input type="hidden" name="id" value={r.id} />
                     <input type="hidden" name="version" value={r.version} />
-                    <button className="btn primary" type="submit" style={{ padding: '5px 10px' }}><Ico name="check" />{t('verify_btn')}</button>
+                    <button className="btn primary small" type="submit"><Ico name="check" />{t('verify_btn')}</button>
                   </form>
                 );
                 return (
                   <tr key={r.id}>
                     <td><KindIcon kind={r.kind} label={t(`k_${r.kind}`)} /></td>
-                    <td className="num hm">{date(r.op_date)}</td>
-                    <td className="num muted hm nw">{r.ref}</td>
-                    <td><Link className="rowlink" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>{r.reverses_id && <> <span className="chip">{t('reversal')}</span></>}
-                      {/* telefono: i dettagli sotto la descrizione e il pulsante a portata di dito */}
-                      <div className="so muted">{[date(r.op_date), r.ref, r.category?.code, r.project?.name, nm(lang, r.account), name.get(r.created_by)].filter(Boolean).join(' · ')}</div>
-                      <div className="so" style={{ marginTop: 6 }}>{action}</div></td>
-                    <td className="muted hm">{r.category?.code ?? '–'}</td>
-                    <td className="hm">{r.project?.name ?? '–'}</td>
-                    <td className="hm">{nm(lang, r.account)}</td>
+                    <td className="num nw">{date(r.op_date)}<div className="muted small">{r.ref}</div></td>
+                    <td><Link className="rowlink" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>{r.reverses_id && <> <span className="chip tiny">{t('reversal')}</span></>}
+                      <div className="muted small">{[r.category?.code, name.get(r.created_by)].filter(Boolean).join(' · ')}</div></td>
+                    <td>{r.project?.name ?? '–'}<div className="muted small">{nm(lang, r.account)}</div></td>
                     <td className="r num nw">{money(r.amount, r.currency, lang)}</td>
-                    <td className="hm">{r.kind !== 'transfer' && <DocIndicator count={r.docs?.[0]?.count ?? 0} noDocReason={r.no_doc_reason}
+                    <td>{r.kind !== 'transfer' && <DocIndicator count={r.docs?.[0]?.count ?? 0} noDocReason={r.no_doc_reason}
                       labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
-                    <td className="hm">{name.get(r.created_by) ?? '–'}</td>
-                    <td className="r hm">{action}</td>
+                    <td className="r">{action}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          <ul className="mv-cards vf-cards">
+            {data!.map((r) => (
+              <li key={r.id}><div className="vf-c">
+                <KindIcon kind={r.kind} label={t(`k_${r.kind}`)} />
+                <div className="mc-m"><Link className="mc-t" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>
+                  <span className="mc-s">{[date(r.op_date), r.ref, r.project?.name, name.get(r.created_by)].filter(Boolean).join(' · ')}</span>
+                  {mine(r) ? <span className="chip tiny" style={{ marginLeft: 0 }}>{t('verify_own')}</span> : (
+                    <form action={verifyMovement}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="version" value={r.version} />
+                      <button className="btn primary small" type="submit"><Ico name="check" />{t('verify_btn')}</button></form>)}</div>
+                <span className="mc-a num"><b>{money(r.amount, r.currency, lang)}</b></span>
+              </div></li>))}
+          </ul></>
         )}
       </Panel>
     </div>

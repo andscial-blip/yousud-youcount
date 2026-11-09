@@ -1,34 +1,37 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { I } from '@/lib/icons';
 import { createClient } from '@/lib/supabase/client';
 import { flushOutbox, listOutbox, OUTBOX_EVENT } from '@/lib/outbox';
 
-// Stato della rete nell'intestazione (in linea / senza rete, mai rosso) e invio automatico della coda:
-// all'apertura, al ritorno della rete, a ogni nuovo elemento e ogni 30 secondi finché resta qualcosa da inviare.
-export function NetStatus({ labels }: { labels: { online: string; offline: string; pending: string } }) {
-  const [online, setOnline] = useState(true);
-  const [pending, setPending] = useState(0);
+// Stato della sincronizzazione nello stile di Cairn: pallino verde (in linea) o rosso tenue (senza rete) e testo.
+// Un solo «motore» (SyncEngine) invia la coda: all'apertura, al ritorno della rete, a ogni nuovo elemento e ogni
+// 30 secondi; i distintivi (menu laterale, barra del telefono) leggono soltanto lo stato condiviso.
+
+type St = { online: boolean; pending: number; at: number | null };
+let st: St = { online: true, pending: 0, at: null };
+const subs = new Set<() => void>();
+const set = (p: Partial<St>) => { st = { ...st, ...p }; subs.forEach((f) => f()); };
+const useSt = () => useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => st, () => st);
+
+export function SyncEngine() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-
   const sync = useCallback(async () => {
     try {
       if (navigator.onLine) {
         const r = await flushOutbox(supabase);
         if (r.sent > 0) router.refresh();
       }
-      setPending((await listOutbox()).length);
+      set({ pending: (await listOutbox()).length, at: navigator.onLine ? Date.now() : st.at });
     } catch { /* IndexedDB non disponibile (navigazione privata): l'app funziona solo in linea */ }
   }, [supabase, router]);
 
   useEffect(() => {
-    const upd = () => { setOnline(navigator.onLine); if (navigator.onLine) sync(); };
-    const count = () => listOutbox().then((l) => setPending(l.length)).catch(() => {});
+    const upd = () => { set({ online: navigator.onLine }); if (navigator.onLine) sync(); };
+    const count = () => listOutbox().then((l) => set({ pending: l.length })).catch(() => {});
     upd();
-    sync();
     // una volta per sessione, con la rete: pagine principali salvate per l'uso offline
     try {
       if (navigator.onLine && 'serviceWorker' in navigator && !sessionStorage.getItem('yc-warm')) {
@@ -49,15 +52,33 @@ export function NetStatus({ labels }: { labels: { online: string; offline: strin
       clearInterval(timer);
     };
   }, [sync]);
+  return null;
+}
 
-  const label = (online ? labels.online : labels.offline) + (pending ? ` · ${pending} ${labels.pending}` : '');
+const agoLabel = (at: number | null, now: number, lang: string) => {
+  if (!at) return '';
+  const s = Math.round((now - at) / 1000);
+  if (s < 60) return lang === 'fr' ? 'à l’instant' : 'adesso';
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  return `${Math.round(s / 3600)} h`;
+};
+
+export function SyncBadge({ labels, compact = false, lang = 'it' }: {
+  labels: { ok: string; offline: string; pending: string }; compact?: boolean; lang?: string;
+}) {
+  const s = useSt();
+  const [now, setNow] = useState(0);
+  useEffect(() => { setNow(Date.now()); const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, [s.at]);
+  const tone = !s.online ? 'late' : s.pending ? 'soon' : 'far';
+  const label = !s.online ? `${labels.offline}${s.pending ? ` · ${s.pending} ${labels.pending}` : ''}`
+    : s.pending ? `${s.pending} ${labels.pending}`
+    : `${labels.ok}${s.at && now ? ` · ${agoLabel(s.at, now, lang)}` : ''}`;
   return (
-    <Link href="/sincronizzazione" className="net" aria-label={label} title={label}
-          style={{ color: online ? 'rgba(255,255,255,.72)' : 'var(--amber-soft)' }}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-           strokeLinejoin="round" aria-hidden="true"><path d={online ? I.cloud : I.cloudOff} /></svg>
-      {pending > 0 && <span className="net-badge">{pending}</span>}
-      <span className="desk">{label}</span>
+    <Link href="/sincronizzazione" className={`sync ${tone}${compact ? ' compact' : ''}`} aria-live="polite" title={label} aria-label={label}>
+      <span aria-hidden="true" className={`sync-dot ${s.online ? 'on' : 'off'}`} />
+      {compact
+        ? (s.pending > 0 && <span className="net-badge">{s.pending}</span>)
+        : <span className="sync-l">{label}</span>}
     </Link>
   );
 }

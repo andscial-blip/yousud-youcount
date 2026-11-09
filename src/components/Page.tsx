@@ -1,29 +1,36 @@
 import Link from 'next/link';
 import { Ico } from './Ui';
+import { PageHeadRow } from './PageHeadRow';
+import { CIcon } from './CIcon';
 import type { ReactNode } from 'react';
 
 export function PageHead({ title, lead, children }: { title: string; lead?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="h1row">
+    <PageHeadRow>
       {lead}
-      <h1>{title}</h1>
+      <h2>{title}</h2>
       <div className="spacer" />
       {children}
-    </div>
+    </PageHeadRow>
   );
 }
 
-export function Panel({ title, children, pad = false }: { title?: string; children: ReactNode; pad?: boolean }) {
+export function Panel({ title, children, pad = false, right, className = '' }: { title?: string; children: ReactNode; pad?: boolean; right?: ReactNode; className?: string }) {
   return (
-    <section className="panel" style={{ overflowX: 'auto' }}>
-      {title && <div className="panel-h"><h2>{title}</h2></div>}
+    <section className={`panel ${className}`}>
+      {(title || right) && <div className="panel-h">{title && <h2>{title}</h2>}{right && <><div className="spacer" />{right}</>}</div>}
       {pad ? <div className="panel-b">{children}</div> : children}
     </section>
   );
 }
 
+// «Come funziona questa sezione», come in Cairn.
+export function Help({ summary, children }: { summary: string; children: ReactNode }) {
+  return <details className="help"><summary><CIcon name="info" size={14} />{summary}</summary><div className="help-b">{children}</div></details>;
+}
+
 export function Empty({ text }: { text: string }) {
-  return <div className="panel-b muted">{text}</div>;
+  return <div className="empty">{text}</div>;
 }
 
 export function Denied({ text }: { text: string }) {
