@@ -110,9 +110,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const chipFor = (d: string) => { const n = days(d);
     return n < 0 ? { c: 'late', t: L(`scaduta da ${-n} g`, `en retard de ${-n} j`) } : n === 0 ? { c: 'late', t: L('oggi', 'aujourd\'hui') }
       : n <= 7 ? { c: 'soon', t: L(`tra ${n} g`, `dans ${n} j`) } : { c: 'mid', t: L(`tra ${n} g`, `dans ${n} j`) }; };
+  // chi può verificare va alla pagina di verifica in blocco; gli altri vedono l'elenco nel registro
+  const verHref = ['super_admin', 'admin', 'responsabile'].includes(me!.role) ? '/verifica' : '/movimenti?stato=recorded';
   const todo: Todo[] = [];
   if (toVerify) todo.push({ lvl: 'do', ic: 'check', title: L(`${toVerify} movimenti da verificare`, `${toVerify} mouvements à vérifier`), sub: L('Registrati ma non ancora controllati', 'Enregistrés mais pas encore contrôlés'),
-    href: '/movimenti?stato=recorded', act: L('Verifica', 'Vérifier') });
+    href: verHref, act: L('Verifica', 'Vérifier') });
   if (dueCount) todo.push({ lvl: 'warn', ic: 'wallet', title: L(`${dueCount} ${dueCount === 1 ? 'spesa da rimborsare' : 'spese da rimborsare'}`, `${dueCount} dépense${dueCount === 1 ? '' : 's'} à rembourser`),
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });
   if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi da giustificare da oltre 30 giorni: ${advLate}`, `Avances à justifier depuis plus de 30 jours : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
@@ -229,7 +231,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <small>1{'\u00a0'}€ · {ML[fx.month - 1]}{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
                 : <small>{L('Inserisci il tasso', 'Saisir le taux')}</small>}
             </Link>
-            <Link className={`htile${toVerify ? ' t-do' : ''}`} href="/movimenti?stato=recorded">
+            <Link className={`htile${toVerify ? ' t-do' : ''}`} href={verHref}>
               <span className="ht-l"><CIcon name="check" size={14} />{L('Da verificare', 'À vérifier')}</span>
               <b className="num">{toVerify ?? 0}</b><small>{L('movimenti', 'mouvements')}</small>
             </Link>

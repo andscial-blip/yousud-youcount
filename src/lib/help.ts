@@ -76,9 +76,9 @@ export const HELP: HelpEntry[] = [
       'Une contrepartie liée aux mouvements permet de filtrer le registre et de voir dans les Analyses les principaux fournisseurs et donateurs.']] },
   { href: '/verifica', sec: 'mov',
     it: ['Verifica in blocco', [
-      'Un responsabile controlla i movimenti registrati da altri e li segna come verificati. Un movimento verificato non si modifica più: un errore si corregge con uno storno.']],
+      'Un responsabile controlla i movimenti registrati da altri e li segna come verificati (il super amministratore può verificare anche i propri). Un movimento verificato non si modifica più: un errore si corregge con uno storno.']],
     fr: ['Vérification groupée', [
-      'Un responsable contrôle les mouvements enregistrés par d\'autres et les marque comme vérifiés. Un mouvement vérifié ne se modifie plus : une erreur se corrige par une contre-passation.']] },
+      'Un responsable contrôle les mouvements enregistrés par d\'autres et les marque comme vérifiés (le super administrateur peut aussi vérifier les siens). Un mouvement vérifié ne se modifie plus : une erreur se corrige par une contre-passation.']] },
   { href: '/conti', sec: 'cassa',
     it: ['Conti e cassa', [
       'Saldi di banca, cassa e mobile money in Italia (EUR) e in Madagascar (MGA): saldo iniziale più movimenti registrati e verificati. Un saldo negativo è in rosso: di solito manca una registrazione.',

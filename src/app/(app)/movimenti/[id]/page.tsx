@@ -74,7 +74,8 @@ export default async function MovementDetail({ params, searchParams }: {
   })));
   const resp = me && RESP.includes(me.role);
   const strict = fe?.value !== false;
-  const canVerify = resp && m.status === 'recorded' && !rev && !(strict && (m.created_by === me!.id || m.recorded_by === me!.id));
+  // il super amministratore verifica anche i propri movimenti; per gli altri vale «quattro occhi»
+  const canVerify = resp && m.status === 'recorded' && !rev && !(strict && me!.role !== 'super_admin' && (m.created_by === me!.id || m.recorded_by === me!.id));
   const canReverse = resp && m.status !== 'draft' && !m.reverses_id && !rev;
   const canEdit = !rev && (m.status === 'draft' ? (m.created_by === me!.id || resp) : m.status === 'recorded' && resp);
   const admin = Boolean(me && ADMIN.includes(me.role));

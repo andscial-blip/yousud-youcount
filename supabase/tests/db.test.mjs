@@ -196,6 +196,10 @@ test('quattro occhi e immutabilità del verificato', async () => {
   await assert.rejects(rpc(U.op, 'verify_movement', r.id, r.version), /forbidden/);
   const v = await rpc(U.resp2, 'verify_movement', r.id, r.version);
   assert.equal(v.status, 'verified');
+  // il super amministratore verifica anche ciò che ha registrato lui
+  const s = await rpc(U.sa, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova super amministratore' }));
+  const sv = await rpc(U.sa, 'verify_movement', s.id, s.version);
+  assert.equal(sv.status, 'verified');
   await assert.rejects(rpc(U.resp2, 'save_movement', { id: r.id, expected_version: v.version, amount: 1 }), /immutable/);
   // nemmeno chi ha accesso diretto al database (chiave di servizio, SQL) lo modifica o lo cancella
   await assert.rejects(sql('update movements set amount = 1 where id = $1', [r.id]), /immutable/);

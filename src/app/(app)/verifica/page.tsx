@@ -28,7 +28,7 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
   ]);
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   const strict = fourEyes?.value !== false;
-  const mine = (r: Row) => strict && (r.created_by === me!.id || r.recorded_by === me!.id);
+  const mine = (r: Row) => strict && me!.role !== 'super_admin' && (r.created_by === me!.id || r.recorded_by === me!.id);
 
   return (
     <div className="stack">
