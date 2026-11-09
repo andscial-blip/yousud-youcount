@@ -7,12 +7,12 @@ import { date, dateTime, money, nm } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
-import { discardAction, reverseAction, selfCertAction, signSelfCertAction, verifyAction } from './actions';
+import { deleteDemoAction, discardAction, reverseAction, selfCertAction, signSelfCertAction, verifyAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 type N = { name_it: string; name_fr: string } | null;
-type M = {
+type M = { demo?: boolean;
   id: string; ref: string | null; kind: 'income' | 'expense' | 'transfer'; status: 'draft' | 'recorded' | 'verified';
   op_date: string; doc_date: string | null; description: string; amount: string; currency: string; fx_rate: string | null;
   amount_eur: string | null; to_amount: string | null; notes: string | null; no_doc_reason: string | null;
@@ -130,6 +130,14 @@ export default async function MovementDetail({ params, searchParams }: {
               </dl>
             </div>
           </section>
+          {m.demo && resp && m.status !== 'draft' && !rev && (
+            <form action={deleteDemoAction} className="note" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+              <input type="hidden" name="id" value={m.id} />
+              <span>{lang === 'fr' ? 'Mouvement de démonstration (DEMO) : il peut être supprimé.' : 'Movimento dimostrativo (DEMO): si può eliminare.'}</span>
+              <label className="check"><input type="checkbox" name="confirm" required /> {lang === 'fr' ? `Je confirme la suppression de ${m.ref ?? 'ce mouvement'}` : `Confermo l'eliminazione di ${m.ref ?? 'questo movimento'}`}</label>
+              <button className="btn danger small" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
+            </form>
+          )}
           {(canEdit || canVerify || canReverse || m.status === 'draft') && (
             <div className="factions">
               {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}

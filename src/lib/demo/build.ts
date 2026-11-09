@@ -89,7 +89,8 @@ export function buildDemo(year: number, mgaRate = 5000) {
     for (const m of months) {
       const eur = r2((annual / months.length) * between(0.85, 1.15));
       if (eur < 3) continue;
-      const d = `${year}-${pad(m)}-${pad(Math.min(28, Math.ceil(R() * 28)))}`;
+      const maxDay = m === lastMonth && +today.slice(0, 4) === year ? Math.max(1, +today.slice(8, 10)) : 28;
+      const d = `${year}-${pad(m)}-${pad(Math.min(maxDay, Math.ceil(R() * maxDay)))}`;
       const field = it.cur === 'MGA' || (it.prj !== STRUCT && R() < 0.8);
       const rate = rateOf(d);
       const acc = field ? pick(['Cassa Missione', 'Cassa Missione', 'Banca Missione', 'Mvola Telma']) : 'Banca Italia';
@@ -105,7 +106,8 @@ export function buildDemo(year: number, mgaRate = 5000) {
   const plan = (code: string) => items.filter((i) => i.dir === 'in' && i.code === code).reduce((a, i) => a + i.eurTot, 0);
   const share = lastMonth / 12;
   for (let m = 1; m <= lastMonth; m++) {
-    const d = (day: number) => `${year}-${pad(m)}-${pad(day)}`;
+    const cap = m === lastMonth && +today.slice(0, 4) === year ? Math.max(1, +today.slice(8, 10)) : 31;
+    const d = (day: number) => `${year}-${pad(m)}-${pad(Math.min(day, cap, new Date(year, m, 0).getDate()))}`;
     const xmas = m === 12 ? 2.2 : m === 11 ? 1.4 : 1;
     movements.push({ k: 'income', st: 'verified', d: d(5), de: `Donazioni da privati · ${m}/${year}`, a: r2((plan('E101') * 0.72 / 12) * xmas * between(0.8, 1.2)), cur: 'EUR', acc: 'Banca Italia', code: 'E101', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'Bonifico', nd: 'DEMO: dato dimostrativo' });
     movements.push({ k: 'income', st: 'verified', d: d(12), de: 'Donazioni online', a: r2((plan('E101') * 0.18 / 12) * between(0.6, 1.4)), cur: 'EUR', acc: pick(['Paypal', 'Satispay']), code: 'E101', prj: STRUCT, cp: 'Donatori privati (demo)', pm: 'PayPal', nd: 'DEMO: dato dimostrativo' });
