@@ -9,11 +9,11 @@ import { DOC_GROUPS } from '@/lib/doc-model';
 export const dynamic = 'force-dynamic';
 
 // Nuovo documento: precompilato dal movimento quando si arriva dal dettaglio (?mov=…).
-export default async function NewDoc({ searchParams }: { searchParams: Promise<{ tipo?: string; mov?: string; err?: string; da?: string }> }) {
+export default async function NewDoc({ searchParams }: { searchParams: Promise<{ tipo?: string; mov?: string; err?: string; da?: string; progetto?: string }> }) {
   const sp = await searchParams;
   const { supabase, me, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  if (!Object.keys(DOC_TYPES).includes(sp.tipo ?? '')) return <TypePicker lang={lang} mov={sp.mov} />;
+  if (!Object.keys(DOC_TYPES).includes(sp.tipo ?? '')) return <TypePicker lang={lang} mov={sp.mov} prj={sp.progetto} />;
   const type = sp.tipo as IssuableType;
   const [{ data: projects }, { data: pms }, mv] = await Promise.all([
     supabase.from('projects').select('id, name').eq('active', true).order('name'),
@@ -35,7 +35,7 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
     counterparty_id: src.counterparty_id, party_name: src.party_name, party_tax_id: src.party_tax_id, party_address: src.party_address, amount: src.amount,
     currency: src.currency, data: { ...(src.data ?? {}), fx_rate: undefined } } : {
     type, lang: lang === 'fr' ? 'fr' : 'it', doc_date: new Date().toISOString().slice(0, 10), currency: m?.currency ?? 'EUR',
-    movement_id: m?.id ?? null, project_id: m?.project_id ?? null, counterparty_id: m?.counterparty_id ?? null,
+    movement_id: m?.id ?? null, project_id: m?.project_id ?? (/^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : null), counterparty_id: m?.counterparty_id ?? null,
     party_name: m ? (type === 'NRS' || type === 'ASP' ? m.paid_by ?? m.counterparty?.name ?? '' : m.counterparty?.name ?? m.paid_by ?? '') : '',
     party_tax_id: priv?.tax_code ?? '', party_address: priv?.address ?? '', amount: m ? Number(m.amount) : '',
     data: m ? { method, desc: m.description ?? '', causale_txt: type === 'RIC' ? m.description ?? '' : undefined, received_on: m.op_date, paid_on: m.op_date,
@@ -56,9 +56,9 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
 }
 
 // Passo 1 del flusso «Emetti nuovo documento»: scegliere il tipo (raggruppati come nell'archivio).
-function TypePicker({ lang, mov }: { lang: 'it' | 'fr'; mov?: string }) {
+function TypePicker({ lang, mov, prj }: { lang: 'it' | 'fr'; mov?: string; prj?: string }) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const m = /^[0-9a-f-]{36}$/.test(mov ?? '') ? `&mov=${mov}` : '';
+  const m = (/^[0-9a-f-]{36}$/.test(mov ?? '') ? `&mov=${mov}` : '') + (/^[0-9a-f-]{36}$/.test(prj ?? '') ? `&progetto=${prj}` : '');
   return (
     <div className="stack">
       <PageHead title={L('Emetti nuovo documento', 'Émettre un nouveau document')} />

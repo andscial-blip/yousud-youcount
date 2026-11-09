@@ -170,7 +170,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           <div className="mv-tw"><table className="t keep mv-table">
             <thead>
               <tr><th style={{ width: 36 }}><span className="sr-only">{t('type')}</span></th><th>{t('date')}</th><th>{t('description')}</th><th>{t('code')}</th>
-                <th>{t('project')}</th><th>{t('account')}</th><th className="r">{t('amount')}</th><th style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th>{t('status')}</th></tr>
+                <th>{t('project')} · {t('account')}</th><th className="r">{t('amount')}</th><th style={{ width: 32 }}><span className="sr-only">{t('f_doc')}</span></th><th>{t('status')}</th></tr>
             </thead>
             <tbody>
               {data!.map((m) => {
@@ -184,8 +184,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                       {m.reimb_status === 'due' && <span className="chip warn tiny">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
                       {(m.counterparty || m.method) && <div className="muted small">{[m.counterparty?.name, m.method ? nm(lang, m.method) : null].filter(Boolean).join(' · ')}</div>}</td>
                     <td className="muted nw">{m.category?.code ?? '–'}</td>
-                    <td>{m.project?.name ?? '–'}</td>
-                    <td>{nm(lang, m.account)}</td>
+                    <td>{m.project?.name ?? '–'}<div className="muted small">{nm(lang, m.account)}</div></td>
                     <td className={`r num nw ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                       <span className="two"><b>{m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>
                         {m.currency !== 'EUR' && m.amount_eur && <small>{money(Number(m.amount_eur), 'EUR', lang)}</small>}</span></td>

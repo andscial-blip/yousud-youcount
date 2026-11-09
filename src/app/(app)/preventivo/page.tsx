@@ -34,7 +34,8 @@ export default async function BudgetPage({ searchParams }: {
   const vs = versions ?? [];
   const approved = vs.find((b) => b.status === 'approved') ?? null;
   const draft = vs.find((b) => b.status === 'draft') ?? null;
-  const shown = vs.find((b) => b.id === sp.v) ?? draft ?? approved ?? vs[vs.length - 1] ?? null;
+  // si apre sulla versione in vigore; la bozza (revisione in preparazione) si apre dall'elenco versioni o da «Righe»
+  const shown = vs.find((b) => b.id === sp.v) ?? approved ?? draft ?? vs[vs.length - 1] ?? null;
   const view = sp.vista === 'schema' ? 'schema' : sp.vista === 'righe' || (!approved && shown?.status === 'draft') ? 'righe' : 'confronto';
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : '';
 
@@ -125,12 +126,7 @@ export default async function BudgetPage({ searchParams }: {
 
   return (
     <div className="stack">
-      <PageHead title={`${L('Preventivo', 'Budget')} ${year}`}>
-        <div className="seg" role="group" aria-label={L('Anno', 'Année')}>
-          <Link href={`/preventivo?anno=${year - 1}`} aria-label={String(year - 1)}>← {year - 1}</Link>
-          <Link href={`/preventivo?anno=${year + 1}`} aria-label={String(year + 1)}>{year + 1} →</Link>
-        </div>
-      </PageHead>
+      <PageHead title={`${L('Preventivo', 'Budget')} ${year}`} />
       {sp.ok && <div className="note ok" role="status">{sp.ok === 'deleted' ? L(`Preventivo eliminato (${sp.n ?? 0} righe).`, `Budget supprimé (${sp.n ?? 0} lignes).`) : L('Salvato.', 'Enregistré.')}</div>}
       {errText && <div className="note err">{errText}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
@@ -241,10 +237,11 @@ export default async function BudgetPage({ searchParams }: {
                 <button className="btn" type="submit">{L('Filtra', 'Filtrer')}</button>
               </form>
               {(over.length > 0 || near.length > 0) && (
-                <div className="panel-b alerts">
+                <details className="panel-b alerts" open={over.length + near.length <= 4}>
+                  <summary className={`note ${over.length ? 'err' : ''}`}>{over.length ? L(`${over.length} codici oltre il preventivo`, `${over.length} codes au-delà du budget`) : ''}{over.length && near.length ? ' · ' : ''}{near.length ? L(`${near.length} vicini al limite`, `${near.length} proches de la limite`) : ''} <span className="muted">{L('· mostra il dettaglio', '· afficher le détail')}</span></summary>
                   {over.map((x) => <div key={x.r.category_id} className="note err">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {L('eseguito', 'réalisé')} {m(x.a)} {L('su', 'sur')} {m(x.b)} {L('previsti', 'prévus')} ({x.b > 0 ? `+${m(x.a - x.b)}` : L('voce non prevista', 'poste non prévu')})</div>)}
                   {near.map((x) => <div key={x.r.category_id} className="note">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {Math.round(((x.a + x.c) / x.b) * 100)}% {L('del previsto, impegni compresi', 'du prévu, engagements compris')}</div>)}
-                </div>
+                </details>
               )}
               {fr.length === 0 ? <Empty text={L('Nessuna voce.', 'Aucun poste.')} /> : (
                 <div className="tscroll">
