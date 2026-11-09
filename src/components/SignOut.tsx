@@ -13,7 +13,8 @@ export function SignOut({ label, warn, variant = 'btn', icon }: { label: string;
       if (pending.length && !window.confirm(warn)) return;
       setBusy(true);
       if (pending.length) indexedDB.deleteDatabase('youcount');
-      await createClient().auth.signOut();
+      // esce solo da questo dispositivo: telefono e computer restano collegati
+      await createClient().auth.signOut({ scope: 'local' });
       if ('caches' in window) {
         const keys = await caches.keys();
         await Promise.all(keys.map((k) => caches.delete(k)));
