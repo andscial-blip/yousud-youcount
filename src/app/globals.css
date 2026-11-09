@@ -54,14 +54,14 @@ main:focus { outline: none; }
 /* schermata d'apertura: bianca, 3 secondi all'accesso (una volta per sessione), poi sfuma; finché è visibile non lascia
    passare i tocchi alla pagina sotto */
 #yc-splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; background: #fff; animation: yc-splash-out .35s ease var(--yc-sd, 2.65s) forwards; }
+  gap: 12px; background: #fff; animation: yc-splash-out .35s ease var(--yc-sd, 3.65s) forwards; }
 .yc-boot { position: fixed; inset: 0; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #fff; }
 :root[data-theme="dark"] .yc-boot { background: var(--bg); }
 :root[data-theme="dark"] #yc-splash { background: var(--bg); }
 #yc-splash p { margin: 0; color: var(--muted); font-size: 14px; }
 .nosplash #yc-splash { display: none; }
 @keyframes yc-splash-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-@media (prefers-reduced-motion: reduce) { #yc-splash { animation-duration: .01s; animation-delay: var(--yc-sd, 3s); } }
+@media (prefers-reduced-motion: reduce) { #yc-splash { animation-duration: .01s; animation-delay: var(--yc-sd, 4s); } }
 
 /* ---------- Intestazione dentro la pagina (pagine di dettaglio) ---------- */
 .h1row { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }

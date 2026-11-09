@@ -11,16 +11,17 @@ export function Wordmark({ as = 'b' }: { as?: 'b' | 'h1' }) {
   return <Tag className="wordmark yc-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></Tag>;
 }
 
-// Schermata d'apertura: fondo bianco, marchio, nome e frase al centro. Solo al primo caricamento della
-// sessione (lo script la nasconde subito alle aperture successive), poi sfuma da sola via CSS:
+// Schermata d'apertura: fondo bianco, marchio, nome e frase al centro, 4 secondi a ogni avvio dell'app
+// (lo script la nasconde subito ai ricaricamenti nella stessa sessione), poi sfuma da sola via CSS:
 // nessun JavaScript da attendere, e non intercetta i tocchi.
 export function Splash({ tagline }: { tagline: string }) {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html:
-        // 3 secondi in tutto contati dall'apertura dell'app, non dall'arrivo della pagina: se il server ha
-        // impiegato 2 secondi, la schermata resta solo un altro secondo
-        "try{var h=document.documentElement;if(sessionStorage.getItem('yc-splash'))h.classList.add('nosplash');else{sessionStorage.setItem('yc-splash','1');h.style.setProperty('--yc-sd',Math.max(0,Math.round(2650-performance.now()))+'ms')}}catch(e){}" }} />
+        // 4 secondi in tutto contati dall'apertura dell'app (non dall'arrivo della pagina), a ogni avvio;
+        // anche quando si torna all'app dopo almeno 5 minuti in sottofondo
+        "try{var h=document.documentElement,sd=function(){return Math.max(0,Math.round(3650-performance.now()))+'ms'};if(sessionStorage.getItem('yc-splash'))h.classList.add('nosplash');else{sessionStorage.setItem('yc-splash','1');h.style.setProperty('--yc-sd',sd())}"
+        + "var away=0;document.addEventListener('visibilitychange',function(){if(document.hidden){away=Date.now();return}if(away&&Date.now()-away>=300000){var e=document.getElementById('yc-splash');if(!e)return;h.style.setProperty('--yc-sd','3650ms');h.classList.remove('nosplash');e.style.animation='none';void e.offsetHeight;e.style.animation=''}})}catch(e){}" }} />
       <div id="yc-splash" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/youcount-mark.svg" alt="" width={88} height={88} />

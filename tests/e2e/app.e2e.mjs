@@ -978,7 +978,7 @@ try {
     await p.locator('.ask-a', { hasText: 'Risposta simulata' }).waitFor();
     assert.equal((await ro.page.request.post(`${base}/api/v1/translate`, { data: { ids: [] } })).status(), 403, 'sola lettura non scrive traduzioni');
   });
-  await check('schermata d\'apertura: bianca, visibile 3 secondi dopo l\'accesso, poi sparisce e non blocca l\'app', async () => {
+  await check('schermata d\'apertura: bianca, visibile 4 secondi dopo l\'accesso, poi sparisce e non blocca l\'app', async () => {
     const ctx = await browser.newContext({ splash: true });
     const p = await ctx.newPage();
     await p.goto(`${base}/`);
@@ -989,9 +989,9 @@ try {
     await p.locator('#yc-splash').waitFor({ state: 'attached' });
     const st = await p.locator('#yc-splash').evaluate((e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.animationDuration, parseFloat(c.animationDelay) * (c.animationDelay.endsWith('ms') ? 1 : 1000)]; });
     assert.deepEqual(st.slice(0, 2), ['rgb(255, 255, 255)', '0.35s'], 'bianca, con 0,35 s di dissolvenza');
-    // 3 s in tutto contati dall'apertura: l'attesa residua è al massimo 2,65 s (meno il tempo già passato)
-    assert.ok(st[2] >= 0 && st[2] <= 2650, `attesa residua ${st[2]} ms`);
-    await p.locator('#yc-splash').waitFor({ state: 'hidden', timeout: 6000 });
+    // 4 s in tutto contati dall'apertura: l'attesa residua è al massimo 3,65 s (meno il tempo già passato)
+    assert.ok(st[2] >= 0 && st[2] <= 3650, `attesa residua ${st[2]} ms`);
+    await p.locator('#yc-splash').waitFor({ state: 'hidden', timeout: 7000 });
     // alla pagina successiva della stessa sessione non ricompare
     await p.goto(`${base}/movimenti`);
     assert.equal(await p.locator('#yc-splash').isVisible(), false);

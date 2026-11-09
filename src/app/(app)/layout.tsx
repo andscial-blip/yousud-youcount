@@ -4,6 +4,7 @@ import { Logo, Splash, Wordmark } from '@/components/Logo';
 import { SyncBadge, SyncEngine } from '@/components/NetStatus';
 import { TableCards } from '@/components/TableCards';
 import { PerfBeacon } from '@/components/PerfBeacon';
+import { Prefetcher } from '@/components/Prefetcher';
 import { Tooltip } from '@/components/Tooltip';
 import { CIcon } from '@/components/CIcon';
 import { SignOut } from '@/components/SignOut';
@@ -28,6 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const years = Array.from({ length: cy + 2 - 2022 }, (_, i) => cy + 1 - i);
   const syncL = { ok: t('sync_ok'), offline: t('sync_off'), pending: t('sync_wait') };
   const warn = t('q_signout_warn');
+  // prima le schede della barra in basso, poi le altre sezioni
+  const pre = [...new Set(['/movimenti', '/conti', ...(canWrite ? ['/nuovo'] : []), '/', ...secs.map((s) => s.subs[0]?.href).filter((h): h is string => Boolean(h))])];
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(t('lang_code'))}` }} />
@@ -59,6 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <TableCards />
       <Tooltip />
       <PerfBeacon />
+      <Prefetcher hrefs={pre} />
     </>
   );
 }
