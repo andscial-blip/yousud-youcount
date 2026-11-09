@@ -31,16 +31,23 @@ export async function saveItem(form: FormData) {
     notes: String(form.get('notes') ?? ''),
   };
   if (!p.category_id || p.unit_cost == null) back(year, 'err=missing&vista=righe');
-  const { error } = await (await createClient()).rpc('budget_item_save', { p });
-  if (error) err(year, error);
-  done(year, 'ok=1&vista=righe');
+  const sb = await createClient();
+  // riga esistente: budget_item_amend vale per la bozza e, con il motivo, per la versione in vigore
+  const { error } = p.id
+    ? await sb.rpc('budget_item_amend', { p, p_reason: String(form.get('reason') ?? '') || null })
+    : await sb.rpc('budget_item_save', { p });
+  const v = `&v=${encodeURIComponent(p.budget_id)}`;
+  if (error) back(year, `err=${encodeURIComponent(error.message)}&vista=righe${v}${p.id ? `&edit=${p.id}` : ''}`);
+  done(year, `ok=1&vista=righe${v}`);
 }
 
 export async function deleteItem(form: FormData) {
   const year = String(form.get('year'));
-  const { error } = await (await createClient()).rpc('budget_item_delete', { p_id: String(form.get('id')) });
+  const v = form.get('budget_id') ? `&v=${encodeURIComponent(String(form.get('budget_id')))}` : '';
+  if (form.get('confirm') !== 'on') back(year, `err=${encodeURIComponent('Spunta la conferma per eliminare la riga.')}&vista=righe${v}`);
+  const { error } = await (await createClient()).rpc('budget_item_remove', { p_id: String(form.get('id')), p_reason: String(form.get('reason') ?? '') || null });
   if (error) err(year, error);
-  done(year, 'ok=1&vista=righe');
+  done(year, `ok=row_deleted&vista=righe${v}`);
 }
 
 export async function approveBudget(form: FormData) {

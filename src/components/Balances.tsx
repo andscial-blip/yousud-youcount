@@ -9,7 +9,26 @@ export type Balance = {
 
 export function BalancesTable({ rows, t, lang, detail = false }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean }) {
   return (
-    <table className="t">
+    <>
+    {/* telefono: una scheda per conto (nome e saldo sulla stessa riga, dettagli sotto a pezzi interi) */}
+    <ul className="bal-cards">
+      {rows.map((r) => (
+        <li key={r.account_id}>
+          <div className="bc-top"><b>{nm(lang, r)}</b>
+            <span className={`num bc-bal${Number(r.balance) < 0 ? ' neg' : ''}`}>{money(r.balance, r.currency, lang)}</span></div>
+          {detail && <div className="bc-det num">
+            <span>{t('acc_opening')} {money(r.opening_balance, r.currency, lang)}</span>
+            <span>{t('acc_in')} {money(r.movements_in, r.currency, lang)}</span>
+            <span>{lang === 'fr' ? 'Sorties' : 'Uscite'} {money(r.movements_out, r.currency, lang)}</span>
+          </div>}
+          {r.unverified > 0 && <span className="chip warn tiny">{r.unverified} {t('nav_verify').toLowerCase()}</span>}
+        </li>
+      ))}
+    </ul>
+    <table className={`t keep bal-t${detail ? ' bal-fixed' : ''}`}>
+      {/* stesse larghezze in ogni tabella (Italia, Madagascar): le colonne restano allineate tra un riquadro e l'altro */}
+      {detail && <colgroup><col style={{ width: '25%' }} /><col style={{ width: '8%' }} /><col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
+        <col style={{ width: '17%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} /></colgroup>}
       <thead>
         <tr>
           <th>{t('account')}</th><th>{t('place')}</th>
@@ -34,5 +53,6 @@ export function BalancesTable({ rows, t, lang, detail = false }: { rows: Balance
         ))}
       </tbody>
     </table>
+    </>
   );
 }

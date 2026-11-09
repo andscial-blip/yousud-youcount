@@ -72,7 +72,7 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
       <Panel>
         <form className="filters panel-h" action="/documenti-emessi" role="search">
           <input type="hidden" name="anno" value={year} />{sez && <input type="hidden" name="sez" value={sez.k} />}
-          <input className="input grow" type="search" name="q" defaultValue={sp.q ?? ''} placeholder={L('Cerca numero, controparte, movimento, progetto', 'Rechercher numéro, contrepartie, mouvement, projet')}
+          <input className="input grow" type="search" name="q" defaultValue={sp.q ?? ''} placeholder={L('Cerca numero o controparte', 'Numéro ou contrepartie')} title={L('Cerca per numero, controparte, movimento o progetto', 'Rechercher par numéro, contrepartie, mouvement ou projet')}
                  aria-label={L('Cerca', 'Rechercher')} />
           <select className="input" name="stato" defaultValue={stato} aria-label={L('Stato', 'Statut')}>
             <option value="">{L('Tutti gli stati', 'Tous les statuts')}</option><option value="draft">{L('Bozze', 'Brouillons')}</option>

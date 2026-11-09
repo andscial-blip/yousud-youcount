@@ -118,7 +118,27 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
           {sp.q && <Link className="btn ghost" href={`/cambi?anno=${year}`}>{L('Azzera', 'Réinitialiser')}</Link>}
         </form>
         {rows.length === 0 ? <div className="empty">{L(`Nessun tasso per il ${year}.`, `Aucun taux pour ${year}.`)}</div> : (
-          <table className="t" data-cards="">
+          <>
+          {/* telefono: un mese per scheda */}
+          <ul className="fx-cards">
+            {rows.map((r) => {
+              const p = prevOf(r), a = ap.get(r.month);
+              return (
+                <li key={key(r)} className={key(r) === (current && key(current)) ? 'hl' : ''}>
+                  <div className="fc-top"><span className="fc-m">{M[r.month - 1]} {r.year}{r.demo && <span className="chip warn tiny">DEMO</span>}</span>
+                    <b className="num">{mga(Number(r.rate))}</b></div>
+                  <div className="fc-det num">
+                    <span>{L('variazione', 'variation')} {p ? pct(Number(r.rate), Number(p.rate)) : '–'}</span>
+                    {a && a.w ? <span>{L('applicato', 'appliqué')} {n(Math.round(a.s / a.w))}{a.min === a.max ? '' : ` (${n(a.min)}–${n(a.max)})`}</span> : null}
+                    <span>{a?.c ?? 0} {L('movimenti', 'mouvements')}</span>
+                  </div>
+                  <div className="fc-src"><span>{r.source ?? '–'} · {name.get(r.updated_by ?? '') ?? '–'}, {dateTime(r.updated_at, lang)}</span>
+                    {writer && <Link className="btn ghost small" href={`/cambi?anno=${year}&mese=${key(r)}`}>{L('Correggi', 'Corriger')}</Link>}</div>
+                </li>
+              );
+            })}
+          </ul>
+          <table className="t fx-t" data-cards="">
             <thead><tr><th>{t('period')}</th><th className="r">{L('Tasso del mese', 'Taux du mois')}</th><th className="r">{L('Variazione', 'Variation')}</th>
               <th className="r">{L('Applicato (media)', 'Appliqué (moyenne)')}</th><th className="r">{L('Movimenti', 'Mouvements')}</th><th>{t('fx_source')}</th><th>{L('Inserito da', 'Saisi par')}</th>{writer && <th />}</tr></thead>
             <tbody>
@@ -140,6 +160,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               })}
             </tbody>
           </table>
+          </>
         )}
         <div className="panel-f"><span className="muted">{L('Tasso corrente aggiornato al', 'Taux courant au')} {current ? date(`${key(current)}-01`).slice(3) : '–'}</span>
           {can(me, ['super_admin', 'admin']) && <Link className="btn ghost small" href="/admin/registro?tab=fx_rates">{L('Storico delle modifiche', 'Historique des modifications')}</Link>}</div>

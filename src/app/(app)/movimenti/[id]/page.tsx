@@ -2,12 +2,12 @@ import { docName } from '@/lib/doc-name';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
-import { requireMe, RESP } from '@/lib/session';
+import { ADMIN, requireMe, RESP } from '@/lib/session';
 import { date, dateTime, money, nm } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
-import { deleteDemoAction, discardAction, reverseAction, selfCertAction, signSelfCertAction, verifyAction } from './actions';
+import { deleteDemoAction, discardAction, purgeAction, reverseAction, selfCertAction, signSelfCertAction, unverifyAction, verifyAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +77,10 @@ export default async function MovementDetail({ params, searchParams }: {
   const canVerify = resp && m.status === 'recorded' && !rev && !(strict && (m.created_by === me!.id || m.recorded_by === me!.id));
   const canReverse = resp && m.status !== 'draft' && !m.reverses_id && !rev;
   const canEdit = !rev && (m.status === 'draft' ? (m.created_by === me!.id || resp) : m.status === 'recorded' && resp);
+  const admin = Boolean(me && ADMIN.includes(me.role));
+  // verificato: per correggerlo un amministratore ne riapre la verifica (con motivo); poi si modifica e si riverifica
+  const canReopen = admin && m.status === 'verified' && !rev && !m.reverses_id;
+  const FR = lang === 'fr';
   // autocertificazione: per una spesa senza giustificativo (o con l'AUT già emessa), non verificata, non da chi legge soltanto
   const writer = Boolean(me && me.role !== 'read_only');
   const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
@@ -95,7 +99,7 @@ export default async function MovementDetail({ params, searchParams }: {
         <StatusChip s={m.status} label={t(`st_${m.status}`)} />
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
-      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ''}</div>}
+      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
       {errText && <div className="note err">{errText}</div>}
 
       <div className="detail">
@@ -137,6 +141,37 @@ export default async function MovementDetail({ params, searchParams }: {
               <label className="check"><input type="checkbox" name="confirm" required /> {lang === 'fr' ? `Je confirme la suppression de ${m.ref ?? 'ce mouvement'}` : `Confermo l'eliminazione di ${m.ref ?? 'questo movimento'}`}</label>
               <button className="btn danger small" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
             </form>
+          )}
+          {canReopen && (
+            <details className="danger-zone reopen" id="riapri">
+              <summary className="btn">{FR ? 'Corriger ce mouvement…' : 'Correggi questo movimento…'}</summary>
+              <form action={unverifyAction} className="stack" style={{ gap: 8, marginTop: 10 }}>
+                <input type="hidden" name="id" value={m.id} />
+                <p className="muted" style={{ margin: 0 }}>{FR
+                  ? 'Le mouvement est vérifié : pour le corriger, sa vérification est rouverte (il redevient « enregistré »), puis il faudra le vérifier à nouveau. Le motif reste dans les notes et l\'historique.'
+                  : 'Il movimento è verificato: per correggerlo se ne riapre la verifica (torna «registrato»), poi andrà verificato di nuovo. Il motivo resta nelle note e nello storico.'}</p>
+                <label className="field"><span>{FR ? 'Motif' : 'Motivo'}</span>
+                  <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={FR ? 'Ex. code comptable erroné' : 'Es. codice contabile sbagliato'} /></label>
+                <div><button className="btn" type="submit">{FR ? 'Rouvrir et corriger' : 'Riapri e correggi'}</button></div>
+              </form>
+            </details>
+          )}
+          {admin && !m.demo && m.status !== 'draft' && (
+            <details className="danger-zone" id="elimina">
+              <summary className="btn ghost">{FR ? 'Supprimer définitivement…' : 'Elimina definitivamente…'}</summary>
+              <form action={purgeAction} className="stack" style={{ gap: 8, marginTop: 10 }}>
+                <input type="hidden" name="id" value={m.id} />
+                <p className="muted" style={{ margin: 0 }}>{FR
+                  ? 'En comptabilité, on corrige normalement par une contre-passation. La suppression définitive retire le mouvement (et son éventuelle contre-passation) des soldes et des rapports ; ses données restent dans le journal des modifications.'
+                  : 'In contabilità di norma si corregge con lo storno. L\'eliminazione definitiva toglie il movimento (e il suo eventuale storno) da saldi e report; i suoi dati restano nel registro modifiche.'}</p>
+                <label className="field"><span>{FR ? 'Motif' : 'Motivo'}</span>
+                  <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={FR ? 'Ex. saisi deux fois' : 'Es. inserito due volte'} /></label>
+                <label className="field"><span>{FR ? 'Votre mot de passe' : 'La tua password'}</span>
+                  <input className="input" name="password" type="password" required autoComplete="current-password" /></label>
+                <label className="check"><input type="checkbox" name="confirm" required /> {FR ? `Je supprime définitivement ${m.ref ?? 'ce mouvement'}` : `Elimino definitivamente ${m.ref ?? 'questo movimento'}`}</label>
+                <div><button className="btn danger" type="submit">{FR ? 'Supprimer définitivement' : 'Elimina definitivamente'}</button></div>
+              </form>
+            </details>
           )}
           {(canEdit || canVerify || canReverse || m.status === 'draft') && (
             <div className="factions">

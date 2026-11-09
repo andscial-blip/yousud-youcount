@@ -41,11 +41,6 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
   return (
     <div className="stack">
       <PageHead title={`${t('rep_title')} ${year}`}>
-        <div className="seg noprint">
-          <Link href={q(year - 1)}>{year - 1}</Link>
-          <Link href={q(year)} aria-current="true">{year}</Link>
-          <Link href={q(year + 1)}>{year + 1}</Link>
-        </div>
       </PageHead>
       <div className="h1row noprint" style={{ gap: 8 }}>
         <div className="seg">

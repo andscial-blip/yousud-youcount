@@ -21,8 +21,9 @@ export async function middleware(req: NextRequest) {
       },
     },
   });
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) {
+  // verifica locale del token (chiavi pubbliche in memoria); rinnova la sessione se è scaduta
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.search = path === '/' ? '' : `?next=${encodeURIComponent(path)}`;

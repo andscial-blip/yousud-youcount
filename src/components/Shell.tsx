@@ -58,7 +58,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
     const q = new URLSearchParams(sp.toString()); q.set('anno', String(y));
     router.push(`${path}?${q.toString()}`);
   };
-  const showYear = YEAR_PATHS.includes(path);
+  const showYear = YEAR_PATHS.includes(path) || /^\/progetti\/[^/]+$/.test(path);
   const ys = years.includes(year) ? years : [...years, year].sort((a, b) => b - a);
   return (
     <header className="phead">
@@ -142,7 +142,7 @@ function CommandPalette({ secs, onClose, labels }: { secs: NavSec[]; onClose: ()
 }
 
 // Telefono: Dashboard, Movimenti, «+» al centro, Tesoreria, Altro (le altre sezioni in un foglio).
-export function BottomNav({ secs, labels, canWrite }: { secs: NavSec[]; labels: { more: string; newMov: string; other: string; close: string; signOut: React.ReactNode }; canWrite: boolean }) {
+export function BottomNav({ secs, labels, canWrite }: { secs: NavSec[]; labels: { more: string; home?: string; newMov: string; other: string; close: string; signOut: React.ReactNode }; canWrite: boolean }) {
   const path = usePathname();
   const [more, setMore] = useState(false);
   useEffect(() => { setMore(false); }, [path]);
@@ -152,7 +152,7 @@ export function BottomNav({ secs, labels, canWrite }: { secs: NavSec[]; labels: 
   const tab = (id: string) => {
     const s = secs.find((x) => x.id === id);
     if (!s) return <span key={id} />;
-    return <Link key={id} href={s.subs[0]!.href} aria-current={active === id ? 'page' : undefined}><CIcon name={s.ic} size={20} /><span>{s.label}</span></Link>;
+    return <Link key={id} href={s.subs[0]!.href} aria-current={active === id ? 'page' : undefined}><CIcon name={s.ic} size={20} /><span>{id === 'home' && labels.home ? labels.home : s.label}</span></Link>;
   };
   const others = secs.filter((s) => !MAIN.includes(s.id));
   return (

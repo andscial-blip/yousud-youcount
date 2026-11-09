@@ -852,6 +852,29 @@ test('preventivo: eliminazione di una bozza; versione approvata reale solo da am
   assert.equal((await rpc(U.resp, 'budget_delete', b3.id, null)).outcome, 'deleted');
 });
 
+test('preventivo: righe della versione in vigore corrette ed eliminate una per una, con motivo e storico', async () => {
+  const Y = year + 4;
+  const b = await rpc(U.resp, 'budget_draft', Y, null, 'Da correggere');
+  const it1 = await rpc(U.resp, 'budget_item_save', { budget_id: b.id, category_id: R.out['201'], qty: 2, unit_cost: 100, currency: 'EUR' });
+  const it2 = await rpc(U.resp, 'budget_item_save', { budget_id: b.id, category_id: R.out['201'], qty: 1, unit_cost: 50, currency: 'EUR' });
+  // bozza: modifica ed eliminazione dirette, senza storico
+  await rpc(U.resp, 'budget_item_amend', { ...it2, budget_id: b.id, unit_cost: 60 }, null);
+  await rpc(U.admin, 'budget_approve', b.id, 'delibera di prova');
+  // versione approvata: la scrittura diretta resta bloccata
+  await assert.rejects(rpc(U.resp, 'budget_item_save', { ...it1, budget_id: b.id, unit_cost: 1 }), /immutable|approvato/);
+  await assert.rejects(rpc(U.resp, 'budget_item_amend', { ...it1, budget_id: b.id, unit_cost: 120 }, 'motivo valido'), /amministratore/);
+  await assert.rejects(rpc(U.admin, 'budget_item_amend', { ...it1, budget_id: b.id, unit_cost: 120 }, ''), /motivo/);
+  const up = await rpc(U.admin, 'budget_item_amend', { ...it1, budget_id: b.id, unit_cost: 120 }, 'nuovo preventivo del fornitore');
+  assert.equal(Number(up.amount), 240);
+  await rpc(U.admin, 'budget_item_remove', it2.id, 'voce annullata');
+  await assert.rejects(rpc(U.admin, 'budget_item_remove', it1.id, 'ultima riga'), /ultima riga/);
+  const h = await sql('select op, reason, (old_row->>\'unit_cost\')::numeric old_cost, (new_row->>\'unit_cost\')::numeric new_cost from budget_amendments where budget_id = $1 order by id', [b.id]);
+  assert.deepEqual(h.map((r) => [r.op, r.reason, Number(r.old_cost), r.new_cost == null ? null : Number(r.new_cost)]),
+    [['update', 'nuovo preventivo del fornitore', 100, 120], ['delete', 'voce annullata', 60, null]]);
+  await assert.rejects(sql('update budget_amendments set reason = $1', ['x']), /immutable|non si modifica/);
+  assert.equal((await sql('select status from budgets where id = $1', [b.id]))[0].status, 'approved', 'resta la versione in vigore');
+});
+
 test('documenti emessi: dichiarazione senza importo, buono d\'ordine, archiviazione', async () => {
   const d = await rpc(U.op, 'issued_doc_save', { type: 'DIC', party_name: 'Volontaria di prova', currency: 'EUR', data: { tpl: 'vol', period: '2026' } });
   const i = await rpc(U.op, 'issued_doc_issue', d.id);
@@ -888,4 +911,74 @@ test('azzeramento prima dell\'avvio: solo super admin, backup recente, numeri e 
   const m = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'dopo azzeramento' }));
   assert.match(m.ref, new RegExp(`^MOV-${year}-001$`));
   assert.ok((await sql('select count(*)::int n from accounts'))[0].n > 0, 'i conti restano');
+});
+
+// come rpc(), ma con il token di chi ha appena reinserito la password (amr «password» di ageSec secondi fa)
+const rpcPw = (uid, ageSec, fn, ...args) => as(uid, async (q) => {
+  await q("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: 'authenticated',
+    amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - ageSec }] })]);
+  return (await q(`select public.${fn}(${args.map((_, i) => `$${i + 1}`).join(',')}) as r`, args))[0].r;
+});
+
+test('eliminazione definitiva di movimenti: amministratore, password appena reinserita, motivo, storni insieme, mesi chiusi esclusi, tutto con backup', async () => {
+  const a = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova eliminazione A' }));
+  const b = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova eliminazione B' }));
+  const s = await rpc(U.resp, 'reverse_movement', b.id, 'importo errato', randomUUID(), null);
+  await assert.rejects(rpcPw(U.resp, 10, 'movement_purge', [a.id], 'prova di errore'), /amministratore/);
+  await assert.rejects(rpc(U.admin, 'movement_purge', [a.id], 'prova di errore'), /password/);
+  await assert.rejects(rpcPw(U.admin, 900, 'movement_purge', [a.id], 'prova di errore'), /password/, 'password vecchia');
+  await assert.rejects(rpcPw(U.admin, 10, 'movement_purge', [a.id], 'no'), /motivo/);
+  const before = (await sql(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete'`))[0].n;
+  const r = await rpcPw(U.admin, 10, 'movement_purge', [a.id, b.id], 'movimenti inseriti per prova');
+  assert.equal(r.deleted, 3, 'con lo storno del movimento B');
+  assert.ok(s, 'storno creato');
+  assert.equal((await sql('select count(*)::int n from movements where id = any($1) or reverses_id = $2', [[a.id, b.id], b.id]))[0].n, 0);
+  assert.equal((await sql(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete'`))[0].n - before, 3, 'restano nel registro');
+  // mese chiuso: non si elimina
+  const c = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova mese chiuso', op_date: `${year - 1}-03-10` }));
+  await sql(`insert into periods(org_id, year, month, closed_at, closed_by) values ($1, $2, 3, now(), $3)`, [ORG, year - 1, U.admin]);
+  await assert.rejects(rpcPw(U.admin, 10, 'movement_purge', [c.id], 'mese già chiuso'), /mese chiuso/);
+  await assert.rejects(rpcPw(U.sa, 10, 'movement_purge_all', 999, 'ripulisco tutto'), /backup|mesi chiusi|ricarica/);
+  await sql(`delete from periods where org_id = $1 and year = $2 and month = 3`, [ORG, year - 1]);
+  await sql(`insert into settings(org_id, key, value) values ($1, 'last_backup', jsonb_build_object('at', now())) on conflict (org_id, key) do update set value = excluded.value`, [ORG]);
+  const n = (await sql('select count(*)::int n from movements'))[0].n;
+  await assert.rejects(rpcPw(U.sa, 10, 'movement_purge_all', n + 1, 'ripulisco tutto'), /ricarica/);
+  const all = await rpcPw(U.sa, 10, 'movement_purge_all', n, 'ripulisco tutto');
+  assert.equal(all.deleted, n);
+  assert.equal((await sql('select count(*)::int n from movements'))[0].n, 0);
+  const m = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'dopo la pulizia' }));
+  assert.match(m.ref, new RegExp(`^MOV-${year}-001$`));
+});
+
+test('riapertura della verifica: solo amministratore con motivo; torna registrato, si corregge, si riverifica', async () => {
+  const r = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'da verificare e riaprire' }));
+  const [row] = await sql('select version from movements where id = $1', [r.id]);
+  await rpc(U.resp, 'verify_movement', r.id, row.version);
+  await assert.rejects(sql('update movements set description = $2 where id = $1', [r.id, 'x']), /verificato/);
+  await assert.rejects(rpc(U.resp, 'movement_unverify', r.id, 'errore di codice'), /amministratore/);
+  await assert.rejects(rpc(U.admin, 'movement_unverify', r.id, 'no'), /motivo/);
+  await rpc(U.admin, 'movement_unverify', r.id, 'codice contabile sbagliato');
+  const [m] = await sql('select status, verified_by, notes from movements where id = $1', [r.id]);
+  assert.equal(m.status, 'recorded'); assert.equal(m.verified_by, null);
+  assert.match(m.notes, /Verifica riaperta.*codice contabile sbagliato/);
+  await assert.rejects(rpc(U.admin, 'movement_unverify', r.id, 'di nuovo'), /non è verificato/);
+});
+
+test('eliminazione di un utente: solo super amministratore con password; senza dati sparisce, con dati resta il nome ma non l\'accesso', async () => {
+  const clean = await newUser('da-eliminare', 'operator');
+  const busy = await newUser('con-dati', 'responsabile');
+  await rpc(busy, 'save_movement', mov({ status: 'draft' }));
+  await assert.rejects(rpcPw(U.admin, 10, 'user_delete', clean, 'non serve più'), /super amministratore/);
+  await assert.rejects(rpc(U.sa, 'user_delete', clean, 'non serve più'), /password/);
+  await assert.rejects(rpcPw(U.sa, 10, 'user_delete', U.sa, 'prova su me'), /te stesso|super amministratore/);
+  assert.equal((await rpcPw(U.sa, 10, 'user_delete', clean, 'non serve più')).outcome, 'deleted');
+  assert.equal((await sql('select count(*)::int n from auth.users where id = $1', [clean]))[0].n, 0);
+  assert.equal((await sql('select count(*)::int n from profiles where id = $1', [clean]))[0].n, 0);
+  const r = await rpcPw(U.sa, 10, 'user_delete', busy, 'ha lasciato l\'associazione');
+  assert.equal(r.outcome, 'disabled');
+  const [p] = await sql('select active, email, deleted_at, full_name from profiles where id = $1', [busy]);
+  assert.deepEqual([p.active, p.email, Boolean(p.deleted_at), p.full_name], [false, null, true, 'con-dati']);
+  const [a] = await sql('select email, banned_until from auth.users where id = $1', [busy]);
+  assert.equal(a.email, null); assert.ok(a.banned_until);
+  await assert.rejects(rpcPw(U.sa, 10, 'user_delete', busy, 'di nuovo'), /già eliminato/);
 });

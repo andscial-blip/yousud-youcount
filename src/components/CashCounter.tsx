@@ -6,7 +6,7 @@ import { recordCashCount } from '@/app/(app)/conti/actions';
 
 // Verifica di cassa per tagli (come il Gestionale): si contano banconote e monete, il totale si calcola da sé
 // e si confronta con il saldo dell'app. Il database registra il saldo alla data e la differenza.
-const DEN: Record<string, number[]> = { MGA: [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50], EUR: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01] };
+const DEN: Record<string, number[]> = { MGA: [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50], EUR: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02] };
 
 export function CashCounter({ accounts, lang, L }: { accounts: { id: string; label: string; currency: string; balance: number }[]; lang: Lang;
   L: { account: string; date: string; den: string; qty: string; total: string; counted: string; expected: string; diff: string; notes: string; save: string; manual: string; hint: string } }) {

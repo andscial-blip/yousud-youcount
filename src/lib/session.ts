@@ -24,15 +24,20 @@ export async function guestLang(): Promise<Lang> {
 // una sola lettura di utente e profilo per richiesta: layout e pagina la condividono (prima erano due giri al database)
 export const requireMe = cache(async function requireMe() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect('/login');
+  // getClaims verifica il token di accesso sul server con le chiavi pubbliche del progetto (tenute in memoria):
+  // niente chiamata al servizio di autenticazione a ogni pagina, che rallentava ogni cambio di scheda.
+  // Se il progetto usa ancora la chiave condivisa, la libreria ripiega da sola su getUser.
+  const { data: cl } = await supabase.auth.getClaims();
+  const sub = cl?.claims?.sub;
+  if (!sub) redirect('/login');
   const { data: me } = await supabase
     .from('profiles')
     .select('id, org_id, full_name, role, active, lang, all_projects')
-    .eq('id', auth.user.id)
+    .eq('id', sub)
     .maybeSingle<Me>();
   const lang = me ? normLang(me.lang) : await guestLang();
-  return { supabase, user: auth.user, me, lang, t: translator(lang) };
+  const user = { id: sub, email: typeof cl?.claims?.email === 'string' ? cl.claims.email : '' };
+  return { supabase, user, me, lang, t: translator(lang) };
 });
 
 export const can = (me: Me | null, roles: Role[]) => Boolean(me && me.active && roles.includes(me.role));

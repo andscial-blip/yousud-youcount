@@ -59,7 +59,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                   {alert && <span className={`cdp ${alert.c}`}>{alert.t}</span>}</div>
                 <div className="pc-big"><span>{L('Uscite', 'Dépenses')}</span><b className="num">{e0(a.out)}</b>{a.bOut > 0 && <small>{L('su', 'sur')} {e0(a.bOut)} {L('previsti', 'prévus')}</small>}</div>
                 {a.bOut > 0 ? (
-                  <div className="pc-meter"><div className="meter" role="img" aria-label={`${Math.round(used * 100)} %`}>
+                  <div className="pc-meter"><div className="meter" role="img" aria-label={`${Math.round(used * 100)} %`}>
                     <i style={{ width: `${Math.min(100, used * 100).toFixed(1)}%`, background: a.out > a.bOut ? 'var(--tax)' : undefined }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>
                     <span className="num">{Math.round(used * 100)}{' '}%</span></div>
                 ) : <div className="pc-meter none">{L('Senza preventivo per l\'anno', 'Sans budget pour l\'année')}</div>}

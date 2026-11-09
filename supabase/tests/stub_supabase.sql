@@ -13,7 +13,9 @@ create table if not exists auth.users (
   email              text,
   raw_app_meta_data  jsonb not null default '{}',
   raw_user_meta_data jsonb not null default '{}',
-  created_at         timestamptz not null default now()
+  created_at         timestamptz not null default now(),
+  encrypted_password text,
+  banned_until       timestamptz
 );
 -- come in Supabase: il "sub" del JWT della richiesta
 create or replace function auth.uid() returns uuid language sql stable as $$

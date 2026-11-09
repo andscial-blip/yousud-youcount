@@ -24,7 +24,7 @@ export const HELP: HelpEntry[] = [
     fr: ['Enregistrer une dépense ou une recette', [
       'Appuyez sur « + Nouveau mouvement » (sur téléphone le « + » au centre en bas). D\'abord : photographiez ou chargez la pièce ; l\'application lit le document et propose date, montant, fournisseur et code. Contrôlez les champs signalés comme incertains.',
       'Choisissez le compte, le code comptable et le projet (hors projet : « Spese generali »). Pour les montants en ariary, le taux du mois est proposé automatiquement et reste enregistré sur le mouvement.',
-      '« Enregistrer le brouillon » ne compte pas dans les soldes ; « Enregistrer » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche, à rembourser ».',
+      '« Brouillon » ne compte pas dans les soldes ; « Comptabiliser » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche, à rembourser ».',
       'Sans réseau, le mouvement reste sur le téléphone et part tout seul au retour de la connexion (indicateur en haut).']] },
   { href: '/', sec: 'home',
     it: ['Dashboard', [

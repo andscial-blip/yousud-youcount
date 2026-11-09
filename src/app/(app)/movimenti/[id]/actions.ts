@@ -86,3 +86,27 @@ export async function signSelfCertAction(form: FormData) {
   revalidatePath('/', 'layout');
   back(id, error ? `err=${encodeURIComponent(error.message)}` : 'ok=aut_signed');
 }
+
+// Eliminazione definitiva (amministratore): conferma, motivo e password reinserita; i controlli veri sono nel database.
+export async function purgeAction(form: FormData) {
+  const id = String(form.get('id'));
+  if (form.get('confirm') !== 'on') back(id, `err=${encodeURIComponent('Spunta la conferma per eliminare definitivamente.')}#elimina`);
+  const { user } = await (await import('@/lib/session')).requireMe();
+  const { withFreshPassword } = await import('@/lib/reauth');
+  const r = await withFreshPassword(user.email, String(form.get('password') ?? ''), async (sb): Promise<string> => {
+    const { error } = await sb.rpc('movement_purge', { p_ids: [id], p_reason: String(form.get('reason') ?? '') });
+    return error?.message ?? '';
+  });
+  const msg = r.ok ? r.value : r.error;
+  if (msg) back(id, `err=${encodeURIComponent(msg)}#elimina`);
+  revalidatePath('/', 'layout');
+  redirect('/movimenti?ok=purged');
+}
+
+// Riapertura della verifica (amministratore, con motivo): il movimento torna «registrato» e si può correggere.
+export async function unverifyAction(form: FormData) {
+  const id = String(form.get('id'));
+  const { error } = await (await createClient()).rpc('movement_unverify', { p_id: id, p_reason: String(form.get('reason') ?? '') });
+  revalidatePath('/', 'layout');
+  back(id, error ? `err=${encodeURIComponent(error.message)}` : 'ok=reopened');
+}

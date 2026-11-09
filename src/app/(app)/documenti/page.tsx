@@ -42,17 +42,17 @@ export default async function Documents({ searchParams }: { searchParams: Promis
   return (
     <div className="stack">
       <PageHead title={t('nav_documents')}>
+        <form className="search" method="get" action="/documenti" role="search">
+          {f && <input type="hidden" name="f" value={f} />}
+          <Ico name="search" />
+          <input className="input" type="search" name="q" defaultValue={q0} placeholder={t('search_docs')} aria-label={t('search_docs')} />
+          {term && <Link className="btn ghost" href={f ? `/documenti?f=${f}` : '/documenti'}>{t('search_clear')}</Link>}
+        </form>
         <div className="seg">
           <Link href={qs('')} aria-current={f !== 'orfani' ? 'true' : undefined}>{t('all')} · {rows.length}</Link>
           <Link href={qs('orfani')} aria-current={f === 'orfani' ? 'true' : undefined}>{t('doc_orphans')} · {orphans}</Link>
         </div>
       </PageHead>
-      <form className="search" method="get" action="/documenti" role="search">
-        {f && <input type="hidden" name="f" value={f} />}
-        <Ico name="search" />
-        <input className="input" type="search" name="q" defaultValue={q0} placeholder={t('search_docs')} aria-label={t('search_docs')} />
-        {term && <Link className="btn ghost" href={f ? `/documenti?f=${f}` : '/documenti'}>{t('search_clear')}</Link>}
-      </form>
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
         {rows.length === 0 ? <EmptyState title={t('empty_docs')} badge="clip" />

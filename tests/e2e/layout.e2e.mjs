@@ -145,6 +145,46 @@ function audit() {
       bad.push(`testo tagliato di ${el.scrollWidth - el.clientWidth}px: ${name(el)}`);
     }
   }
+  // 3) etichette brevi che vanno a capo (pulsanti, schede, titoli, intestazioni di colonna, etichette delle cifre)
+  // righe occupate dal solo testo (le icone accanto o sopra il testo non contano)
+  const lines = (el) => {
+    const tops = [];
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      if (!n.textContent.trim()) continue;
+      const rg = document.createRange(); rg.selectNodeContents(n);
+      for (const q of rg.getClientRects()) if (q.width > 0.5) tops.push(q.top + q.height / 2);
+    }
+    tops.sort((a, b) => a - b);
+    let k = tops.length ? 1 : 0;
+    for (let i = 1; i < tops.length; i++) if (tops[i] - tops[i - 1] > 6) k++;
+    return k;
+  };
+  const SHORT = 'button, .btn, a.chip, .chip, .seg > *, .subnav a, .side-link, .bnav a, th, h1, h2, .hn-main span, .hero-nums span, .kpi .l, .eyebrow, label > span, .cdp, .tag, .pill, .num, .yearsel select';
+  for (const el of document.querySelectorAll(SHORT)) {
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden' || inScroller(el)) continue;
+    if (el.getBoundingClientRect().width < 3) continue;   // nascosto per l'accessibilità
+    const txt = (el.innerText || '').trim().replace(/\s+/g, ' ');
+    if (!txt || txt.length > 34 || el.closest('.cmdk, .vh, .skip')) continue;
+    if (lines(el) > 1) bad.push(`va a capo: ${name(el)}`);
+  }
+  // 4) ultima riga di un paragrafo con una parola sola di 1-3 lettere (orfana)
+  const tw = document.createTreeWalker(document.querySelector('main') ?? document.body, NodeFilter.SHOW_TEXT);
+  for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+    const t = n.textContent.trim();
+    if (t.length < 12 || !n.parentElement || inScroller(n.parentElement)) continue;
+    const ps = getComputedStyle(n.parentElement);
+    if (ps.display === 'none' || ps.visibility === 'hidden') continue;
+    const rg = document.createRange(); rg.selectNodeContents(n);
+    const rs = [...rg.getClientRects()].filter((q) => q.width > 0.5);
+    const tops = [...new Set(rs.map((q) => Math.round(q.top)))];
+    if (tops.length < 2) continue;
+    const last = rs.filter((q) => Math.round(q.top) === tops[tops.length - 1]);
+    const w = last.reduce((a, q) => a + q.width, 0);
+    const lastWord = t.split(/\s+/).pop();
+    if (w < 26 && lastWord.length <= 3) bad.push(`parola orfana «${lastWord}» in fondo a: ${name(n.parentElement)}`);
+  }
   if (document.documentElement.scrollWidth > vw + 1) bad.push(`la pagina scorre in orizzontale di ${document.documentElement.scrollWidth - vw}px`);
   return { bad: [...new Set(bad)], scrollers };
 }

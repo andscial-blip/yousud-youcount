@@ -84,14 +84,27 @@ const results = [];
 const ONLY = (process.env.ONLY ?? '').split('|').filter(Boolean);
 async function check(name, fn) {
   if (ONLY.length && !ONLY.some((o) => name.includes(o))) return;
+  await keepAlive();
   try { await fn(); results.push(['ok', name]); } catch (e) { results.push(['FAIL', name, e.message.replace(/\s+/g, ' ').slice(0, 700)]); }
 }
 
 const U = await seed();
 const stack = await startStack();
-const next = startNext(stack);
+let next = startNext(stack);
 const base = `http://localhost:${APP_PORT}`;
+// In questo ambiente il server di sviluppo può essere chiuso per memoria esaurita a metà prova (compila ogni pagina):
+// prima di ogni controllo, se non risponde, lo si riavvia. Non cambia ciò che si controlla.
+let restarts = 0;
+async function keepAlive() {
+  if (await fetch(`${base}/login`).then((r) => r.status < 500, () => false)) return;
+  try { process.kill(-next.p.pid); } catch {}
+  restarts++;
+  next = startNext(stack);
+  await waitFor(`${base}/login`, 120000);
+}
 const browser = await chromium.launch();
+const _newContext = browser.newContext.bind(browser);
+browser.newContext = async (o) => { const c = await _newContext(o); if (!o?.splash) await c.addInitScript(() => { try { sessionStorage.setItem('yc-splash', '1'); } catch {} }); return c; };
 try {
   await waitFor(`${base}/login`);
   const login = async (email, vp = { width: 1280, height: 860 }) => {
@@ -127,7 +140,7 @@ try {
 
   const op = await login('operatore@test.local');
   await check('operatore: cruscotto con saldi reali', async () => {
-    await op.page.getByText('Saldi dei conti').waitFor();
+    await op.page.getByText('Saldo dei conti').waitFor();
     const txt = await op.page.locator('main').innerText();
     assert.match(txt, /2\.500,00\s?€/, 'saldo Banca Italia');
     assert.match(txt, /-?1\.010\.000\s?MGA|MGA\s?-1\.010\.000/, 'saldo Cassa Missione');
@@ -620,6 +633,28 @@ try {
       assert.ok(wb.getWorksheet('Schema rendiconto'), 'foglio schema del rendiconto'); }
     assert.equal(await op.page.request.get(`${base}/api/v1/export/budget?anno=${year}`).then((r) => r.status()), 403);
     await a.screenshot({ path: `${SHOTS}/sa_preventivo.png`, fullPage: true });
+    // versione in vigore: il responsabile non tocca le righe; l'amministratore le corregge ed elimina con il motivo
+    await p.goto(`${base}/preventivo?anno=${year}&vista=righe`);
+    assert.equal(await p.getByRole('link', { name: 'Modifica', exact: true }).count(), 0);
+    await a.goto(`${base}/preventivo?anno=${year}&vista=righe`);
+    await a.locator('tr', { hasText: 'Quaderni e penne' }).getByRole('link', { name: 'Modifica', exact: true }).first().click();
+    await a.waitForURL(/edit=/);
+    await a.fill('#bi-cost', '120.000');
+    await a.fill('#bi-reason', 'nuovo preventivo del fornitore');
+    await a.getByRole('button', { name: 'Salva la riga' }).click();
+    await a.waitForURL(/ok=1/);
+    await a.locator('td', { hasText: '1.200.000' }).first().waitFor();
+    await a.locator('tr', { hasText: 'Donazioni da privati' }).getByRole('link', { name: 'Elimina', exact: true }).first().click();
+    await a.waitForURL(/elimina=/);
+    await a.fill('#del-reason', 'voce annullata');
+    await a.locator('form.del-row input[name=confirm]').check();
+    await a.getByRole('button', { name: 'Elimina la riga' }).click();
+    await a.waitForURL(/ok=row_deleted/);
+    const am = (await pool.query(`select op, reason from budget_amendments order by id`)).rows.map((r) => `${r.op}:${r.reason}`);
+    assert.deepEqual(am, ['update:nuovo preventivo del fornitore', 'delete:voce annullata']);
+    const [{ n: n2, eur: eur2 }] = (await pool.query(`select count(*)::int n, sum(amount_eur)::text eur from budget_items`)).rows;
+    assert.deepEqual([n2, eur2], [1, '240.00']);
+    assert.equal((await pool.query(`select status from budgets`)).rows[0].status, 'approved', 'resta in vigore');
   });
   await check('scadenze: nuova scadenza, segnata fatta, adempimenti ETS, calendario, file .ics', async () => {
     const p = rs.page;
@@ -904,6 +939,43 @@ try {
     await p.getByText('ultimo tasso usato, inserito in automatico').waitFor();
     assert.equal(await p.inputValue('#rate'), String(Number(fx_rate)).replace('.', ','));
   });
+  await check('eliminazione definitiva di un movimento: password sbagliata rifiutata, poi eliminato e tracciato', async () => {
+    const [m] = (await pool.query(`select id, ref from movements where status <> 'draft' and not demo and reverses_id is null
+      and not exists (select 1 from movements r where r.reverses_id = movements.id) order by created_at desc limit 1`)).rows;
+    const p = sa.page;
+    await p.goto(`${base}/movimenti/${m.id}`);
+    await p.locator('#elimina > summary').click();
+    await p.fill('#elimina input[name=reason]', 'inserito per prova');
+    await p.fill('#elimina input[name=password]', 'password-sbagliata');
+    await p.locator('#elimina input[name=confirm]').check();
+    await p.getByRole('button', { name: 'Elimina definitivamente' }).click();
+    await p.getByText('Password non corretta').waitFor();
+    await p.locator('#elimina > summary').click().catch(() => {});
+    await p.fill('#elimina input[name=reason]', 'inserito per prova');
+    await p.fill('#elimina input[name=password]', TEST_PASSWORD);
+    await p.locator('#elimina input[name=confirm]').check();
+    await p.getByRole('button', { name: 'Elimina definitivamente' }).click();
+    await p.waitForURL(/ok=purged/);
+    assert.equal((await pool.query('select count(*)::int n from movements where id = $1', [m.id])).rows[0].n, 0);
+    assert.equal((await pool.query(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete' and row_id = $1`, [m.id])).rows[0].n, 1);
+  });
+  await check('schermata d\'apertura: bianca, visibile 3 secondi dopo l\'accesso, poi sparisce e non blocca l\'app', async () => {
+    const ctx = await browser.newContext({ splash: true });
+    const p = await ctx.newPage();
+    await p.goto(`${base}/`);
+    await p.waitForURL(/\/login/);
+    await p.fill('#email', 'andrea@test.local'); await p.fill('#password', TEST_PASSWORD);
+    await p.click('button[type=submit]');
+    await p.waitForURL(`${base}/`, { timeout: 60000 });
+    await p.locator('#yc-splash').waitFor({ state: 'visible' });
+    const st = await p.locator('#yc-splash').evaluate((e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.animationDelay, c.animationDuration]; });
+    assert.deepEqual(st, ['rgb(255, 255, 255)', '2.65s', '0.35s'], 'bianca, 2,65 s ferma + 0,35 s di dissolvenza = 3 s');
+    await p.locator('#yc-splash').waitFor({ state: 'hidden', timeout: 6000 });
+    // alla pagina successiva della stessa sessione non ricompare
+    await p.goto(`${base}/movimenti`);
+    assert.equal(await p.locator('#yc-splash').isVisible(), false);
+    await ctx.close();
+  });
   await check('uscita: chiude la sessione', async () => {
     await ro.page.goto(`${base}/altro`);
     await ro.page.getByRole('button', { name: 'Esci' }).first().click();
@@ -956,5 +1028,6 @@ try {
 for (const r of results) console.log(r.join(' · '));
 const failed = results.filter((r) => r[0] !== 'ok').length;
 console.log(`\n${results.length - failed} superati, ${failed} falliti`);
+if (restarts) console.log(`(server di sviluppo riavviato ${restarts} volte per memoria esaurita)`);
 if (failed) { console.log(next.log().slice(-3000)); process.exit(1); }
 void U;

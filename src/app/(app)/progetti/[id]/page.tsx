@@ -1,3 +1,4 @@
+import { nth } from '@/lib/palette';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, RESP, STAFF } from '@/lib/session';
@@ -64,7 +65,7 @@ export default async function ProjectDetail({ params, searchParams }: {
       {sp.err && <div className="note err">{sp.err}</div>}
       <div className="kpis">
         <div className="kpi"><div className="l">{L('Preventivo uscite', 'Budget dépenses')}</div><div className="v num">{bOut ? e0(bOut) : '–'}</div>
-          <div className="s">{bOut ? L(`usato ${Math.round(used * 100)} % · anno trascorso ${Math.round(elapsed * 100)} %`, `utilisé ${Math.round(used * 100)} % · année écoulée ${Math.round(elapsed * 100)} %`) : L('nessun preventivo approvato', 'aucun budget approuvé')}</div>
+          <div className="s">{bOut ? L(`usato ${Math.round(used * 100)} % · anno trascorso ${Math.round(elapsed * 100)} %`, `utilisé ${Math.round(used * 100)} % · année écoulée ${Math.round(elapsed * 100)} %`) : L('nessun preventivo approvato', 'aucun budget approuvé')}</div>
           {bOut > 0 && <div className="meter" style={{ marginTop: 8 }}><i style={{ width: `${Math.min(100, used * 100).toFixed(1)}%`, background: out > bOut ? 'var(--tax)' : undefined }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>}</div>
         <div className="kpi"><div className="l">{L('Uscite', 'Dépenses')}</div><div className="v num">{e0(out)}</div><div className="s">{L(`${nMoves ?? 0} movimenti nell'anno`, `${nMoves ?? 0} mouvements dans l'année`)}</div></div>
         <div className="kpi"><div className="l">{L('Entrate', 'Recettes')}</div><div className="v num">{e0(inc)}</div><div className="s">{L('Saldo', 'Solde')} <b className={inc - out < 0 ? 'neg' : 'pos'}>{e0(inc - out)}</b></div></div>
@@ -78,9 +79,9 @@ export default async function ProjectDetail({ params, searchParams }: {
         </Panel>
         <Panel className="c4" title={L('Voci di spesa', 'Postes de dépense')}>
           <div className="panel-b">{gparts.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : (
-            <ul className="hcat pbars">{gparts.map(([n, v]) => (
+            <ul className="hcat pbars">{gparts.map(([n, v], gi) => (
               <li key={n}><span className="hc-n">{n}</span><b className="num">{e0(v)} <small>{Math.round((v / gtot) * 100)}{' '}%</small></b>
-                <span className="hc-b"><i style={{ width: `${((v / gparts[0]![1]) * 100).toFixed(1)}%`, background: 'var(--amber-soft)' }} /></span></li>))}</ul>)}</div>
+                <span className="hc-b"><i style={{ width: `${((v / gparts[0]![1]) * 100).toFixed(1)}%`, background: nth(gi) }} /></span></li>))}</ul>)}</div>
         </Panel>
       </div>
       {staff && (
@@ -91,15 +92,19 @@ export default async function ProjectDetail({ params, searchParams }: {
       <div className="grid">
         <Panel className="c6" title={t('prj_recent')} right={<Link className="eyebrow" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('tutti', 'tous')} →</Link>}>
           {(moves ?? []).length === 0 ? <Empty text={t('none')} /> : (
-            <table className="t keep"><tbody>
-              {moves!.map((m) => (
-                <tr key={m.id}>
-                  <td className="num nw">{date(m.op_date)}</td>
-                  <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind as 'income'}`)}</Link></td>
-                  <td className="r num nw"><span className="two"><b>{money(Number(m.amount) * m.sign * (m.kind === 'income' ? 1 : -1), m.currency, lang)}</b>
-                    {m.currency !== 'EUR' && m.amount_eur && <small>{money(Number(m.amount_eur), 'EUR', lang)}</small>}</span></td>
-                </tr>
-              ))}
+            <table className="t keep recent"><tbody>
+              {moves!.map((m) => {
+                const sg = m.sign * (m.kind === 'income' ? 1 : -1);
+                const eur = m.currency !== 'EUR' && m.amount_eur ? Number(m.amount_eur) * sg : null;
+                return (
+                  <tr key={m.id}>
+                    <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind as 'income'}`)}</Link>
+                      <small className="muted num rc-d">{date(m.op_date)}</small></td>
+                    <td className="r num nw"><span className="two"><b>{eur != null ? money(eur, 'EUR', lang) : money(Number(m.amount) * sg, m.currency, lang)}</b>
+                      {eur != null && <small>{money(Number(m.amount) * sg, m.currency, lang)}</small>}</span></td>
+                  </tr>
+                );
+              })}
             </tbody></table>
           )}
         </Panel>

@@ -36,9 +36,10 @@ async function userBy(field, value) {
 }
 const userJson = (u) => ({ id: u.id, aud: 'authenticated', role: 'authenticated', email: u.email,
   app_metadata: u.raw_app_meta_data, user_metadata: u.raw_user_meta_data, created_at: u.created_at });
-function session(u) {
-  const exp = Math.floor(Date.now() / 1000) + 3600;
-  return { access_token: sign({ sub: u.id, role: 'authenticated', aud: 'authenticated', email: u.email, exp }),
+// amr come Supabase: metodo e ora dell'accesso (con password: adesso; rinnovo del token: un'ora fa)
+function session(u, method = 'password', ago = 0) {
+  const now = Math.floor(Date.now() / 1000), exp = now + 3600;
+  return { access_token: sign({ sub: u.id, role: 'authenticated', aud: 'authenticated', email: u.email, exp, amr: [{ method, timestamp: now - ago }] }),
            token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: `r.${u.id}`, user: userJson(u) };
 }
 
@@ -61,7 +62,7 @@ async function auth(req, res, url) {
     let u;
     if (grant === 'password' && body.password === TEST_PASSWORD) u = await userBy('lower(email)', String(body.email).toLowerCase());
     if (grant === 'refresh_token' && String(body.refresh_token).startsWith('r.')) u = await userBy('id', body.refresh_token.slice(2));
-    return u ? send(res, 200, session(u)) : send(res, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials' });
+    return u ? send(res, 200, grant === 'password' ? session(u) : session(u, 'password', 3600)) : send(res, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials' });
   }
   if (req.method === 'GET' && path === '/user') {
     const claims = verify((req.headers.authorization ?? '').replace(/^Bearer /, ''));

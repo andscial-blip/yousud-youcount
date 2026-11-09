@@ -10,7 +10,7 @@
 :root {
   --aqua: var(--green-soft); --aqua-fg: var(--green); --aqua-bg: var(--ok-bg);
   --lilac-fg: var(--lilac-ink); --sky-bg: color-mix(in srgb, var(--sky) 18%, var(--surface));
-  --c-in: var(--vz-real); --c-out: var(--amber-soft); --c-budget: var(--band); --c-over: var(--tax);
+  --c-in: var(--green-soft); --c-out: var(--tax); --c-budget: var(--band); --c-over: var(--tax);
   --ok-fg: var(--green); --line-input: var(--line); --focus: var(--cyan);
 }
 :root { color-scheme: light; }
@@ -51,12 +51,15 @@ main:focus { outline: none; }
 .menu-list button > span { font-family: var(--f-ui); font-size: 16px; font-weight: 600; }
 
 /* schermata d'apertura (solo al primo caricamento della sessione) */
+/* schermata d'apertura: bianca, 3 secondi all'accesso (una volta per sessione), poi sfuma; finché è visibile non lascia
+   passare i tocchi alla pagina sotto */
 #yc-splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; background: var(--bg); pointer-events: none; animation: yc-splash-out .35s ease .7s forwards; }
+  gap: 12px; background: #fff; animation: yc-splash-out .35s ease 2.65s forwards; }
+:root[data-theme="dark"] #yc-splash { background: var(--bg); }
 #yc-splash p { margin: 0; color: var(--muted); font-size: 14px; }
 .nosplash #yc-splash { display: none; }
-@keyframes yc-splash-out { to { opacity: 0; visibility: hidden; } }
-@media (prefers-reduced-motion: reduce) { #yc-splash { animation-duration: .01s; animation-delay: .4s; } }
+@keyframes yc-splash-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+@media (prefers-reduced-motion: reduce) { #yc-splash { animation-duration: .01s; animation-delay: 3s; } }
 
 /* ---------- Intestazione dentro la pagina (pagine di dettaglio) ---------- */
 .h1row { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }
@@ -691,3 +694,196 @@ h2.h-ic { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .empty > .ic { color: var(--muted); opacity: .7; }
 .langsw { display: inline-flex; }
 .langsw button { min-width: 40px; font-weight: 600; letter-spacing: .03em; }
+
+/* Telefono: prima riga logo e comandi (cerca, lingua, guida, anno), seconda riga il titolo per intero */
+@media (max-width: 760px) {
+  .phead-row { flex-wrap: wrap; row-gap: 4px; }
+  .phead-row .pctl { margin-left: auto; gap: 4px; }
+  .phead-row .ptitle { order: 3; flex: 1 0 100%; }
+  .phead-row .ptitle h1 { font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; word-break: normal; }
+  .pctl .searchbtn, .pctl .infobtn, .pctl .langsw button { width: 36px; height: 36px; min-width: 36px; padding: 0; justify-content: center; }
+}
+/* Telefono stretto: le cifre in colonna unica, così etichette e valori restano su una riga */
+@media (max-width: 480px) {
+  .kpis, .kpis.k2, .kpis.k3 { grid-template-columns: minmax(0, 1fr); }
+  .kpi .l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+/* righe di dettaglio fatte di pezzi: un pezzo non si spezza mai a metà, va a capo intero */
+.mv-cards .mc-s { display: flex; flex-wrap: wrap; column-gap: 4px; }
+.mv-cards .mc-s > span { white-space: nowrap; }
+.mv-cards .mc-s > span:not(:last-child)::after { content: ' ·'; white-space: pre; }
+/* filtro a una scelta (Analisi): menu e pulsante sulla stessa riga anche su telefono */
+form.filters:has(> select:only-of-type) { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+form.filters:has(> select:only-of-type) > select { flex: 1 1 auto; min-width: 0; }
+form.filters:has(> select:only-of-type) > .btn { flex: none; }
+/* cifre di riepilogo su telefono stretto: una per riga, etichetta a sinistra e valore a destra */
+@media (max-width: 480px) {
+  .figs, .rec-sum { grid-template-columns: minmax(0, 1fr); }
+  .figs > div, .rec-sum > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; padding: 11px 16px; }
+  .figs > div > span, .rec-sum > div > span { grid-column: 1; }
+  .figs > div > b, .rec-sum > div > b { grid-column: 2; grid-row: 1; font-size: 20px; white-space: nowrap; overflow-wrap: normal; }
+  .figs > div > small, .rec-sum > div > small { grid-column: 1 / -1; }
+}
+/* versioni del preventivo: nome e titolo a sinistra (il titolo va a capo intero), stato a destra */
+.versions a { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; width: 100%; }
+.versions .v-name { display: flex; flex-direction: column; min-width: 0; }
+.versions .v-name b { white-space: nowrap; }
+.versions .v-title { font-weight: 500; color: var(--muted); font-size: 14px; }
+.versions .v-chips { display: inline-flex; gap: 6px; flex: none; }
+/* Preventivo e consuntivo su telefono: ogni voce è una scheda (codice e voce sopra, tre cifre sotto con l'etichetta) */
+@media (max-width: 600px) {
+  table.cmp, table.cmp tbody { display: block; width: 100%; }
+  table.cmp thead { display: none; }
+  table.cmp tr { display: grid; grid-template-columns: 44px repeat(3, minmax(0, 1fr)); column-gap: 8px; row-gap: 4px; padding: 10px 14px; border-bottom: 1px solid var(--line-2); }
+  table.cmp tr > * { display: block; padding: 0 !important; border: 0 !important; min-width: 0; text-align: left; }
+  table.cmp tr > .hm { display: none; }
+  table.cmp tr > :nth-child(1) { grid-column: 1; grid-row: 1; }
+  table.cmp tr > :nth-child(2) { grid-column: 2 / -1; grid-row: 1; }
+  table.cmp tr:not(.grp):not(.sec) > :nth-child(3) { grid-column: 2; grid-row: 2; }
+  table.cmp tr:not(.grp):not(.sec) > :nth-child(4) { grid-column: 3; grid-row: 2; }
+  table.cmp tr:not(.grp):not(.sec) > :nth-child(6) { grid-column: 4; grid-row: 2; }
+  table.cmp tr:not(.grp):not(.sec) > :nth-child(8) { grid-column: 2 / -1; grid-row: 3; }
+  table.cmp tr:not(.grp):not(.sec) > :nth-child(8):empty { display: none; }
+  table.cmp tr.grp > th { grid-column: 1 / -1; grid-row: 1; }
+  table.cmp tr.grp > :nth-child(2) { grid-column: 2; grid-row: 2; }
+  table.cmp tr.grp > :nth-child(3) { grid-column: 3; grid-row: 2; }
+  table.cmp tr.grp > :nth-child(5) { grid-column: 4; grid-row: 2; }
+  table.cmp tr.grp > :nth-child(7) { display: none; }
+  table.cmp tr.sec { display: block; padding: 8px 14px; }
+  table.cmp td[data-l] { text-align: right; white-space: nowrap; font-size: 13px; }
+  table.cmp td[data-l]::before { content: attr(data-l); display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+  .tscroll:has(> table.cmp) { overflow: visible; }
+}
+@media (max-width: 600px) {
+  table.cmp tr.grp, table.cmp tr.sec { background: var(--surface-2); }
+  table.cmp tr.grp > *, table.cmp tr.sec > * { background: transparent !important; }
+  table.cmp td.neg { color: var(--red); }
+}
+table.recent td { vertical-align: top; }
+table.recent .rc-d { display: block; margin-top: 2px; font-size: 12px; }
+/* saldi dei conti: schede su telefono, tabella da tablet in su */
+.bal-cards { display: none; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 760px) {
+  .bal-t { display: none; }
+  .bal-cards { display: block; }
+  .bal-cards li { padding: 12px 16px; border-bottom: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .bal-cards li:last-child { border-bottom: 0; }
+  .bal-cards .bc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; width: 100%; }
+  .bal-cards .bc-top b { font-weight: 600; min-width: 0; }
+  .bal-cards .bc-bal { font-weight: 700; white-space: nowrap; font-size: 16px; color: var(--navy); }
+  .bal-cards .bc-bal.neg { color: var(--red); }
+  .bal-cards .bc-det { display: flex; flex-wrap: wrap; column-gap: 4px; font-size: 12.5px; color: var(--muted); }
+  .bal-cards .bc-det > span { white-space: nowrap; }
+  .bal-cards .bc-det > span:not(:last-child)::after { content: ' ·'; }
+}
+/* tassi di cambio: schede su telefono */
+.fx-cards { display: none; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 760px) {
+  .fx-t { display: none !important; }
+  .fx-cards { display: block; }
+  .fx-cards li { padding: 12px 16px; border-bottom: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 4px; }
+  .fx-cards li.hl { background: var(--surface-2); box-shadow: inset 3px 0 var(--slate); }
+  .fx-cards .fc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .fx-cards .fc-m { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+  .fx-cards .fc-top b { white-space: nowrap; font-size: 16px; color: var(--navy); }
+  .fx-cards .fc-det { display: flex; flex-wrap: wrap; column-gap: 4px; font-size: 12.5px; color: var(--muted); }
+  .fx-cards .fc-det > span { white-space: nowrap; }
+  .fx-cards .fc-det > span:not(:last-child)::after { content: ' ·'; }
+  .fx-cards .fc-src { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: var(--faint); }
+  .fx-cards .fc-src .btn { flex: none; }
+  /* ricerca in un elenco: campo e pulsante sulla stessa riga */
+  form.filters:has(> input[type="search"]) { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; }
+  form.filters:has(> input[type="search"]) > input { flex: 1 1 auto; min-width: 0; }
+  form.filters:has(> input[type="search"]) > .btn { flex: none; }
+}
+/* Tablet: il titolo ha la precedenza; Cerca diventa solo icona e il sottotitolo si nasconde */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .phead .searchbtn > span, .phead .searchbtn > kbd { display: none !important; }
+  .phead .searchbtn { width: 38px; padding: 0; justify-content: center; }
+  .phead .ptitle h1 { white-space: nowrap; }
+  .phead .ptitle p { display: none; }
+}
+.row-btns { display: flex; gap: 6px; justify-content: flex-end; }
+.del-row { display: flex; flex-direction: column; gap: 10px; background: color-mix(in srgb, var(--red) 6%, var(--surface)); border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+.amt-out { color: var(--red); }
+.mv-sum .amt-out, .mv-sum .amt-in { font-weight: 700; }
+table.bal-fixed { table-layout: fixed; width: 100%; }
+table.bal-fixed td, table.bal-fixed th { overflow-wrap: anywhere; }
+table.bal-fixed th.r, table.bal-fixed td.r { white-space: nowrap; }
+/* ricerca nella riga in alto, accanto ai filtri: occupa lo spazio libero, i filtri restano a destra */
+.h1row:has(> form.search) > .spacer { display: none; }
+.h1row > form.search { flex: 1 1 280px; min-width: 0; max-width: 560px; margin: 0; }
+.h1row > form.search ~ .seg { margin-left: auto; }
+/* palette tenue per categorie e progetti (src/lib/palette.ts) */
+:root { --pp1: #5FB8A3; --pp2: #A596E6; --pp3: #E8BE5A; --pp4: #8FAFD6; --pp5: #E2917F; --pp6: #B9C47A; --pp7: #E3A6C2; --pp8: #5B6F8C; }
+:root[data-theme="dark"] { --pp8: #9FB3CF; }
+
+/* Dashboard: riquadri piccoli (cambio, da verificare, da rimborsare, prossima scadenza) */
+.h-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.htile { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 12px 14px; border-radius: var(--r, 14px); background: var(--surface);
+  border: 1px solid var(--line-2); box-shadow: var(--sh-1); color: var(--fg); text-decoration: none; transition: border-color .15s, transform .15s; }
+.htile:hover { border-color: var(--line); transform: translateY(-1px); }
+.htile .ht-l { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-ui); font-weight: 600; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.htile b { font-size: 20px; font-weight: 700; color: var(--navy); white-space: nowrap; line-height: 1.15; }
+.htile small { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.htile .ht-t { display: block; }
+.htile.t-do { box-shadow: inset 3px 0 var(--amber-soft), var(--sh-1); }
+.htile.t-warn { box-shadow: inset 3px 0 var(--tax), var(--sh-1); }
+.htile .cdp { font-size: 11px; padding: 1px 7px; }
+/* note condivise */
+.dnotes { display: flex; flex-direction: column; gap: 8px; }
+.dnotes textarea { min-height: 110px; resize: vertical; font-size: 14px; line-height: 1.45; }
+.dn-f { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+/* misuratori del preventivo con gli stessi colori del grafico */
+.home.v2 .hero-soglia .meter > i { background: var(--c-out); }
+.home.v2 .hero-soglia .meter.m-in > i { background: var(--c-in); }
+.s-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.s-tiles .htile b { font-size: 24px; }
+.htile b.neg { color: var(--red); }
+@media (max-width: 600px) { .s-tiles { grid-template-columns: minmax(0, 1fr); } }
+
+/* Utenti: righe allineate su una griglia comune, dettaglio a tutta larghezza */
+.ulist-h, .urow > summary { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, .8fr) auto; gap: 16px; align-items: center; }
+.ulist-h { padding: 10px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line-2); font-family: var(--f-ui); font-weight: 600; font-size: 13px; color: var(--muted); }
+.ulist { list-style: none; margin: 0; padding: 0; }
+.ulist > li { border-bottom: 1px solid var(--line-2); }
+.ulist > li:last-child { border-bottom: 0; }
+.urow > summary { list-style: none; padding: 12px 18px; cursor: pointer; }
+.urow > summary::-webkit-details-marker { display: none; }
+.urow[open] > summary { background: var(--surface-2); }
+.u-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.u-who > .ic { flex: none; color: var(--muted); }
+.u-who > span { display: flex; flex-direction: column; min-width: 0; }
+.u-who b { font-weight: 600; }
+.u-who small { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.u-act { justify-self: end; }
+.urow[open] .u-act .btn { background: var(--surface); }
+.u-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px 28px; padding: 14px 18px 18px 44px; border-top: 1px solid var(--line-2); }
+.u-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.u-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.u-line .field { flex: 1 1 180px; margin: 0; }
+.u-t { font-family: var(--f-ui); }
+.u-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 14px; }
+.u-grid .check { font-weight: 400; }
+@media (max-width: 760px) {
+  .ulist-h { display: none; }
+  .urow > summary { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+  .urow > summary .u-who { grid-column: 1 / -1; }
+  .u-act { grid-column: 2; grid-row: 2; }
+  .u-body { grid-template-columns: minmax(0, 1fr); padding-left: 18px; }
+}
+.u-del { grid-column: 1 / -1; }
+
+/* Dashboard su tablet e telefono: prima la sintesi dell'anno, poi i riquadri piccoli, poi le cose da fare */
+@media (max-width: 1099px) {
+  .home.v2 .h-hero { order: -3; }
+  .home.v2 .h-tiles { order: -2; grid-column: 1 / -1; }
+  .home.v2 .h-todo { order: -1; }
+}
+/* cose da fare su telefono: tutta la riga si tocca, niente pulsante su una riga a parte */
+@media (max-width: 760px) {
+  .tlist li { grid-template-columns: 28px minmax(0, 1fr) auto; }
+  .tlist .ta { display: none; }
+  .tlist .tt a::after { content: ''; position: absolute; inset: 0; }
+  .h-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

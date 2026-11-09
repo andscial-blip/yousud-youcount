@@ -383,7 +383,7 @@ const fr: Record<Key, string> = {
   f_doc_photo: 'Prendre une photo', f_doc_file: 'Charger un fichier', f_doc_uploading: 'Chargement…', f_doc_ok: 'chargé',
   f_doc_dup: 'déjà dans l’archive : je relie l’existant', f_doc_err: 'échec du chargement',
   f_no_doc: 'Il n’y a pas de pièce justificative', f_no_doc_reason: 'Pourquoi elle manque (obligatoire)',
-  f_save_draft: 'Enregistrer le brouillon', f_record: 'Comptabiliser', f_saving: 'Enregistrement…', f_dups_title: 'Doublons possibles',
+  f_save_draft: 'Brouillon', f_record: 'Comptabiliser', f_saving: 'Enregistrement…', f_dups_title: 'Doublons possibles',
   f_dups_text: 'Des mouvements de même montant et à des dates proches existent. Vérifiez avant de comptabiliser.',
   f_required: 'Champ obligatoire', f_choose: 'Choisir…', f_conflict: 'Quelqu’un a modifié ce mouvement entre-temps. Rechargez la page pour voir la version à jour.',
   f_record_hint: 'Une fois comptabilisé, le mouvement reçoit un numéro et compte dans les soldes. Ensuite, seul un responsable peut le modifier.',

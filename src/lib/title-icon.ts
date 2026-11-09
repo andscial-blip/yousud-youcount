@@ -1,6 +1,7 @@
 // Icona di un titolo di pannello, ricavata dalle parole del titolo (italiano o francese).
 // Così ogni pannello ha la sua icona senza ripeterla in ogni pagina; chi vuole un'icona diversa la passa a mano.
 const RULES: [RegExp, string][] = [
+  [/storico|historique|modifiche|modifications/, 'clock'],
   [/da fare|a faire|verific|controll|riconcil|rapproch|chiusur|cloture/, 'check'],
   [/scadenz|echeanc|calendar|period|mese|mois/, 'cal'],
   [/cambi|change|tass|taux/, 'euro'],

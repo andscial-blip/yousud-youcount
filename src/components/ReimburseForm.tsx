@@ -55,8 +55,8 @@ export function ReimburseForm({ rows, currency, canPay, accounts, methods, label
           <label className="field"><span className="flabel">{t.method}</span>
             <select className="input" name="method_id" defaultValue=""><option value="">{t.choose}</option>
               {methods.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></label>
-          <button className="btn primary" type="submit" disabled={sel.size === 0}>
-            {t.pay} · {fmt(total, currency, lang)} ({sel.size} {sel.size === 1 ? t.one : t.many})</button>
+          <button className="btn primary" type="submit" disabled={sel.size === 0}
+            title={`${fmt(total, currency, lang)} · ${sel.size} ${sel.size === 1 ? t.one : t.many}`}>{t.pay}</button>
         </div>
       )}
     </form>

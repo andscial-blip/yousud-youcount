@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { buildReport, REPORTS, type Cell, type ReportKind, type Table } from '@/lib/reports';
-import { C_IN, C_OUT, HBars, MonthBars } from '@/components/Charts';
+import { HBars, MonthBars } from '@/components/Charts';
 
 const TOPN = 8;
 import { Denied, PageHead, H2 } from '@/components/Page';
@@ -28,9 +28,6 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
   return (
     <div className="stack">
       <PageHead title={`${L('Report', 'Rapports')} ${year}`}>
-        <div className="seg" role="group" aria-label={L('Anno', 'Année')}>
-          <Link href={q(kind, year - 1)}>← {year - 1}</Link><Link href={q(kind, year + 1)}>{year + 1} →</Link>
-        </div>
         <a className="btn" href={`/api/v1/export/report?tipo=${kind}&anno=${year}`}><Ico name="download" />Excel</a>
         <PrintButton label={L('Stampa / PDF', 'Imprimer / PDF')} />
       </PageHead>
@@ -48,7 +45,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
               {tb.chart.kind === 'months'
                 ? <MonthBars data={tb.chart.data} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }} />
                 : <>
-                    <HBars rows={tb.chart.rows} lang={lang} color={tb.chart.dir === 'in' ? C_IN : C_OUT} />
+                    <HBars rows={tb.chart.rows} lang={lang} many />
                     {tb.chart.more > 0 && <p className="hint" style={{ margin: '6px 0 0' }}>{L(`Le ${TOPN} voci più alte; altre ${tb.chart.more} nella tabella.`, `Les ${TOPN} postes les plus élevés ; ${tb.chart.more} autres dans le tableau.`)}</p>}
                   </>}
             </div>

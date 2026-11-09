@@ -4,6 +4,7 @@ import { date, money } from '@/lib/format';
 import { DL_CAT, THRESHOLDS, ruleItems, type DlCat } from '@/lib/deadline-rules';
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
+import { CIcon } from '@/components/CIcon';
 import { saveDeadline, setDeadlineStatus } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -139,13 +140,20 @@ export default async function Deadlines({ searchParams }: {
       {sp.err && <div className="note err">{sp.err === 'missing' ? L('Indica descrizione e data.', 'Indiquez description et date.') : sp.err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
-      <section className="panel">
-        <div className="figs">
-          <div className={late ? 'bad' : ''}><span>{L('Scadute', 'En retard')}</span><b className="num">{late}</b></div>
-          <div><span>{L('Nei prossimi 14 giorni', 'Dans les 14 prochains jours')}</span><b className="num">{soon}</b></div>
-          {staff && <div><span>{L(`Entrate registrate ${Y}`, `Recettes enregistrées ${Y}`)}</span><b className="num">{money(inc(Y), 'EUR', lang)}</b><small>{Y - 1}: {money(inc(Y - 1), 'EUR', lang)}</small></div>}
+      <div className="h-tiles s-tiles">
+        <div className={`htile${late ? ' t-warn' : ''}`}>
+          <span className="ht-l"><CIcon name="alert" size={14} />{L('Scadute', 'En retard')}</span>
+          <b className={`num${late ? ' neg' : ''}`}>{late}</b><small>{late ? L('da chiudere subito', 'à traiter tout de suite') : L('nessuna in ritardo', 'aucune en retard')}</small>
         </div>
-      </section>
+        <div className={`htile${soon ? ' t-do' : ''}`}>
+          <span className="ht-l"><CIcon name="cal" size={14} />{L('Nei prossimi 14 giorni', 'Dans les 14 prochains jours')}</span>
+          <b className="num">{soon}</b><small>{L('da preparare', 'à préparer')}</small>
+        </div>
+        {staff && <div className="htile">
+          <span className="ht-l"><CIcon name="trend" size={14} />{L(`Entrate registrate ${Y}`, `Recettes enregistrées ${Y}`)}</span>
+          <b className="num amt-in">{money(inc(Y), 'EUR', lang)}</b><small>{Y - 1}: {money(inc(Y - 1), 'EUR', lang)} · {L('servono per le soglie ETS', 'servent aux seuils ETS')}</small>
+        </div>}
+      </div>
 
       {showForm && (
         <Panel title={edit ? L('Modifica la scadenza', 'Modifier l\'échéance') : L('Nuova scadenza', 'Nouvelle échéance')} pad>

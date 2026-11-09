@@ -21,7 +21,7 @@ const NEAR = 0.9;   // avviso quando l'eseguito arriva al 90% della voce
 // Preventivo annuale: versioni (originale e revisioni), righe per codice e progetto, confronto con il consuntivo.
 // Il preventivo è solo annuale: niente ripartizione mensile (non si sa in che mese avverranno le spese).
 export default async function BudgetPage({ searchParams }: {
-  searchParams: Promise<{ anno?: string; v?: string; vista?: string; progetto?: string; edit?: string; ok?: string; err?: string; n?: string }>;
+  searchParams: Promise<{ anno?: string; v?: string; vista?: string; progetto?: string; edit?: string; elimina?: string; ok?: string; err?: string; n?: string }>;
 }) {
   const sp = await searchParams;
   const year = Number(sp.anno) || new Date().getFullYear();
@@ -85,7 +85,12 @@ export default async function BudgetPage({ searchParams }: {
   const vLabel = (b: Budget) => `${b.version === 1 ? L('Originale', 'Initial') : `${L('Revisione', 'Révision')} ${b.version - 1}`}`;
   const stLabel = (s: Budget['status']) => (s === 'draft' ? L('Bozza', 'Brouillon') : s === 'approved' ? L('In vigore', 'En vigueur') : L('Superata', 'Remplacée'));
   const editing = shown?.status === 'draft' && resp;
-  const edit = its.find((i) => i.id === sp.edit);
+  // versione in vigore: righe correggibili o eliminabili una per una, con motivo (DEMO: responsabile, senza motivo obbligatorio)
+  const amending = shown?.status === 'approved' && (admin || (Boolean(shown?.demo) && resp));
+  const needReason = amending && !shown?.demo;
+  const rowActions = editing || amending;
+  const edit = rowActions ? its.find((i) => i.id === sp.edit) : undefined;
+  const delRow = rowActions ? its.find((i) => i.id === sp.elimina) : undefined;
 
   // tabella del confronto: entrate e uscite, gruppo → codice, con l'eventuale progetto
   const section = (d: 'in' | 'out') => {
@@ -99,8 +104,8 @@ export default async function BudgetPage({ searchParams }: {
         <tbody key={g.id}>
           <tr className="grp">
             <th scope="rowgroup" colSpan={2}>{g.code} · {CL(g)}</th>
-            <td className="r num"><b>{m(gb)}</b></td><td className="r num"><b>{m(ga)}</b></td>
-            <td className="r num hm">{d === 'out' ? m(gc) : ''}</td><td className="r num"><b>{m(gb - ga)}</b></td>
+            <td className="r num" data-l={L('Preventivo', 'Budget')}><b>{m(gb)}</b></td><td className="r num" data-l={L('Consuntivo', 'Réalisé')}><b>{m(ga)}</b></td>
+            <td className="r num hm">{d === 'out' ? m(gc) : ''}</td><td className="r num" data-l={L('Residuo', 'Reste')}><b>{m(gb - ga)}</b></td>
             <td className="hm">{gb > 0 ? `${Math.round((ga / gb) * 100)}%` : ''}</td><td />
           </tr>
           {gr.map((r) => {
@@ -109,11 +114,11 @@ export default async function BudgetPage({ searchParams }: {
               <tr key={`${r.category_id}-${r.project_id}`}>
                 <td className="nw">{r.category_code}</td>
                 <td>{lang === 'fr' && r.cat_fr ? r.cat_fr : r.cat_it}{r.project_name && <span className="muted"> · {r.project_name}</span>}</td>
-                <td className="r num">{m(b)}</td>
-                <td className="r num">{r.movements > 0
+                <td className="r num" data-l={L('Preventivo', 'Budget')}>{m(b)}</td>
+                <td className="r num" data-l={L('Consuntivo', 'Réalisé')}>{r.movements > 0
                   ? <Link href={`/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${r.category_id}${r.project_id ? `&progetto=${r.project_id}` : ''}`}>{m(a)}</Link> : m(a)}</td>
                 <td className="r num hm">{d === 'out' && c ? m(c) : ''}</td>
-                <td className={`r num ${b - a < 0 ? 'neg' : ''}`}>{m(b - a)}</td>
+                <td className={`r num ${b - a < 0 ? 'neg' : ''}`} data-l={L('Residuo', 'Reste')}>{m(b - a)}</td>
                 <td className="hm">{d === 'out' && <BudgetBar budget={b} spent={a + c} />}</td>
                 <td>{d === 'out' && status(b, a, c)}</td>
               </tr>
@@ -155,8 +160,8 @@ export default async function BudgetPage({ searchParams }: {
               {vs.map((b) => (
                 <li key={b.id} aria-current={b.id === shown?.id ? 'true' : undefined}>
                   <Link href={href({ v: b.id })}>
-                    <b>{vLabel(b)}</b>{b.title ? ` · ${b.title}` : ''}
-                    <span className={`chip ${b.status === 'approved' ? 'ok' : b.status === 'draft' ? 'warn' : ''}`}>{stLabel(b.status)}</span>{b.demo && <span className="chip warn">DEMO</span>}
+                    <span className="v-name"><b>{vLabel(b)}</b>{b.title && <span className="v-title">{b.title}</span>}</span>
+                    <span className="v-chips"><span className={`chip ${b.status === 'approved' ? 'ok' : b.status === 'draft' ? 'warn' : ''}`}>{stLabel(b.status)}</span>{b.demo && <span className="chip warn">DEMO</span>}</span>
                   </Link>
                   <span className="muted">{b.approved_at ? `${L('Approvato il', 'Approuvé le')} ${dateTime(b.approved_at, lang)} · ${b.approval_ref}` : `${L('Creato il', 'Créé le')} ${date(b.created_at)}`}</span>
                 </li>
@@ -264,15 +269,32 @@ export default async function BudgetPage({ searchParams }: {
             </Panel>
           ) : (
             <Panel title={`${L('Righe', 'Lignes')} · ${shown ? vLabel(shown) : ''}`}>
-              {!editing && shown?.status !== 'draft' && <div className="panel-b note">{L(
-                'Questa versione è approvata o superata e non si modifica: per cambiare il preventivo crea una revisione.',
-                'Cette version est approuvée ou remplacée et ne se modifie pas : pour changer le budget, créez une révision.')}</div>}
+              {!editing && !amending && shown?.status !== 'draft' && <div className="panel-b note">{L(
+                'Questa versione non si modifica: per cambiare il preventivo crea una revisione.',
+                'Cette version ne se modifie pas : pour changer le budget, créez une révision.')}</div>}
+              {amending && <div className="panel-b note">{shown?.demo ? L(
+                'Versione DEMO in vigore: puoi correggere o eliminare le righe una per una (per aggiungerne, crea una revisione).',
+                'Version DEMO en vigueur : vous pouvez corriger ou supprimer les lignes une par une (pour en ajouter, créez une révision).') : L(
+                'Versione approvata: puoi correggere o eliminare una riga indicando il motivo. Ogni modifica resta nello storico con il valore precedente; per aggiungere righe crea una revisione.',
+                'Version approuvée : vous pouvez corriger ou supprimer une ligne en indiquant le motif. Chaque modification reste dans l\'historique avec la valeur précédente ; pour ajouter des lignes, créez une révision.')}</div>}
+              {sp.ok === 'row_deleted' && <div className="panel-b note ok" role="status">{L('Riga eliminata.', 'Ligne supprimée.')}</div>}
+              {delRow && shown && (
+                <form action={deleteItem} className="panel-b del-row">
+                  <input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={delRow.id} /><input type="hidden" name="budget_id" value={shown.id} />
+                  <p style={{ margin: 0 }}><b>{L('Eliminare questa riga?', 'Supprimer cette ligne ?')}</b> {catBy.get(delRow.category_id)?.code} · {delRow.description || (catBy.get(delRow.category_id) ? CL(catBy.get(delRow.category_id)!) : '')} · {money(delRow.amount, delRow.currency, lang)}</p>
+                  {needReason && <div className="field"><label htmlFor="del-reason">{L('Motivo', 'Motif')}</label>
+                    <input className="input" id="del-reason" name="reason" required minLength={5} maxLength={500} placeholder={L('Es. voce annullata con delibera del…', 'Ex. poste annulé par délibération du…')} /></div>}
+                  <label className="chk"><input type="checkbox" name="confirm" required /> {L('Confermo l\'eliminazione', 'Je confirme la suppression')}</label>
+                  <div className="row-actions"><button className="btn danger" type="submit">{L('Elimina la riga', 'Supprimer la ligne')}</button>
+                    <Link className="btn ghost" href={href({ v: shown.id, vista: 'righe' })}>{L('Annulla', 'Annuler')}</Link></div>
+                </form>
+              )}
               {its.length === 0 ? <Empty text={L('Ancora nessuna riga.', 'Aucune ligne pour l\'instant.')} /> : (
                 <div className="tscroll">
                   <table className="t">
                     <thead><tr>
                       <th>{L('Codice', 'Code')}</th><th>{L('Progetto', 'Projet')}</th><th>{L('Descrizione', 'Description')}</th>
-                      <th className="r">{L('Quantità × costo', 'Quantité × coût')}</th><th className="r">{L('Importo', 'Montant')}</th><th className="r">EUR</th>{editing && <th />}
+                      <th className="r">{L('Quantità × costo', 'Quantité × coût')}</th><th className="r">{L('Importo', 'Montant')}</th><th className="r">EUR</th>{rowActions && <th />}
                     </tr></thead>
                     <tbody>
                       {its.map((i) => {
@@ -285,13 +307,10 @@ export default async function BudgetPage({ searchParams }: {
                             <td className="r num nw">{Number(i.qty).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}{i.unit ? ` ${i.unit}` : ''} × {money(i.unit_cost, i.currency, lang)}</td>
                             <td className="r num">{money(i.amount, i.currency, lang)}</td>
                             <td className="r num">{m(i.amount_eur)}</td>
-                            {editing && (
-                              <td className="nw r">
-                                <Link className="btn small" href={href({ v: shown!.id, vista: 'righe', edit: i.id })}>{L('Modifica', 'Modifier')}</Link>{' '}
-                                <form action={deleteItem} style={{ display: 'inline' }}>
-                                  <input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={i.id} />
-                                  <button className="btn small danger" type="submit" aria-label={L('Elimina riga', 'Supprimer la ligne')}>×</button>
-                                </form>
+                            {rowActions && (
+                              <td className="nw r row-btns" data-label="">
+                                <Link className="btn small" href={`${href({ v: shown!.id, vista: 'righe', edit: i.id })}#riga`}>{L('Modifica', 'Modifier')}</Link>
+                                <Link className="btn small danger" href={`${href({ v: shown!.id, vista: 'righe', elimina: i.id })}`}>{L('Elimina', 'Supprimer')}</Link>
                               </td>
                             )}
                           </tr>
@@ -301,8 +320,8 @@ export default async function BudgetPage({ searchParams }: {
                   </table>
                 </div>
               )}
-              {editing && shown && (
-                <form action={saveItem} className="fgrid panel-b" key={edit?.id ?? 'new'}>
+              {(editing || edit) && shown && (
+                <form action={saveItem} className="fgrid panel-b" key={edit?.id ?? 'new'} id="riga">
                   <input type="hidden" name="year" value={year} /><input type="hidden" name="budget_id" value={shown.id} />
                   {edit && <input type="hidden" name="id" value={edit.id} />}
                   <h3 className="span2" style={{ margin: 0 }}>{edit ? L('Modifica la riga', 'Modifier la ligne') : L('Nuova riga', 'Nouvelle ligne')}</h3>
@@ -334,6 +353,8 @@ export default async function BudgetPage({ searchParams }: {
                     <input className="input num" id="bi-rate" name="fx_rate" inputMode="decimal" defaultValue={edit?.fx_rate ? String(Number(edit.fx_rate)).replace('.', ',') : rate ? String(rate) : ''} /></div>
                   <div className="field"><label htmlFor="bi-notes">{L('Note', 'Notes')}</label>
                     <input className="input" id="bi-notes" name="notes" maxLength={500} defaultValue={edit?.notes ?? ''} /></div>
+                  {edit && needReason && <div className="field span2"><label htmlFor="bi-reason">{L('Motivo della modifica (resta nello storico)', 'Motif de la modification (reste dans l\'historique)')}</label>
+                    <input className="input" id="bi-reason" name="reason" required minLength={5} maxLength={500} placeholder={L('Es. importo corretto dopo il nuovo preventivo del fornitore', 'Ex. montant corrigé après le nouveau devis du fournisseur')} /></div>}
                   <div className="span2 row-actions">
                     <button className="btn primary" type="submit">{edit ? L('Salva la riga', 'Enregistrer la ligne') : L('Aggiungi la riga', 'Ajouter la ligne')}</button>
                     {edit && <Link className="btn ghost" href={href({ v: shown.id, vista: 'righe' })}>{L('Annulla', 'Annuler')}</Link>}

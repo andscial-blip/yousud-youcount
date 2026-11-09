@@ -38,6 +38,7 @@ for (let i = 0; i < 120 && !(await fetch(`${base}/login`).then((r) => r.ok, () =
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 860 } });
+await ctx.addInitScript(() => { try { sessionStorage.setItem('yc-splash', '1'); } catch {} });
 const page = await ctx.newPage();
 const consoleErrors = [];
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });

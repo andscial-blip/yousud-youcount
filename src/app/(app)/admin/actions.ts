@@ -134,3 +134,21 @@ export async function closeMonth(form: FormData) {
   const { error } = await supabase.rpc(fn, { p_year: y, p_month: mo });
   done('/admin/periodi', error);
 }
+
+// Eliminazione di un utente (super amministratore): motivo e password reinserita; il database decide se eliminarlo
+// del tutto (nessun dato lasciato) o solo togliergli l'accesso tenendo il nome nello storico.
+export async function deleteUser(form: FormData) {
+  const fail = (m: string) => back('/admin/utenti', `err=${encodeURIComponent(m)}`);
+  if (form.get('confirm') !== 'on') fail('Spunta la conferma per eliminare l\'utente.');
+  const { requireMe } = await import('@/lib/session');
+  const { withFreshPassword } = await import('@/lib/reauth');
+  const { user } = await requireMe();
+  const r = await withFreshPassword(user.email, String(form.get('password') ?? ''), async (sb): Promise<string> => {
+    const { data, error } = await sb.rpc('user_delete', { p_id: String(form.get('id')), p_reason: String(form.get('reason') ?? '') });
+    return error ? `!${error.message}` : String(data?.outcome ?? '');
+  });
+  const out = r.ok ? r.value : `!${r.error}`;
+  if (out.startsWith('!')) fail(out.slice(1));
+  revalidatePath('/', 'layout');
+  back('/admin/utenti', `ok=${out === 'deleted' ? 'user_deleted' : 'user_disabled'}`);
+}

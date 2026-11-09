@@ -52,7 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <main className="main" id="main" tabIndex={-1}><div id="app" className="view">{children}</div></main>
         </div>
         <BottomNav secs={secs} canWrite={canWrite}
-          labels={{ more: t('nav_more'), newMov: t('nav_new_long').replace('+ ', ''), other: t('nav_sections'), close: t('close'),
+          labels={{ more: t('nav_more'), home: lang === 'fr' ? 'Accueil' : undefined, newMov: t('nav_new_long').replace('+ ', ''), other: t('nav_sections'), close: t('close'),
                     signOut: <SignOut variant="menu" label={t('sign_out')} warn={warn} icon={<CIcon name="logout" size={20} />} /> }} />
       </div>
       <TableCards />

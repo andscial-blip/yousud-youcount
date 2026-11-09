@@ -30,12 +30,27 @@ function label(root: ParentNode) {
   return pending;
 }
 
+// Schede che scorrono in orizzontale (viste, sotto-schede): quella scelta deve essere visibile, non tagliata a destra.
+// (nessun attributo aggiunto: cambierebbe l'HTML prima che React lo idrati)
+const shown = new WeakSet<Element>();
+function showActive(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('.segs, .subnav').forEach((bar) => {
+    if (bar.scrollWidth <= bar.clientWidth + 1 || shown.has(bar)) return;
+    const on = bar.querySelector<HTMLElement>('[aria-selected="true"], [aria-current="page"], .on');
+    if (!on) return;
+    shown.add(bar);
+    const l = on.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft, r = l + on.offsetWidth;
+    if (r > bar.scrollLeft + bar.clientWidth - 8 || l < bar.scrollLeft) bar.scrollLeft = Math.max(0, l - 24);
+  });
+}
+
 export function TableCards() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let tries = 0;
     const run = () => {
       clearTimeout(timer);
+      showActive(document);
       if (label(document) && tries++ < 40) timer = setTimeout(run, 150);
     };
     run();

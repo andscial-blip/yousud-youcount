@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
+import { purgeAllAction } from './actions';
 import { date, money, nm } from '@/lib/format';
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
@@ -19,7 +20,7 @@ const PAGE = 100;
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isId = (v: string) => /^[0-9a-f-]{36}$/.test(v);
 const KEYS = ['stato', 'q', 'progetto', 'conto', 'dal', 'al', 'codice', 'tipo', 'cp', 'metodo', 'valuta', 'doc', 'demo', 'p'] as const;
-type SP = Partial<Record<(typeof KEYS)[number], string>>;
+type SP = Partial<Record<(typeof KEYS)[number] | 'ok' | 'err', string>>;
 
 // Registro dei movimenti: ricerca e filtri combinabili (tutti nell'indirizzo, quindi salvabili e condivisibili),
 // totali del filtro in euro, tabella su PC e schede su telefono. «Da verificare» è il filtro stato=recorded.
@@ -93,8 +94,16 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Contre-passations')]];
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
+  const admin = can(me, ['super_admin', 'admin']);
+  const { count: allCount } = admin ? await supabase.from('movements').select('id', { count: 'exact', head: true }) : { count: 0 };
+  const { data: bk } = admin ? await supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : { data: null };
+  const bkAt = (bk?.value as { at?: string } | null)?.at ?? null;
+  const bkFresh = Boolean(bkAt && Date.now() - Date.parse(bkAt) < 24 * 3600e3);
   return (
     <div className="stack">
+      {sp.ok === 'purged' && <div className="note ok" role="status">{L('Movimento eliminato definitivamente. I suoi dati restano nel registro modifiche.', 'Mouvement supprimé définitivement. Ses données restent dans le journal des modifications.')}</div>}
+      {sp.ok === 'purged_all' && <div className="note ok" role="status">{L('Tutti i movimenti sono stati eliminati. I loro dati restano nel registro modifiche e nel backup.', 'Tous les mouvements ont été supprimés. Leurs données restent dans le journal et la sauvegarde.')}</div>}
+      {sp.err && <div className="note err" role="alert">{sp.err}</div>}
       <PageHead title={t('nav_movements')} />
 
       <Panel>
@@ -148,8 +157,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
         <div className="sstrip mv-sum">
           <div><span>{L('Movimenti', 'Mouvements')}</span><b className="num">{total.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</b></div>
           <div><span>{L('Entrate', 'Recettes')}</span><b className="num amt-in">{e0(inc)}</b></div>
-          <div><span>{L('Uscite', 'Dépenses')}</span><b className="num">{e0(out)}</b></div>
-          <div><span>{L('Saldo', 'Solde')}</span><b className={`num ${inc - out < 0 ? 'neg' : ''}`}>{e0(inc - out)}</b></div>
+          <div><span>{L('Uscite', 'Dépenses')}</span><b className="num amt-out">{e0(out)}</b></div>
+          <div><span>{L('Saldo', 'Solde')}</span><b className={`num ${inc - out < 0 ? 'neg' : 'amt-in'}`}>{e0(inc - out)}</b></div>
         </div>
         {demoCount > 0 && <div className="note" style={{ margin: '0 18px 14px' }}>{L(`Stai vedendo ${demoCount} movimenti dimostrativi. Per eliminarli tutti, con conferma del numero, vai a `, `Vous voyez ${demoCount} mouvements de démonstration. Pour tous les supprimer, avec confirmation du nombre, allez à `)}
           <Link href="/admin/impostazioni#demo">{L('Impostazioni › Dati dimostrativi', 'Paramètres › Données de démonstration')}</Link>.</div>}
@@ -197,7 +206,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 <li key={m.id}><Link href={`/movimenti/${m.id}`}>
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
                   <div className="mc-m"><b className="mc-t">{m.description || t(`k_${m.kind}`)}</b>
-                    <span className="mc-s">{[date(m.op_date), m.project?.name, m.category?.code].filter(Boolean).join(' · ')}</span>
+                    <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
                     <span className="mc-c"><StatusChip s={m.status} label={t(`st_${m.status}`)} />{m.demo && <span className="chip warn tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('senza giustificativo', 'sans justificatif')}</span>}</span></div>
                   <span className={`mc-a num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
@@ -216,6 +225,27 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           </nav>
         )}
       </Panel>
+      {admin && (allCount ?? 0) > 0 && (
+        <details className="danger-zone panel" id="svuota">
+          <summary className="btn ghost">{L(`Svuota l'elenco: elimina tutti i ${allCount} movimenti…`, `Vider la liste : supprimer les ${allCount} mouvements…`)}</summary>
+          <form action={purgeAllAction} className="stack panel-b" style={{ gap: 10 }}>
+            <input type="hidden" name="expected" value={allCount ?? 0} />
+            <p className="muted" style={{ margin: 0 }}>{L(
+              'Elimina definitivamente tutti i movimenti (reali e DEMO) con i loro abbinamenti; preventivi, conti e piano dei conti restano, la numerazione MOV riparte da 001. Serve un backup scaricato nelle ultime 24 ore.',
+              'Supprime définitivement tous les mouvements (réels et DEMO) avec leurs rapprochements ; budgets, comptes et plan comptable restent, la numérotation MOV repart de 001. Il faut une sauvegarde téléchargée dans les dernières 24 heures.')}</p>
+            <p style={{ margin: 0 }}>{bkFresh
+              ? <span className="chip ok">{L('Backup recente', 'Sauvegarde récente')}: {new Date(bkAt!).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</span>
+              : <><span className="chip warn">{L('Nessun backup nelle ultime 24 ore', 'Aucune sauvegarde dans les dernières 24 heures')}</span>{' '}
+                <a className="btn small" href="/api/v1/backup"><Ico name="download" />{L('Scarica il backup', 'Télécharger la sauvegarde')}</a></>}</p>
+            <label className="field"><span>{L('Motivo', 'Motif')}</span>
+              <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={L('Es. pulizia dei movimenti di prova prima dell\'avvio', 'Ex. nettoyage des mouvements de test avant le démarrage')} /></label>
+            <label className="field"><span>{L('La tua password', 'Votre mot de passe')}</span>
+              <input className="input" name="password" type="password" required autoComplete="current-password" /></label>
+            <label className="check"><input type="checkbox" name="confirm" required /> {L(`Elimino definitivamente tutti i ${allCount} movimenti`, `Je supprime définitivement les ${allCount} mouvements`)}</label>
+            <div><button className="btn danger" type="submit" disabled={!bkFresh}>{L('Elimina tutti i movimenti', 'Supprimer tous les mouvements')}</button></div>
+          </form>
+        </details>
+      )}
     </div>
   );
 }

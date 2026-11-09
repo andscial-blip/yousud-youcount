@@ -7,6 +7,8 @@ import { ErrorNote, H2 } from '@/components/Page';
 import { type Balance } from '@/components/Balances';
 import { MonthBars } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
+import { DashNotes } from '@/components/DashNotes';
+import { colorFor } from '@/lib/palette';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +31,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const cfFrom = new Date(cy, now.getMonth() - 3, 1), cfTo = new Date(cy, now.getMonth(), 0);
 
   const [{ data: bal, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }, { data: advs },
-    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { count: noDoc }] = await Promise.all([
+    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id).is('reimb_status', null),
@@ -45,6 +47,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     staff ? supabase.rpc('budget_compare', { p_year: year }) : Promise.resolve({ data: [] }),
     staff ? supabase.from('v_ledger').select('amount_eur').eq('kind', 'expense').gte('op_date', ymd(cfFrom)).lte('op_date', ymd(cfTo)).limit(50000) : Promise.resolve({ data: null }),
     staff ? supabase.from('movements').select('amount, currency, amount_eur').eq('reimb_status', 'due').limit(5000) : Promise.resolve({ data: null }),
+    supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('movements').select('id', { count: 'exact', head: true }).neq('status', 'draft').not('no_doc_reason', 'is', null).eq('kind', 'expense').gte('op_date', `${year}-01-01`).lte('op_date', `${year}-12-31`),
   ]);
 
@@ -112,16 +115,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     href: '/movimenti?stato=recorded', act: L('Verifica', 'Vérifier') });
   if (dueCount) todo.push({ lvl: 'warn', ic: 'wallet', title: L(`${dueCount} ${dueCount === 1 ? 'spesa da rimborsare' : 'spese da rimborsare'}`, `${dueCount} dépense${dueCount === 1 ? '' : 's'} à rembourser`),
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });
-  if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi da giustificare da oltre 30 giorni: ${advLate}`, `Avances à justifier depuis plus de 30 jours : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
-  if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
-  if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/preventivo?anno=${year}&vista=confronto`, act: L('Vedi', 'Voir') });
+  if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi da giustificare da oltre 30 giorni: ${advLate}`, `Avances à justifier depuis plus de 30 jours : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
+  if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
+  if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/preventivo?anno=${year}&vista=confronto`, act: L('Vedi', 'Voir') });
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });
-  if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
+  if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
   if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'warn', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
     sub: L('Scaricalo e salvalo nel Drive condiviso di YouSud', 'Téléchargez-la et enregistrez-la dans le Drive partagé de YouSud'), href: '/admin/impostazioni', act: L('Scarica', 'Télécharger') });
   for (const u of upcoming.slice(0, 5)) todo.push({ lvl: days(u.date) < 0 ? 'warn' : 'do', ic: 'cal', title: u.title, sub: date(u.date), chip: chipFor(u.date), href: '/scadenze' });
   if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: L('Niente da verificare, rimborsare o firmare', 'Rien à vérifier, rembourser ou signer'), href: '/movimenti' });
   const TODO_MAX = 7;
+  const notes = (notesRow?.value ?? null) as { text?: string; by_name?: string; at?: string } | null;
 
   const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
   const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)} %` : '–');
@@ -172,7 +176,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <div className="panel-b">{projects.length ? (
               <ul className="hcat pbars">{projects.slice(0, 7).map((p) => (
                 <li key={p.href}><Link className="hc-n" href={p.href}>{p.label}</Link><b className="num">{e0(p.value)} <small>{pct(p.value, out)}</small></b>
-                  <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%`, background: 'var(--amber-soft)' }} /></span></li>))}</ul>
+                  <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%`, background: colorFor(p.label) }} /></span></li>))}</ul>
             ) : <p className="muted" style={{ margin: 0 }}>{t('none')}</p>}
               {projects.length > 7 && <p style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{L(`Tutti i ${projects.length} progetti`, `Les ${projects.length} projets`)} →</Link></p>}</div>
           </section>
@@ -217,22 +221,43 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             {todo.length > TODO_MAX && <div className="more"><Link className="btn small ghost" href="/scadenze">{L(`Altre ${todo.length - TODO_MAX}`, `${todo.length - TODO_MAX} autres`)}</Link></div>}
           </section>
 
-          <section className="panel h-card">
-            <div className="panel-h"><H2 icon="euro">{L('Cambio', 'Change')} MGA/EUR</H2><div className="spacer" /><Link className="eyebrow" href="/cambi">{L('storico', 'historique')} →</Link></div>
-            <div className="panel-b">
-              {fx ? <>
-                <div className="big-row"><div><span>1{' '}€ =</span><b className="num">{money(rate, 'MGA', lang)}</b><small>{ML[fx.month - 1]} {fx.year}{fx.source ? ` · ${fx.source}` : ''}</small></div>
-                  {fxPrev && <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{' '}%</span>}</div>
-                <p className="muted small" style={{ margin: '8px 0 0' }}>{L('Tasso del mese, proposto ai nuovi movimenti in ariary. Ogni movimento conserva il tasso applicato.', 'Taux du mois, proposé aux nouveaux mouvements en ariary. Chaque mouvement garde son taux appliqué.')}</p>
-              </> : <p className="muted" style={{ margin: 0 }}><Link href="/cambi">{L('Inserisci il primo tasso', 'Saisir le premier taux')} →</Link></p>}
-            </div>
-          </section>
+          {/* riquadri piccoli: cambio e le cifre da tenere d'occhio */}
+          <div className="h-tiles">
+            <Link className="htile" href="/cambi">
+              <span className="ht-l"><CIcon name="euro" size={14} />{L('Cambio', 'Change')}</span>
+              {fx ? <><b className="num">{money(rate, 'MGA', lang)}</b>
+                <small>1{'\u00a0'}€ · {ML[fx.month - 1]}{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
+                : <small>{L('Inserisci il tasso', 'Saisir le taux')}</small>}
+            </Link>
+            <Link className={`htile${toVerify ? ' t-do' : ''}`} href="/movimenti?stato=recorded">
+              <span className="ht-l"><CIcon name="check" size={14} />{L('Da verificare', 'À vérifier')}</span>
+              <b className="num">{toVerify ?? 0}</b><small>{L('movimenti', 'mouvements')}</small>
+            </Link>
+            <Link className={`htile${dueCount ? ' t-warn' : ''}`} href="/rimborsi">
+              <span className="ht-l"><CIcon name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span>
+              <b className="num">{due ? e0(due) : '0'}</b><small>{dueCount ?? 0} {(dueCount ?? 0) === 1 ? L('spesa', 'dépense') : L('spese', 'dépenses')}</small>
+            </Link>
+            {(() => { const u = upcoming.find((u) => days(u.date) >= 0); return (
+              <Link className="htile" href="/scadenze">
+                <span className="ht-l"><CIcon name="cal" size={14} />{L('Prossima scadenza', 'Prochaine échéance')}</span>
+                {u ? <><b className="num">{days(u.date) === 0 ? L('oggi', 'aujourd\'hui') : L(`tra ${days(u.date)} g`, `dans ${days(u.date)} j`)}</b><small className="ht-t">{u.title}</small></>
+                  : <><b>–</b><small>{L('nessuna nei prossimi 30 giorni', 'aucune dans les 30 prochains jours')}</small></>}
+              </Link>); })()}
+          </div>
 
           <section className="panel h-card">
-            <div className="panel-h"><H2 text={t('balances')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
+            <div className="panel-h"><H2 text={L('Saldo dei conti', 'Solde des comptes')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
             <ul className="acclist">{rows.filter((r) => r.kind !== 'advance').map((r) => (
               <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
                 <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
+          </section>
+
+          <section className="panel h-card">
+            <div className="panel-h"><H2 icon="pen" text={L('Note', 'Notes')} /><div className="spacer" /><span className="eyebrow">{L('condivise', 'partagées')}</span></div>
+            <div className="panel-b">
+              <DashNotes text={notes?.text ?? ''} lang={lang} canWrite={me!.role !== 'read_only'}
+                meta={notes?.at ? `${notes.by_name ?? ''} · ${new Date(notes.at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''} />
+            </div>
           </section>
         </div>
       </div>
