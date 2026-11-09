@@ -1021,3 +1021,15 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
   :root:not([data-theme="light"]) .chip.tiny { background: #2C3746; color: #C9D6E8; }
   :root:not([data-theme="light"]) { --dn6: #8A9BB5; }
 }
+/* giustificativi: scarica tutti (ZIP) e collegamento dei file senza movimento */
+.dzip { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dzip select.input { width: auto; min-width: 0; flex: 0 1 160px; }
+.dzip .btn { flex: none; }
+.dl-link { display: inline-flex; align-items: center; gap: 6px; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.orph { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.orph-f { display: flex; gap: 6px; align-items: center; flex: 1 1 220px; }
+.orph-f .input { flex: 1 1 140px; min-width: 0; min-height: 36px; padding: 4px 10px; font-size: 14px; }
+@media (max-width: 600px) {
+  .dzip select.input { flex: 1 1 calc(50% - 4px); }
+  .dzip .btn { flex: 1 1 100%; justify-content: center; }
+}

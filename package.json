@@ -25,6 +25,7 @@
     "@supabase/supabase-js": "^2.119.0",
     "dexie": "^4.4.7",
     "exceljs": "^4.4.0",
+    "fflate": "^0.8.3",
     "next": "15.5.29",
     "pdf-lib": "^1.17.1",
     "react": "19.1.0",

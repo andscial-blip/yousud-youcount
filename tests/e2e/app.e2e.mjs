@@ -2,6 +2,7 @@
 // Prepara utenti e movimenti con le funzioni del database, poi entra nell'app con Playwright come
 // operatore e come utente in sola lettura e controlla cosa vede ciascuno.
 // Uso: npm run db:reset && node tests/e2e/app.e2e.mjs
+import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -511,6 +512,32 @@ try {
     await p.goto(`${base}/documenti?f=orfani`);
     if (n === 0) await p.getByText('Nessun documento corrisponde alla ricerca.').waitFor();
     else assert.equal(await p.locator('main tbody tr').count(), n);
+  });
+  await check('documenti: scarica tutti in uno ZIP; un giustificativo senza movimento si scarica e si collega', async () => {
+    const p = rs.page;
+    await p.goto(`${base}/documenti`);
+    const [{ y }] = (await pool.query(`select extract(year from coalesce(d.doc_date, m.op_date, d.created_at::date))::int y
+      from documents d left join movement_documents md on md.document_id = d.id left join movements m on m.id = md.movement_id
+      order by d.created_at limit 1`)).rows;
+    await p.locator('.dzip select').first().selectOption(String(y));
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Scarica tutti (ZIP)' }).click()]);
+    assert.match(dl.suggestedFilename(), new RegExp(`^giustificativi_${y}\\.zip$`));
+    const buf = await fs.promises.readFile(await dl.path());
+    assert.equal(buf.subarray(0, 2).toString(), 'PK', 'è un file ZIP');
+    // un file caricato e mai collegato: si scarica dalla lista e si collega a un movimento registrato
+    const [src] = (await pool.query(`select org_id, original_path, mime, uploaded_by from documents limit 1`)).rows;
+    const sha = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
+    const [{ id: orphan }] = (await pool.query(`insert into documents(org_id, client_uuid, doc_type, original_path, sha256, mime, file_name, uploaded_by)
+      values ($1, $2, 'receipt', $3, $4, $5, 'ricevuta-sciolta.pdf', $6) returning id`, [src.org_id, randomUUID(), src.original_path, sha, src.mime, src.uploaded_by])).rows;
+    const [mv] = (await pool.query(`select id, ref from movements where status = 'recorded' and ref is not null and kind <> 'transfer' order by ref limit 1`)).rows;
+    await p.goto(`${base}/documenti?f=orfani`);
+    const row = p.locator('main tbody tr', { hasText: 'ricevuta-sciolta.pdf' });
+    assert.ok(await row.locator('a.dl-link').getAttribute('href'), 'link per scaricarlo');
+    await row.locator('input[name=ref]').fill(mv.ref.toLowerCase());
+    await row.getByRole('button', { name: 'Collega' }).click();
+    await p.getByText(`Giustificativo collegato a ${mv.ref}.`).waitFor();
+    const [{ n }] = (await pool.query(`select count(*)::int n from movement_documents where document_id = $1 and movement_id = $2`, [orphan, mv.id])).rows;
+    assert.equal(n, 1);
   });
   await check('analisi: totali dell\'anno uguali al database, gruppi con preventivo, filtro per progetto; vietata agli operatori', async () => {
     const p = rs.page;

@@ -90,7 +90,8 @@ async function storage(req, res, url) {
   if (req.method === 'GET' && p.startsWith('/object/sign/')) {
     const f = FILES.get(p.slice('/object/sign/'.length));
     if (!f) return send(res, 404, { error: 'not found' });
-    res.writeHead(200, { 'content-type': f.type });
+    // come lo Storage vero: i link firmati si leggono anche da un'altra origine (lo ZIP dei giustificativi li scarica dal browser)
+    res.writeHead(200, { 'content-type': f.type, 'access-control-allow-origin': '*' });
     return res.end(f.buf);
   }
   if (!auth || auth.role !== 'authenticated') return send(res, 403, { error: 'unauthorized' });
