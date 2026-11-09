@@ -87,16 +87,15 @@ export function MonthBars({ data, lang, labels, hrefFor }: {
 export function HBars({ rows, lang, color = C_OUT, total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   const tot = total ?? rows.reduce((s, r) => s + r.value, 0);
+  // nome e importo su una riga (il nome va a capo, mai troncato), barra sotto
   return (
-    <div className="cbars">
+    <ul className="hcat pbars">
       {rows.map((r) => (
-        <div key={r.label} className="cbar">
-          <span className="n" title={r.label}>{r.href ? <a href={r.href}>{r.label}</a> : r.label}</span>
-          <span className="b"><i style={{ width: `${(r.value / max) * 100}%`, background: r.color ?? color }} /></span>
-          <span className="p num">{eur0(r.value, lang)}{tot > 0 && <small>{Math.round((r.value / tot) * 100)}%</small>}</span>
-        </div>
+        <li key={r.label}>{r.href ? <a className="hc-n" href={r.href}>{r.label}</a> : <span className="hc-n">{r.label}</span>}
+          <b className="num">{eur0(r.value, lang)}{tot > 0 && <small>{Math.round((r.value / tot) * 100)}{'\u00a0'}%</small>}</b>
+          <span className="hc-b"><i style={{ width: `${((r.value / max) * 100).toFixed(1)}%`, background: r.color ?? color }} /></span></li>
       ))}
-    </div>
+    </ul>
   );
 }
 

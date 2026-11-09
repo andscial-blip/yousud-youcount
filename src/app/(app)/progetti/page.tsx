@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { Empty, ErrorNote, Help, PageHead } from '@/components/Page';
+import { ProjectIcon } from '@/components/ProjectIcon';
+import { THEMES, themeOf } from '@/lib/project-theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +20,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const { data: bud } = await supabase.from('budgets').select('id').eq('year', year).eq('status', 'approved').maybeSingle();
   const [{ data: projects, error }, { data: ledger }, { data: items }] = await Promise.all([
-    supabase.from('projects').select('id, name, kind, active, demo').order('kind').order('name'),
+    supabase.from('projects').select('id, name, kind, active, demo, theme').order('kind').order('name'),
     supabase.from('v_ledger').select('project_id, kind, amount_eur').eq('year', year).neq('kind', 'transfer').eq('out_of_report', false).limit(50000).returns<Led[]>(),
     bud ? supabase.from('budget_items').select('project_id, amount_eur, category:categories(direction)').eq('budget_id', bud.id).returns<BI[]>() : Promise.resolve({ data: [] as BI[] }),
   ]);
@@ -32,7 +34,6 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const hidden = all.length - shown.length;
   const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
   const tot = shown.reduce((s, p) => { const a = A(p.id); s.out += a.out; s.inc += a.inc; s.b += a.bOut; return s; }, { out: 0, inc: 0, b: 0 });
-  const initials = (n: string) => n.replace(/^(École|Ecole|Scuola)\s+/i, '').split(/[\s&-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 
   return (
     <div className="stack">
@@ -59,8 +60,8 @@ export default async function Projects({ searchParams }: { searchParams: Promise
               : !a.bOut && a.out > 0 ? { c: 'mid', t: L('nessun preventivo', 'aucun budget') } : null;
             return (
               <Link key={p.id} className="pcard" href={`/progetti/${p.id}?anno=${year}`}>
-                <div className="pc-h"><span className={`pc-ic ${p.kind === 'structure' ? 'st' : ''}`} aria-hidden="true">{initials(p.name)}</span>
-                  <div className="pc-n"><b>{p.name}</b><small>{p.kind === 'structure' ? L('Struttura e spese generali', 'Structure et frais généraux') : L(`${a.n} movimenti`, `${a.n} mouvements`)}{p.demo ? ' · DEMO' : ''}</small></div>
+                <div className="pc-h"><ProjectIcon p={p} />
+                  <div className="pc-n"><b>{p.name}</b><small>{L(THEMES[themeOf(p)].it, THEMES[themeOf(p)].fr)} · {L(`${a.n} movimenti`, `${a.n} mouvements`)}{p.demo ? ' · DEMO' : ''}</small></div>
                   {alert && <span className={`cdp ${alert.c}`}>{alert.t}</span>}</div>
                 <div className="pc-big"><span>{L('Uscite', 'Dépenses')}</span><b className="num">{e0(a.out)}</b>{a.bOut > 0 && <small>{L('su', 'sur')} {e0(a.bOut)} {L('previsti', 'prévus')}</small>}</div>
                 {a.bOut > 0 ? (

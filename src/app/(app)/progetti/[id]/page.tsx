@@ -6,6 +6,7 @@ import { Empty, Help, PageHead, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
 import { MonthBars } from '@/components/Charts';
 import { DOC_TYPES } from '@/lib/doc-model';
+import { ProjectIcon } from '@/components/ProjectIcon';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const year = Number(sp.anno) || now.getFullYear();
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const { data: p } = await supabase.from('projects').select('id, name, kind, start_date, end_date, demo').eq('id', id).maybeSingle();
+  const { data: p } = await supabase.from('projects').select('id, name, kind, start_date, end_date, demo, theme').eq('id', id).maybeSingle();
   if (!p) notFound();
   const staff = can(me, STAFF);
   const [{ data: budget }, { data: moves, count: nMoves }, { data: grants }, { data: ledger }, { data: cats }, { data: docs }, { data: dls }] = await Promise.all([
@@ -55,7 +56,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const back = `/progetti/${id}?anno=${year}`;
   return (
     <div className="stack">
-      <PageHead title={`${p.name} · ${year}`} lead={<Link className="btn ghost small" href={`/progetti?anno=${year}`}>← {t('nav_projects')}</Link>}>
+      <PageHead title={`${p.name} · ${year}`} lead={<><Link className="btn ghost small" href={`/progetti?anno=${year}`}>← {t('nav_projects')}</Link><ProjectIcon p={p} size={34} /></>}>
         <Link className="btn" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('Tutti i movimenti', 'Tous les mouvements')}</Link>
         <Link className="btn" href={`/documenti-emessi/nuovo?progetto=${id}`}>{L('Emetti documento', 'Émettre un document')}</Link>
       </PageHead>

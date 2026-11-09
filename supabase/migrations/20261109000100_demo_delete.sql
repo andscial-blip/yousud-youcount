@@ -335,3 +335,7 @@ begin
     execute v_src;
   end loop;
 end $$;
+
+-- Identità visiva dei progetti (scelta di Andrea: icona per tipo di attività). Vuoto = dedotto dal nome nell'app.
+alter table public.projects add column if not exists theme text
+  check (theme is null or theme in ('school','sport','food','soap','agri','health','water','training','other'));

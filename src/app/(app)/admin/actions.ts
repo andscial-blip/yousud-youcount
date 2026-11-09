@@ -79,7 +79,7 @@ type Spec = Record<string, 'text' | 'num' | 'bool' | 'date' | 'uuid'>;
 const TABLES: Record<string, { path: string; fields: Spec; insertOnly?: Spec }> = {
   accounts: { path: '/admin/conti', fields: { name_it: 'text', name_fr: 'text', opening_balance: 'num', opening_date: 'date', active: 'bool', sort: 'num' },
               insertOnly: { code: 'text', currency: 'text', location: 'text', kind: 'text' } },
-  projects: { path: '/admin/progetti', fields: { name: 'text', kind: 'text', code: 'text', active: 'bool', start_date: 'date', end_date: 'date' } },
+  projects: { path: '/admin/progetti', fields: { name: 'text', kind: 'text', theme: 'text', code: 'text', active: 'bool', start_date: 'date', end_date: 'date' } },
   categories: { path: '/admin/piano-conti', fields: { name_it: 'text', name_fr: 'text', report_line_key: 'text', active: 'bool' },
                 insertOnly: { code: 'text', direction: 'text', group_id: 'uuid', chart_version: 'num' } },
   counterparties: { path: '/controparti', fields: { name: 'text', kind: 'text', vat_number: 'text', country: 'text', active: 'bool' } },

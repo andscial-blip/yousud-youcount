@@ -1,3 +1,5 @@
+import { ProjectIcon } from '@/components/ProjectIcon';
+import { THEMES } from '@/lib/project-theme';
 import { ADMIN, can, requireMe } from '@/lib/session';
 import { date } from '@/lib/format';
 import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
@@ -6,15 +8,15 @@ import { saveRow } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-type P = { id: string; name: string; code: string | null; kind: string; active: boolean; start_date: string | null;
+type P = { id: string; name: string; code: string | null; kind: string; theme: string | null; active: boolean; start_date: string | null;
            end_date: string | null; legacy_name: string | null };
 
 export default async function AdminProjects({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
   const { ok, err } = await searchParams;
-  const { supabase, me, t } = await requireMe();
+  const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
   const { data, error } = await supabase.from('projects')
-    .select('id, name, code, kind, active, start_date, end_date, legacy_name').order('kind').order('name').returns<P[]>();
+    .select('id, name, code, kind, theme, active, start_date, end_date, legacy_name').order('kind').order('name').returns<P[]>();
   const fields = (p?: P) => (<>
     <F label={t('name')}><input className="input" name="name" defaultValue={p?.name} required maxLength={120} /></F>
     <F label={t('code')}><input className="input" name="code" defaultValue={p?.code ?? ''} maxLength={40} /></F>
@@ -22,7 +24,11 @@ export default async function AdminProjects({ searchParams }: { searchParams: Pr
       <select className="input" name="kind" defaultValue={p?.kind ?? 'project'}>
         <option value="project">{t('project')}</option><option value="structure">{t('prj_structure')}</option>
       </select></F>
-    <span />
+    <F label={lang === 'fr' ? 'Type d\'activité (icône)' : 'Tipo di attività (icona)'}>
+      <select className="input" name="theme" defaultValue={p?.theme ?? ''}>
+        <option value="">{lang === 'fr' ? 'Déduit du nom' : 'Dedotto dal nome'}</option>
+        {(Object.keys(THEMES) as (keyof typeof THEMES)[]).filter((k) => k !== 'structure').map((k) => <option key={k} value={k}>{lang === 'fr' ? THEMES[k].fr : THEMES[k].it}</option>)}
+      </select></F>
     <F label={t('start_date')}><input className="input" type="date" name="start_date" defaultValue={p?.start_date ?? ''} /></F>
     <F label={t('end_date')}><input className="input" type="date" name="end_date" defaultValue={p?.end_date ?? ''} /></F>
   </>);
@@ -36,7 +42,7 @@ export default async function AdminProjects({ searchParams }: { searchParams: Pr
         {(data ?? []).length === 0 ? <Empty text={t('none')} /> : data!.map((p) => (
           <EditRow key={p.id} inactive={!p.active} summary={<>
             <b className="grow">{p.name}</b>
-            {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}
+            <ProjectIcon p={p} size={28} /> {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}
             <span className="muted num">{p.start_date ? `${date(p.start_date)} – ${date(p.end_date)}` : ''}</span>
             {!p.active && <span className="chip">{t('inactive')}</span>}
           </>}>
