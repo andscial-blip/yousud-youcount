@@ -1001,7 +1001,7 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
   table.stmt thead { display: none; }
   table.stmt, table.stmt tbody { display: block; width: 100%; }
   table.stmt tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; row-gap: 2px; padding: 8px 14px; border-bottom: 1px solid var(--line-2); }
-  table.stmt tr > * { display: block; padding: 0 !important; border: 0 !important; }
+  table.stmt tr > * { display: block; width: auto !important; padding: 0 !important; border: 0 !important; }
   table.stmt tr > :nth-child(1), table.stmt tr > :nth-child(2):not([data-l]) { grid-column: 1 / -1; text-align: left; }
   table.stmt tr > td:nth-child(1).muted { font-size: 12px; }
   table.stmt tr > :empty { display: none; }
@@ -1010,3 +1010,5 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
   table.stmt tr.sec { display: block; background: var(--band); }
   table.stmt tr.sub, table.stmt tr.tot { background: var(--surface-2); }
 }
+/* «Elimina revisione…» rosso come «Elimina la bozza» */
+.row-actions .danger-zone > summary.btn { color: var(--red); }

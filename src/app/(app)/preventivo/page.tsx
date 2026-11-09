@@ -390,11 +390,11 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
       return (
         <tbody key={`${d}${sec}`}>
           <tr className="sub"><td colSpan={2}><b>{L(rs[0].section_it, rs[0].section_fr)}</b></td>
-            <td className="r num" data-l={LB[0]}><b>{m(sb)}</b></td><td className="r num" data-l={LB[1]}><b>{m(sa)}</b></td><td className="r num" data-l={LB[2]}><b>{m(sb - sa)}</b></td></tr>
+            <td className="r num" data-l={LB[0]}><b>{m(sb)}</b></td><td className="r num" data-l={LB[1]}><b>{m(sa)}</b></td><td className={`r num ${d === 'out' && sb - sa < 0 ? 'neg' : ''}`} data-l={LB[2]}><b>{m(sb - sa)}</b></td></tr>
           {rs.filter((r) => r.b || r.a).map((r) => (
             <tr key={`${d}${r.key ?? 'x'}`} className={r.key ? undefined : 'warn'}>
               <td className="nw muted">{r.key ?? '–'}</td><td>{L(r.name_it, r.name_fr)}</td>
-              <td className="r num" data-l={LB[0]}>{m(r.b)}</td><td className="r num" data-l={LB[1]}>{r.key ? m(r.a) : '–'}</td><td className="r num" data-l={LB[2]}>{r.key ? m(r.b - r.a) : '–'}</td>
+              <td className="r num" data-l={LB[0]}>{m(r.b)}</td><td className="r num" data-l={LB[1]}>{r.key ? m(r.a) : '–'}</td><td className={`r num ${d === 'out' && r.key && r.b - r.a < 0 ? 'neg' : ''}`} data-l={LB[2]}>{r.key ? m(r.b - r.a) : '–'}</td>
             </tr>
           ))}
         </tbody>
@@ -408,7 +408,7 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
         <thead><tr><th>{L('Voce', 'Poste')}</th><th /><th className="r">{L('Preventivo', 'Budget')}</th><th className="r">{L('Consuntivo', 'Réalisé')}</th><th className="r">{L('Differenza', 'Écart')}</th></tr></thead>
         <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Uscite', 'Dépenses')}</th></tr></tbody>
         {block('out')}
-        <tbody><tr className="tot"><td colSpan={2}>{L('Totale uscite', 'Total des dépenses')}</td><td className="r num" data-l={LB[0]}>{m(outB)}</td><td className="r num" data-l={LB[1]}>{m(outA)}</td><td className="r num" data-l={LB[2]}>{m(outB - outA)}</td></tr></tbody>
+        <tbody><tr className="tot"><td colSpan={2}>{L('Totale uscite', 'Total des dépenses')}</td><td className="r num" data-l={LB[0]}>{m(outB)}</td><td className="r num" data-l={LB[1]}>{m(outA)}</td><td className={`r num ${outB - outA < 0 ? 'neg' : ''}`} data-l={LB[2]}>{m(outB - outA)}</td></tr></tbody>
         <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Entrate', 'Recettes')}</th></tr></tbody>
         {block('in')}
         <tbody>

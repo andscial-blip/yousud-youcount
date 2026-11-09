@@ -29,15 +29,15 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
         {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
-          <table className="t" data-cards="">
-            <thead><tr><th>{t('g_title')}</th><th className="hm">{t('g_donor')}</th><th className="hm">{t('project')}</th>
-              <th className="hm">{t('g_period')}</th><th className="r">{t('g_amount')}</th><th className="r">{t('g_spent')}</th><th /></tr></thead>
+          <table className="t">
+            <thead><tr><th>{t('g_title')}</th><th>{t('g_donor')}</th><th>{t('project')}</th>
+              <th>{t('g_period')}</th><th className="r">{t('g_amount')}</th><th className="r">{t('g_spent')}</th><th /></tr></thead>
             <tbody>
               {data!.map((g) => (
                 <tr key={g.id}>
                   <td><Link className="rowlink" href={`/finanziamenti/${g.id}`}>{g.title}</Link>{g.code && <span className="muted"> · {g.code}</span>}</td>
-                  <td className="hm">{g.donor?.name ?? <span className="muted">{t('g_no_donor')}</span>}</td><td className="hm">{g.project?.name ?? t('g_none_project')}</td>
-                  <td className="hm num nw">{g.start_date ? `${date(g.start_date)} – ${date(g.end_date)}` : '–'}</td>
+                  <td>{g.donor?.name ?? <span className="muted">{t('g_no_donor')}</span>}</td><td>{g.project?.name ?? t('g_none_project')}</td>
+                  <td className="num nw">{g.start_date ? `${date(g.start_date)} – ${date(g.end_date)}` : '–'}</td>
                   <td className="r num nw">{g.amount ? money(g.amount, g.currency, lang) : '–'}</td>
                   <td className="r num nw">{money(spent.get(g.id) ?? 0, 'EUR', lang)}
                     {g.currency === 'EUR' && Number(g.amount) > 0 && (() => {
