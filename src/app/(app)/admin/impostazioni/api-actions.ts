@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 export async function createApiKey(_prev: unknown, form: FormData): Promise<{ key?: string; err?: string }> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('create_api_client', { p_name: String(form.get('name') ?? '') });
-  revalidatePath('/admin/impostazioni');
+  revalidatePath('/admin/dati');
   if (error) return { err: error.message };
   return { key: (data as { key: string }).key };
 }
@@ -14,5 +14,5 @@ export async function createApiKey(_prev: unknown, form: FormData): Promise<{ ke
 export async function revokeApiKey(form: FormData) {
   const supabase = await createClient();
   await supabase.rpc('revoke_api_client', { p_id: String(form.get('id') ?? '') });
-  revalidatePath('/admin/impostazioni');
+  revalidatePath('/admin/dati');
 }

@@ -15,7 +15,7 @@ const TABLES: [string, string[]][] = [
   ['organizations', ['id']], ['settings', ['org_id', 'key']], ['profiles', ['id']], ['accounts', ['id']], ['report_lines', ['id']],
   ['category_groups', ['id']], ['categories', ['id']], ['projects', ['id']], ['project_members', ['project_id', 'user_id']],
   ['payment_methods', ['id']], ['counterparties', ['id']], ['counterparty_private', ['counterparty_id']], ['grants', ['id']],
-  ['budget_lines', ['id']], ['documents', ['id']], ['movements', ['id']], ['movement_documents', ['movement_id', 'document_id']],
+  ['budget_lines', ['id']], ['documents', ['id']], ['movements', ['id']], ['movement_translations', ['movement_id']], ['movement_documents', ['movement_id', 'document_id']],
   ['periods', ['org_id', 'year', 'month']], ['fx_rates', ['org_id', 'year', 'month']], ['cash_counts', ['id']], ['bank_reconciliations', ['id']], ['api_clients', ['id']], ['reconciliation_items', ['movement_id', 'side']], ['self_certs', ['id']], ['budgets', ['id']], ['budget_items', ['id']], ['budget_amendments', ['id']], ['deadlines', ['id']], ['issued_docs', ['id']],
   ['audit_log', ['id']], ['sync_log', ['id']],
 ];

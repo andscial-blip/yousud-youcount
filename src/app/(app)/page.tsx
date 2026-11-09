@@ -121,7 +121,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });
   if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
   if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'warn', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
-    sub: L('Scaricalo e salvalo nel Drive condiviso di YouSud', 'Téléchargez-la et enregistrez-la dans le Drive partagé de YouSud'), href: '/admin/impostazioni', act: L('Scarica', 'Télécharger') });
+    sub: L('Scaricalo e salvalo nel Drive condiviso di YouSud', 'Téléchargez-la et enregistrez-la dans le Drive partagé de YouSud'), href: '/admin/dati', act: L('Scarica', 'Télécharger') });
   for (const u of upcoming.slice(0, 5)) todo.push({ lvl: days(u.date) < 0 ? 'warn' : 'do', ic: 'cal', title: u.title, sub: date(u.date), chip: chipFor(u.date), href: '/scadenze' });
   if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: L('Niente da verificare, rimborsare o firmare', 'Rien à vérifier, rembourser ou signer'), href: '/movimenti' });
   const TODO_MAX = 7;

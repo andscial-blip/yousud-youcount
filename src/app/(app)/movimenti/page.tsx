@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
 import { purgeAllAction } from './actions';
+import { AutoTranslate } from '@/components/AutoTranslate';
 import { date, money, nm } from '@/lib/format';
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
@@ -94,6 +95,12 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Contre-passations')]];
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
+  // descrizione nella lingua di chi legge (traduzione AI); le mancanti si chiedono in sottofondo
+  const pageIds = (data ?? []).map((m) => m.id);
+  const { data: trs } = pageIds.length ? await supabase.from('movement_translations').select('movement_id, source, it, fr').in('movement_id', pageIds) : { data: [] };
+  const trBy = new Map((trs ?? []).map((x) => [x.movement_id as string, x as { source: string; it: string; fr: string }]));
+  const desc = (m: { id: string; description: string }) => { const x = trBy.get(m.id); return x && x.source === m.description ? (lang === 'fr' ? x.fr : x.it) : m.description; };
+  const missing = (data ?? []).filter((m) => m.description && trBy.get(m.id)?.source !== m.description).map((m) => m.id);
   const admin = can(me, ['super_admin', 'admin']);
   const { count: allCount } = admin ? await supabase.from('movements').select('id', { count: 'exact', head: true }) : { count: 0 };
   const { data: bk } = admin ? await supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : { data: null };
@@ -101,6 +108,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const bkFresh = Boolean(bkAt && Date.now() - Date.parse(bkAt) < 24 * 3600e3);
   return (
     <div className="stack">
+      {missing.length > 0 && <AutoTranslate ids={missing} />}
       {sp.ok === 'purged' && <div className="note ok" role="status">{L('Movimento eliminato definitivamente. I suoi dati restano nel registro modifiche.', 'Mouvement supprimé définitivement. Ses données restent dans le journal des modifications.')}</div>}
       {sp.ok === 'purged_all' && <div className="note ok" role="status">{L('Tutti i movimenti sono stati eliminati. I loro dati restano nel registro modifiche e nel backup.', 'Tous les mouvements ont été supprimés. Leurs données restent dans le journal et la sauvegarde.')}</div>}
       {sp.err && <div className="note err" role="alert">{sp.err}</div>}
@@ -161,7 +169,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           <div><span>{L('Saldo', 'Solde')}</span><b className={`num ${inc - out < 0 ? 'neg' : 'amt-in'}`}>{e0(inc - out)}</b></div>
         </div>
         {demoCount > 0 && <div className="note" style={{ margin: '0 18px 14px' }}>{L(`Stai vedendo ${demoCount} movimenti dimostrativi. Per eliminarli tutti, con conferma del numero, vai a `, `Vous voyez ${demoCount} mouvements de démonstration. Pour tous les supprimer, avec confirmation du nombre, allez à `)}
-          <Link href="/admin/impostazioni#demo">{L('Impostazioni › Dati dimostrativi', 'Paramètres › Données de démonstration')}</Link>.</div>}
+          <Link href="/admin/dati#demo">{L('Impostazioni › Dati e sicurezza', 'Paramètres › Données et sécurité')}</Link>.</div>}
       </Panel>
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
@@ -180,7 +188,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <tr key={m.id}>
                     <td><KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} /></td>
                     <td className="num nw">{date(m.op_date)}<div className="muted small">{m.ref ?? L('bozza', 'brouillon')}</div></td>
-                    <td className="mv-d"><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind}`)}</Link>
+                    <td className="mv-d"><Link className="rowlink" href={`/movimenti/${m.id}`}>{desc(m) || t(`k_${m.kind}`)}</Link>
                       {m.demo && <span className="chip warn tiny">DEMO</span>}{m.reverses_id && <span className="chip tiny">{t('reversal')}</span>}
                       {m.reimb_status === 'due' && <span className="chip warn tiny">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
                       {(m.counterparty || m.method) && <div className="muted small">{[m.counterparty?.name, m.method ? nm(lang, m.method) : null].filter(Boolean).join(' · ')}</div>}</td>
@@ -205,7 +213,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               return (
                 <li key={m.id}><Link href={`/movimenti/${m.id}`}>
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
-                  <div className="mc-m"><b className="mc-t">{m.description || t(`k_${m.kind}`)}</b>
+                  <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
                     <span className="mc-c"><StatusChip s={m.status} label={t(`st_${m.status}`)} />{m.demo && <span className="chip warn tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('senza giustificativo', 'sans justificatif')}</span>}</span></div>

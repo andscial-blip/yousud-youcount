@@ -77,14 +77,14 @@ export async function loadDemo() {
   const supabase = await createClient();
   const { error } = await supabase.rpc('demo_load', { p: buildDemo(new Date().getFullYear()) });
   revalidatePath('/', 'layout');
-  redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#demo` : '/admin/impostazioni?ok=demo_loaded#demo');
+  redirect(error ? `/admin/dati?err=${encodeURIComponent(error.message)}#demo` : '/admin/dati?ok=demo_loaded#demo');
 }
 export async function purgeDemo(form: FormData) {
   const supabase = await createClient();
-  if (form.get('confirm') !== 'on') redirect('/admin/impostazioni?err=' + encodeURIComponent('Spunta la conferma per svuotare i dati dimostrativi.') + '#demo');
+  if (form.get('confirm') !== 'on') redirect('/admin/dati?err=' + encodeURIComponent('Spunta la conferma per svuotare i dati dimostrativi.') + '#demo');
   const { error } = await supabase.rpc('demo_purge', { p_expected: Number(form.get('expected')) });
   revalidatePath('/', 'layout');
-  redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#demo` : '/admin/impostazioni?ok=demo_purged#demo');
+  redirect(error ? `/admin/dati?err=${encodeURIComponent(error.message)}#demo` : '/admin/dati?ok=demo_purged#demo');
 }
 
 // Azzeramento prima dell'avvio: elimina tutti i movimenti e tutti i preventivi (solo super amministratore,
@@ -95,6 +95,6 @@ export async function resetAccounting(form: FormData) {
     p_movements: Number(form.get('movements')), p_budgets: Number(form.get('budgets')), p_word: String(form.get('word') ?? '').trim(),
   });
   revalidatePath('/', 'layout');
-  redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#azzera`
-    : `/admin/impostazioni?ok=reset&n=${data?.deleted?.movements ?? 0}&b=${data?.deleted?.budgets ?? 0}#azzera`);
+  redirect(error ? `/admin/dati?err=${encodeURIComponent(error.message)}#azzera`
+    : `/admin/dati?ok=reset&n=${data?.deleted?.movements ?? 0}&b=${data?.deleted?.budgets ?? 0}#azzera`);
 }

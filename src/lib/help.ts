@@ -179,12 +179,17 @@ export const HELP: HelpEntry[] = [
     it: ['Chiusure mensili', ['Chiudere un mese blocca nuove registrazioni con data in quel mese. Si chiude dopo aver verificato tutti i movimenti del mese.']],
     fr: ['Clôtures mensuelles', ['Clôturer un mois bloque les nouveaux enregistrements datés de ce mois. On clôture après avoir vérifié tous les mouvements du mois.']] },
   { href: '/admin/impostazioni', sec: 'set',
-    it: ['Ente e impostazioni', [
+    it: ['Ente e documenti', [
       'Dati dell\'associazione usati nei documenti (denominazione legale, sede, codice fiscale, IBAN, iscrizione RUNTS, contatti), firmatario e logo.',
+      'Qui si scelgono anche le regole: controllo a quattro occhi, giustificativo obbligatorio, lettura dei documenti con l\'AI.']],
+    fr: ['Organisme et documents', [
+      'Données de l\'association utilisées dans les documents (dénomination légale, siège, code fiscal, IBAN, inscription RUNTS, contacts), signataire et logo.',
+      'Ici se choisissent aussi les règles : contrôle à quatre yeux, justificatif obligatoire, lecture des documents par l\'IA.']] },
+  { href: '/admin/dati', sec: 'set',
+    it: ['Dati e sicurezza', [
       'Backup completo in Excel da salvare nel Drive condiviso di YouSud; chiavi per collegare altre app. I dati dimostrativi si caricano e si svuotano da qui, con conferma del numero.',
       'Solo il super amministratore, prima dell\'avvio: «Azzera movimenti e preventivi» elimina tutti i movimenti e i preventivi di collaudo. Serve un backup scaricato nelle ultime 24 ore e la parola AZZERA; la numerazione MOV riparte da 001.']],
-    fr: ['Organisme et paramètres', [
-      'Données de l\'association utilisées dans les documents (dénomination légale, siège, code fiscal, IBAN, inscription RUNTS, contacts), signataire et logo.',
+    fr: ['Données et sécurité', [
       'Sauvegarde complète en Excel à enregistrer dans le Drive partagé de YouSud ; clés pour relier d\'autres applications. Les données de démonstration se chargent et se vident ici, avec confirmation du nombre.',
       'Seulement le super administrateur, avant le lancement : « Remettre à zéro » supprime tous les mouvements et budgets de test. Il faut une sauvegarde de moins de 24 heures et le mot AZZERA ; la numérotation MOV repart de 001.']] },
   { href: '/admin/registro', sec: 'set',

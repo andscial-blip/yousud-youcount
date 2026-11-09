@@ -81,6 +81,7 @@ export default async function MovementDetail({ params, searchParams }: {
   // verificato: per correggerlo un amministratore ne riapre la verifica (con motivo); poi si modifica e si riverifica
   const canReopen = admin && m.status === 'verified' && !rev && !m.reverses_id;
   const FR = lang === 'fr';
+  const { data: tr } = await supabase.from('movement_translations').select('source, it, fr').eq('movement_id', m.id).maybeSingle();
   // autocertificazione: per una spesa senza giustificativo (o con l'AUT già emessa), non verificata, non da chi legge soltanto
   const writer = Boolean(me && me.role !== 'read_only');
   const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
@@ -114,6 +115,8 @@ export default async function MovementDetail({ params, searchParams }: {
               <dl className="kv">
                 {row(t('f_op_date'), date(m.op_date))}
                 {row(t('description'), m.description || null)}
+                {tr && tr.source === m.description && (lang === 'fr' ? tr.fr : tr.it) !== m.description &&
+                  row(lang === 'fr' ? 'Traduction (IA)' : 'Traduzione (AI)', lang === 'fr' ? tr.fr : tr.it)}
                 {m.reimb_status === 'due' ? row(t('account'), <span className="chip warn">{t('reimb_due_chip')}</span>)
                 : row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
                 {m.paid_by && row(t('f_paid_by'), m.paid_by)}

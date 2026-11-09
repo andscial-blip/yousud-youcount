@@ -26,15 +26,16 @@ export const SECTIONS: Section[] = [
   { id: 'prj', key: 'nav_projects', hint: 'hint_prj', ic: 'brief', subs: [
     { href: '/progetti', key: 'nav_projects' }, { href: '/finanziamenti', key: 'nav_grants' }] },
   { id: 'anal', key: 'nav_analysis', hint: 'hint_anal', ic: 'chart', roles: STAFF, subs: [
-    { href: '/analisi', key: 'nav_analysis' }, { href: '/rendiconto', key: 'nav_report' }, { href: '/report', key: 'nav_reports' }] },
+    { href: '/analisi', key: 'nav_analysis' }, { href: '/rendiconto', key: 'nav_report' }, { href: '/report', key: 'nav_reports' }, { href: '/chiedi', key: 'nav_ask' }] },
   { id: 'docs', key: 'nav_documents', hint: 'hint_docs', ic: 'receipt', subs: [{ href: '/documenti-emessi', key: 'nav_documents' }] },
+  { id: 'guide', key: 'nav_guide', hint: 'hint_guide', ic: 'info', subs: [{ href: '/guida', key: 'nav_guide' }] },
   { id: 'set', key: 'nav_settings', hint: 'hint_set', ic: 'gear', also: ['/altro'], subs: [
     { href: '/account', key: 'nav_account' },
     { href: '/admin/utenti', key: 'sub_users', roles: ADMIN }, { href: '/admin/conti', key: 'nav_admin_accounts', roles: ADMIN },
     { href: '/admin/piano-conti', key: 'nav_chart', roles: ADMIN },
     { href: '/admin/progetti', key: 'sub_cost_centres', roles: ADMIN }, { href: '/admin/periodi', key: 'nav_periods', roles: ADMIN },
-    { href: '/admin/impostazioni', key: 'sub_org', roles: ADMIN }, { href: '/admin/registro', key: 'nav_audit', roles: ADMIN },
-    { href: '/sincronizzazione', key: 'nav_sync' }, { href: '/guida', key: 'nav_guide' }] },
+    { href: '/admin/impostazioni', key: 'sub_org', roles: ADMIN }, { href: '/admin/dati', key: 'sub_data', roles: ADMIN }, { href: '/admin/registro', key: 'nav_audit', roles: ADMIN },
+    { href: '/sincronizzazione', key: 'nav_sync' }] },
 ];
 
 const can = (roles: Role[] | undefined, role: Role | undefined) => !roles || (!!role && roles.includes(role));
@@ -60,7 +61,7 @@ export function locate(secs: Section[], path: string): { sec: Section | null; su
 }
 
 // Pagine in cui l'anno nell'intestazione cambia ciò che si vede (parametro ?anno=).
-export const YEAR_PATHS = ['/', '/progetti', '/analisi', '/rendiconto', '/report', '/preventivo', '/documenti-emessi', '/cambi'];
+export const YEAR_PATHS = ['/', '/chiedi', '/progetti', '/analisi', '/rendiconto', '/report', '/preventivo', '/documenti-emessi', '/cambi'];
 
 // Indirizzi che sono una sotto-scheda: lì il titolo è già nell'intestazione e la pagina non lo ripete.
 export const SUB_HREFS = SECTIONS.flatMap((s) => s.subs.map((x) => x.href));

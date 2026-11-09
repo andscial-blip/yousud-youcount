@@ -71,6 +71,8 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
           <button type="button" className="btn ghost searchbtn" onClick={() => setCmd(true)} aria-label={`${labels.search} (⌘K)`} title={`${labels.search} (⌘K)`}>
             <CIcon name="search" size={16} /><span className="not-phone">{labels.search}</span><kbd className="not-phone">⌘K</kbd>
           </button>
+          <Link className="btn ghost askbtn" href="/chiedi" title={labels.lang === 'fr' ? 'Demander à l\'IA' : 'Chiedi all\'AI'} aria-label={labels.lang === 'fr' ? 'Demander à l\'IA' : 'Chiedi all\'AI'}>
+            <CIcon name="spark" size={16} /><span className="not-phone">{labels.lang === 'fr' ? 'IA' : 'AI'}</span></Link>
           <LangSwitch lang={labels.lang ?? 'it'} />
           <InfoButton path={path} lang={labels.lang ?? 'it'} />
           {showYear && (

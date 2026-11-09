@@ -202,7 +202,7 @@ try {
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
     '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
-    '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/cambi', '/admin/impostazioni', '/admin/registro',
+    '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/cambi', '/admin/impostazioni', '/admin/dati', '/admin/registro', '/chiedi',
     '/preventivo', '/preventivo?vista=righe', '/preventivo?vista=schema', '/nuovo?tipo=expense&data=2026-11-03&importo=1234&desc=Riga%20estratto', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,
     '/documenti-emessi/nuovo?tipo=NRS', '/documenti-emessi/nuovo', '/documenti-emessi/nuovo?tipo=DIC', '/documenti-emessi/nuovo?tipo=BDC', '/analisi?vista=andamento', '/analisi?vista=uscite', '/analisi?vista=entrate', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=fornitori', '/report?tipo=nodoc', '/report?tipo=cassa'];
   // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri; /a/* = tutte le pagine sotto /a/) — prova rapida

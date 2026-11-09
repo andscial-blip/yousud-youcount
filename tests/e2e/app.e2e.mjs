@@ -850,7 +850,7 @@ try {
   });
   await check('collegamento con altre app: chiave creata in Impostazioni (mostrata una volta), API di sola lettura', async () => {
     const p = sa.page;
-    await p.goto(`${base}/admin/impostazioni`);
+    await p.goto(`${base}/admin/dati`);
     await p.locator('input[name=name]').fill('App madre e2e');
     await p.getByRole('button', { name: 'Crea chiave' }).click();
     const key = (await p.locator('.note.ok code').innerText()).trim();
@@ -894,14 +894,14 @@ try {
     // dopo il backup il promemoria sparisce e Impostazioni mostra la data
     await sa.page.goto(`${base}/`);
     assert.equal(await sa.page.getByText('backup dei dati', { exact: false }).count(), 0);
-    await sa.page.goto(`${base}/admin/impostazioni`);
+    await sa.page.goto(`${base}/admin/dati`);
     await sa.page.getByText('Ultimo backup:', { exact: false }).waitFor();
   });
   await check('super admin: pagine di amministrazione e lingua francese', async () => {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
-      ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto|da verificare'], ['/admin/impostazioni', 'Quattro occhi'],
+      ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto|da verificare'], ['/admin/impostazioni', 'Quattro occhi'], ['/admin/dati', 'Backup'],
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
-      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Verifica in blocco']]) {
+      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Come si usa YouCount']]) {
       await sa.page.goto(base + path);
       assert.match(await sa.page.locator('main').innerText(), new RegExp(text, 'i'), path);
     }
@@ -958,6 +958,25 @@ try {
     await p.waitForURL(/ok=purged/);
     assert.equal((await pool.query('select count(*)::int n from movements where id = $1', [m.id])).rows[0].n, 0);
     assert.equal((await pool.query(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete' and row_id = $1`, [m.id])).rows[0].n, 1);
+  });
+  await check('AI: traduzione IT/FR dei movimenti in sottofondo e «Chiedi all\'AI» (risposte simulate)', async () => {
+    await pool.query(`insert into settings(org_id, key, value) select id, 'ai_reading', 'true'::jsonb from organizations
+                      on conflict (org_id, key) do update set value = 'true'::jsonb`);
+    const p = sa.page;
+    await p.goto(`${base}/movimenti`);
+    const t0 = Date.now();
+    let n = 0;
+    while (Date.now() - t0 < 20000) { n = (await pool.query('select count(*)::int n from movement_translations')).rows[0].n; if (n > 0) break; await p.waitForTimeout(500); }
+    assert.ok(n > 0, 'traduzioni salvate');
+    const [tr] = (await pool.query(`select t.it, t.fr, m.description from movement_translations t join movements m on m.id = t.movement_id limit 1`)).rows;
+    assert.equal(tr.it, tr.description); assert.equal(tr.fr, `[FR] ${tr.description}`);
+    const r = await p.request.post(`${base}/api/v1/ask`, { data: { q: 'Quanto abbiamo speso?', year: new Date().getFullYear() } });
+    assert.equal(r.status(), 200);
+    assert.match((await r.json()).answer, /Risposta simulata/);
+    await p.goto(`${base}/chiedi`);
+    await p.locator('.ask-chip').first().click();
+    await p.locator('.ask-a', { hasText: 'Risposta simulata' }).waitFor();
+    assert.equal((await ro.page.request.post(`${base}/api/v1/translate`, { data: { ids: [] } })).status(), 403, 'sola lettura non scrive traduzioni');
   });
   await check('schermata d\'apertura: bianca, visibile 3 secondi dopo l\'accesso, poi sparisce e non blocca l\'app', async () => {
     const ctx = await browser.newContext({ splash: true });
