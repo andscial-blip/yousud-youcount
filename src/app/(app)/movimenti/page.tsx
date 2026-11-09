@@ -61,11 +61,12 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     if (f.demo) q = q.eq('demo', f.demo === 'si');
     return q as Q;
   };
-  const [{ data, error, count }, { data: sums }, { data: projects }, { data: accounts }, { data: cats }, { data: cps }, { data: pms }] = await Promise.all([
+  const admin = can(me, ['super_admin', 'admin']);
+  const [{ data, error, count }, { data: sums }, { data: projects }, { data: accounts }, { data: cats }, { data: cps }, { data: pms }, { count: allCount }, { data: bk }] = await Promise.all([
     apply(supabase.from('movements')
       .select(`id, ref, op_date, kind, status, demo, description, amount, currency, sign, amount_eur, reverses_id, no_doc_reason, reimb_status, paid_by, docs:movement_documents(count),
              account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name), counterparty:counterparties(name),
-             method:payment_methods(name_it, name_fr)`, { count: 'exact' }))
+             method:payment_methods(name_it, name_fr), tr:movement_translations(source, it, fr)`, { count: 'exact' }))
       .order('op_date', { ascending: false }).order('created_at', { ascending: false })
       .range((page - 1) * PAGE, page * PAGE - 1).returns<Row[]>(),
     apply(supabase.from('movements').select('kind, sign, amount_eur, status')).neq('status', 'draft').neq('kind', 'transfer').limit(20000),
@@ -74,6 +75,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     supabase.from('categories').select('id, code, name_it, name_fr, direction').eq('active', true).order('code'),
     supabase.from('counterparties').select('id, name').order('name').limit(1000),
     supabase.from('payment_methods').select('id, name_it, name_fr').order('sort'),
+    admin ? supabase.from('movements').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: 0 }),
+    admin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const total = count ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
@@ -96,14 +99,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
   // descrizione nella lingua di chi legge (traduzione AI); le mancanti si chiedono in sottofondo
-  const pageIds = (data ?? []).map((m) => m.id);
-  const { data: trs } = pageIds.length ? await supabase.from('movement_translations').select('movement_id, source, it, fr').in('movement_id', pageIds) : { data: [] };
-  const trBy = new Map((trs ?? []).map((x) => [x.movement_id as string, x as { source: string; it: string; fr: string }]));
+  type Tr = { source: string; it: string; fr: string };
+  const trOf = (m: Row) => { const x = (m as unknown as { tr?: Tr | Tr[] | null }).tr; return Array.isArray(x) ? x[0] : x ?? undefined; };
+  const trBy = new Map((data ?? []).map((m) => [m.id, trOf(m)] as const));
   const desc = (m: { id: string; description: string }) => { const x = trBy.get(m.id); return x && x.source === m.description ? (lang === 'fr' ? x.fr : x.it) : m.description; };
   const missing = (data ?? []).filter((m) => m.description && trBy.get(m.id)?.source !== m.description).map((m) => m.id);
-  const admin = can(me, ['super_admin', 'admin']);
-  const { count: allCount } = admin ? await supabase.from('movements').select('id', { count: 'exact', head: true }) : { count: 0 };
-  const { data: bk } = admin ? await supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : { data: null };
   const bkAt = (bk?.value as { at?: string } | null)?.at ?? null;
   const bkFresh = Boolean(bkAt && Date.now() - Date.parse(bkAt) < 24 * 3600e3);
   return (

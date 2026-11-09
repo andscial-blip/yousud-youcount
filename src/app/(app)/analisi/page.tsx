@@ -98,7 +98,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
     <Panel title={t('an_by_group')}>
       <p className="panel-b muted" style={{ margin: 0 }}>{t('an_by_group_note').replace('{p}', `${Math.round(elapsed * 100)}%`)}</p>
       {outGroups.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('none')}</p> : (
-        <div className="tscroll"><table className="t keep">
+        <div className="tscroll"><table className="t" data-cards="">
           <thead><tr><th>{t('an_group')}</th><th className="r">{t('budget')}</th><th className="r">{t('prj_spent')}</th><th className="r">%</th><th style={{ width: '30%' }} /></tr></thead>
           <tbody>
             {outGroups.map((g) => {

@@ -146,7 +146,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="h-left">
           <section className="panel hero h-hero">
             <div className="hero-h"><div><h2>{L(`Il ${year} in sintesi`, `${year} en synthèse`)}</h2><span className="eyebrow">{eye} · {L('movimenti registrati e verificati, in euro', 'mouvements enregistrés et vérifiés, en euros')}</span></div>
-              {over.size > 0 && <Link className="cdp late nolink" href={`/preventivo?anno=${year}&vista=confronto`}>{L(`${over.size} codici oltre il preventivo`, `${over.size} codes au-delà du budget`)}</Link>}</div>
+              {over.size > 0 && <Link className="cdp late nolink" href={`/preventivo?anno=${year}&vista=confronto`}>{over.size === 1 ? L('1 codice oltre il preventivo', '1 code au-delà du budget') : L(`${over.size} codici oltre il preventivo`, `${over.size} codes au-delà du budget`)}</Link>}</div>
             <div className="hero-nums">
               <div className="hn-main"><span><CIcon name="trend" size={14} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(inc)}</b><small>{bIn ? `${pct(inc, bIn)} ${L('del previsto', 'du prévu')}` : L('nessun preventivo', 'aucun budget')}</small></div>
               <div><span><CIcon name="chart" size={14} />{L('Uscite', 'Dépenses')}</span><b className="num">{e0(out)}</b><small>{curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : ''}</small></div>
@@ -159,12 +159,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             </div>
             {staff && bOut > 0 && (
               <div className="hero-soglia">
-                <div className="hs-top"><span>{L('Uscite rispetto al preventivo', 'Dépenses par rapport au budget')} <b className="num">{e0(aOut)}</b> {L('su', 'sur')} <b className="num">{e0(bOut)}</b></span>
+                <div className="hs-top"><span>{L('Uscite rispetto al preventivo', 'Dépenses par rapport au budget')} <b className="num">{e0(aOut)}</b> {L('su\u00a0', 'sur\u00a0')}<b className="num">{e0(bOut)}</b></span>
                   <span className={aOut / bOut > elapsed + 0.1 ? 'neg' : ''}><b className="num">{pct(aOut, bOut)}</b> {L('usato', 'utilisé')} · {L('anno trascorso', 'année écoulée')} {Math.round(elapsed * 100)}{' '}%</span></div>
                 <div className="meter" role="img" aria-label={`${pct(aOut, bOut)}`}><i style={{ width: `${outW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>
                 <div className="meter-legend"><span>{L('speso', 'dépensé')}</span><span>{L('tacca = tempo trascorso dell\'anno', 'repère = temps écoulé de l\'année')}</span></div>
                 {bIn > 0 && <>
-                  <div className="hs-top" style={{ marginTop: 12 }}><span>{L('Entrate rispetto al previsto', 'Recettes par rapport au prévu')} <b className="num">{e0(aIn)}</b> {L('su', 'sur')} <b className="num">{e0(bIn)}</b></span><span><b className="num">{pct(aIn, bIn)}</b></span></div>
+                  <div className="hs-top" style={{ marginTop: 12 }}><span>{L('Entrate rispetto al previsto', 'Recettes par rapport au prévu')} <b className="num">{e0(aIn)}</b> {L('su\u00a0', 'sur\u00a0')}<b className="num">{e0(bIn)}</b></span><span><b className="num">{pct(aIn, bIn)}</b></span></div>
                   <div className="meter m-in" role="img" aria-label={`${pct(aIn, bIn)}`}><i style={{ width: `${inW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>
                 </>}
               </div>
@@ -178,7 +178,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <li key={p.href}><Link className="hc-n" href={p.href}>{p.label}</Link><b className="num">{e0(p.value)} <small>{pct(p.value, out)}</small></b>
                   <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%`, background: colorFor(p.label) }} /></span></li>))}</ul>
             ) : <p className="muted" style={{ margin: 0 }}>{t('none')}</p>}
-              {projects.length > 7 && <p style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{L(`Tutti i ${projects.length} progetti`, `Les ${projects.length} projets`)} →</Link></p>}</div>
+              {projects.length > 7 && <p style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{L(`${String(projects.length).startsWith('8') || projects.length === 11 ? 'Tutti gli' : 'Tutti i'} ${projects.length} progetti`, `Les ${projects.length} projets`)} →</Link></p>}</div>
           </section>
 
           <section className="panel h-card">
@@ -188,7 +188,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <div className="hstack" role="img" aria-label={L('Uscite per voce', 'Dépenses par poste')}>
                   {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: `var(--dn${i + 1})` }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
                 <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: `var(--dn${i + 1})` }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
-                {noDoc ? <div className="hcat-f"><span>{L('Uscite senza giustificativo fiscale', 'Dépenses sans justificatif fiscal')} <b className="num">{noDoc}</b></span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
+                {noDoc ? <div className="hcat-f"><span><b className="num">{noDoc.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</b> {noDoc === 1 ? L('uscita senza giustificativo fiscale', 'dépense sans justificatif fiscal') : L('uscite senza giustificativo fiscale', 'dépenses sans justificatif fiscal')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
               </>}
             </div>
           </section>

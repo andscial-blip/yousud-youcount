@@ -29,7 +29,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
         {(data ?? []).length === 0 ? <Empty text={t('none')} /> : (
-          <table className="t">
+          <table className="t" data-cards="">
             <thead><tr><th>{t('g_title')}</th><th className="hm">{t('g_donor')}</th><th className="hm">{t('project')}</th>
               <th className="hm">{t('g_period')}</th><th className="r">{t('g_amount')}</th><th className="r">{t('g_spent')}</th><th /></tr></thead>
             <tbody>

@@ -105,7 +105,7 @@ export default async function BudgetPage({ searchParams }: {
           <tr className="grp">
             <th scope="rowgroup" colSpan={2}>{g.code} · {CL(g)}</th>
             <td className="r num" data-l={L('Preventivo', 'Budget')}><b>{m(gb)}</b></td><td className="r num" data-l={L('Consuntivo', 'Réalisé')}><b>{m(ga)}</b></td>
-            <td className="r num hm">{d === 'out' ? m(gc) : ''}</td><td className="r num" data-l={L('Residuo', 'Reste')}><b>{m(gb - ga)}</b></td>
+            <td className="r num hm">{d === 'out' ? m(gc) : ''}</td><td className={`r num ${gb - ga < 0 ? 'neg' : ''}`} data-l={L('Residuo', 'Reste')}><b>{m(gb - ga)}</b></td>
             <td className="hm">{gb > 0 ? `${Math.round((ga / gb) * 100)}%` : ''}</td><td />
           </tr>
           {gr.map((r) => {
@@ -212,7 +212,7 @@ export default async function BudgetPage({ searchParams }: {
               <div className={inB - outB < 0 ? 'bad' : ''}><span>{L('Saldo previsto', 'Solde prévu')}</span><b className="num">{m(inB - outB)}</b>
                 <small>{inB - outB < 0 ? L('disavanzo da coprire', 'déficit à couvrir') : L('avanzo', 'excédent')}</small></div>
               <div className={over.length ? 'bad' : ''}><span>{L('Codici oltre il preventivo', 'Codes au-delà du budget')}</span><b className="num">{over.length}</b>
-                <small>{near.length} {L('vicini al limite', 'proches de la limite')}</small></div>
+                <small>{near.length} {near.length === 1 ? L('vicino al limite', 'proche de la limite') : L('vicini al limite', 'proches de la limite')}</small></div>
             </div>
           </section>
 
@@ -243,7 +243,7 @@ export default async function BudgetPage({ searchParams }: {
               </form>
               {(over.length > 0 || near.length > 0) && (
                 <details className="panel-b alerts" open={over.length + near.length <= 4}>
-                  <summary className={`note ${over.length ? 'err' : ''}`}>{over.length ? L(`${over.length} codici oltre il preventivo`, `${over.length} codes au-delà du budget`) : ''}{over.length && near.length ? ' · ' : ''}{near.length ? L(`${near.length} vicini al limite`, `${near.length} proches de la limite`) : ''} <span className="muted">{L('· mostra il dettaglio', '· afficher le détail')}</span></summary>
+                  <summary className={`note ${over.length ? 'err' : ''}`}>{over.length ? (over.length === 1 ? L('1 codice oltre il preventivo', '1 code au-delà du budget') : L(`${over.length} codici oltre il preventivo`, `${over.length} codes au-delà du budget`)) : ''}{over.length && near.length ? ' · ' : ''}{near.length ? (near.length === 1 ? L('1 vicino al limite', '1 proche de la limite') : L(`${near.length} vicini al limite`, `${near.length} proches de la limite`)) : ''} <span className="muted">{L('· mostra il dettaglio', '· afficher le détail')}</span></summary>
                   {over.map((x) => <div key={x.r.category_id} className="note err">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {L('eseguito', 'réalisé')} {m(x.a)} {L('su', 'sur')} {m(x.b)} {L('previsti', 'prévus')} ({x.b > 0 ? `+${m(x.a - x.b)}` : L('voce non prevista', 'poste non prévu')})</div>)}
                   {near.map((x) => <div key={x.r.category_id} className="note">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {Math.round(((x.a + x.c) / x.b) * 100)}% {L('del previsto, impegni compresi', 'du prévu, engagements compris')}</div>)}
                 </details>
@@ -380,6 +380,7 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
   const rows = budget.map((b) => ({ ...b, b: Number(b.budget_eur), a: b.key ? act.get(`${b.direction}|${b.key}`) ?? 0 : 0 }));
   const tot = (d: 'in' | 'out', k: 'a' | 'b') => rows.filter((r) => r.direction === d).reduce((s, r) => s + r[k], 0);
   if (!rows.some((r) => r.b || r.a)) return <Empty text={L('Nessuna voce: il preventivo è vuoto e non ci sono movimenti nell\'anno.', 'Aucun poste : le budget est vide et il n\'y a pas de mouvements dans l\'année.')} />;
+  const LB = [L('Preventivo', 'Budget'), L('Consuntivo', 'Réalisé'), L('Differenza', 'Écart')];
   const block = (d: 'in' | 'out') => {
     const secs: StLine['section'][] = [...new Set(rows.filter((r) => r.direction === d).map((r) => r.section))];
     return secs.map((sec) => {
@@ -389,11 +390,11 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
       return (
         <tbody key={`${d}${sec}`}>
           <tr className="sub"><td colSpan={2}><b>{L(rs[0].section_it, rs[0].section_fr)}</b></td>
-            <td className="r num"><b>{m(sb)}</b></td><td className="r num"><b>{m(sa)}</b></td><td className="r num"><b>{m(sb - sa)}</b></td></tr>
+            <td className="r num" data-l={LB[0]}><b>{m(sb)}</b></td><td className="r num" data-l={LB[1]}><b>{m(sa)}</b></td><td className="r num" data-l={LB[2]}><b>{m(sb - sa)}</b></td></tr>
           {rs.filter((r) => r.b || r.a).map((r) => (
             <tr key={`${d}${r.key ?? 'x'}`} className={r.key ? undefined : 'warn'}>
               <td className="nw muted">{r.key ?? '–'}</td><td>{L(r.name_it, r.name_fr)}</td>
-              <td className="r num">{m(r.b)}</td><td className="r num">{r.key ? m(r.a) : '–'}</td><td className="r num">{r.key ? m(r.b - r.a) : '–'}</td>
+              <td className="r num" data-l={LB[0]}>{m(r.b)}</td><td className="r num" data-l={LB[1]}>{r.key ? m(r.a) : '–'}</td><td className="r num" data-l={LB[2]}>{r.key ? m(r.b - r.a) : '–'}</td>
             </tr>
           ))}
         </tbody>
@@ -407,12 +408,12 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
         <thead><tr><th>{L('Voce', 'Poste')}</th><th /><th className="r">{L('Preventivo', 'Budget')}</th><th className="r">{L('Consuntivo', 'Réalisé')}</th><th className="r">{L('Differenza', 'Écart')}</th></tr></thead>
         <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Uscite', 'Dépenses')}</th></tr></tbody>
         {block('out')}
-        <tbody><tr className="tot"><td colSpan={2}>{L('Totale uscite', 'Total des dépenses')}</td><td className="r num">{m(outB)}</td><td className="r num">{m(outA)}</td><td className="r num">{m(outB - outA)}</td></tr></tbody>
+        <tbody><tr className="tot"><td colSpan={2}>{L('Totale uscite', 'Total des dépenses')}</td><td className="r num" data-l={LB[0]}>{m(outB)}</td><td className="r num" data-l={LB[1]}>{m(outA)}</td><td className="r num" data-l={LB[2]}>{m(outB - outA)}</td></tr></tbody>
         <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Entrate', 'Recettes')}</th></tr></tbody>
         {block('in')}
         <tbody>
-          <tr className="tot"><td colSpan={2}>{L('Totale entrate', 'Total des recettes')}</td><td className="r num">{m(inB)}</td><td className="r num">{m(inA)}</td><td className="r num">{m(inB - inA)}</td></tr>
-          <tr className="tot"><td colSpan={2}>{L('Avanzo (disavanzo)', 'Excédent (déficit)')}</td><td className="r num">{m(inB - outB)}</td><td className="r num">{m(inA - outA)}</td><td /></tr>
+          <tr className="tot"><td colSpan={2}>{L('Totale entrate', 'Total des recettes')}</td><td className="r num" data-l={LB[0]}>{m(inB)}</td><td className="r num" data-l={LB[1]}>{m(inA)}</td><td className="r num" data-l={LB[2]}>{m(inB - inA)}</td></tr>
+          <tr className="tot"><td colSpan={2}>{L('Avanzo (disavanzo)', 'Excédent (déficit)')}</td><td className="r num" data-l={LB[0]}>{m(inB - outB)}</td><td className="r num" data-l={LB[1]}>{m(inA - outA)}</td><td /></tr>
         </tbody>
       </table>
     </div>
