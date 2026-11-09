@@ -444,7 +444,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           </div>
           <div className="field">
             <span className="flabel" id="howpaid">{t.f_how_paid}</span>
-            <div className="seg" role="radiogroup" aria-labelledby="howpaid">
+            <div className="seg stackable" role="radiogroup" aria-labelledby="howpaid">
               <button type="button" role="radio" aria-checked={payMode === 'org'} disabled={initial?.reimb_status === 'paid'} onClick={() => choosePay('org')}>{t.f_paid_org}</button>
               <button type="button" role="radio" aria-checked={ownPocket} disabled={Boolean(initial && initial.status !== 'draft')} onClick={() => choosePay('own')}>{t.f_paid_own}</button>
               {advances.length > 0 && (

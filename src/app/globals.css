@@ -659,3 +659,21 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 .num { white-space: nowrap; }
 @media (max-width: 900px) { .mv-table { display: none; } .mv-cards { display: block; } }
 @media (max-width: 560px) { .an-top .filters { flex-wrap: wrap; width: 100%; } .an-top .filters select.input { min-width: 0; flex: 1 1 100%; } }
+/* selettori con opzioni lunghe: su telefono le opzioni vanno una sotto l'altra, tutte visibili */
+@media (max-width: 640px) {
+  .seg.stackable { display: grid; grid-template-columns: 1fr; width: 100%; }
+  .seg.stackable button { justify-content: flex-start; white-space: normal; text-align: left; min-height: 44px; }
+  .seg.kinds { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .seg.kinds button { padding: 0 6px; font-size: 14px; min-width: 0; white-space: normal; line-height: 1.15; }
+  .an-top .segs, .segs { max-width: 100%; }
+}
+/* impostazioni su telefono: le schede sono nel menu «Altro», la striscia lunga di sotto-schede non serve */
+@media (max-width: 760px) { .subnav[data-sec="set"] { display: none; } }
+.figs small { white-space: normal; }
+.vf-cards { display: none; }
+@media (max-width: 900px) {
+  .vf-table { display: none; }
+  .vf-cards { display: block; }
+  .vf-cards .vf-c { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 12px 14px; }
+  .vf-cards .mc-m form { margin-top: 6px; }
+}

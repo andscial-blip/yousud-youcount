@@ -82,7 +82,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
         </div>
       </div>
       {sec && sec.subs.length > 1 && (
-        <nav className="subnav" aria-label={`${labels.subnav}: ${sec.label}`}>
+        <nav className="subnav" data-sec={sec.id} aria-label={`${labels.subnav}: ${sec.label}`}>
           {sec.subs.map((x) => (
             <Link key={x.href} href={x.href}
                   aria-current={(x.href === '/' ? path === '/' : path === x.href || path.startsWith(x.href + '/')) ? 'page' : undefined}>{x.label}</Link>
