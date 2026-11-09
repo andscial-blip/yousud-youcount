@@ -228,7 +228,8 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 32px; 
 .inline-form select.input { max-width: 420px; }
 @media (max-width: 760px) {
   .fgrid { grid-template-columns: minmax(0, 1fr); }
-  .factions { position: sticky; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); background: var(--bg); padding: 10px 0; z-index: 5; }
+  /* pulsanti in fondo al modulo, non fissi sopra i campi mentre si scorre */
+  .factions { padding: 14px 0 6px; }
   .factions .btn { flex: 1 1 140px; }
   .factions .hint { display: none; }
 }
