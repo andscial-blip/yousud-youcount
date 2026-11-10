@@ -148,13 +148,13 @@ export const HELP: HelpEntry[] = [
       'Réalisé : mouvements enregistrés et vérifiés de l\'année, en euros au taux du mouvement. Engagé : dépenses encore en brouillon (remboursements à payer, dépenses à compléter).']] },
   { href: '/progetti', sec: 'prj',
     it: ['Progetti', [
-      'Una scheda per progetto: preventivo dell\'anno, uscite, entrate, saldo (entrate − uscite) e residuo (preventivo − uscite), con la barra della quota usata e la tacca del tempo trascorso.',
-      'Un solo avviso per scheda: oltre il preventivo, spesa più veloce del tempo (oltre 15 punti) o spese senza preventivo. Aprendo la scheda si vede il cruscotto completo: andamento mensile, voci di spesa, preventivo per codice, movimenti, scadenze, documenti e finanziamenti.',
-      'L\'icona indica il tipo di attività; un amministratore la imposta in Impostazioni › Progetti.']],
+      'In alto quattro riquadri per tutti i progetti: previsto, speso (con la quota dell\'anno trascorso), residuo e entrate; sotto, «Dove vanno i fondi» mostra il peso di ogni progetto sulle uscite.',
+      'Una scheda per progetto: l\'anello è la parte del preventivo già spesa, la tacca verde segna l\'anno trascorso (se l\'anello la supera si spende più in fretta del ritmo lineare). Accanto speso, previsto e residuo; sotto le uscite mese per mese. Diventa rossa solo se si supera il preventivo.',
+      'Aprendo la scheda si vede il cruscotto completo: andamento mensile, voci di spesa, preventivo per codice (si modifica nella pagina Preventivo), movimenti, scadenze, documenti e finanziamenti. L\'icona del tipo di attività la imposta un amministratore in Impostazioni › Progetti.']],
     fr: ['Projets', [
-      'Une fiche par projet : budget de l\'année, dépenses, recettes, solde (recettes − dépenses) et reste (budget − dépenses), avec la barre de la part utilisée et le repère du temps écoulé.',
-      'Une seule alerte par fiche : au-delà du budget, dépense plus rapide que le temps (plus de 15 points) ou dépenses sans budget. La fiche ouvre le tableau de bord complet : évolution mensuelle, postes, budget par code, mouvements, échéances, documents et financements.',
-      'L\'icône indique le type d\'activité ; un administrateur la règle dans Paramètres › Projets.']] },
+      'En haut, quatre encadrés pour tous les projets : prévu, dépensé (avec la part de l\'année écoulée), reste et recettes ; en dessous, « Où vont les fonds » montre le poids de chaque projet dans les dépenses.',
+      'Une fiche par projet : l\'anneau est la part du budget déjà dépensée, le repère vert marque l\'année écoulée (si l\'anneau le dépasse, on dépense plus vite que le rythme linéaire). À côté, dépensé, prévu et reste ; en dessous, les dépenses mois par mois. Elle devient rouge seulement si le budget est dépassé.',
+      'En ouvrant la fiche, on voit le tableau de bord complet : évolution mensuelle, postes de dépense, budget par code (il se modifie dans la page Budget), mouvements, échéances, documents et financements. L\'icône du type d\'activité est réglée par un administrateur dans Paramètres › Projets.']] },
   { href: '/finanziamenti', sec: 'prj',
     it: ['Finanziamenti', [
       'Per ogni finanziamento: importo, periodo, budget per gruppo di spesa e, scelto il periodo, il rendiconto al finanziatore in Excel con spese, giustificativi ed entrate.',

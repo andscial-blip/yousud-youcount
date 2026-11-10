@@ -1,8 +1,6 @@
-import Link from 'next/link';
-import { STAFF, can, requireMe } from '@/lib/session';
+import { requireMe } from '@/lib/session';
 import { date, money, nm } from '@/lib/format';
 import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
-import { Ico } from '@/components/Ui';
 import { BalancesTable, type Balance } from '@/components/Balances';
 import { CountryMark } from '@/components/CountryMark';
 import { CashCounter } from '@/components/CashCounter';
@@ -27,9 +25,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   return (
     <div className="stack">
-      <PageHead title={t('nav_accounts')}>
-        {can(me, STAFF) && <Link className="btn" href="/riconciliazione"><Ico name="check" />{t('nav_rec')}</Link>}
-      </PageHead>
+      <PageHead title={t('nav_accounts')} />
       <ErrorNote prefix={t('error_load')} error={error} />
       {ok === 'cash' && <div className="note ok" role="status">{t('cc_ok')}</div>}
       {err && <div className="note err">{err}</div>}

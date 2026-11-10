@@ -16,11 +16,11 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false }
         <li key={r.account_id}>
           <div className="bc-top"><b>{nm(lang, r)}</b>
             <span className={`num bc-bal${Number(r.balance) < 0 ? ' neg' : ''}`}>{money(r.balance, r.currency, lang)}</span></div>
-          {detail && <div className="bc-det num">
-            <span>{t('acc_opening')} {money(r.opening_balance, r.currency, lang)}</span>
-            <span>{t('acc_in')} {money(r.movements_in, r.currency, lang)}</span>
-            <span>{lang === 'fr' ? 'Sorties' : 'Uscite'} {money(r.movements_out, r.currency, lang)}</span>
-          </div>}
+          {detail && <dl className="bc-det">
+            <div><dt>{lang === 'fr' ? 'Initial' : 'Iniziale'}</dt><dd className="num">{money(r.opening_balance, r.currency, lang)}</dd></div>
+            <div><dt>{t('acc_in')}</dt><dd className="num">{money(r.movements_in, r.currency, lang)}</dd></div>
+            <div><dt>{lang === 'fr' ? 'Sorties' : 'Uscite'}</dt><dd className="num">{money(r.movements_out, r.currency, lang)}</dd></div>
+          </dl>}
           {r.unverified > 0 && <span className="chip warn tiny">{r.unverified} {t('nav_verify').toLowerCase()}</span>}
         </li>
       ))}

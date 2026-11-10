@@ -777,9 +777,9 @@ table.recent .rc-d { display: block; margin-top: 2px; font-size: 12px; }
   .bal-cards .bc-top b { font-weight: 600; min-width: 0; }
   .bal-cards .bc-bal { font-weight: 700; white-space: nowrap; font-size: 16px; color: var(--navy); }
   .bal-cards .bc-bal.neg { color: var(--red); }
-  .bal-cards .bc-det { display: flex; flex-wrap: wrap; column-gap: 4px; font-size: 12.5px; color: var(--muted); }
-  .bal-cards .bc-det > span { white-space: nowrap; }
-  .bal-cards .bc-det > span:not(:last-child)::after { content: ' ·'; }
+  .bal-cards .bc-det { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin: 4px 0 0; }
+  .bal-cards .bc-det dt { font-size: 11.5px; color: var(--muted); } .bal-cards .bc-det dd { margin: 0; font-size: 12.5px; white-space: nowrap; color: var(--fg); }
+  .bal-cards .bc-det > div:nth-child(2) { text-align: center; } .bal-cards .bc-det > div:nth-child(3) { text-align: right; }
 }
 /* tassi di cambio: schede su telefono */
 .fx-cards { display: none; list-style: none; margin: 0; padding: 0; }
@@ -1483,3 +1483,4 @@ table.bal-fixed th.r { white-space: normal; line-height: 1.25; vertical-align: b
   .pr-ring { width: 80px; height: 80px; }
   .pr-spark { display: none; }
 }
+@media (max-width: 760px) { .pt > small { min-height: 2.5em; line-height: 1.25; } .k4 > small { min-height: 2.5em; line-height: 1.25; } }
