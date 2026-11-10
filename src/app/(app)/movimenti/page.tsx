@@ -6,7 +6,7 @@ import { date, money, nm, num } from '@/lib/format';
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
 import { SavedFilters } from '@/components/SavedFilters';
-import { CIcon } from '@/components/CIcon';
+import { FilterBar } from '@/components/FilterBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,14 +116,19 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       <PageHead title={t('nav_movements')} />
 
       <Panel>
-        <form className="filters panel-h" method="get" action="/movimenti" role="search">
-          <input className="input grow" type="search" name="q" defaultValue={term} placeholder={t('search_mov')} aria-label={t('search_mov')} />
-          <select className="input" name="stato" defaultValue={stato} aria-label={L('Stato', 'Statut')}>{stati.map(([v, l]) => <option key={v} value={v}>{v ? l : L('Stato: tutti', 'Statut : tous')}</option>)}</select>
-          <select className="input" name="tipo" defaultValue={f.tipo} aria-label={t('type')}><option value="">{L('Tipo: tutti', 'Type : tous')}</option>
-            {(['expense', 'income', 'transfer'] as const).map((k) => <option key={k} value={k}>{t(`k_${k}`)}</option>)}</select>
-          <details className="more" open={active - (f.tipo ? 1 : 0) > 0}>
-            <summary className="btn ghost" aria-label={L('Altri filtri', 'Autres filtres')}><CIcon name="sliders" size={16} /><span className="mf-l">{L('Altri filtri', 'Autres filtres')}</span>{active ? <span className="mf-n">{active}</span> : null}</summary>
-            <div className="filter-grid">
+        <FilterBar action="/movimenti" lang={lang} search={{ value: term, placeholder: t('search_mov') }}
+          active={active + (stato ? 1 : 0)} reset={term || stato || active > 0 ? '/movimenti' : null}
+          result={L(`Mostra ${num(total, lang)} movimenti`, `Afficher ${num(total, lang)} mouvements`)}
+          quick={<>
+            {periods.map(([l, a, b]) => <Link key={l} href={href({ dal: a, al: b })} scroll={false} aria-current={f.from === a && f.to === b ? 'true' : undefined}>{l}</Link>)}
+            <Link href={href({ stato: 'recorded' })} scroll={false} aria-current={stato === 'recorded' ? 'true' : undefined}>{L('Da verificare', 'À vérifier')}</Link>
+            <Link href={href({ doc: 'no' })} scroll={false} aria-current={f.doc === 'no' ? 'true' : undefined}>{L('Senza giustificativo', 'Sans justificatif')}</Link>
+          </>}>
+              <label className="field"><span className="flabel">{L('Stato', 'Statut')}</span>
+                <select className="input" name="stato" defaultValue={stato}>{stati.map(([v, l]) => <option key={v} value={v}>{v ? l : t('all')}</option>)}</select></label>
+              <label className="field"><span className="flabel">{t('type')}</span>
+                <select className="input" name="tipo" defaultValue={f.tipo}><option value="">{t('all')}</option>
+                  {(['expense', 'income', 'transfer'] as const).map((k) => <option key={k} value={k}>{t(`k_${k}`)}</option>)}</select></label>
               <label className="field"><span className="flabel">{L('Dal', 'Du')}</span><input className="input" type="date" name="dal" defaultValue={f.from} /></label>
               <label className="field"><span className="flabel">{L('Al', 'Au')}</span><input className="input" type="date" name="al" defaultValue={f.to} /></label>
               <label className="field"><span className="flabel">{L('Codice contabile', 'Code comptable')}</span>
@@ -149,17 +154,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               <label className="field"><span className="flabel">{L('Dati', 'Données')}</span>
                 <select className="input" name="demo" defaultValue={f.demo}><option value="">{L('Reali e dimostrativi', 'Réelles et de démonstration')}</option>
                   <option value="no">{L('Solo reali', 'Seulement réelles')}</option><option value="si">{L('Solo dimostrativi (DEMO)', 'Seulement DEMO')}</option></select></label>
-            </div>
-          </details>
-          <button className="btn primary" type="submit">{t('f_apply')}</button>
-          {(term || stato || active > 0) && <Link className="btn ghost" href="/movimenti">{L('Azzera', 'Réinitialiser')}</Link>}
-        </form>
+        </FilterBar>
         <div className="mv-bar">
-          <nav className="quick" aria-label={t('f_quick')}>
-            {periods.map(([l, a, b]) => <Link key={l} href={href({ dal: a, al: b })} aria-current={f.from === a && f.to === b ? 'true' : undefined}>{l}</Link>)}
-            <Link href={href({ stato: 'recorded' })} aria-current={stato === 'recorded' ? 'true' : undefined}>{L('Da verificare', 'À vérifier')}</Link>
-            <Link href={href({ doc: 'no' })} aria-current={f.doc === 'no' ? 'true' : undefined}>{L('Senza giustificativo', 'Sans justificatif')}</Link>
-          </nav>
           <div className="mv-tools"><SavedFilters current={qs({})} lang={lang} />
             <a className="btn small" href={`/api/v1/export/movimenti?anno=${(f.from || f.to || String(y)).slice(0, 4)}${stato && stato !== 'storni' ? `&stato=${stato}` : ''}`}><Ico name="download" />{t('exp_xlsx')}</a></div>
         </div>
@@ -240,8 +236,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           <form action={purgeAllAction} className="stack panel-b" style={{ gap: 10 }}>
             <input type="hidden" name="expected" value={allCount ?? 0} />
             <p className="muted" style={{ margin: 0 }}>{L(
-              'Elimina definitivamente tutti i movimenti (reali e DEMO) con i loro abbinamenti; preventivi, conti e piano dei conti restano, la numerazione MOV riparte da 001. Serve un backup scaricato nelle ultime 24 ore.',
-              'Supprime définitivement tous les mouvements (réels et DEMO) avec leurs rapprochements ; budgets, comptes et plan comptable restent, la numérotation MOV repart de 001. Il faut une sauvegarde téléchargée dans les dernières 24 heures.')}</p>
+              'Elimina definitivamente tutti i movimenti (reali e DEMO) con i loro abbinamenti; preventivi, conti e categorie restano, la numerazione MOV riparte da 001. Serve un backup scaricato nelle ultime 24 ore.',
+              'Supprime définitivement tous les mouvements (réels et DEMO) avec leurs rapprochements ; budgets, comptes et catégories restent, la numérotation MOV repart de 001. Il faut une sauvegarde téléchargée dans les dernières 24 heures.')}</p>
             <p style={{ margin: 0 }}>{bkFresh
               ? <span className="chip ok">{L('Backup recente', 'Sauvegarde récente')}: {new Date(bkAt!).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</span>
               : <><span className="chip warn">{L('Nessun backup nelle ultime 24 ore', 'Aucune sauvegarde dans les dernières 24 heures')}</span>{' '}

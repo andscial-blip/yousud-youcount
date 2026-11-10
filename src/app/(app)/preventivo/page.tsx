@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FilterBar } from '@/components/FilterBar';
 import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, dateTime, money, num } from '@/lib/format';
 import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
@@ -229,15 +230,11 @@ export default async function BudgetPage({ searchParams }: {
             </Panel>
           ) : view === 'confronto' ? (
             <Panel title={`${L('Confronto', 'Comparaison')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
-              <form className="inline-form panel-b" method="get" action="/preventivo">
-                <input type="hidden" name="anno" value={year} />{shown && <input type="hidden" name="v" value={shown.id} />}
-                <label className="vh" htmlFor="bprj">{L('Progetto', 'Projet')}</label>
-                <select className="input" id="bprj" name="progetto" defaultValue={prj}>
+              <FilterBar action="/preventivo" lang={lang} hidden={{ anno: String(year), v: shown?.id }}
+                inline={<select className="input" name="progetto" defaultValue={prj} aria-label={L('Progetto', 'Projet')}>
                   <option value="">{L('Tutti i progetti', 'Tous les projets')}</option>
                   {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <button className="btn" type="submit">{L('Filtra', 'Filtrer')}</button>
-              </form>
+                </select>} />
               {(over.length > 0 || near.length > 0) && (
                 <details className="panel-b alerts" open={over.length + near.length <= 4}>
                   <summary className={`note ${over.length ? 'err' : ''}`}>{over.length ? (over.length === 1 ? L('1 codice oltre il preventivo', '1 code au-delà du budget') : L(`${over.length} codici oltre il preventivo`, `${over.length} codes au-delà du budget`)) : ''}{over.length && near.length ? ' · ' : ''}{near.length ? (near.length === 1 ? L('1 vicino al limite', '1 proche de la limite') : L(`${near.length} vicini al limite`, `${near.length} proches de la limite`)) : ''} <span className="muted">{L('· mostra il dettaglio', '· afficher le détail')}</span></summary>

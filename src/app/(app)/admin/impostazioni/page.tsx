@@ -1,7 +1,8 @@
 import { ADMIN, can, requireMe } from '@/lib/session';
 import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
-import { removeLogo, saveLogo, saveDocDetails, toggleSetting } from './actions';
+import { removeLogo, saveLogo, saveDocDetails, saveMgSeat, toggleSetting } from './actions';
+import { CountryMark } from '@/components/CountryMark';
 import { LogoUpload } from '@/components/LogoUpload';
 import { LOGO_MAX } from '@/lib/org';
 
@@ -26,12 +27,20 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const signer = ((data ?? []).find((s) => s.key === 'doc_signer')?.value ?? {}) as { name?: string; role?: string };
   const lg = ((data ?? []).find((s) => s.key === 'org_logo')?.value ?? {}) as { mime?: string; data?: string };
   const logoUrl = lg.mime && lg.data ? `data:${lg.mime};base64,${lg.data}` : null;
+  const mg = ((data ?? []).find((s) => s.key === 'mg_seat')?.value ?? {}) as Record<string, string | undefined>;
+  const FR = lang === 'fr', L = (it: string, fr: string) => (FR ? fr : it);
+  const dmy = (d?: string) => (d ? d.split('-').reverse().join('/') : '');
+  const remind = mg.expires_on ? (() => { const d = new Date(`${mg.expires_on}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 6); return d.toISOString().slice(0, 10); })() : '';
+  const mf = (k: string, it: string, fr: string, o: { span?: boolean; type?: string; max?: number; area?: boolean; ph?: string } = {}) => (
+    <div className={`field${o.span ? ' span2' : ''}`}><label htmlFor={`mg-${k}`}>{L(it, fr)}</label>
+      {o.area ? <textarea className="input" id={`mg-${k}`} name={k} rows={3} maxLength={o.max ?? 1000} defaultValue={mg[k] ?? ''} placeholder={o.ph} />
+        : <input className="input" id={`mg-${k}`} name={k} type={o.type ?? 'text'} maxLength={o.max ?? 120} defaultValue={mg[k] ?? ''} placeholder={o.ph} />}</div>);
   return (
     <div className="stack" style={{ maxWidth: 920 }}>
       <PageHead title={t('nav_settings')} />
       {ok && <div className="note ok" role="status">{ok === 'demo_loaded' ? (lang === 'fr' ? 'Données de démonstration chargées.' : 'Dati dimostrativi caricati.')
         : ok === 'demo_purged' ? (lang === 'fr' ? 'Données de démonstration supprimées.' : 'Dati dimostrativi eliminati.')
-        : ok === 'reset' ? (lang === 'fr' ? 'Comptabilité remise à zéro : mouvements et budgets supprimés. La numérotation repart de 001.' : 'Contabilità azzerata: movimenti e preventivi eliminati. La numerazione riparte da 001.') : '✓'}</div>}
+        : ok === 'mg' ? L('Dati della sede in Madagascar salvati.', 'Données du siège à Madagascar enregistrées.') : ok === 'reset' ? (lang === 'fr' ? 'Comptabilité remise à zéro : mouvements et budgets supprimés. La numérotation repart de 001.' : 'Contabilità azzerata: movimenti e preventivi eliminati. La numerazione riparte da 001.') : '✓'}</div>}
       {err && <div className="note err">{err}</div>}
       <Panel>
         <table className="t">
@@ -82,6 +91,31 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <LogoUpload current={logoUrl} action={saveLogo} removeAction={removeLogo} max={LOGO_MAX}
           labels={{ pick: t('logo_pick'), hint: t('logo_hint'), save: t('logo_save'), remove: t('logo_remove'), big: t('logo_big'), bad: t('logo_bad') }} />
       </Panel>
+      <section className="panel country" id="sede-mg">
+        <div className="panel-h"><CountryMark loc="MG" label="Madagascar" /><h2>{L('Sede in Madagascar · accordo di sede', 'Siège à Madagascar · accord de siège')}</h2></div>
+        <div className="panel-b">
+          {mg.expires_on && <p className="note" style={{ marginTop: 0 }}>{L(`Accordo valido fino al ${dmy(mg.expires_on)}. Promemoria di rinnovo in Scadenze il ${dmy(remind)} (6 mesi prima).`,
+            `Accord valable jusqu’au ${dmy(mg.expires_on)}. Rappel de renouvellement dans Échéances le ${dmy(remind)} (6 mois avant).`)}</p>}
+          <form action={saveMgSeat} className="fgrid">
+            {mf('agreement_no', 'Numero dell’accordo', 'Numéro de l’accord', { max: 80 })}
+            {mf('ministries', 'Ministeri firmatari o di riferimento', 'Ministères signataires ou de tutelle', { max: 300 })}
+            {mf('signed_on', 'Data di firma', 'Date de signature', { type: 'date', max: 10 })}
+            {mf('expires_on', 'Data di scadenza', 'Date d’expiration', { type: 'date', max: 10 })}
+            {mf('rep_name', 'Rappresentante legale in Madagascar', 'Représentant légal à Madagascar')}
+            {mf('rep_mandate', 'Mandato o procura (estremi)', 'Mandat ou procuration (références)', { max: 200 })}
+            {mf('nif', 'NIF', 'NIF', { max: 40 })}
+            {mf('stat', 'STAT', 'STAT', { max: 40 })}
+            {mf('cnaps', 'CNaPS (affiliazione)', 'CNaPS (affiliation)', { max: 40 })}
+            {mf('ostie', 'OSTIE o altro servizio medico', 'OSTIE ou autre service médical', { max: 40 })}
+            {mf('address', 'Indirizzo della sede', 'Adresse du siège', { span: true, max: 300 })}
+            {mf('zones', 'Zone di intervento', 'Zones d’intervention', { span: true, max: 300 })}
+            {mf('accounts', 'Conti bancari e firmatari', 'Comptes bancaires et signataires', { span: true, area: true, ph: L('Banca, numero (ultime cifre), chi firma e con quali limiti', 'Banque, numéro (derniers chiffres), qui signe et avec quelles limites') })}
+            {mf('exemptions', 'Esenzioni e agevolazioni previste dall’accordo', 'Exonérations et facilités prévues par l’accord', { span: true, area: true })}
+            {mf('notes', 'Note (allegati, dove si trova la copia firmata)', 'Notes (annexes, où se trouve la copie signée)', { span: true, area: true })}
+            <div className="span2"><button className="btn primary" type="submit">{t('save')}</button></div>
+          </form>
+        </div>
+      </section>
     </div>
   );
 }

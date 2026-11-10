@@ -24,7 +24,7 @@ export function InfoButton({ path, lang }: { path: string; lang: 'it' | 'fr' }) 
   return (
     <>
       <button type="button" className="btn ghost infobtn" onClick={() => setOpen(true)} aria-label={L('Come funziona questa scheda', 'Comment fonctionne cet onglet')}
-              title={L('Come funziona', 'Comment ça marche')}><CIcon name="info" size={17} /></button>
+              title={L('Come si fa', 'Mode d’emploi')}><CIcon name="info" size={17} /><span className="ib-l">{L('Come si fa', 'Mode d’emploi')}</span></button>
       {open && (
         <div className="sheet-bg" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
           <div className="sheet sheet-help" role="dialog" aria-modal="true" aria-label={title || L('Guida', 'Guide')}>

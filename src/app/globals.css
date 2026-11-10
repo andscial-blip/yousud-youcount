@@ -10,7 +10,7 @@
 :root {
   --aqua: var(--green-soft); --aqua-fg: var(--green); --aqua-bg: var(--ok-bg);
   --lilac-fg: var(--lilac-ink); --sky-bg: color-mix(in srgb, var(--sky) 18%, var(--surface));
-  --c-in: var(--green-soft); --c-out: var(--tax); --c-budget: var(--band); --c-over: var(--tax);
+  --c-in: var(--green-soft); --c-out: var(--tax); --c-budget: var(--band); --c-over: var(--tax); --c-net: var(--navy);
   --ok-fg: var(--green); --line-input: var(--line); --focus: var(--cyan);
 }
 :root { color-scheme: light; }
@@ -575,7 +575,7 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 .acclist .an { white-space: normal; overflow: visible; line-height: 1.3; }
 
 /* ---- Movimenti: barra filtri rapidi, totali, tabella su PC e schede su telefono ---- */
-.mv-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--line-2); }
+.mv-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: flex-end; padding: 12px 18px; border-bottom: 1px solid var(--line-2); }
 .saved-f { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .saved-f .sf { display: inline-flex; align-items: center; border: 1px dashed var(--line); border-radius: 999px; padding-left: 12px; font-size: 13px; }
 .saved-f .sf a { color: var(--fg); text-decoration: none; }
@@ -642,7 +642,9 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 .an-top .filters select.input { min-width: 220px; }
 .grid2 .span2 { grid-column: 1 / -1; }
 .figs small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
-.infobtn { width: 38px; height: 38px; padding: 0; justify-content: center; border-radius: 10px; color: var(--muted); }
+.infobtn { height: 38px; padding: 0 12px 0 10px; gap: 6px; justify-content: center; border-radius: 10px; color: var(--muted); }
+.infobtn .ib-l { font-size: 13.5px; font-weight: 500; color: var(--fg); white-space: nowrap; }
+@media (max-width: 760px) { .infobtn .ib-l { display: none; } }
 .sheet.sheet-help { width: min(560px, 100%); }
 .help-b { padding: 18px 22px; font-size: 15px; line-height: 1.6; }
 .help-b p { margin: 0 0 12px; }
@@ -1106,3 +1108,51 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
 .fxchg.down { background: color-mix(in srgb, #A596E6 24%, transparent); color: #5E4FA6; }
 :root[data-theme="dark"] .fxchg.up { color: #A9C3E3; } :root[data-theme="dark"] .fxchg.down { color: #C4B8F0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fxchg.up { color: #A9C3E3; } :root:not([data-theme="light"]) .fxchg.down { color: #C4B8F0; } }
+
+/* ── Filtri (scelta 3A): ricerca + «Filtri (n)»; pannello dal basso sul telefono, riquadro sul computer ── */
+.fbar { position: relative; display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
+.fbar.bare { padding: 0; border: 0; }
+.fbar.pending .fb-search .ic { animation: fbp 1s ease-in-out infinite; }
+@keyframes fbp { 50% { opacity: .35; } }
+.fb-search { position: relative; flex: 1 1 260px; min-width: 0; display: flex; align-items: center; }
+.fb-search .ic { position: absolute; left: 12px; color: var(--muted); pointer-events: none; }
+.fb-search .input { width: 100%; max-width: none; padding-left: 36px; }
+.fbar > select.input { flex: 0 1 220px; width: auto; min-width: 0; }
+.fb-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.fb-btn.on { border-color: var(--slate); }
+.fb-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--slate); color: var(--surface); font-size: 12px; font-weight: 600; display: inline-grid; place-items: center; }
+.fb-back { position: fixed; inset: 0; z-index: 60; background: transparent; }
+.fb-back[hidden], .fb-sheet[hidden] { display: none; }
+.fb-sheet { position: absolute; z-index: 61; right: 18px; top: calc(100% - 6px); width: min(560px, calc(100vw - 36px)); background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(20, 30, 45, .16); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.fb-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.fb-head b { font-size: 16px; }
+.fb-head a { font-size: 14px; }
+.fb-quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.fb-quick a { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--line); color: var(--fg); text-decoration: none; font-size: 13.5px; }
+.fb-quick a[aria-current="true"] { background: var(--slate); border-color: var(--slate); color: var(--surface); }
+.fb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; max-height: min(52vh, 460px); overflow: auto; }
+.fb-grid .field { margin: 0; min-width: 0; }
+.fb-grid .input { width: 100%; max-width: none; }
+.fb-grid label.check { align-self: end; padding-bottom: 8px; }
+.fb-done { width: 100%; justify-content: center; }
+@media (max-width: 760px) {
+  .fbar { padding: 12px 14px; flex-wrap: nowrap; }
+  .fbar > select.input { flex: 1 1 0; }
+  .fb-btn > span:not(.fb-n) { display: none; }
+  .fb-btn { padding: 0 12px; }
+  .fb-back { background: rgba(15, 22, 32, .38); }
+  .fb-sheet { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto; border-radius: 20px 20px 0 0; border-bottom: 0;
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 86vh; }
+  .fb-sheet::before { content: ''; align-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 2px; }
+  .fb-grid { grid-template-columns: minmax(0, 1fr); max-height: 56vh; }
+}
+
+/* ── Testi (scelta 9e): allineati a sinistra, a capo senza parole orfane; giustificato solo nella Guida su schermi larghi ── */
+p, li, dd, figcaption, .note, .muted, small, .help-b p { text-wrap: pretty; }
+h1, h2, h3, h4, .panel-h h2 { text-wrap: balance; }
+@media (min-width: 900px) {
+  .guide .g-body p { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+}
+@media print { .guide .g-body p, .doc-print p { text-align: justify; hyphens: auto; } }
+.panel:has(> .fbar), .panel:has(> * > .fbar) { overflow: visible; }

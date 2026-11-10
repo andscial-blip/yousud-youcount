@@ -47,7 +47,7 @@ export default async function Chart({ searchParams }: { searchParams: Promise<{ 
           <Link href="/admin/piano-conti?dir=in" aria-current={(dir === 'in') ? 'true' : undefined}>{t('in')}</Link>
         </div>
       </PageHead>
-      <p className="muted" style={{ margin: 0 }}>{t('admin_readonly')}</p>
+      <p className="muted" style={{ margin: 0 }}>{lang === 'fr' ? 'Plan comptable, pour l’expert-comptable.' : 'Piano dei conti, per il commercialista.'} {t('admin_readonly')}</p>
       <SearchBox action="/admin/piano-conti" value={q0} placeholder={t('search_chart')} clearLabel={t('search_clear')} hidden={{ dir }} />
       {term && groups.length === 0 && <p className="muted" style={{ margin: 0 }}>{t('empty_search_generic')}</p>}
       <Flash ok={ok} err={err} okText={t('saved')} />

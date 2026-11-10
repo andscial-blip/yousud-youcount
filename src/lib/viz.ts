@@ -77,6 +77,33 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
 }
 
+// Istogramma «a specchio» (scelta 1D del 10/11): entrate sopra lo zero, uscite sotto, pallino per il saldo del mese.
+// Una colonna per mese, simmetrica; la scala è la stessa sopra e sotto, così le altezze si confrontano a occhio.
+export function svgMirror(cats: string[], inc: number[], out: number[], opt: { label?: string; phone?: boolean; lang?: Lang; hrefs?: (string | null)[]; names: [string, string, string] }) {
+  const lang = opt.lang ?? 'it', ph = !!opt.phone;
+  const W = ph ? 380 : 720, H = ph ? 260 : 280, L = ph ? 44 : 56, R = 10, T = 14, B = 30, n = cats.length;
+  const max = Math.max(1000, ...inc, ...out), step = niceStep(max / 2), top = Math.ceil(max / step) * step;
+  const mid = T + (H - T - B) / 2, half = (H - T - B) / 2, sx = (W - L - R) / n, bw = Math.min(ph ? 18 : 30, sx * 0.62);
+  const y = (v: number) => mid - (v / top) * half;
+  const lab = (v: number) => (v === 0 ? '0' : (v > 0 ? '+' : '\u2212') + kfmt(Math.abs(v), lang));
+  let g = '';
+  for (let t = -top; t <= top + 0.1; t += step)
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? 'var(--muted)' : 'var(--line-2)'}"${t === 0 ? '' : ' stroke-dasharray="2 4"'}/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${lab(t)}</text>`;
+  let bars = '', dots = '';
+  cats.forEach((c, i) => {
+    const a = Math.max(0, inc[i] || 0), b = Math.max(0, out[i] || 0), x = L + sx * i + (sx - bw) / 2, net = a - b;
+    if (a > 0) bars += `<rect x="${x}" y="${y(a)}" width="${bw}" height="${mid - y(a)}" rx="3" fill="var(--c-in)"/>`;
+    if (b > 0) bars += `<rect x="${x}" y="${mid}" width="${bw}" height="${y(-b) - mid}" rx="3" fill="var(--c-out)"/>`;
+    if (a > 0 || b > 0) dots += `<circle cx="${x + bw / 2}" cy="${y(net)}" r="${ph ? 4 : 5}" fill="var(--c-net)" stroke="var(--surface)" stroke-width="2"/>`;
+    const tl = [c, `${opt.names[0]}: ${eur0(a, lang)}`, `${opt.names[1]}: ${eur0(b, lang)}`, `${opt.names[2]}: ${net < 0 ? '\u2212' : ''}${eur0(Math.abs(net), lang)}`];
+    const hov = `<rect class="hov" x="${L + sx * i}" y="${T}" width="${sx}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
+    const href = opt.hrefs?.[i];
+    bars += href && (a > 0 || b > 0) ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
+    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 9.5 : 11.5}" fill="var(--muted)">${esc(ph ? c.slice(0, 3) : c)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${g}${bars}${dots}</svg>`;
+}
+
 // Linee (cumulati, andamenti), con area tenue facoltativa e punto sull'ultimo valore.
 // opt.zoom: scala che non parte da zero (per grandezze come i tassi di cambio, dove conta la variazione); opt.fmt: formato dei valori nei tooltip
 export function svgLines(cats: string[], series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[], opt: { refs?: Ref[]; h?: number; label?: string; phone?: boolean; lang?: Lang; zoom?: boolean; fmt?: (v: number) => string } = {}) {

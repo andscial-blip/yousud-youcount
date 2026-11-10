@@ -98,3 +98,35 @@ export async function resetAccounting(form: FormData) {
   redirect(error ? `/admin/dati?err=${encodeURIComponent(error.message)}#azzera`
     : `/admin/dati?ok=reset&n=${data?.deleted?.movements ?? 0}&b=${data?.deleted?.budgets ?? 0}#azzera`);
 }
+
+// Sede in Madagascar (scelta 9c del 10/11): dati dell'accordo di sede e della presenza locale, inseriti dall'amministratore.
+// Se c'è la data di scadenza, crea o sposta in Scadenze il promemoria di rinnovo 6 mesi prima.
+const MG_FIELDS: [string, number][] = [['agreement_no', 80], ['signed_on', 10], ['expires_on', 10], ['ministries', 300], ['rep_name', 120], ['rep_mandate', 200],
+  ['nif', 40], ['stat', 40], ['cnaps', 40], ['ostie', 40], ['address', 300], ['zones', 300], ['accounts', 1000], ['exemptions', 1000], ['notes', 1000]];
+export async function saveMgSeat(form: FormData) {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const { data: me } = await supabase.from('profiles').select('org_id').eq('id', auth.user!.id).single();
+  const { data: cur } = await supabase.from('settings').select('value').eq('key', 'mg_seat').maybeSingle();
+  const v: Record<string, string> = {};
+  for (const [k, max] of MG_FIELDS) v[k] = String(form.get(k) ?? '').trim().slice(0, max);
+  for (const k of ['signed_on', 'expires_on']) if (v[k] && !/^\d{4}-\d{2}-\d{2}$/.test(v[k]!)) v[k] = '';
+  let deadline_id = ((cur?.value ?? {}) as { deadline_id?: string }).deadline_id ?? '';
+  if (v.expires_on) {
+    const d = new Date(`${v.expires_on}T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - 6);
+    const p = (id?: string) => supabase.rpc('deadline_save', { p: {
+      id, title: 'Rinnovo accordo di sede in Madagascar', category: 'doc', priority: 'high',
+      due_date: d.toISOString().slice(0, 10),
+      notes: `Accordo${v.agreement_no ? ` n° ${v.agreement_no}` : ''} in scadenza il ${v.expires_on.split('-').reverse().join('/')}. Avviare il rinnovo con il ministero competente.`,
+    } });
+    let { data: dl, error: e1 } = await p(deadline_id || undefined);
+    if (e1 && deadline_id) ({ data: dl, error: e1 } = await p(undefined)); // promemoria cancellato a mano: se ne crea uno nuovo
+    if (e1) redirect(`/admin/impostazioni?err=${encodeURIComponent(e1.message)}#sede-mg`);
+    deadline_id = (dl as { id?: string } | null)?.id ?? deadline_id;
+  }
+  const { error } = await supabase.from('settings').upsert({ org_id: me!.org_id, key: 'mg_seat', value: { ...v, deadline_id },
+    updated_by: auth.user!.id, updated_at: new Date().toISOString() });
+  revalidatePath('/', 'layout');
+  redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#sede-mg` : '/admin/impostazioni?ok=mg#sede-mg');
+}

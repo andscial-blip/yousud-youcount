@@ -1,5 +1,5 @@
 import type { Lang } from '@/lib/i18n';
-import { donut, eur0, MESI, monthChart, svgBars, svgLines, VZ, type Ref, type Series } from '@/lib/viz';
+import { donut, eur0, MESI, monthChart, svgBars, svgLines, svgMirror, VZ, type Ref, type Series } from '@/lib/viz';
 
 // Componenti grafici con gli stessi disegni di Cairn (src/lib/viz.ts). Sul computer la versione larga,
 // sul telefono quella stretta e alta (si sceglie con il CSS, nessun JavaScript).
@@ -69,17 +69,28 @@ export function MonthChart({ a, b, c, curM, names, lang, hrefs }: {
   );
 }
 
-// Entrate e uscite per mese, barre affiancate (stesso disegno delle barre di Cairn).
+// Entrate e uscite per mese: istogramma a specchio (entrate sopra, uscite sotto, pallino del saldo); solo entrate → barre semplici.
 export function MonthBars({ data, lang, labels, hrefFor }: {
   data: { inc: number; out: number }[]; lang: Lang; labels: { in: string; out: string }; hrefFor?: (month: number) => string;
 }) {
   const tin = data.reduce((s, d) => s + d.inc, 0), tout = data.reduce((s, d) => s + d.out, 0);
+  const hrefs = hrefFor ? data.map((_, i) => hrefFor(i + 1)) : undefined;
+  if (!labels.out || !data.some((d) => d.out > 0)) return (
+    <figure style={{ margin: 0 }}>
+      <Bars cats={MESI[lang]} lang={lang} label={labels.in} series={[{ name: labels.in, vals: data.map((d) => d.inc), color: C_IN }]} hrefs={hrefs} />
+      <figcaption><Legend className="under" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }]} /></figcaption>
+    </figure>
+  );
+  const net = lang === 'fr' ? 'Solde' : 'Saldo', names: [string, string, string] = [labels.in, labels.out, net];
+  const inc = data.map((d) => d.inc), out = data.map((d) => d.out), cats = MESI[lang], tn = tin - tout;
   return (
     <figure style={{ margin: 0 }}>
-      <Bars cats={MESI[lang]} lang={lang} label={`${labels.in} / ${labels.out}`}
-        series={[{ name: labels.in, vals: data.map((d) => d.inc), color: C_IN }, { name: labels.out, vals: data.map((d) => d.out), color: C_OUT }]}
-        hrefs={hrefFor ? data.map((_, i) => hrefFor(i + 1)) : undefined} />
-      <figcaption><Legend className="under" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }, { label: labels.out, color: C_OUT, value: eur0(tout, lang) }]} /></figcaption>
+      <div className="chart-wrap">
+        <Svg className="ch-d" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names })} />
+        <Svg className="ch-m" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, phone: true })} />
+      </div>
+      <figcaption><Legend className="under" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }, { label: labels.out, color: C_OUT, value: eur0(tout, lang) },
+        { label: net, color: 'var(--c-net)', value: `${tn < 0 ? '\u2212' : ''}${eur0(Math.abs(tn), lang)}` }]} /></figcaption>
     </figure>
   );
 }

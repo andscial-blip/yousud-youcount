@@ -167,6 +167,7 @@ function audit() {
     if (el.getBoundingClientRect().width < 3) continue;   // nascosto per l'accessibilità
     const txt = (el.innerText || '').trim().replace(/\s+/g, ' ');
     if (!txt || txt.length > 34 || el.closest('.cmdk, .vh, .skip')) continue;
+    if (el.querySelector('.two') || el.closest('.two')) continue;   // valore su due righe voluto (importo e dettaglio)
     if (lines(el) > 1) bad.push(`va a capo: ${name(el)}`);
   }
   // 4) ultima riga di un paragrafo con una parola sola di 1-3 lettere (orfana)

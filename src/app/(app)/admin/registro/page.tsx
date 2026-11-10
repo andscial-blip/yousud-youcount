@@ -1,8 +1,7 @@
 import { ADMIN, can, requireMe } from '@/lib/session';
+import { FilterBar } from '@/components/FilterBar';
 import { dateTime } from '@/lib/format';
-import Link from 'next/link';
 import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
-import { Ico } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +10,7 @@ type A = { id: number; at: string; table_name: string; action: 'insert' | 'updat
 
 const TABLE: Record<string, [string, string]> = {
   movements: ['Movimenti', 'Mouvements'], documents: ['Documenti', 'Documents'], movement_documents: ['Collegamenti documenti', 'Liens documents'],
-  accounts: ['Conti', 'Comptes'], categories: ['Piano dei conti', 'Plan comptable'], projects: ['Progetti', 'Projets'],
+  accounts: ['Conti', 'Comptes'], categories: ['Categorie', 'Catégories'], projects: ['Progetti', 'Projets'],
   profiles: ['Utenti', 'Utilisateurs'], periods: ['Chiusure', 'Clôtures'], settings: ['Impostazioni', 'Paramètres'],
   counterparties: ['Fornitori e donatori', 'Fournisseurs et donateurs'], counterparty_private: ['Dati personali controparti', 'Données personnelles'],
   project_members: ['Accessi ai progetti', 'Accès aux projets'], grants: ['Finanziamenti', 'Financements'],
@@ -48,21 +47,16 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="stack">
       <PageHead title={t('nav_audit')} />
-      <form className="filters" method="get" action="/admin/registro" role="search">
-        <div className="search"><Ico name="search" />
-          <input className="input" type="search" name="q" defaultValue={sp.q ?? ''} placeholder={t('search_audit')} aria-label={t('search_audit')} /></div>
-        <select className="input" name="tab" defaultValue={tab} aria-label={t('audit_table')} style={{ width: 'auto' }}>
-          <option value="">{t('audit_table')}: {t('all').toLowerCase()}</option>
-          {Object.entries(TABLE).sort((x, y) => x[1][L].localeCompare(y[1][L])).map(([k, v]) => <option key={k} value={k}>{v[L]}</option>)}
-        </select>
-        <select className="input" name="chi" defaultValue={who} aria-label={t('audit_who')} style={{ width: 'auto' }}>
-          <option value="">{t('audit_who')}: {t('all').toLowerCase()}</option>
-          <option value="sistema">{t('audit_system')}</option>
-          {((users ?? []) as { id: string; full_name: string }[]).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-        </select>
-        <button className="btn primary" type="submit">{t('f_apply')}</button>
-        {(tab || who || term) && <Link className="btn ghost" href="/admin/registro">{t('search_clear')}</Link>}
-      </form>
+      <FilterBar className="bare" action="/admin/registro" lang={lang} search={{ value: sp.q ?? '', placeholder: t('search_audit') }}
+        active={(tab ? 1 : 0) + (who ? 1 : 0)} reset={tab || who || term ? '/admin/registro' : null}>
+        <label className="field"><span className="flabel">{t('audit_table')}</span>
+          <select className="input" name="tab" defaultValue={tab}><option value="">{t('all')}</option>
+            {Object.entries(TABLE).sort((x, y) => x[1][L].localeCompare(y[1][L])).map(([k, v]) => <option key={k} value={k}>{v[L]}</option>)}</select></label>
+        <label className="field"><span className="flabel">{t('audit_who')}</span>
+          <select className="input" name="chi" defaultValue={who}><option value="">{t('all')}</option>
+            <option value="sistema">{t('audit_system')}</option>
+            {((users ?? []) as { id: string; full_name: string }[]).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}</select></label>
+      </FilterBar>
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel>
         {data.length === 0 ? <Empty text={tab || who || term ? t('empty_search_generic') : t('none')} /> : (

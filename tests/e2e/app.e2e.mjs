@@ -484,15 +484,23 @@ try {
   await check('movimenti: ricerca per descrizione o numero e filtro «Senza giustificativo»', async () => {
     const p = rs.page;
     await p.goto(`${base}/movimenti`);
+    // i filtri si applicano da soli: si scrive e, dopo una breve pausa, la lista si aggiorna senza premere nulla
     await p.getByRole('searchbox').fill('donazione');
-    await p.getByRole('searchbox').press('Enter');
     await p.waitForURL(/q=donazione/);
+    await p.getByText('PROVA donazione').first().waitFor();
     const txt = await p.locator('main table').innerText();
     assert.match(txt, /PROVA donazione/);
     assert.doesNotMatch(txt, /PROVA materiale scolastico/);
     const [{ ref }] = (await pool.query(`select ref from movements where ref is not null order by ref limit 1`)).rows;
     await p.goto(`${base}/movimenti?q=${ref}`);
     assert.equal(await p.locator('main tbody tr').count(), 1, 'ricerca per numero MOV');
+    // pulsante «Filtri»: il pannello si apre, un menu si applica subito e il numero dei filtri attivi compare sul pulsante
+    await p.goto(`${base}/movimenti`);
+    await p.getByRole('button', { name: /^Filtri/ }).click();
+    await p.locator('#fb-sheet select[name=tipo]').selectOption('income');
+    await p.waitForURL(/tipo=income/);
+    await p.locator('.fb-btn .fb-n').filter({ hasText: '1' }).waitFor();
+    assert.doesNotMatch(await p.locator('main table').innerText(), /PROVA materiale scolastico/);
     await p.goto(`${base}/movimenti?doc=no`);
     const [{ n }] = (await pool.query(`select count(*)::int n from movements where no_doc_reason is not null`)).rows;
     assert.equal(await p.locator('main .mv-table tbody tr').count(), Math.min(n, 100));
@@ -924,6 +932,27 @@ try {
     assert.equal(await sa.page.getByText('backup dei dati', { exact: false }).count(), 0);
     await sa.page.goto(`${base}/admin/dati`);
     await sa.page.getByText('Ultimo backup:', { exact: false }).waitFor();
+  });
+  await check('impostazioni: sede in Madagascar salvata, promemoria di rinnovo 6 mesi prima in Scadenze', async () => {
+    const p = sa.page;
+    await p.goto(`${base}/admin/impostazioni`);
+    const f = p.locator('#sede-mg');
+    await f.locator('#mg-agreement_no').fill('E2E-ACC-1');
+    await f.locator('#mg-expires_on').fill('2028-09-30');
+    await f.locator('#mg-nif').fill('NIF-E2E');
+    await f.getByRole('button', { name: 'Salva' }).click();
+    await p.getByText('Dati della sede in Madagascar salvati.').waitFor();
+    assert.match(await f.innerText(), /Promemoria di rinnovo in Scadenze il 30\/03\/2028/);
+    const [{ value }] = (await pool.query(`select value from settings where key = 'mg_seat'`)).rows;
+    assert.equal(value.nif, 'NIF-E2E');
+    const dl = (await pool.query(`select due_date::text d, priority from deadlines where id = $1`, [value.deadline_id])).rows;
+    assert.deepEqual(dl, [{ d: '2028-03-30', priority: 'high' }]);
+    // cambiando la scadenza il promemoria si sposta, non se ne crea un secondo
+    await f.locator('#mg-expires_on').fill('2029-01-31');
+    await f.getByRole('button', { name: 'Salva' }).click();
+    await p.getByText('Accordo valido fino al 31/01/2029').waitFor();
+    const all = (await pool.query(`select due_date::text d from deadlines where title = 'Rinnovo accordo di sede in Madagascar'`)).rows;
+    assert.deepEqual(all, [{ d: '2028-07-31' }]);
   });
   await check('super admin: pagine di amministrazione e lingua francese', async () => {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],

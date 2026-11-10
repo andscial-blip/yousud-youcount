@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FilterBar } from '@/components/FilterBar';
 import { requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { DOC_GROUPS, DOC_TYPES } from '@/lib/doc-model';
@@ -70,17 +71,15 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
         {DOC_GROUPS.map((g) => <Link key={g.k} href={href({ sez: g.k })} aria-current={sez?.k === g.k ? 'true' : undefined}>{L(g.it, g.fr)} <span className="n">{count(g.k)}</span></Link>)}
       </nav>
       <Panel>
-        <form className="filters panel-h" action="/documenti-emessi" role="search">
-          <input type="hidden" name="anno" value={year} />{sez && <input type="hidden" name="sez" value={sez.k} />}
-          <input className="input grow" type="search" name="q" defaultValue={sp.q ?? ''} placeholder={L('Cerca numero o controparte', 'Numéro ou contrepartie')} title={L('Cerca per numero, controparte, movimento o progetto', 'Rechercher par numéro, contrepartie, mouvement ou projet')}
-                 aria-label={L('Cerca', 'Rechercher')} />
-          <select className="input" name="stato" defaultValue={stato} aria-label={L('Stato', 'Statut')}>
-            <option value="">{L('Tutti gli stati', 'Tous les statuts')}</option><option value="draft">{L('Bozze', 'Brouillons')}</option>
-            <option value="issued">{L('Emessi', 'Émis')}</option><option value="cancelled">{L('Annullati', 'Annulés')}</option></select>
-          <label className="check"><input type="checkbox" name="arch" value="1" defaultChecked={arch} /> {L('Archiviati', 'Archivés')}</label>
-          <button className="btn" type="submit">{L('Filtra', 'Filtrer')}</button>
-          {(sp.q || stato || arch) && <Link className="btn ghost" href={href({ q: undefined, stato: undefined, arch: undefined })}>{L('Azzera', 'Réinitialiser')}</Link>}
-        </form>
+        <FilterBar action="/documenti-emessi" lang={lang} hidden={{ anno: String(year), sez: sez?.k }}
+          search={{ value: sp.q ?? '', placeholder: L('Cerca numero o controparte', 'Numéro ou contrepartie') }}
+          active={(stato ? 1 : 0) + (arch ? 1 : 0)} reset={sp.q || stato || arch ? href({ q: undefined, stato: undefined, arch: undefined }) : null}>
+          <label className="field"><span className="flabel">{L('Stato', 'Statut')}</span>
+            <select className="input" name="stato" defaultValue={stato}>
+              <option value="">{L('Tutti gli stati', 'Tous les statuts')}</option><option value="draft">{L('Bozze', 'Brouillons')}</option>
+              <option value="issued">{L('Emessi', 'Émis')}</option><option value="cancelled">{L('Annullati', 'Annulés')}</option></select></label>
+          <label className="check"><input type="checkbox" name="arch" value="1" defaultChecked={arch} /> {L('Mostra gli archiviati', 'Afficher les archivés')}</label>
+        </FilterBar>
         {rows.length === 0 ? (
           <div className="empty">
             <p>{q || stato ? L('Nessun documento con questi filtri.', 'Aucun document avec ces filtres.') : L(`Nessun documento nel ${year}${sez ? ` in «${sez.it}»` : ''}.`, `Aucun document en ${year}${sez ? ` dans « ${sez.fr} »` : ''}.`)}</p>

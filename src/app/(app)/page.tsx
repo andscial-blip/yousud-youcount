@@ -228,7 +228,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <Link className="htile" href="/cambi">
               <span className="ht-l"><CIcon name="euro" size={14} />{L('Tasso di cambio', 'Taux de change')}</span>
               {fx ? <><b className="num">{money(rate, 'MGA', lang)}</b>
-                <small>1{'\u00a0'}€ · <span className="nw">{L('in vigore dal', 'en vigueur depuis le')} 01/{String(fx.month).padStart(2, '0')}/{fx.year}</span>{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
+                <small>1{'\u00a0'}€ <span className="nw">· {L('in vigore dal', 'en vigueur depuis le')} 01/{String(fx.month).padStart(2, '0')}/{fx.year}</span>{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
                 : <small>{L('Inserisci il tasso', 'Saisir le taux')}</small>}
             </Link>
             <Link className={`htile${toVerify ? ' t-do' : ''}`} href={verHref}>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FilterBar } from '@/components/FilterBar';
 import { RESP, can, requireMe } from '@/lib/session';
 import { date, dateTime } from '@/lib/format';
 import { MESI_L } from '@/lib/viz';
@@ -113,12 +114,9 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
       </div>
 
       <Panel>
-        <form className="filters panel-h" action="/cambi" role="search">
-          <input type="hidden" name="anno" value={year} />
-          <input className="input grow" type="search" name="q" defaultValue={sp.q ?? ''} placeholder={L('Cerca per fonte o utente', 'Rechercher par source ou utilisateur')} aria-label={L('Cerca', 'Rechercher')} />
-          <button className="btn" type="submit">{L('Filtra', 'Filtrer')}</button>
-          {sp.q && <Link className="btn ghost" href={`/cambi?anno=${year}`}>{L('Azzera', 'Réinitialiser')}</Link>}
-        </form>
+        <FilterBar action="/cambi" lang={lang} hidden={{ anno: String(year) }}
+          search={{ value: sp.q ?? '', placeholder: L('Cerca per fonte o utente', 'Rechercher par source ou utilisateur') }}
+          reset={sp.q ? `/cambi?anno=${year}` : null} />
         {rows.length === 0 ? <div className="empty">{L(`Nessun tasso per il ${year}.`, `Aucun taux pour ${year}.`)}</div> : (
           <>
           {/* telefono: un mese per scheda */}

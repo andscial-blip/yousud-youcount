@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FilterBar } from '@/components/FilterBar';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
@@ -130,14 +131,11 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       <PageHead title={`${t('nav_analysis')} ${year}`} />
       <div className="an-top">
         <nav className="segs" aria-label={lg('Viste', 'Vues')}>{tabs.map(([k, l]) => <Link key={k} href={q({ vista: k })} aria-selected={view === k}>{l}</Link>)}</nav>
-        <form className="filters" method="get" action="/analisi">
-          <input type="hidden" name="anno" value={year} /><input type="hidden" name="vista" value={view} />
-          <select className="input" name="progetto" defaultValue={prj} aria-label={t('project')}>
+        <FilterBar className="bare" action="/analisi" lang={lang} hidden={{ anno: String(year), vista: view }}
+          inline={<select className="input" name="progetto" defaultValue={prj} aria-label={t('project')}>
             <option value="">{t('an_all_projects')}</option>
             {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <button className="btn" type="submit">{t('f_apply')}</button>
-        </form>
+          </select>} />
       </div>
       <ErrorNote prefix={t('error_load')} error={error} />
       <section className="panel">

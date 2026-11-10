@@ -146,11 +146,11 @@ export const HELP: HelpEntry[] = [
     it: ['Progetti', [
       'Una scheda per progetto: preventivo dell\'anno, uscite, entrate, saldo (entrate − uscite) e residuo (preventivo − uscite), con la barra della quota usata e la tacca del tempo trascorso.',
       'Un solo avviso per scheda: oltre il preventivo, spesa più veloce del tempo (oltre 15 punti) o spese senza preventivo. Aprendo la scheda si vede il cruscotto completo: andamento mensile, voci di spesa, preventivo per codice, movimenti, scadenze, documenti e finanziamenti.',
-      'L\'icona indica il tipo di attività; un amministratore la imposta in Impostazioni › Centri di costo.']],
+      'L\'icona indica il tipo di attività; un amministratore la imposta in Impostazioni › Progetti.']],
     fr: ['Projets', [
       'Une fiche par projet : budget de l\'année, dépenses, recettes, solde (recettes − dépenses) et reste (budget − dépenses), avec la barre de la part utilisée et le repère du temps écoulé.',
       'Une seule alerte par fiche : au-delà du budget, dépense plus rapide que le temps (plus de 15 points) ou dépenses sans budget. La fiche ouvre le tableau de bord complet : évolution mensuelle, postes, budget par code, mouvements, échéances, documents et financements.',
-      'L\'icône indique le type d\'activité ; un administrateur la règle dans Paramètres › Centres de coût.']] },
+      'L\'icône indique le type d\'activité ; un administrateur la règle dans Paramètres › Projets.']] },
   { href: '/finanziamenti', sec: 'prj',
     it: ['Finanziamenti', [
       'Per ogni finanziamento: importo, periodo, budget per gruppo di spesa e, scelto il periodo, il rendiconto al finanziatore in Excel con spese, giustificativi ed entrate.',
@@ -173,7 +173,7 @@ export const HELP: HelpEntry[] = [
       'Euros, mouvements enregistrés et vérifiés. Cliquez sur un mois pour ses mouvements.']] },
   { href: '/rendiconto', sec: 'anal',
     it: ['Rendiconto', [
-      'Bozza del rendiconto per cassa (Mod. D, enti del Terzo settore) calcolata dai movimenti, con le voci collegate al piano dei conti. La conformità la verifica il commercialista.']],
+      'Bozza del rendiconto per cassa (Mod. D, enti del Terzo settore) calcolata dai movimenti, con le voci collegate alle categorie. La conformità la verifica il commercialista.']],
     fr: ['Compte rendu', [
       'Brouillon du compte rendu de caisse (modèle D, organismes du Tiers secteur italien) calculé à partir des mouvements. La conformité est vérifiée par l\'expert-comptable.']] },
   { href: '/report', sec: 'anal',
@@ -200,11 +200,11 @@ export const HELP: HelpEntry[] = [
     it: ['Conti (amministrazione)', ['Elenco dei conti con saldo e data di apertura. Valuta e paese si scelgono alla creazione e poi non cambiano.']],
     fr: ['Comptes (administration)', ['Liste des comptes avec solde et date d\'ouverture. Devise et pays se choisissent à la création et ne changent plus.']] },
   { href: '/admin/piano-conti', sec: 'set',
-    it: ['Piano dei conti', ['Codici contabili di entrata e di uscita raggruppati come nel Gestionale YouSud, ciascuno collegato a una voce del rendiconto ETS.']],
-    fr: ['Plan comptable', ['Codes comptables de recettes et de dépenses regroupés comme dans le Gestionale YouSud, chacun lié à un poste du compte rendu ETS.']] },
+    it: ['Categorie', ['Le categorie (il «piano dei conti» per il commercialista) sono i codici contabili di entrata e di uscita raggruppati come nel Gestionale YouSud, ciascuno collegato a una voce del rendiconto ETS.']],
+    fr: ['Catégories', ['Les catégories (le « plan comptable » pour l’expert-comptable) sont les codes comptables de recettes et de dépenses regroupés comme dans le Gestionale YouSud, chacun lié à un poste du compte rendu ETS.']] },
   { href: '/admin/progetti', sec: 'set',
-    it: ['Centri di costo', ['Progetti e struttura: nome, codice, tipo di attività (icona), date e stato. Un progetto non attivo non si propone nei nuovi movimenti ma resta nei report.']],
-    fr: ['Centres de coût', ['Projets et structure : nom, code, type d\'activité (icône), dates et statut. Un projet inactif n\'est plus proposé mais reste dans les rapports.']] },
+    it: ['Progetti (amministrazione)', ['Ogni movimento va su un progetto oppure su «Struttura e spese generali» (sede, amministrazione, spese comuni): non servono centri di costo a parte. Per ciascuno: nome, codice, tipo di attività (icona), date e stato. Un progetto non attivo non si propone nei nuovi movimenti ma resta nei report.']],
+    fr: ['Projets (administration)', ['Chaque mouvement va sur un projet ou sur « Structure et frais généraux » (siège, administration, frais communs) : pas besoin de centres de coût séparés. Pour chacun : nom, code, type d\'activité (icône), dates et statut. Un projet inactif n\'est plus proposé mais reste dans les rapports.']] },
   { href: '/admin/periodi', sec: 'set',
     it: ['Chiusure mensili', ['Chiudere un mese blocca nuove registrazioni con data in quel mese. Si chiude dopo aver verificato tutti i movimenti del mese.',
       'Si chiude un mese quando tutti i suoi movimenti sono verificati. Dopo la chiusura in quel mese non si registra né si modifica nulla; riaprire spetta al super amministratore.']],
@@ -214,20 +214,22 @@ export const HELP: HelpEntry[] = [
     it: ['Ente e documenti', [
       'Dati dell\'associazione usati nei documenti (denominazione legale, sede, codice fiscale, IBAN, iscrizione RUNTS, contatti), firmatario e logo.',
       'Qui si scelgono anche le regole: controllo a quattro occhi, giustificativo obbligatorio, lettura dei documenti con l\'AI.',
-      'Compaiono nell\'intestazione di tutti i documenti emessi (ricevute, quietanze, notule, note spese, autocertificazioni). Il firmatario è chi firma per l\'ente.']],
+      'Compaiono nell\'intestazione di tutti i documenti emessi (ricevute, quietanze, notule, note spese, autocertificazioni). Il firmatario è chi firma per l\'ente.',
+      'In fondo, «Sede in Madagascar»: numero e date dell\'accordo di sede, ministeri, rappresentante legale, NIF, STAT, CNaPS, conti e firmatari, esenzioni. Con la data di scadenza l\'app mette in Scadenze il promemoria di rinnovo 6 mesi prima. I dati li inserisce l\'amministratore dai documenti ufficiali.']],
     fr: ['Organisme et documents', [
       'Données de l\'association utilisées dans les documents (dénomination légale, siège, code fiscal, IBAN, inscription RUNTS, contacts), signataire et logo.',
       'Ici se choisissent aussi les règles : contrôle à quatre yeux, justificatif obligatoire, lecture des documents par l\'IA.',
-      'Elles figurent dans l\'en-tête de tous les documents émis (reçus, quittances, notes d\'honoraires, notes de frais, attestations). Le signataire est celui qui signe pour l\'association.']] },
+      'Elles figurent dans l\'en-tête de tous les documents émis (reçus, quittances, notes d\'honoraires, notes de frais, attestations). Le signataire est celui qui signe pour l\'association.',
+      'En bas, « Siège à Madagascar » : numéro et dates de l\'accord de siège, ministères, représentant légal, NIF, STAT, CNaPS, comptes et signataires, exonérations. Avec la date d\'expiration, l\'app ajoute dans Échéances le rappel de renouvellement 6 mois avant. Les données sont saisies par l\'administrateur à partir des documents officiels.']] },
   { href: '/admin/dati', sec: 'set',
     it: ['Dati e sicurezza', [
       'Backup completo in Excel da salvare nel Drive condiviso di YouSud; chiavi per collegare altre app. I dati dimostrativi si caricano e si svuotano da qui, con conferma del numero.',
       'Solo il super amministratore, prima dell\'avvio: «Azzera movimenti e preventivi» elimina tutti i movimenti e i preventivi di collaudo. Serve un backup scaricato nelle ultime 24 ore e la parola AZZERA; la numerazione MOV riparte da 001.',
-      'Tutti i dati dell’app (movimenti, conti, piano dei conti, progetti, controparti, registro delle modifiche) in un file Excel, un foglio per tabella. Conservalo nel Drive condiviso di YouSud. I file dei giustificativi restano nell’archivio dell’app: il foglio documents ne elenca percorso e impronta.']],
+      'Tutti i dati dell’app (movimenti, conti, categorie, progetti, controparti, registro delle modifiche) in un file Excel, un foglio per tabella. Conservalo nel Drive condiviso di YouSud. I file dei giustificativi restano nell’archivio dell’app: il foglio documents ne elenca percorso e impronta.']],
     fr: ['Données et sécurité', [
       'Sauvegarde complète en Excel à enregistrer dans le Drive partagé de YouSud ; clés pour relier d\'autres applications. Les données de démonstration se chargent et se vident ici, avec confirmation du nombre.',
       'Seulement le super administrateur, avant le lancement : « Remettre à zéro » supprime tous les mouvements et budgets de test. Il faut une sauvegarde de moins de 24 heures et le mot AZZERA ; la numérotation MOV repart de 001.',
-      'Toutes les données de l’app (mouvements, comptes, plan comptable, projets, tiers, journal des modifications) dans un fichier Excel, une feuille par table. Conservez-le dans le Drive partagé de YouSud. Les fichiers des pièces restent dans l’archive de l’app : la feuille documents indique leur chemin et leur empreinte.']] },
+      'Toutes les données de l’app (mouvements, comptes, catégories, projets, tiers, journal des modifications) dans un fichier Excel, une feuille par table. Conservez-le dans le Drive partagé de YouSud. Les fichiers des pièces restent dans l’archive de l’app : la feuille documents indique leur chemin et leur empreinte.']] },
   { href: '/admin/registro', sec: 'set',
     it: ['Registro modifiche', ['Ogni creazione, modifica ed eliminazione con data, ora e autore, filtrabile per tabella e persona.']],
     fr: ['Historique des modifications', ['Chaque création, modification et suppression avec date, heure et auteur, filtrable par table et personne.']] },

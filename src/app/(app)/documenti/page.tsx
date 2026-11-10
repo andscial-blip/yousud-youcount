@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FilterBar } from '@/components/FilterBar';
 import { requireMe } from '@/lib/session';
 import { docName } from '@/lib/doc-name';
 import { date, money } from '@/lib/format';
@@ -53,12 +54,8 @@ export default async function Documents({ searchParams }: { searchParams: Promis
   return (
     <div className="stack">
       <PageHead title={t('nav_documents')}>
-        <form className="search" method="get" action="/documenti" role="search">
-          {f && <input type="hidden" name="f" value={f} />}
-          <Ico name="search" />
-          <input className="input" type="search" name="q" defaultValue={q0} placeholder={t('search_docs')} aria-label={t('search_docs')} />
-          {term && <Link className="btn ghost" href={f ? `/documenti?f=${f}` : '/documenti'}>{t('search_clear')}</Link>}
-        </form>
+        <FilterBar className="bare" action="/documenti" lang={lang} hidden={{ f }} search={{ value: q0, placeholder: t('search_docs') }}
+          reset={term ? (f ? `/documenti?f=${f}` : '/documenti') : null} />
         <div className="seg">
           <Link href={qs('')} aria-current={f !== 'orfani' ? 'true' : undefined}>{t('all')} · {rows.length}</Link>
           <Link href={qs('orfani')} aria-current={f === 'orfani' ? 'true' : undefined}>{t('doc_orphans')} · {orphans}</Link>
