@@ -65,6 +65,22 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
             <small>{by ? `${by} · ${dt(at)}` : sub}</small></li>))}
       </ol>
 
+      {r.delivered_at && (
+        <section className="panel doc-print adv-receipt">
+          <div className="panel-b">
+            <p className="muted small" style={{ marginTop: 0 }}>{ente} · {LL('Ricevuta di consegna di contanti', 'Reçu de remise d’espèces')}</p>
+            <h2 style={{ margin: '4px 0 12px' }}>{LL('Ricevuta di consegna', 'Reçu de remise')}</h2>
+            <p>{LL('Il/la sottoscritto/a', 'Je soussigné(e)')} <b>{holder}</b> {LL('dichiara di aver ricevuto in contanti da', 'déclare avoir reçu en espèces de')} {ente}
+              {' '}{LL('la somma di', 'la somme de')} <b className="num">{money(given, cur, lang)}</b> {LL('il', 'le')} {date(r.delivered_at)}, {LL('per', 'pour')}: <b>{r.purpose}</b>{prj?.name ? ` (${prj.name})` : ''}.</p>
+            <p>{LL(`Si impegna a consegnare le ricevute o fatture delle spese entro il ${date(r.report_by)} e a restituire la parte non spesa.`, `Je m’engage à remettre les reçus ou factures des dépenses avant le ${date(r.report_by)} et à restituer la partie non dépensée.`)}</p>
+            <div className="sign-row">
+              <div><span>{LL('Chi riceve', 'Qui reçoit')} · {holder}</span><i /></div>
+              <div><span>{LL('Chi consegna', 'Qui remet')}</span><i /></div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="panel doc-print">
         <div className="panel-b">
           <p className="muted small" style={{ marginTop: 0 }}>{ente} · {LL('Scheda anticipo di cassa', 'Fiche d’avance de caisse')}</p>

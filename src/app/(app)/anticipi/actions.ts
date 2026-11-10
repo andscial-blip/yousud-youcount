@@ -14,7 +14,7 @@ function readPerson(form: FormData) {
   return { holder: String(form.get('holder') ?? '').trim(), currency: String(form.get('currency') ?? 'MGA') };
 }
 
-const back = (q: string) => redirect(`/anticipi?${q}`);
+const back = (q: string, persona?: string) => redirect(`/anticipi?${q}${persona && /^[0-9a-f-]{36}$/.test(persona) ? `&persona=${persona}` : ''}`);
 const fail = (e: { message: string } | null | undefined, fallback = 'invalid') => back(`err=${encodeURIComponent(e?.message ?? fallback)}`);
 
 // Nuova persona: il database crea il suo conto anticipi (solo admin e responsabili).
@@ -66,9 +66,36 @@ export async function moveAdvance(form: FormData) {
     description: `${give ? 'Anticipo in contanti a' : 'Restituzione anticipo da'} ${holder}`.trim().slice(0, 500),
     notes: String(form.get('notes') ?? '').trim() || null,
   } });
+  const persona = String(form.get('ret_persona') ?? '');
+  if (error) { revalidatePath('/', 'layout'); back(`err=${encodeURIComponent(error.message)}`, persona); }
+  // restituzione che porta il saldo a zero: gli anticipi consegnati di questa persona si chiudono da soli
+  const n = give ? 0 : await closeIfSettled(supabase, adv);
   revalidatePath('/', 'layout');
-  if (error) fail(error);
-  back('ok=1');
+  back(n ? `ok=closed&n=${n}` : 'ok=1', persona || adv);
+}
+
+type Sb = Awaited<ReturnType<typeof createClient>>;
+// Saldo della persona a zero (consegnato = speso + restituito): si chiudono le richieste consegnate o in verifica.
+async function closeIfSettled(supabase: Sb, account: string) {
+  const { data: rows } = await supabase.rpc('advance_summary');
+  const r = ((rows ?? []) as { account_id: string; balance: string }[]).find((x) => x.account_id === account);
+  if (!r || Math.abs(Number(r.balance)) > 0.004) return 0;
+  const { data: open } = await supabase.from('advance_requests').select('id').eq('account_id', account).in('status', ['delivered', 'reported']);
+  let n = 0;
+  for (const o of open ?? []) {
+    const { error } = await supabase.rpc('advance_step', { p: { id: o.id, step: 'close', note: 'saldo a zero: spese giustificate e resto restituito' } });
+    if (!error) n += 1;
+  }
+  return n;
+}
+
+// Dal portafoglio della persona: chiude gli anticipi quando il saldo è a zero (es. tutto speso con le ricevute).
+export async function closeSettled(form: FormData) {
+  const supabase = await createClient();
+  const acc = String(form.get('account') ?? '');
+  const n = await closeIfSettled(supabase, acc);
+  revalidatePath('/', 'layout');
+  back(n ? `ok=closed&n=${n}` : 'err=not_settled', acc);
 }
 
 // ── Procedura in 5 passi (scelta 8 del 10/11) ──
@@ -76,14 +103,20 @@ export async function moveAdvance(form: FormData) {
 export async function requestAdvance(form: FormData) {
   const supabase = await createClient();
   const amount = parseAmount(String(form.get('amount') ?? ''));
-  const { error } = await supabase.rpc('advance_request', { p: {
+  const { data: rq, error } = await supabase.rpc('advance_request', { p: {
     ...readPerson(form), amount, purpose: String(form.get('purpose') ?? '').trim(),
     role_kind: String(form.get('role_kind') ?? 'volunteer'),
     project_id: String(form.get('project') ?? ''), category_id: String(form.get('category') ?? ''),
     use_date: String(form.get('use_date') ?? ''), report_by: String(form.get('report_by') ?? ''),
   } });
+  if (error) { revalidatePath('/', 'layout'); fail(error); }
+  // preventivo o stima caricati nel modulo: si collegano alla richiesta appena creata
+  const est = String(form.get('estimate_document_id') ?? '');
+  if (est && rq) {
+    const { error: ea } = await supabase.rpc('advance_attach', { p: { id: (rq as { id: string }).id, kind: 'estimate', document_id: est } });
+    if (ea) { revalidatePath('/', 'layout'); back(`ok=req&err=${encodeURIComponent(ea.message)}`); }
+  }
   revalidatePath('/', 'layout');
-  if (error) fail(error);
   back('ok=req');
 }
 
@@ -127,5 +160,5 @@ export async function deliverAdvance(form: FormData) {
   const { error: e2 } = await supabase.rpc('advance_step', { p: { id, step: 'deliver', movement_id: (mv as { id: string }).id } });
   revalidatePath('/', 'layout');
   if (e2) fail(e2);
-  back('ok=deliver');
+  back(`ok=deliver&ric=${id}`);
 }

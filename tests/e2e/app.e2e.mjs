@@ -563,11 +563,12 @@ try {
   await check('anticipi: nuova persona, consegna, spesa con l\'anticipo, autocertificazione firmata', async () => {
     const p = rs.page;
     await p.goto(`${base}/anticipi`);
-    await p.getByText('Nuova persona con anticipo').click();
+    await p.getByText('Altre operazioni').click();
     await p.getByLabel('Nome della persona').fill('Hery');
     await p.getByRole('button', { name: 'Crea', exact: true }).click();
     await p.waitForURL(/\/anticipi\?ok=1/);
     await p.goto(`${base}/anticipi`);
+    await p.getByText('Altre operazioni').click();
     await p.locator('#adv').selectOption({ label: 'Hery · MGA' });
     await p.locator('#advcash').selectOption({ label: 'Cassa Madagascar (contanti) · MGA' });
     await p.locator('#advamt').fill('200.000');
@@ -614,14 +615,18 @@ try {
     await p.locator('section.panel', { hasText: sc.number }).getByText('Firmata', { exact: true }).waitFor();
     // riepilogo: consegnato 200.000, speso 50.000, da giustificare 150.000
     await p.goto(`${base}/anticipi`);
-    const row = p.locator('tr', { hasText: 'Hery' });
-    const txt = (await row.innerText()).replace(/[  ]/g, ' ');
-    assert.match(txt, /200\.000 MGA[\s\S]*50\.000 MGA[\s\S]*150\.000 MGA/);
+    const row = p.locator('.aw-list > li', { hasText: 'Hery' });
+    assert.match((await row.innerText()).replace(/[\u00a0\u202f]/g, ' '), /150\.000 MGA/);
+    await row.getByRole('link').click();
+    await p.waitForURL(/persona=/);
+    const top = (await p.locator('.aw-top').innerText()).replace(/[\u00a0\u202f]/g, ' ');
+    assert.match(top, /150\.000 MGA[\s\S]*consegnato 200\.000 MGA · speso 50\.000 MGA/);
+    assert.match(await p.locator('.aw-sheet').innerText(), /PROVA mercato con anticipo/);
     await p.screenshot({ path: `${SHOTS}/resp_anticipi.png`, fullPage: true });
   });
   await check('anticipi: richiesta per una persona che non è utente (nome scritto, conto creato da solo)', async () => {
     const o = op.page;
-    await o.goto(`${base}/anticipi`);
+    await o.goto(`${base}/anticipi?nuova=1`);
     await o.locator('#rq-acc').selectOption('new');
     await o.locator('#rq-acc-n').fill('Voahangy Prova');
     await o.locator('#rq-acc-c').selectOption('MGA');
@@ -632,52 +637,57 @@ try {
     const [r] = (await pool.query(`select a.holder, a.currency, r.amount from advance_requests r join accounts a on a.id = r.account_id where r.purpose = 'PROVA persona nuova'`)).rows;
     assert.deepEqual([r.holder, r.currency, r.amount], ['Voahangy Prova', 'MGA', '15000.00']);
     // ora compare nella lista di chi ha un conto anticipi
-    await o.goto(`${base}/anticipi`);
+    await o.goto(`${base}/anticipi?nuova=1`);
     assert.equal(await o.locator('#rq-acc option', { hasText: 'Voahangy Prova · MGA' }).count(), 1);
   });
-  await check('anticipi: procedura in 5 passi (richiesta, autorizzazione a quattro occhi, consegna collegata, rendiconto, chiusura)', async () => {
+  await check('anticipi: richiesta con preventivo, autorizzazione a quattro occhi, consegna con ricevuta, restituzione del resto e chiusura automatica', async () => {
     const o = op.page, p = rs.page;
-    // 1 richiesta dell'operatore
-    await o.goto(`${base}/anticipi`);
+    // 1 richiesta dell'operatore, con il preventivo allegato
+    await o.goto(`${base}/anticipi?nuova=1`);
     await o.locator('#rq-acc').selectOption({ label: 'Hery · MGA' });
     await o.locator('#rq-amt').fill('80.000');
     await o.locator('#rq-p').fill('PROVA materiale laboratorio');
+    await o.locator('.adv-up input[type=file]').setInputFiles({ name: 'preventivo.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 preventivo di prova') });
+    await o.getByText('Allegato: preventivo.pdf').waitFor();
     await o.getByRole('button', { name: 'Invia la richiesta' }).click();
     await o.waitForURL(/ok=req/);
-    const li = (pg) => pg.locator('.adv-req > li', { hasText: 'PROVA materiale laboratorio' });
-    await li(o).getByText('Richiesta', { exact: true }).waitFor();
-    assert.equal(await li(o).getByText('Autorizza', { exact: true }).count(), 0, 'l\'operatore non autorizza');
-    // 2 autorizzazione del responsabile (non è chi ha chiesto)
+    const [rq0] = (await pool.query(`select r.status, d.doc_type from advance_requests r join documents d on d.id = r.estimate_document_id where r.purpose = 'PROVA materiale laboratorio'`)).rows;
+    assert.deepEqual([rq0.status, rq0.doc_type], ['requested', 'estimate']);
+    // il preventivo non è un giustificativo di spesa
+    await p.goto(`${base}/documenti`);
+    assert.doesNotMatch(await p.locator('main').innerText(), /preventivo\.pdf/);
+    // 2 autorizzazione del responsabile (non è chi ha chiesto); l'operatore non vede i tasti
+    await o.goto(`${base}/anticipi`);
+    assert.equal(await o.locator('summary', { hasText: 'Autorizza' }).count(), 0);
     await p.goto(`${base}/anticipi`);
-    await li(p).locator('summary', { hasText: 'Autorizza' }).click();
-    await li(p).locator('.ar-form').getByRole('button', { name: 'Autorizza' }).click();
+    const li = p.locator('.aw-rq > li', { hasText: 'PROVA materiale laboratorio' });
+    await li.locator('summary', { hasText: 'Autorizza' }).click();
+    await li.locator('.ar-form').getByRole('button', { name: 'Autorizza' }).click();
     await p.waitForURL(/ok=authorize/);
-    // 3 consegna: giroconto dalla cassa in ariary al conto anticipi di Hery, collegato alla richiesta
-    await li(p).locator('summary', { hasText: 'Consegna' }).click();
-    await li(p).getByRole('button', { name: 'Registra la consegna' }).click();
+    // 3 consegna: giroconto dalla cassa in ariary al conto anticipi di Hery, poi la ricevuta di consegna da firmare
+    await li.locator('summary', { hasText: 'Consegna i contanti' }).click();
+    await li.getByRole('button', { name: 'Registra e prepara la ricevuta' }).click();
     await p.waitForURL(/ok=deliver/);
     const [rq] = (await pool.query(`select r.status, m.amount, m.kind, a.holder from advance_requests r join movements m on m.id = r.delivery_movement_id
       join accounts a on a.id = m.to_account_id where r.purpose = 'PROVA materiale laboratorio'`)).rows;
     assert.deepEqual([rq.status, rq.amount, rq.kind, rq.holder], ['delivered', '80000.00', 'transfer', 'Hery']);
-    // 4 rendiconto segnato da chi ha chiesto; avviso in Scadenze
+    await p.getByRole('link', { name: 'Apri la ricevuta di consegna →' }).click();
+    await p.getByRole('heading', { name: 'Ricevuta di consegna' }).waitFor();
+    assert.match((await p.locator('main').innerText()).replace(/[  ]/g, ' '), /Hery[\s\S]*dichiara di aver ricevuto[\s\S]*80\.000 MGA/);
+    // avviso in Scadenze per le ricevute
     await o.goto(`${base}/scadenze?periodo=30`);
     await o.locator('ul.dl').getByRole('link', { name: 'Giustificare l’anticipo: Hery' }).waitFor();
-    await o.goto(`${base}/anticipi`);
-    await li(o).getByRole('button', { name: 'Spese registrate: rendiconto pronto' }).click();
-    await o.waitForURL(/ok=report/);
-    // scheda stampabile con il riepilogo
-    await p.goto(`${base}/anticipi`);
-    await li(p).getByRole('link', { name: 'Scheda e stampa' }).click();
-    await p.getByText('Scheda anticipo di cassa').waitFor();
-    assert.match(await p.locator('main').innerText(), /Importo autorizzato[\s\S]*80\.000/);
-    // 5 chiusura del responsabile
-    await p.goto(`${base}/anticipi`);
-    await li(p).locator('summary', { hasText: 'Chiudi' }).click();
-    await li(p).getByRole('button', { name: 'Chiudi l’anticipo' }).click();
-    await p.waitForURL(/ok=close/);
-    assert.equal(await li(p).count(), 0, 'chiuso: non è più fra le aperte');
-    const [{ st }] = (await pool.query(`select status st from advance_requests where purpose = 'PROVA materiale laboratorio'`)).rows;
-    assert.equal(st, 'closed');
+    // portafoglio di Hery: ricevuta di consegna firmata caricata, poi restituzione del resto → saldo a zero e chiusura automatica
+    const [{ acc }] = (await pool.query(`select id acc from accounts where kind = 'advance' and holder = 'Hery'`)).rows;
+    await p.goto(`${base}/anticipi?persona=${acc}`);
+    await p.locator('.aw-rc input[type=file]').setInputFiles({ name: 'ricevuta-firmata.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 firmata') });
+    await p.locator('.aw-rc', { hasText: 'firmata ✓' }).waitFor();
+    assert.match((await p.locator('.aw-top > b').innerText()).replace(/[  ]/g, ' '), /230\.000 MGA/);
+    await p.locator('.aw-btns summary', { hasText: 'Restituzione' }).click();
+    await p.getByRole('button', { name: 'Registra la restituzione' }).click();
+    await p.waitForURL(/ok=closed/);
+    const [{ st, dd }] = (await pool.query(`select r.status st, d.doc_type dd from advance_requests r join documents d on d.id = r.delivery_document_id where purpose = 'PROVA materiale laboratorio'`)).rows;
+    assert.deepEqual([st, dd], ['closed', 'delivery_receipt']);
   });
   await check('preventivo: griglia codici × progetti (cella scritta e dettaglio in ariary), approvazione con delibera, confronto, Excel', async () => {
     const p = rs.page;

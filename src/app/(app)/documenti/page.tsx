@@ -32,7 +32,7 @@ export default async function Documents({ searchParams }: { searchParams: Promis
   const { data, error } = await supabase.from('documents')
     .select(`id, doc_type, doc_date, doc_number, total, currency, created_at, original_path, pdf_path, file_name,
       links:movement_documents(seq, movement:movements(id, ref, description, op_date, doc_date, amount, currency, sign))`)
-    .neq('doc_type', 'statement').order('created_at', { ascending: false }).limit(1000).returns<Doc[]>();
+    .not('doc_type', 'in', '(statement,estimate,delivery_receipt)').order('created_at', { ascending: false }).limit(1000).returns<Doc[]>();
   // per ogni documento: il movimento principale (quello numerato prima), il nome con cui lo si riconosce
   const rows = (data ?? []).map((d) => {
     const link = [...(d.links ?? [])].sort((a, b) => (a.movement?.ref ? 0 : 1) - (b.movement?.ref ? 0 : 1))[0];
