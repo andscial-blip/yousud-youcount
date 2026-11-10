@@ -1484,3 +1484,12 @@ table.bal-fixed th.r { white-space: normal; line-height: 1.25; vertical-align: b
   .pr-spark { display: none; }
 }
 @media (max-width: 760px) { .pt > small { min-height: 2.5em; line-height: 1.25; } .k4 > small { min-height: 2.5em; line-height: 1.25; } }
+.cal-d { position: relative; }
+.cal-hit { display: none; }
+@media (max-width: 760px) {
+  .cal-hit { display: block; position: absolute; inset: 0; z-index: 1; }
+  .s-tiles .htile .ht-l { min-height: 2.5em; }
+}
+ul.dl.dl-day-list li { grid-template-columns: minmax(0, 1fr) auto; }
+ul.dl.dl2.dl-day-list li { grid-template-columns: minmax(0, 1fr) auto !important; }
+ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !important; justify-self: end; align-self: start; }

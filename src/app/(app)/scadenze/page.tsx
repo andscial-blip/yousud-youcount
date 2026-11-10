@@ -109,6 +109,8 @@ export default async function Deadlines({ searchParams }: {
       : (i.status === 'open' && i.date < td) || (i.date >= td && i.date <= addDays(td, Number(per)));
   const list = items.filter((i) => (!tipo || i.cat === tipo) && i.applies && (view === 'cal' || inPeriod(i))).sort((a, b) => a.date.localeCompare(b.date) || (b.priority === 'high' ? 1 : -1));
   const sel = sp.apri ? items.find((x) => x.key === sp.apri) : undefined;
+  const selDay = sp.apri?.startsWith('day:') ? sp.apri.slice(4) : null;
+  const dayItems = selDay ? items.filter((i) => i.applies && i.date === selDay && (!tipo || i.cat === tipo)) : [];
   const late = items.filter((i) => i.applies && i.status === 'open' && i.date < td).length;
   const soonL = items.filter((i) => i.applies && i.status === 'open' && i.date >= td && i.date <= addDays(td, 14)).sort((a, b) => a.date.localeCompare(b.date));
   const soon = soonL.length;
@@ -232,6 +234,7 @@ export default async function Deadlines({ searchParams }: {
             return (
               <div key={d} className={`cal-d ${d.slice(0, 7) !== month ? 'out' : ''} ${d === td ? 'today' : ''} ${its.length ? 'has' : ''}`} role="gridcell">
                 <span className="cal-n">{Number(d.slice(8))}</span>
+                {its.length > 0 && <Link className="cal-hit" href={href({ apri: `day:${d}` })} scroll={false} aria-label={`${Number(d.slice(8))} ${monthName}: ${its.length}`} />}
                 {its.slice(0, 3).map((i) => <Link key={i.key} className={`cal-i i-${imp(i)}`} title={i.title} href={href({ apri: i.key })} scroll={false}>{i.title}</Link>)}
                 {its.length > 3 && <span className="cal-more">+{its.length - 3}</span>}
               </div>
@@ -290,6 +293,23 @@ export default async function Deadlines({ searchParams }: {
           <p className="muted small" style={{ marginBottom: 0 }}>{L('Scala logaritmica: le soglie sono molto distanti fra loro. La tacca lilla è la stima di fine anno al ritmo di oggi. La lettura delle soglie la conferma il commercialista.',
             'Échelle logarithmique : les seuils sont très éloignés. Le repère lilas est l’estimation de fin d’année au rythme actuel. La lecture des seuils est confirmée par l’expert-comptable.')}</p>
         </Panel>
+      )}
+      {selDay && (
+        <div className="sheet-bg dl-sheet-bg">
+          <Link className="dl-sheet-x" href={href({})} scroll={false} aria-label={L('Chiudi', 'Fermer')} />
+          <aside className="sheet sheet-help dl-sheet" role="dialog" aria-modal="true" aria-label={selDay}>
+            <div className="sheet-h"><h2>{selDay.split('-').reverse().join('/')}</h2><div className="spacer" />
+              <Link className="btn ghost" href={href({})} scroll={false}>{L('Chiudi', 'Fermer')}</Link></div>
+            <ul className="dl dl2 dl-day-list">
+              {dayItems.map((i) => (
+                <li key={i.key} className={`${i.status !== 'open' ? 'done' : ''} i-${imp(i)}`}>
+                  <div className="dl-body"><div className="dl-t"><Link href={href({ apri: i.key })} scroll={false}>{i.title}</Link></div>
+                    <div className="muted dl-s">{L(...DL_CAT[i.cat])}{i.amount ? ` · ${money(i.amount, i.currency ?? 'EUR', lang)}` : ''}</div></div>
+                  <div className="dl-tag">{tag(i)}</div>
+                </li>))}
+            </ul>
+          </aside>
+        </div>
       )}
       {sel && (
         <div className="sheet-bg dl-sheet-bg">
