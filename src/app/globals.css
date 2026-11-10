@@ -1504,11 +1504,11 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
   .legend.trio > span > b { grid-column: 1 / -1; margin-left: 0; }
 }
 
-/* «Dove vanno i fondi» su telefono: due colonne uguali, percentuali allineate a destra. */
+/* «Dove vanno i fondi» su telefono: una voce per riga, nome intero e percentuale allineata a destra. */
 @media (max-width: 760px) {
-  .pmix-k { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 14px; }
+  .pmix-k { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
   .pmix-k li { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 6px; }
-  .pmix-k li > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pmix-k li > span { min-width: 0; }
   .pmix-k b { text-align: right; }
 }
 
