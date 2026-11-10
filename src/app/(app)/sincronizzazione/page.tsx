@@ -24,7 +24,6 @@ export default async function Sync() {
   return (
     <div className="stack">
       <PageHead title={t('nav_sync')} />
-      <div className="note">{t('sync_text')}</div>
       <OutboxList t={dictFor(lang)} />
       <ErrorNote prefix={t('error_load')} error={error} />
       <Panel title={t('q_server_log')}>

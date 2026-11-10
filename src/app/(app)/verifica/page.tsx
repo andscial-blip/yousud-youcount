@@ -33,7 +33,6 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
   return (
     <div className="stack">
       <PageHead title={t('nav_verify')} />
-      <p className="muted" style={{ margin: 0 }}>{t('verify_intro')}</p>
       {ok !== undefined && <div className="note ok" role="status"><Ico name="verified" />{t('verify_done')} {ok}</div>}
       {err && <div className="note err">{err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />

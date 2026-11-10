@@ -67,9 +67,8 @@ export default async function Documents({ searchParams }: { searchParams: Promis
       <ErrorNote prefix={t('error_load')} error={error} />
       {ok && <p className="note ok" role="status">{FR ? `Justificatif lié à ${ok}.` : `Giustificativo collegato a ${ok}.`}</p>}
       {err && <p className="note err" role="alert">{err}</p>}
-      {rows.length > 0 && <Panel title={FR ? 'Tout télécharger' : 'Scarica tutti'} icon="download">
+      {rows.length > 0 && <Panel>
         <div className="panel-b stack" style={{ gap: 8 }}>
-          <p className="muted small" style={{ margin: 0 }}>{FR ? 'Un fichier ZIP avec les justificatifs de l\'année ou du mois, nommés date_MOV-… (pour le comptable).' : 'Un file ZIP con i giustificativi dell\'anno o del mese, con i nomi data_MOV-… (per il commercialista).'}</p>
           <DocsZip year={new Date().getFullYear()} lang={FR ? 'fr' : 'it'} />
         </div>
       </Panel>}

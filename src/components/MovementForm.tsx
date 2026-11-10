@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Dict, Lang } from '@/lib/i18n';
 import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
-import { parseAmount } from '@/lib/amount';
+import { formatTyping, parseAmount } from '@/lib/amount';
 import dynamic from 'next/dynamic';
 import type { ScanResult } from './ScanEditor';
 // l'editor della foto (con pdf-lib) si carica a parte: la pagina si apre prima; viene comunque scaricato
@@ -62,8 +62,14 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [kind, setKind] = useState<Kind>(initial?.kind ?? P?.kind ?? 'expense');
   const [opDate, setOpDate] = useState(initial?.op_date ?? P?.op_date ?? today());
   const [docDate, setDocDate] = useState(initial?.doc_date ?? '');
-  const [amountTxt, setAmountTxt] = useState(initial ? String(Number(initial.amount)).replace('.', ',')
-    : P?.amount ? String(P.amount).replace('.', ',') : '');
+  // importi scritti con il punto delle migliaia mentre si digita (5000 → 5.000)
+  const fmt = (n: number | string) => formatTyping(String(n).replace('.', ',')).text;
+  const typed = (e: React.ChangeEvent<HTMLInputElement>, set: (v: string) => void) => {
+    const el = e.target; const r = formatTyping(el.value, el.selectionStart ?? el.value.length);
+    set(r.text); requestAnimationFrame(() => { try { el.setSelectionRange(r.caret, r.caret); } catch { /* niente */ } });
+  };
+  const [amountTxt, setAmountTxt] = useState(initial ? fmt(Number(initial.amount))
+    : P?.amount ? fmt(P.amount) : '');
   const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? '');
   // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
@@ -79,8 +85,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   };
   const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial?.currency === 'MGA' ? 'MGA' : 'EUR');
   const [toAccountId, setToAccountId] = useState(initial?.to_account_id ?? '');
-  const [toAmountTxt, setToAmountTxt] = useState(initial?.to_amount ? String(Number(initial.to_amount)).replace('.', ',') : '');
-  const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? String(Number(initial.fx_rate)).replace('.', ',') : '');
+  const [toAmountTxt, setToAmountTxt] = useState(initial?.to_amount ? fmt(Number(initial.to_amount)) : '');
+  const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? fmt(Number(initial.fx_rate)) : '');
   const [rateTouched, setRateTouched] = useState(Boolean(initial?.fx_rate));
   const [categoryId, setCategoryId] = useState(initial?.category_id ?? '');
   const [projectId, setProjectId] = useState(initial?.project_id ?? '');
@@ -132,7 +138,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // scarica l'editor della foto appena la pagina è pronta (resta in cache per l'uso senza rete)
   useEffect(() => { const id = setTimeout(() => { void import('./ScanEditor'); }, 800); return () => clearTimeout(id); }, []);
   useEffect(() => {
-    if (!rateTouched && suggested) setRateTxt(String(suggested).replace('.', ','));
+    if (!rateTouched && suggested) setRateTxt(fmt(suggested));
   }, [suggested, rateTouched]);
 
   // giroconto nella stessa valuta: l'importo arrivato è lo stesso
@@ -204,7 +210,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       const usable = (x?: AiField) => x && x.value !== null && x.value !== '' && x.status !== 'missing';
       if (usable(f.total)) {
         const n = typeof f.total.value === 'number' ? f.total.value : parseAmount(String(f.total.value));
-        if (n && !(auto && amountTxt)) { setAmountTxt(String(n).replace('.', ',')); mark('amount', f.total); }
+        if (n && !(auto && amountTxt)) { setAmountTxt(fmt(n)); mark('amount', f.total); }
       }
       setAiCurrency(usable(f.currency) ? String(f.currency.value) : null);
       if (usable(f.currency) && ['EUR', 'MGA'].includes(String(f.currency.value))) setDueCurrency(String(f.currency.value) as 'EUR' | 'MGA');
@@ -423,7 +429,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <div className={aiCls('amount')}>
           <label htmlFor="amount">{t.f_amount}{account || due ? ` (${currency})` : ''}</label>
           <input className="input big num" id="amount" inputMode="decimal" autoComplete="off" value={amountTxt}
-                 onChange={(e) => { setAmountTxt(e.target.value); confirm('amount'); }} placeholder="0,00" />
+                 onChange={(e) => { typed(e, setAmountTxt); confirm('amount'); }} placeholder="0,00" />
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
@@ -482,7 +488,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           <div className="field">
             <label htmlFor="rate">{t.f_rate}</label>
             <input className="input num" id="rate" inputMode="decimal" value={rateTxt}
-                   onChange={(e) => { setRateTxt(e.target.value); setRateTouched(true); }} />
+                   onChange={(e) => { typed(e, setRateTxt); setRateTouched(true); }} />
             <span className="hint">{suggested ? (!rateTouched || rate === suggested ? (rateSugg?.src === 'last' ? t.f_rate_last : t.f_rate_auto) : '') : t.f_rate_missing}</span>
             {req(missing.rate)}
           </div>
@@ -499,7 +505,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <label htmlFor="toamount">{t.f_to_amount}{toAccount ? ` (${toAccount.currency})` : ''}</label>
             <input className="input num" id="toamount" inputMode="decimal" value={toAmountTxt}
                    disabled={Boolean(account && toAccount && account.currency === toAccount.currency)}
-                   onChange={(e) => setToAmountTxt(e.target.value)} />
+                   onChange={(e) => typed(e, setToAmountTxt)} />
             {req(missing.toAmount)}
           </div>
         </>)}

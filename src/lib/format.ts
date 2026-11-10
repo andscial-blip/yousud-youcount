@@ -30,3 +30,11 @@ export function dateTime(d: string | null | undefined, lang: Lang = 'it') {
 // nome nella lingua dell'utente, con l'italiano come riserva
 export const nm = (lang: Lang, o: { name_it: string; name_fr?: string | null } | null | undefined) =>
   !o ? '–' : lang === 'fr' && o.name_fr ? o.name_fr : o.name_it;
+
+// Numeri interi o con decimali, sempre con il punto delle migliaia (anche a 4 cifre: 5.000, 1.194)
+export function num(value: number | string | null | undefined, lang: Lang = 'it', decimals?: number) {
+  const n = Number(value ?? 0);
+  return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', {
+    useGrouping: 'always', ...(decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : { maximumFractionDigits: 2 }),
+  } as Intl.NumberFormatOptions).format(Number.isFinite(n) ? n : 0);
+}

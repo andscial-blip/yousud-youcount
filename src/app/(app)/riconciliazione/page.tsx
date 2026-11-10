@@ -54,7 +54,6 @@ export default async function Reconciliation({ searchParams }: {
     return (
       <div className="stack">
         <PageHead title={t('nav_rec')} />
-        <div className="note">{t('rec_text')} {t('rec_cash_hint')}</div>
         <ErrorNote prefix={t('error_load')} error={error} />
         <Panel>
           {rows.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('rec_no_accounts')}</p> : (

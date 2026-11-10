@@ -8,7 +8,7 @@ export function DemoPanel({ lang, counts }: { lang: 'it' | 'fr'; counts: Record<
   const total = Object.values(counts).reduce((a, b) => a + Number(b), 0);
   const rows: [string, string, string][] = [['movements', 'Movimenti', 'Mouvements'], ['budgets', 'Preventivi', 'Budgets'], ['budget_items', 'Voci di preventivo', 'Lignes de budget'],
     ['fx_rates', 'Tassi di cambio', 'Taux de change'], ['projects', 'Progetti', 'Projets'], ['counterparties', 'Controparti', 'Contreparties'],
-    ['deadlines', 'Scadenze', 'Échéances'], ['issued_docs', 'Documenti emessi', 'Documents émis']];
+    ['deadlines', 'Scadenze', 'Échéances'], ['issued_docs', 'Documenti emessi', 'Documents émis'], ['grants', 'Finanziamenti', 'Financements']];
   return (
     <Panel title={L('Dati dimostrativi', 'Données de démonstration')} pad>
       <div id="demo" />

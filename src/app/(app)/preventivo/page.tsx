@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
-import { date, dateTime, money } from '@/lib/format';
+import { date, dateTime, money, num } from '@/lib/format';
 import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { BudgetBar } from '@/components/Charts';
 import { deleteBudget, approveBudget, deleteItem, discardBudget, draftBudget, saveItem } from './actions';
@@ -226,9 +226,6 @@ export default async function BudgetPage({ searchParams }: {
           {view === 'schema' ? (
             <Panel title={`${L('Schema del rendiconto per cassa', 'Schéma du compte rendu de caisse')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
               <StatementTable budget={(stB ?? []) as StLine[]} actual={(stA ?? []) as StAct[]} lang={lang} />
-              <p className="hint panel-b" style={{ margin: 0 }}>{L(
-                'Voci del modello D (rendiconto per cassa, DM 5 marzo 2020) con la stessa regola del consuntivo: le uscite dei progetti di struttura vanno nella sezione E. Il preventivo nello schema ETS è uno strumento interno: la legge non ne impone il formato.',
-                'Postes du modèle D (compte rendu de caisse, DM du 5 mars 2020) avec la même règle que le réalisé : les dépenses des projets de structure vont en section E. Le budget au schéma ETS est un outil interne : la loi n\'en impose pas le format.')}</p>
             </Panel>
           ) : view === 'confronto' ? (
             <Panel title={`${L('Confronto', 'Comparaison')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
@@ -263,9 +260,6 @@ export default async function BudgetPage({ searchParams }: {
                   </table>
                 </div>
               )}
-              <p className="hint panel-b" style={{ margin: 0 }}>{L(
-                'Consuntivo: movimenti registrati e verificati dell\'anno, in euro al cambio del movimento. Impegnato: spese ancora in bozza (rimborsi da pagare, spese da completare).',
-                'Réalisé : mouvements enregistrés et vérifiés de l\'année, en euros au taux du mouvement. Engagé : dépenses encore en brouillon (remboursements à payer, dépenses à compléter).')}</p>
             </Panel>
           ) : (
             <Panel title={`${L('Righe', 'Lignes')} · ${shown ? vLabel(shown) : ''}`}>
@@ -304,7 +298,7 @@ export default async function BudgetPage({ searchParams }: {
                             <td className="nw">{c ? `${c.code}` : ''} <span className={`chip ${c?.direction === 'in' ? 'ok' : ''}`}>{c?.direction === 'in' ? L('entrata', 'recette') : L('uscita', 'dépense')}</span></td>
                             <td>{i.project_id ? prjBy.get(i.project_id) : <span className="muted">{L('Generale', 'Général')}</span>}</td>
                             <td>{i.description || (c ? CL(c) : '')}</td>
-                            <td className="r num nw">{Number(i.qty).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}{i.unit ? ` ${i.unit}` : ''} × {money(i.unit_cost, i.currency, lang)}</td>
+                            <td className="r num nw">{num(Number(i.qty), lang)}{i.unit ? ` ${i.unit}` : ''} × {money(i.unit_cost, i.currency, lang)}</td>
                             <td className="r num">{money(i.amount, i.currency, lang)}</td>
                             <td className="r num">{m(i.amount_eur)}</td>
                             {rowActions && (

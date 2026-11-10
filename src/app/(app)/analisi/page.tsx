@@ -121,8 +121,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const trend = (
     <Panel title={lg(`Entrate e uscite per mese · ${year}`, `Recettes et dépenses par mois · ${year}`)}>
       <div className="panel-b"><MonthBars data={months} lang={lang} labels={{ in: lg('Entrate', 'Recettes'), out: lg('Uscite', 'Dépenses') }}
-        hrefFor={(m) => mov({ dal: `${year}-${String(m).padStart(2, '0')}-01`, al: `${year}-${String(m).padStart(2, '0')}-${String(new Date(year, m, 0).getDate()).padStart(2, '0')}` })} />
-        <p className="muted small" style={{ margin: '8px 0 0' }}>{lg('Euro, movimenti registrati e verificati. Clic su un mese per i suoi movimenti.', 'Euros, mouvements enregistrés et vérifiés. Cliquez sur un mois pour ses mouvements.')}</p></div>
+        hrefFor={(m) => mov({ dal: `${year}-${String(m).padStart(2, '0')}-01`, al: `${year}-${String(m).padStart(2, '0')}-${String(new Date(year, m, 0).getDate()).padStart(2, '0')}` })} /></div>
     </Panel>
   );
 
@@ -188,7 +187,6 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           </Panel>
           <Panel title={t('an_by_country')} pad>
             <HBars lang={lang} rows={(['IT', 'MG'] as const).map((k) => ({ label: t(k === 'IT' ? 'italy' : 'madagascar'), value: byLoc.get(k) ?? 0, color: k === 'IT' ? 'var(--pp4)' : 'var(--pp2)' }))} />
-            <p className="muted" style={{ margin: '10px 0 0', fontSize: 13 }}>{t('an_country_note')}</p>
           </Panel>
         </div>
       </>}

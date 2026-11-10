@@ -1033,3 +1033,76 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
   .dzip select.input { flex: 1 1 calc(50% - 4px); }
   .dzip .btn { flex: 1 1 100%; justify-content: center; }
 }
+/* note della Dashboard: barra dei simboli (come in Cairn) */
+.dnotes .note-bar { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 8px; position: relative; }
+.note-bar button { width: 34px; height: 34px; border: 0; background: transparent; border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer;
+  display: grid; place-items: center; color: var(--ink, var(--navy)); font-family: inherit, "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif; }
+.note-bar button:hover { background: var(--surface-2); }
+.note-bar button:focus-visible { outline: 2px solid var(--navy); outline-offset: 1px; }
+.note-bar .nb-more { font-weight: 600; font-size: 20px; background: var(--surface-2); }
+.nb-pop { position: absolute; z-index: 40; top: 42px; left: 0; right: 0; max-width: 420px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 8px 28px rgba(16, 24, 40, .14); padding: 10px 12px 12px; max-height: 340px; overflow: auto; }
+.nb-g { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 2px; }
+.nb-pop > div:first-child .nb-g { margin-top: 0; }
+.nb-row { display: flex; flex-wrap: wrap; gap: 2px; }
+/* Movimenti: «Altri filtri» accanto a «Tutti i tipi» */
+.filters .more > summary { gap: 6px; align-items: center; }
+.mf-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--navy); color: #fff; font-size: 11px; font-weight: 600; }
+@media (max-width: 600px) {
+  form.filters:has(> details.more):has(> select ~ select) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  form.filters:has(> details.more):has(> select ~ select) > input[type="search"],
+  form.filters:has(> details.more):has(> select ~ select) > .btn,
+  form.filters:has(> details.more):has(> select ~ select) > details.more[open] { grid-column: 1 / -1; }
+  form.filters:has(> details.more):has(> select ~ select) > details.more:not([open]) { grid-column: 3; grid-row: 2; order: 0; }
+  form.filters:has(> details.more):has(> select ~ select) > details.more > summary { width: auto; min-height: 44px; padding: 0 12px; }
+  form.filters:has(> details.more):has(> select ~ select) > details.more:not([open]) .mf-l { display: none; }
+}
+/* Conti: sagoma del paese accanto al titolo (Italia in blu, Madagascar in verde acqua) */
+.cmark { display: inline-grid; place-items: center; border-radius: 50%; flex: none; }
+.cmark svg path { fill: currentColor; fill-opacity: .55; stroke: currentColor; stroke-width: 1; stroke-linejoin: round; }
+.cmark.it { background: color-mix(in srgb, #8FAFD6 22%, transparent); color: #4F78A8; }
+.cmark.mg { background: color-mix(in srgb, #5FB8A3 22%, transparent); color: #2F8A75; }
+:root[data-theme="dark"] .cmark.it { color: #A9C3E3; } :root[data-theme="dark"] .cmark.mg { color: #7FD0BC; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmark.it { color: #A9C3E3; } :root:not([data-theme="light"]) .cmark.mg { color: #7FD0BC; } }
+.panel.country > .panel-h { gap: 10px; }
+/* conta di cassa: tabella compatta per tagli, banconote e monete separate */
+.cc-tab { border: 1px solid var(--line-2); border-radius: var(--r-sm, 10px); overflow: hidden; max-width: 460px; }
+.cc-row { display: grid; grid-template-columns: 84px 96px minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 12px; border-top: 1px solid var(--line-2); }
+.cc-row.cc-head { border-top: 0; background: var(--band); font-size: 12px; font-weight: 600; color: var(--muted); padding: 7px 12px; }
+.cc-row.cc-head > span:nth-child(n+2) { text-align: right; }
+.cc-row.cc-head > span:nth-child(2) { text-align: center; }
+.cc-row .cc-v { font-weight: 600; text-align: right; }
+.cc-row .input { min-height: 36px; padding: 4px 8px; text-align: center; font-size: 16px; }
+.cc-row .cc-t { text-align: right; color: var(--muted); font-size: 13px; }
+.cc-row.on { background: color-mix(in srgb, #5FB8A3 10%, transparent); }
+.cc-row.on .cc-t { color: inherit; font-weight: 600; }
+/* intestazione su telefono: logo + «YouCount» in alto a sinistra, icone a destra; sotto titolo e anno allineati */
+@media (max-width: 760px) {
+  .phead .pbrand { width: auto; height: 40px; gap: 7px; margin-right: auto; display: inline-flex; }
+  .phead .pbrand .pb-wm { font-size: 17px; letter-spacing: -.01em; white-space: nowrap; }
+  .phead-row .pctl { display: contents; }
+  .phead-row .pctl > * { order: 1; }
+  .phead-row .pctl > .btn, .phead-row .pctl .langsw > .btn, .phead-row .pctl > button { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; }
+  .phead-row .ptitle { order: 3; flex: 1 1 60%; min-width: 0; }
+  .phead-row .yearsel { order: 4; flex: none; align-self: center; }
+}
+.pbrand, .pbrand:hover { text-decoration: none; }
+@media (max-width: 760px) { .phead .pbrand .pb-wm { letter-spacing: .14em; font-size: 15px; } }
+@media (max-width: 600px) {
+  form.filters:has(> details.more):has(> select ~ select) > select.input { padding-left: 10px; font-size: 15px; }
+}
+.cc-row .cc-v { text-align: left; }
+.cc-row { padding-top: 4px; padding-bottom: 4px; }
+.cc-row .input { min-height: 34px; }
+@media (min-width: 900px) { .cc-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; } }
+/* Tassi di cambio: un tocco di colore della palette */
+.fx-kpis .kpi { border-top: 3px solid var(--pp1); }
+.fx-kpis .kpi:nth-child(2) { border-top-color: var(--pp4); }
+.fx-kpis .kpi:nth-child(3) { border-top-color: var(--pp2); }
+.fx-kpis .kpi:nth-child(4) { border-top-color: var(--pp3); }
+.fxchg { display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+.kpi .v .fxchg { font-size: .8em; padding: 2px 10px; }
+.fxchg.up { background: color-mix(in srgb, #8FAFD6 24%, transparent); color: #3F6491; }
+.fxchg.down { background: color-mix(in srgb, #A596E6 24%, transparent); color: #5E4FA6; }
+:root[data-theme="dark"] .fxchg.up { color: #A9C3E3; } :root[data-theme="dark"] .fxchg.down { color: #C4B8F0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fxchg.up { color: #A9C3E3; } :root:not([data-theme="light"]) .fxchg.down { color: #C4B8F0; } }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
-import { date, money } from '@/lib/format';
+import { date, money, num } from '@/lib/format';
 import { buildReport, REPORTS, type Cell, type ReportKind, type Table } from '@/lib/reports';
 import { HBars, MonthBars } from '@/components/Charts';
 
@@ -22,7 +22,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
   let tables: Table[] = [], err = '';
   try { tables = await buildReport(supabase, kind, year, lang); } catch (e) { err = e instanceof Error ? e.message : String(e); }
   const fmt = (c: Cell) => c.v == null || c.v === '' ? '' : c.t === 'eur' ? money(c.v, 'EUR', lang) : c.t === 'cur' ? money(c.v, c.cur ?? 'EUR', lang)
-    : c.t === 'int' ? Number(c.v).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT') : c.t === 'date' ? date(String(c.v)) : String(c.v);
+    : c.t === 'int' ? num(Number(c.v), lang) : c.t === 'date' ? date(String(c.v)) : String(c.v);
   const cls = (c: Cell, num?: boolean) => [num ? 'r num' : '', typeof c.v === 'number' && c.v < 0 && (c.t === 'eur' || c.t === 'cur') ? 'neg' : ''].join(' ').trim();
   const q = (k: string, y: number) => `/report?tipo=${k}&anno=${y}`;
   return (

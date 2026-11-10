@@ -36,7 +36,6 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   return (
     <div className="stack">
       <PageHead title={t('nav_advances')} />
-      <div className="note">{t('adv_intro')}</div>
       {ok && <div className="note ok" role="status">{t('adv_saved')}</div>}
       {errText && <div className="note err">{err === 'no_rate' ? t('adv_no_rate') : errText}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />

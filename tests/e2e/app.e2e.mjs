@@ -164,7 +164,7 @@ try {
     await p.goto(`${base}/nuovo`);
     await p.fill('#amount', '250.000');
     await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
-    assert.equal(await p.inputValue('#rate'), '5000', 'tasso proposto dal mese');
+    assert.equal(await p.inputValue('#rate'), '5.000', 'tasso proposto dal mese, con il punto delle migliaia');
     await p.getByText('50,00 €').first().waitFor();
     await p.selectOption('#category', { label: '401 · Materiali di consumo' });
     await p.selectOption('#project', { label: 'École Antanetibe' });
@@ -213,7 +213,7 @@ try {
     assert.equal(stack.files.size - before, 3, 'originale, scansione migliorata e PDF');
     // nessun clic: la lettura parte da sola dopo il caricamento
     await p.getByText('Campi compilati dall’IA', { exact: false }).waitFor({ timeout: 20000 });
-    assert.equal(await p.inputValue('#amount'), '125000');
+    assert.equal(await p.inputValue('#amount'), '125.000', 'importo letto, con il punto delle migliaia');
     assert.equal(await p.inputValue('#desc'), 'Testo scritto prima del file', 'la lettura automatica non sovrascrive quanto scritto');
     assert.match(await p.locator('#category option:checked').innerText(), /^303 ·/);
     assert.equal(await p.inputValue('input[aria-label="Nome del nuovo fornitore o donatore"]'), 'Librairie Mixte Analakely');
@@ -416,7 +416,8 @@ try {
     assert.match((await p.locator('.rec-sum').innerText()).replace(/[\u00a0\u202f]/g, ' '), /41\.500 MGA/);
     await p.getByLabel('Quantità del taglio 20.000', { exact: true }).fill('');
     await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('');
-    await p.fill('#cc-manual', '0');
+    // cassa vuota: basta scrivere 0 in un taglio
+    await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('0');
     await p.getByRole('button', { name: 'Registra la conta' }).click();
     await p.waitForURL(/ok=cash/);
     const row = await p.locator('table.t').last().innerText();
@@ -786,7 +787,7 @@ try {
     assert.match(href, /\/nuovo\?tipo=expense&data=\d{4}-\d{2}-\d{2}&importo=1234&conto=/);
     await p.goto(`${base}${href}`);
     await p.getByText(/Dati presi dalla riga dell'estratto conto/).waitFor();
-    assert.equal(await p.inputValue('input[inputmode=decimal]'), '1234');
+    assert.equal(await p.inputValue('input[inputmode=decimal]'), '1.234');
     // estratto in Excel: stesso risultato
     const ExcelJS = require('exceljs');
     const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Estratto');
@@ -813,7 +814,7 @@ try {
       and op_date >= date_trunc('month', current_date) - interval '3 months' and op_date < date_trunc('month', current_date)`)).rows;
     const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
     const e0 = fmtEur.format(Math.round(burn)).replace(/,00(?=\s?€)/, '');
-    assert.match(await panel.innerText(), new RegExp(`ultimi tre mesi chiusi \\(${e0.replace(/[.\u00a0\u202f ]/g, '.?\\s?')}\\)`));
+    assert.match(await panel.innerText(), new RegExp(`ultimi tre mesi \\(${e0.replace(/[.\u00a0\u202f ]/g, '.?\\s?')} al mese\\)`));
     const opDash = await op.page.goto(`${base}/`).then(() => op.page.locator('main').innerText());
     assert.doesNotMatch(opDash, /Cassa e autonomia/, 'operatore: non vede l\'autonomia di cassa');
     await p.screenshot({ path: `${SHOTS}/resp_dashboard.png`, fullPage: true });
@@ -964,7 +965,7 @@ try {
     await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
     // il tasso arriva dal database dopo la scelta del conto: prima si attende l'avviso, poi si controlla il valore
     await p.getByText('ultimo tasso usato, inserito in automatico').waitFor();
-    assert.equal(await p.inputValue('#rate'), String(Number(fx_rate)).replace('.', ','));
+    assert.equal(await p.inputValue('#rate'), new Intl.NumberFormat('it-IT', { useGrouping: 'always', maximumFractionDigits: 2 }).format(Number(fx_rate)));
   });
   await check('eliminazione definitiva di un movimento: password sbagliata rifiutata, poi eliminato e tracciato', async () => {
     const [m] = (await pool.query(`select id, ref from movements where status <> 'draft' and not demo and reverses_id is null

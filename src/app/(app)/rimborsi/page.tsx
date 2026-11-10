@@ -45,7 +45,6 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
   return (
     <div className="stack">
       <PageHead title={t('nav_reimb')} />
-      <div className="note">{t('reimb_text')}</div>
       {ok && <div className="note ok" role="status">{t('reimb_done')} {ok}</div>}
       {err && (() => {
         // messaggio tradotto per il tipo di errore + dettaglio del server (quale spesa, cosa manca)

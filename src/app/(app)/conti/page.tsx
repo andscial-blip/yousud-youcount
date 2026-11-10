@@ -4,6 +4,7 @@ import { date, money, nm } from '@/lib/format';
 import { Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
 import { BalancesTable, type Balance } from '@/components/Balances';
+import { CountryMark } from '@/components/CountryMark';
 import { CashCounter } from '@/components/CashCounter';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,7 @@ type CC = { id: string; count_date: string; counted: string; system_balance: str
 export default async function Accounts({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
   const { ok, err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
+  const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const [{ data, error }, { data: counts }, { data: users }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('cash_counts').select('id, count_date, counted, system_balance, difference, notes, counted_by, account:accounts(name_it, name_fr, currency)')
@@ -32,20 +34,20 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       {ok === 'cash' && <div className="note ok" role="status">{t('cc_ok')}</div>}
       {err && <div className="note err">{err}</div>}
       {(['IT', 'MG'] as const).map((loc) => (
-        <Panel key={loc} title={loc === 'IT' ? t('italy') : t('madagascar')}>
+        <section key={loc} className="panel country">
+          <div className="panel-h"><CountryMark loc={loc} label={loc === 'IT' ? t('italy') : t('madagascar')} />
+            <h2>{loc === 'IT' ? t('italy') : t('madagascar')}</h2></div>
           {rows.filter((r) => r.location === loc).length === 0 ? <Empty text={t('none')} /> :
             <BalancesTable rows={rows.filter((r) => r.location === loc)} t={t} lang={lang} detail />}
-        </Panel>
+        </section>
       ))}
-      <p className="muted" style={{ margin: 0 }}>{t('balances_note')}</p>
 
       <Panel title={t('cc_title')} pad>
         <div className="stack" style={{ gap: 14 }}>
-          <p className="muted" style={{ margin: 0 }}>{t('cc_intro')}</p>
           {me?.role !== 'read_only' && cash.length > 0 && (
             <CashCounter lang={lang} accounts={cash.map((c) => ({ id: c.account_id, label: nm(lang, c), currency: c.currency, balance: Number(c.balance) }))}
               L={{ account: t('account'), date: t('date'), den: t('cc_den'), qty: t('cc_qty'), total: t('cc_total'), counted: t('cc_counted'),
-                expected: t('cc_expected'), diff: t('cc_diff'), notes: t('f_notes'), save: t('cc_save'), manual: t('cc_manual'), hint: t('cc_hint') }} />
+                expected: t('cc_expected'), diff: t('cc_diff'), notes: t('f_notes'), save: t('cc_save'), hint: t('cc_hint'), pieces: L('Pezzi', 'Nombre'), notes_bank: L('Banconote', 'Billets'), coins: L('Monete', 'Pièces de monnaie') }} />
           )}
           {(counts ?? []).length > 0 && (
             <table className="t">

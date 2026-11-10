@@ -36,6 +36,8 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
   const n = (v: number, d = 0) => v.toLocaleString(loc, { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: 'always' } as Intl.NumberFormatOptions);
   const mga = (v: number) => `${n(v, v % 1 ? 2 : 0)} MGA`;
   const pct = (a: number, b: number) => { const p = ((a - b) / b) * 100; return `${p > 0 ? '+' : ''}${n(p, 1)} %`; };
+  // variazione colorata ma neutra: il cambio che sale o scende non è un bene o un male in sé
+  const chg = (a: number, b: number) => { const p = ((a - b) / b) * 100; return <span className={`fxchg ${p > 0 ? 'up' : p < 0 ? 'down' : ''}`}>{p > 0 ? '↑' : p < 0 ? '↓' : '='} {pct(a, b)}</span>; };
 
   // tassi applicati sui movimenti in ariary dell'anno, mese per mese (media ponderata sugli importi)
   const ap = new Map<number, { w: number; s: number; min: number; max: number; c: number }>();
@@ -63,15 +65,15 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
       {sp.err && <div className="note err">{sp.err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
-      <div className="kpis">
+      <div className="kpis fx-kpis">
         <div className="kpi"><div className="l">{L('Tasso corrente', 'Taux courant')}</div>
           <div className="v num">{current ? mga(Number(current.rate)) : '–'}</div>
           <div className="s">{current ? `${M[current.month - 1]} ${current.year}${current.source ? ` · ${current.source}` : ''}` : L('Nessun tasso inserito', 'Aucun taux saisi')}</div></div>
         <div className="kpi"><div className="l">{L('Rispetto al mese prima', 'Par rapport au mois précédent')}</div>
-          <div className="v num">{current && prevOf(current) ? pct(Number(current.rate), Number(prevOf(current)!.rate)) : '–'}</div>
+          <div className="v num">{current && prevOf(current) ? chg(Number(current.rate), Number(prevOf(current)!.rate)) : '–'}</div>
           <div className="s">{current && prevOf(current) ? `${M[prevOf(current)!.month - 1]}: ${mga(Number(prevOf(current)!.rate))}` : ''}</div></div>
         <div className="kpi"><div className="l">{L('Rispetto a un anno prima', 'Par rapport à un an plus tôt')}</div>
-          <div className="v num">{current && cur12 ? pct(Number(current.rate), Number(cur12.rate)) : '–'}</div>
+          <div className="v num">{current && cur12 ? chg(Number(current.rate), Number(cur12.rate)) : '–'}</div>
           <div className="s">{cur12 ? `${M[cur12.month - 1]} ${cur12.year}: ${mga(Number(cur12.rate))}` : L('Manca il tasso di un anno prima', 'Taux d\'il y a un an manquant')}</div></div>
         <div className="kpi"><div className="l">{L(`Media ${year}`, `Moyenne ${year}`)}</div>
           <div className="v num">{vals.length ? mga(Math.round(avg)) : '–'}</div>
@@ -85,8 +87,8 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               <Lines lang={lang} zoom unit="MGA" label={L('Tasso del mese e tasso applicato ai movimenti', 'Taux du mois et taux appliqué aux mouvements')}
                 cats={M.map((m) => m.slice(0, 3))}
                 series={[
-                  { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--vz-real)', vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
-                  { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--amber-soft)', dash: '5 4', w: 2,
+                  { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--pp1)', w: 3, vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
+                  { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--pp2)', dash: '5 4', w: 2,
                     vals: M.map((_, i) => { const a = ap.get(i + 1); return a && a.w ? Math.round(a.s / a.w) : null; }) as number[] },
                 ]} />
             )}
@@ -148,7 +150,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
                   <tr key={key(r)} className={key(r) === (current && key(current)) ? 'hl' : ''}>
                     <td className="nw" data-label={t('period')}>{M[r.month - 1]} {r.year}{r.demo && <span className="chip warn" style={{ marginLeft: 6 }}>DEMO</span>}</td>
                     <td className="r num nw" data-label={L('Tasso del mese', 'Taux du mois')}><b>{mga(Number(r.rate))}</b></td>
-                    <td className="r num nw" data-label={L('Variazione', 'Variation')}>{p ? pct(Number(r.rate), Number(p.rate)) : '–'}</td>
+                    <td className="r num nw" data-label={L('Variazione', 'Variation')}>{p ? chg(Number(r.rate), Number(p.rate)) : '–'}</td>
                     <td className="r num nw" data-label={L('Applicato (media)', 'Appliqué (moyenne)')}>{a && a.w ? <span className="two"><b>{mga(Math.round(a.s / a.w))}</b>
                       <small>{a.min === a.max ? '' : `${n(a.min)}–${n(a.max)}`}</small></span> : '–'}</td>
                     <td className="r num" data-label={L('Movimenti', 'Mouvements')}>{a?.c ?? 0}</td>

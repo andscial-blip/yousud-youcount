@@ -41,7 +41,7 @@ export function SyncEngine() {
       if (navigator.onLine && 'serviceWorker' in navigator && Date.now() - last > 12 * 3600e3 && !slow?.saveData && slow?.effectiveType !== '2g') {
         warmT = setTimeout(() => {
           navigator.serviceWorker.ready.then((reg) => {
-            reg.active?.postMessage({ type: 'warm', urls: ['/nuovo', '/movimenti', '/sincronizzazione', '/offline'] });
+            reg.active?.postMessage({ type: 'warm', urls: ['/nuovo', '/movimenti', '/conti', '/preventivo', '/progetti', '/analisi', '/scadenze', '/documenti', '/guida', '/sincronizzazione', '/offline'] });
             localStorage.setItem('yc-warm-at', String(Date.now()));
           }).catch(() => {});
         }, 10000);

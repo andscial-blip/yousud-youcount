@@ -42,7 +42,6 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
   return (
     <div className="stack">
       <PageHead title={t('nav_periods')} />
-      <p className="muted" style={{ margin: 0 }}>{t('close_hint')}</p>
       <Flash ok={ok} err={errText} okText={t('saved')} />
       {[...new Set(months.map((x) => x.y))].map((year) => {
         const ms = months.filter((x) => x.y === year);

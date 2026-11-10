@@ -55,7 +55,6 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         </table>
       </Panel>
       <Panel title={t('doc_title')} pad>
-        <p className="muted" style={{ marginTop: 0 }}>{t('doc_text')}</p>
         <form action={saveDocDetails} className="fgrid">
           <div className="field span2"><label htmlFor="d-ln">{lang === 'fr' ? 'Dénomination légale (comme au RUNTS)' : 'Denominazione legale (come nel RUNTS)'}</label>
             <input className="input" id="d-ln" name="legal_name" maxLength={120} placeholder="YOUSUD ODV" defaultValue={orgDet.legal_name ?? ''} /></div>

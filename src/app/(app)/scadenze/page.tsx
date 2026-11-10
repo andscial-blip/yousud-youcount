@@ -256,9 +256,6 @@ export default async function Deadlines({ searchParams }: {
                 <span className="meter" aria-hidden="true"><i style={{ width: `${p}%` }} /></span></div>
             ); })}
           </div>
-          <p className="hint" style={{ marginBottom: 0 }}>{L(
-            'Le soglie si applicano alle entrate dell\'esercizio e vanno confermate con il commercialista. Gli adempimenti ricorrenti sono promemoria con la fonte indicata: le date si verificano ogni anno.',
-            'Les seuils s\'appliquent aux recettes de l\'exercice et sont à confirmer avec l\'expert-comptable. Les obligations récurrentes sont des rappels avec leur source : les dates se vérifient chaque année.')}</p>
         </Panel>
       )}
     </div>

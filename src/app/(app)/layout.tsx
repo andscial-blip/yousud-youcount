@@ -5,6 +5,7 @@ import { SyncBadge, SyncEngine } from '@/components/NetStatus';
 import { TableCards } from '@/components/TableCards';
 import { PerfBeacon } from '@/components/PerfBeacon';
 import { Prefetcher } from '@/components/Prefetcher';
+import { LinkRouter } from '@/components/LinkRouter';
 import { Tooltip } from '@/components/Tooltip';
 import { CIcon } from '@/components/CIcon';
 import { SignOut } from '@/components/SignOut';
@@ -51,7 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Suspense fallback={<header className="phead"><div className="phead-row" /></header>}>
             <PageHeader secs={secs} canWrite={canWrite} years={years}
               labels={{ lang, search: t('cmd_search'), year: t('year_label'), newMov: t('nav_new_long').replace('+ ', ''), subnav: t('nav_sections'), brand: 'YouCount', cmdPh: t('cmd_ph'), searchMov: t('cmd_mov'), goTo: t('cmd_go'), none: t('cmd_none') }}
-              phoneBrand={<Logo size={34} />} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
+              phoneBrand={<><Logo size={32} /><b className="yc-wm pb-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></b></>} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
           </Suspense>
           <main className="main" id="main" tabIndex={-1}><div id="app" className="view">{children}</div></main>
         </div>
@@ -63,6 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Tooltip />
       <PerfBeacon />
       <Prefetcher hrefs={pre} />
+      <LinkRouter />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ruleItems } from '@/lib/deadline-rules';
 import { STAFF, can, requireMe } from '@/lib/session';
-import { date, money } from '@/lib/format';
+import { date, money, num } from '@/lib/format';
 import { MESI_L } from '@/lib/viz';
 import { ErrorNote, H2 } from '@/components/Page';
 import { type Balance } from '@/components/Balances';
@@ -184,13 +184,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </section>
 
           <section className="panel h-card">
-            <div className="panel-h"><H2 text={L('Dove vanno le spese', 'Où vont les dépenses')} /><div className="spacer" /><span className="eyebrow">{L('per voce del piano dei conti', 'par poste du plan comptable')} · {year}</span></div>
+            <div className="panel-h"><H2 text={L('Dove vanno le spese', 'Où vont les dépenses')} /></div>
             <div className="panel-b">
               {out <= 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <>
                 <div className="hstack" role="img" aria-label={L('Uscite per voce', 'Dépenses par poste')}>
                   {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: `var(--dn${i + 1})` }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
                 <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: `var(--dn${i + 1})` }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
-                {noDoc ? <div className="hcat-f"><span><b className="num">{noDoc.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</b> {noDoc === 1 ? L('uscita senza giustificativo fiscale', 'dépense sans justificatif fiscal') : L('uscite senza giustificativo fiscale', 'dépenses sans justificatif fiscal')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
+                {noDoc ? <div className="hcat-f"><span><b className="num">{num(noDoc, lang)}</b> {noDoc === 1 ? L('uscita senza giustificativo fiscale', 'dépense sans justificatif fiscal') : L('uscite senza giustificativo fiscale', 'dépenses sans justificatif fiscal')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
               </>}
             </div>
           </section>
@@ -205,8 +205,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <div><span>{L('Autonomia di cassa', 'Autonomie de trésorerie')}</span><b className={`num ${runway != null && runway < 3 ? 'neg' : ''}`}>{runway == null ? '–' : `${runway.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}\u00a0${L('mesi', 'mois')}`}</b>
                     <div className="mbar thin"><i style={{ width: `${Math.max(0, Math.min(100, ((runway ?? 0) / 6) * 100)).toFixed(1)}%`, background: runway != null && runway >= 3 ? 'var(--green-soft)' : 'var(--amber-soft)' }} /></div></div>
                 </div>
-                <p className="muted small" style={{ margin: '10px 0 0' }}>{L(`Liquidità meno rimborsi dovuti (${e0(due)}), divisa per la spesa media mensile degli ultimi tre mesi chiusi (${e0(burn)}). Gli anticipi al personale sono esclusi.`,
-                  `Liquidités moins remboursements dus (${e0(due)}), divisées par la dépense mensuelle moyenne des trois derniers mois clos (${e0(burn)}). Les avances au personnel sont exclues.`)}</p>
+                <p className="muted small" style={{ margin: '10px 0 0' }}>{L(`Per quanti mesi la liquidità di oggi copre le spese, al ritmo medio degli ultimi tre mesi (${e0(burn)} al mese)${due > 0 ? `, già tolti i rimborsi dovuti (${e0(due)})` : ''}.`,
+                  `Nombre de mois que la trésorerie actuelle couvre au rythme moyen des trois derniers mois (${e0(burn)} par mois)${due > 0 ? `, remboursements dus déjà déduits (${e0(due)})` : ''}.`)}</p>
               </div>
             </section>
           )}
@@ -226,9 +226,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {/* riquadri piccoli: cambio e le cifre da tenere d'occhio */}
           <div className="h-tiles">
             <Link className="htile" href="/cambi">
-              <span className="ht-l"><CIcon name="euro" size={14} />{L('Cambio', 'Change')}</span>
+              <span className="ht-l"><CIcon name="euro" size={14} />{L('Tasso di cambio', 'Taux de change')}</span>
               {fx ? <><b className="num">{money(rate, 'MGA', lang)}</b>
-                <small>1{'\u00a0'}€ · {ML[fx.month - 1]}{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
+                <small>1{'\u00a0'}€ · <span className="nw">{L('in vigore dal', 'en vigueur depuis le')} 01/{String(fx.month).padStart(2, '0')}/{fx.year}</span>{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
                 : <small>{L('Inserisci il tasso', 'Saisir le taux')}</small>}
             </Link>
             <Link className={`htile${toVerify ? ' t-do' : ''}`} href={verHref}>

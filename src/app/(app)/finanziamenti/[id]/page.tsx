@@ -56,7 +56,6 @@ export default async function GrantDetail({ params, searchParams }: {
       </Panel>
       {staff && (
         <Panel title={t('gr_title')} pad>
-          <p className="muted" style={{ marginTop: 0 }}>{t('gr_text')}</p>
           <form className="gr-form" method="get" action="/api/v1/export/finanziamento">
             <input type="hidden" name="id" value={g.id} />
             <label className="field"><span className="flabel">{t('gr_from')}</span>

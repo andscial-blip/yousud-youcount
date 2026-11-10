@@ -830,13 +830,16 @@ test('dati dimostrativi: caricamento marcato DEMO, eliminazione sicura, svuotame
   assert.equal((await rpc(U.op, 'movement_delete', draft.id)).outcome, 'deleted');
   // l'eliminazione resta nel registro modifiche
   assert.equal((await sql(`select count(*)::int n from audit_log where table_name = 'movements' and row_id = $1 and action = 'delete' and old_row is not null`, [dm]))[0].n, 1);
+  // anche i finanziamenti di prova sono demo e si eliminano con il resto
+  await sql(`insert into grants(org_id, title, demo) select org_id, 'Finanziamento di prova', true from profiles where id = $1`, [U.admin]);
   // svuotamento: numero sbagliato → nulla eliminato; numero giusto → solo i demo
   const c2 = await rpc(U.admin, 'demo_counts');
+  assert.ok(c2.grants >= 1);
   await assert.rejects(rpc(U.admin, 'demo_purge', c2.movements + 1), /ricarica/);
   await assert.rejects(rpc(U.resp, 'demo_purge', c2.movements), /forbidden|amministratore/);
   await rpc(U.admin, 'demo_purge', c2.movements);
   const c3 = await rpc(U.admin, 'demo_counts');
-  assert.deepEqual([c3.movements, c3.budgets, c3.deadlines, c3.counterparties], [0, 0, 0, 0]);
+  assert.deepEqual([c3.movements, c3.budgets, c3.deadlines, c3.counterparties, c3.grants], [0, 0, 0, 0, 0]);
   assert.equal((await sql('select count(*)::int n from movements where not demo'))[0].n, realBefore + 1);
   assert.ok((await sql(`select count(*)::int n from fx_rates where not demo and source like '%Exchange Rate%'`))[0].n >= 1, 'i tassi reali restano');
 });

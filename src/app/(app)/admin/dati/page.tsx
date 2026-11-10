@@ -31,7 +31,6 @@ export default async function DataSettings({ searchParams }: { searchParams: Pro
       <ResetPanel lang={lang} c={reset as Record<string, number | string | null> | null} />
       <Panel title={t('bk_title')}>
         <div className="panel-b stack" style={{ gap: 12 }}>
-          <p className="muted" style={{ margin: 0 }}>{t('bk_text')}</p>
           {lastBackup?.at && <p style={{ margin: 0 }}>{t('bk_last')}: <b>{new Date(lastBackup.at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })}</b> · {lastBackup.by}</p>}
           <div><a className="btn primary" href="/api/v1/backup"><Ico name="download" />{t('bk_btn')}</a></div>
         </div>

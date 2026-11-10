@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
 import { purgeAllAction } from './actions';
 import { AutoTranslate } from '@/components/AutoTranslate';
-import { date, money, nm } from '@/lib/format';
+import { date, money, nm, num } from '@/lib/format';
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
 import { SavedFilters } from '@/components/SavedFilters';
+import { CIcon } from '@/components/CIcon';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,11 +118,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       <Panel>
         <form className="filters panel-h" method="get" action="/movimenti" role="search">
           <input className="input grow" type="search" name="q" defaultValue={term} placeholder={t('search_mov')} aria-label={t('search_mov')} />
-          <select className="input" name="stato" defaultValue={stato} aria-label={L('Stato', 'Statut')}>{stati.map(([v, l]) => <option key={v} value={v}>{v ? l : L('Tutti gli stati', 'Tous les statuts')}</option>)}</select>
-          <select className="input" name="tipo" defaultValue={f.tipo} aria-label={t('type')}><option value="">{L('Tutti i tipi', 'Tous les types')}</option>
+          <select className="input" name="stato" defaultValue={stato} aria-label={L('Stato', 'Statut')}>{stati.map(([v, l]) => <option key={v} value={v}>{v ? l : L('Stato: tutti', 'Statut : tous')}</option>)}</select>
+          <select className="input" name="tipo" defaultValue={f.tipo} aria-label={t('type')}><option value="">{L('Tipo: tutti', 'Type : tous')}</option>
             {(['expense', 'income', 'transfer'] as const).map((k) => <option key={k} value={k}>{t(`k_${k}`)}</option>)}</select>
           <details className="more" open={active - (f.tipo ? 1 : 0) > 0}>
-            <summary className="btn ghost">{L('Altri filtri', 'Autres filtres')}{active ? ` · ${active}` : ''}</summary>
+            <summary className="btn ghost" aria-label={L('Altri filtri', 'Autres filtres')}><CIcon name="sliders" size={16} /><span className="mf-l">{L('Altri filtri', 'Autres filtres')}</span>{active ? <span className="mf-n">{active}</span> : null}</summary>
             <div className="filter-grid">
               <label className="field"><span className="flabel">{L('Dal', 'Du')}</span><input className="input" type="date" name="dal" defaultValue={f.from} /></label>
               <label className="field"><span className="flabel">{L('Al', 'Au')}</span><input className="input" type="date" name="al" defaultValue={f.to} /></label>
@@ -163,7 +164,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
             <a className="btn small" href={`/api/v1/export/movimenti?anno=${(f.from || f.to || String(y)).slice(0, 4)}${stato && stato !== 'storni' ? `&stato=${stato}` : ''}`}><Ico name="download" />{t('exp_xlsx')}</a></div>
         </div>
         <div className="sstrip mv-sum">
-          <div><span>{L('Movimenti', 'Mouvements')}</span><b className="num">{total.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</b></div>
+          <div><span>{L('Movimenti', 'Mouvements')}</span><b className="num">{num(total, lang)}</b></div>
           <div><span>{L('Entrate', 'Recettes')}</span><b className="num amt-in">{e0(inc)}</b></div>
           <div><span>{L('Uscite', 'Dépenses')}</span><b className="num amt-out">{e0(out)}</b></div>
           <div><span>{L('Saldo', 'Solde')}</span><b className={`num ${inc - out < 0 ? 'neg' : 'amt-in'}`}>{e0(inc - out)}</b></div>
