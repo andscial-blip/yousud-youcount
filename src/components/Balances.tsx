@@ -7,7 +7,7 @@ export type Balance = {
   opening_balance: string; movements_in: string; movements_out: string; balance: string; unverified: number;
 };
 
-export function BalancesTable({ rows, t, lang, detail = false }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean }) {
+export function BalancesTable({ rows, t, lang, detail = false, noPlace = false }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean; noPlace?: boolean }) {
   return (
     <>
     {/* telefono: una scheda per conto (nome e saldo sulla stessa riga, dettagli sotto a pezzi interi) */}
@@ -27,11 +27,13 @@ export function BalancesTable({ rows, t, lang, detail = false }: { rows: Balance
     </ul>
     <table className={`t keep bal-t${detail ? ' bal-fixed' : ''}`}>
       {/* stesse larghezze in ogni tabella (Italia, Madagascar): le colonne restano allineate tra un riquadro e l'altro */}
-      {detail && <colgroup><col style={{ width: '25%' }} /><col style={{ width: '8%' }} /><col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
-        <col style={{ width: '17%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} /></colgroup>}
+      {detail && (noPlace
+        ? <colgroup><col style={{ width: '28%' }} /><col style={{ width: '15%' }} /><col style={{ width: '15%' }} /><col style={{ width: '16%' }} /><col style={{ width: '15%' }} /><col style={{ width: '11%' }} /></colgroup>
+        : <colgroup><col style={{ width: '25%' }} /><col style={{ width: '8%' }} /><col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
+          <col style={{ width: '17%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} /></colgroup>)}
       <thead>
         <tr>
-          <th>{t('account')}</th><th>{t('place')}</th>
+          <th>{t('account')}</th>{!noPlace && <th>{t('place')}</th>}
           {detail && <><th className="r">{t('acc_opening')}</th><th className="r">{t('acc_in')}</th><th className="r">{t('acc_out')}</th></>}
           <th className="r">{t('balance')}</th><th className="r">{t('nav_verify')}</th>
         </tr>
@@ -40,7 +42,7 @@ export function BalancesTable({ rows, t, lang, detail = false }: { rows: Balance
         {rows.map((r) => (
           <tr key={r.account_id}>
             <td>{nm(lang, r)}</td>
-            <td><Place loc={r.location} label={r.location === 'IT' ? t('italy') : t('madagascar')} /></td>
+            {!noPlace && <td><Place loc={r.location} label={r.location === 'IT' ? t('italy') : t('madagascar')} /></td>}
             {detail && <>
               <td className="r num">{money(r.opening_balance, r.currency, lang)}</td>
               <td className="r num">{money(r.movements_in, r.currency, lang)}</td>

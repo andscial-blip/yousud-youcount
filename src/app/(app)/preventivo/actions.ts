@@ -12,11 +12,13 @@ const done = (year: string, q = 'ok=1') => { revalidatePath('/', 'layout'); back
 export async function draftBudget(form: FormData) {
   const year = String(form.get('year'));
   const from = String(form.get('from') ?? '');
-  const { error } = await (await createClient()).rpc('budget_draft', {
+  const { data, error } = await (await createClient()).rpc('budget_draft', {
     p_year: Number(year), p_from_year: from ? Number(from) : null, p_title: String(form.get('title') ?? '') || null,
   });
   if (error) err(year, error);
-  done(year, 'ok=1&vista=righe');
+  // si apre subito la bozza appena creata (prima si tornava sulla versione in vigore, non modificabile)
+  const id = (data as { id?: string } | null)?.id;
+  done(year, `ok=1&vista=modifica${id ? `&v=${encodeURIComponent(id)}` : ''}`);
 }
 
 export async function saveItem(form: FormData) {

@@ -38,7 +38,7 @@ const it = {
   prj_spent: 'Uscite', prj_income: 'Entrate', prj_moves: 'Movimenti', prj_structure: 'Struttura e spese generali',
   prj_note: 'Importi in EUR dei movimenti registrati e verificati dell\'anno. Budget e confronto con il preventivo nella pagina di ogni progetto.',
   // conti
-  acc_opening: 'Saldo iniziale', acc_in: 'Entrate', acc_out: 'Uscite e giroconti in uscita',
+  acc_opening: 'Saldo iniziale', acc_in: 'Entrate', acc_out: 'Uscite e giroconti',
   // rendiconto
   rep_title: 'Rendiconto per cassa', rep_draft: 'Bozza calcolata dai movimenti registrati e verificati, secondo le righe del Mod. D usate nel Gestionale. La conformità al D.M. 5 marzo 2020 va verificata dal commercialista prima dell\'approvazione.',
   rep_missing_rate: 'movimenti in MGA senza tasso di cambio: importi in EUR incompleti.',
@@ -288,7 +288,7 @@ const fr: Record<Key, string> = {
   verify_btn: 'Vérifier', verify_own: 'saisi par vous', verify_done: 'Vérifié.', entered_by: 'Saisi par',
   prj_spent: 'Dépenses', prj_income: 'Recettes', prj_moves: 'Mouvements', prj_structure: 'Structure et frais généraux',
   prj_note: 'Montants en EUR des mouvements enregistrés et vérifiés de l\'année. Budget et comparaison avec le prévisionnel dans la page de chaque projet.',
-  acc_opening: 'Solde initial', acc_in: 'Recettes', acc_out: 'Dépenses et virements sortants',
+  acc_opening: 'Solde initial', acc_in: 'Recettes', acc_out: 'Sorties et virements',
   rep_title: 'Compte de caisse', rep_draft: 'Brouillon calculé à partir des mouvements enregistrés et vérifiés, selon les lignes du modèle D utilisées dans le Gestionale. La conformité au décret du 5 mars 2020 doit être vérifiée par l\'expert-comptable avant l\'approbation.',
   rep_missing_rate: 'mouvements en MGA sans taux de change : montants en EUR incomplets.',
   rep_unclassified: 'mouvements avec des codes sans ligne de bilan (ex. 999 / E999) : à reclasser.',

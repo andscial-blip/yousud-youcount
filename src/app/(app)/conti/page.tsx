@@ -38,7 +38,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           <div className="panel-h"><CountryMark loc={loc} label={loc === 'IT' ? t('italy') : t('madagascar')} />
             <h2>{loc === 'IT' ? t('italy') : t('madagascar')}</h2></div>
           {rows.filter((r) => r.location === loc).length === 0 ? <Empty text={t('none')} /> :
-            <BalancesTable rows={rows.filter((r) => r.location === loc)} t={t} lang={lang} detail />}
+            <BalancesTable rows={rows.filter((r) => r.location === loc)} t={t} lang={lang} detail noPlace />}
         </section>
       ))}
 

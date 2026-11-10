@@ -385,18 +385,14 @@ try {
     assert.equal(n, 1);
   });
 
-  await check('responsabile: imposta il budget del progetto e crea un finanziamento', async () => {
+  await check('responsabile: preventivo del progetto in sola lettura (si modifica nel Preventivo) e nuovo finanziamento', async () => {
     const p = rs.page;
     const [{ id: prj }] = (await pool.query(`select id from projects where name = 'École Antanetibe'`)).rows;
     await p.goto(`${base}/progetti/${prj}?anno=${year}`);
-    await p.getByText('Imposta il budget').click();
-    await p.locator('label', { hasText: '04 · Beni di consumo e merci' }).click();
-    await p.keyboard.type('1.000');
-    await p.getByRole('button', { name: 'Salva il budget' }).click();
-    await p.waitForURL(/ok=budget/);
-    await p.getByText('Budget salvato.').waitFor();
-    const txt = await p.locator('main').innerText();
-    assert.match(txt, /04 · Beni di consumo e merci\s+1\.000,00\s?€\s+0,00\s?€/);
+    // il preventivo si modifica solo nella pagina Preventivo: qui si legge, con il collegamento
+    const link = p.getByRole('link', { name: 'modifica nel Preventivo →' });
+    assert.match(await link.getAttribute('href'), new RegExp(`/preventivo\\?anno=${year}&vista=analisi&progetto=${prj}`));
+    assert.equal(await p.getByText('Imposta il budget').count(), 0);
     await p.goto(`${base}/finanziamenti`);
     await p.getByText('Nuovo finanziamento').click();
     await p.fill('#title', 'Bando scuole di prova');
@@ -413,7 +409,7 @@ try {
     // conta per tagli: 2 × 20.000 + 3 × 500 = 41.500 MGA, differenza calcolata subito
     await p.getByLabel('Quantità del taglio 20.000', { exact: true }).fill('2');
     await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('3');
-    assert.match((await p.locator('.rec-sum').innerText()).replace(/[\u00a0\u202f]/g, ' '), /41\.500 MGA/);
+    assert.match((await p.locator('.cc-res').innerText()).replace(/[\u00a0\u202f]/g, ' '), /41\.500 MGA/);
     await p.getByLabel('Quantità del taglio 20.000', { exact: true }).fill('');
     await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('');
     // cassa vuota: basta scrivere 0 in un taglio
@@ -671,7 +667,7 @@ try {
     const p = rs.page;
     await p.goto(`${base}/preventivo?anno=${year}`);
     await p.getByRole('button', { name: 'Nuovo preventivo vuoto' }).click();
-    await p.waitForURL(/vista=righe/);
+    await p.waitForURL(/vista=modifica/);
     await p.selectOption('#bi-cat', { label: '401 · Materiali di consumo' });
     await p.selectOption('#bi-prj', { label: 'École Piccolino' });
     await p.fill('#bi-desc', 'Quaderni e penne');
@@ -747,6 +743,12 @@ try {
     await p.waitForURL(/ok=1/);
     const li = p.locator('ul.dl li', { hasText: 'PROVA pagare affitto sede' });
     await li.getByText('Oggi').waitFor();
+    // clic sul titolo: si aprono i dettagli della scadenza
+    await li.locator('.dl-t a').click();
+    await p.locator('.dl-sheet').waitFor();
+    assert.match(await p.locator('.dl-sheet').innerText(), /Tipo[\s\S]*Stato/);
+    await p.locator('.dl-sheet').getByRole('link', { name: 'Chiudi' }).click();
+    await p.locator('.dl-sheet').waitFor({ state: 'detached' });
     await li.getByRole('button', { name: 'Fatta' }).click();
     await p.locator('ul.dl li', { hasText: 'PROVA pagare affitto sede' }).getByRole('button', { name: 'Riapri' }).waitFor();
     assert.equal((await pool.query(`select status from deadlines where title = 'PROVA pagare affitto sede'`)).rows[0].status, 'done');

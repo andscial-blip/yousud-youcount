@@ -23,7 +23,7 @@ const daysTo = (d: string) => Math.round((Date.parse(`${d}T00:00:00Z`) - Date.pa
 // Scadenziario: scadenze a mano (pagamenti, incassi, rendicontazioni), adempimenti ricorrenti ETS e promemoria
 // calcolati dai dati (rimborsi da pagare, mesi da chiudere, finanziamenti in scadenza). Vista elenco e calendario.
 export default async function Deadlines({ searchParams }: {
-  searchParams: Promise<{ periodo?: string; tipo?: string; vista?: string; mese?: string; edit?: string; nuovo?: string; ok?: string; err?: string }>;
+  searchParams: Promise<{ periodo?: string; tipo?: string; vista?: string; mese?: string; edit?: string; nuovo?: string; ok?: string; err?: string; apri?: string }>;
 }) {
   const sp = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
@@ -108,6 +108,7 @@ export default async function Deadlines({ searchParams }: {
     : per === 'late' ? i.status === 'open' && i.date < td
       : (i.status === 'open' && i.date < td) || (i.date >= td && i.date <= addDays(td, Number(per)));
   const list = items.filter((i) => (!tipo || i.cat === tipo) && i.applies && (view === 'cal' || inPeriod(i))).sort((a, b) => a.date.localeCompare(b.date) || (b.priority === 'high' ? 1 : -1));
+  const sel = sp.apri ? items.find((x) => x.key === sp.apri) : undefined;
   const late = items.filter((i) => i.applies && i.status === 'open' && i.date < td).length;
   const soonL = items.filter((i) => i.applies && i.status === 'open' && i.date >= td && i.date <= addDays(td, 14)).sort((a, b) => a.date.localeCompare(b.date));
   const soon = soonL.length;
@@ -231,7 +232,7 @@ export default async function Deadlines({ searchParams }: {
             return (
               <div key={d} className={`cal-d ${d.slice(0, 7) !== month ? 'out' : ''} ${d === td ? 'today' : ''} ${its.length ? 'has' : ''}`} role="gridcell">
                 <span className="cal-n">{Number(d.slice(8))}</span>
-                {its.slice(0, 3).map((i) => <span key={i.key} className={`cal-i i-${imp(i)}`} title={i.title}>{i.title}</span>)}
+                {its.slice(0, 3).map((i) => <Link key={i.key} className={`cal-i i-${imp(i)}`} title={i.title} href={href({ apri: i.key })} scroll={false}>{i.title}</Link>)}
                 {its.length > 3 && <span className="cal-more">+{its.length - 3}</span>}
               </div>
             );
@@ -256,7 +257,7 @@ export default async function Deadlines({ searchParams }: {
               <li key={i.key} className={`${i.status !== 'open' ? 'done' : ''} i-${imp(i)}`}>
                 <div className="dl-day"><b>{i.date.slice(8)}</b><span>{MS[Number(i.date.slice(5, 7)) - 1]}</span></div>
                 <div className="dl-body">
-                  <div className="dl-t">{i.href ? <Link href={i.href}>{i.title}</Link> : i.title}</div>
+                  <div className="dl-t"><Link href={href({ apri: i.key })} scroll={false}>{i.title}</Link></div>
                   <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
                 </div>
                 <div className="dl-amt num">{i.amount ? money(i.amount, i.currency ?? 'EUR', lang) : ''}</div>
@@ -289,6 +290,33 @@ export default async function Deadlines({ searchParams }: {
           <p className="muted small" style={{ marginBottom: 0 }}>{L('Scala logaritmica: le soglie sono molto distanti fra loro. La tacca lilla è la stima di fine anno al ritmo di oggi. La lettura delle soglie la conferma il commercialista.',
             'Échelle logarithmique : les seuils sont très éloignés. Le repère lilas est l’estimation de fin d’année au rythme actuel. La lecture des seuils est confirmée par l’expert-comptable.')}</p>
         </Panel>
+      )}
+      {sel && (
+        <div className="sheet-bg dl-sheet-bg">
+          <Link className="dl-sheet-x" href={href({})} scroll={false} aria-label={L('Chiudi', 'Fermer')} />
+          <aside className="sheet sheet-help dl-sheet" role="dialog" aria-modal="true" aria-label={sel.title}>
+            <div className="sheet-h"><h2>{sel.title}</h2><div className="spacer" />
+              <Link className="btn ghost" href={href({})} scroll={false}>{L('Chiudi', 'Fermer')}</Link></div>
+            <div className="sheet-b help-b">
+              <div className="dl-d-top"><span className={`dl-d-day i-${imp(sel)}`}><b>{sel.date.slice(8)}</b><span>{MS[Number(sel.date.slice(5, 7)) - 1]} {sel.date.slice(0, 4)}</span></span>
+                <div className="dl-d-tags">{tag(sel)}<span className={`chip st imp-${imp(sel)}`}>{L(...(IMP.find(([c]) => c === imp(sel))!.slice(1) as [string, string]))}</span></div></div>
+              <dl className="adv-dl">
+                <dt>{L('Tipo', 'Type')}</dt><dd>{L(...DL_CAT[sel.cat])}</dd>
+                {sel.amount ? <><dt>{t('amount')}</dt><dd className="num">{money(sel.amount, sel.currency ?? 'EUR', lang)}</dd></> : null}
+                {sel.project ? <><dt>{t('project')}</dt><dd>{sel.project}</dd></> : null}
+                {sel.owner ? <><dt>{L('Responsabile', 'Responsable')}</dt><dd>{userBy.get(sel.owner)}</dd></> : null}
+                <dt>{L('Stato', 'Statut')}</dt><dd>{sel.status === 'open' ? (sel.date < td ? L('scaduta', 'en retard') : L('da fare', 'à faire')) : sel.status === 'done' ? L('fatta', 'faite') : L('annullata', 'annulée')}</dd>
+                {sel.auto ? <><dt>{L('Origine', 'Origine')}</dt><dd>{L('promemoria calcolato dai dati: sparisce quando il dato è a posto', 'rappel calculé depuis les données : il disparaît quand la donnée est en ordre')}</dd></> : null}
+              </dl>
+              {sel.sub && <p style={{ margin: 0 }}>{sel.sub}</p>}
+              <div className="row-actions">
+                {sel.href && <Link className="btn primary" href={sel.href}>{L('Vai alla pagina', 'Aller à la page')} →</Link>}
+                {!sel.auto && writer && (sel.status === 'open' ? statusForm(sel, 'done') : statusForm(sel, 'open'))}
+                {!sel.auto && !sel.rule_key && writer && sel.id && <Link className="btn ghost" href={href({ edit: sel.id })}>{L('Modifica', 'Modifier')}</Link>}
+              </div>
+            </div>
+          </aside>
+        </div>
       )}
     </div>
   );

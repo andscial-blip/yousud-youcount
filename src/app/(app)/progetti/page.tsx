@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CIcon } from '@/components/CIcon';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { Empty, ErrorNote, PageHead } from '@/components/Page';
@@ -39,12 +40,30 @@ export default async function Projects({ searchParams }: { searchParams: Promise
     <div className="stack">
       <PageHead title={`${t('nav_projects')} ${year}`} />
       <ErrorNote prefix={t('error_load')} error={error} />
-      <div className="sstrip prj-sum">
-        <div><span>{L('Progetti attivi', 'Projets actifs')}</span><b className="num">{shown.length}</b></div>
-        <div><span>{L('Preventivo uscite', 'Budget dépenses')}</span><b className="num">{e0(tot.b)}</b></div>
-        <div><span>{L('Uscite', 'Dépenses')}</span><b className="num">{e0(tot.out)}</b></div>
-        <div><span>{L('Entrate', 'Recettes')}</span><b className="num">{e0(tot.inc)}</b></div>
-      </div>
+      {(() => {
+        const over = shown.filter((p) => A(p.id).bOut && A(p.id).out > A(p.id).bOut).length;
+        const used = tot.b ? tot.out / tot.b : 0;
+        const tones = ['#3E5C8A', '#5B7DB1', '#8FB7E0', '#B9D3EE', '#DCE8F6'];
+        const mix = shown.filter((p) => A(p.id).out > 0).map((p, i) => ({ p, v: A(p.id).out, c: p.kind === 'structure' ? '#C9D2DF' : tones[Math.min(i, tones.length - 1)] }));
+        return (<>
+          <div className="ptiles">
+            <div className="pt t-b"><span className="pt-l"><CIcon name="wallet" size={16} />{L('Previsto', 'Prévu')}</span><b className="num">{e0(tot.b)}</b><small>{L(`uscite ${year}`, `dépenses ${year}`)}</small></div>
+            <div className="pt t-s"><span className="pt-l"><CIcon name="chart" size={16} />{L('Speso', 'Dépensé')}</span><b className="num">{e0(tot.out)}</b>
+              <small>{tot.b ? L(`${Math.round(used * 100)} % del previsto · anno ${Math.round(elapsed * 100)} %`, `${Math.round(used * 100)} % du prévu · année ${Math.round(elapsed * 100)} %`) : L('nessun preventivo', 'aucun budget')}</small></div>
+            <div className={`pt t-r${over ? ' warn' : ''}`}><span className="pt-l"><CIcon name="calc" size={16} />{L('Residuo', 'Reste')}</span><b className="num">{tot.b ? e0(tot.b - tot.out) : '–'}</b>
+              <small>{over ? L(`${over} oltre il preventivo`, `${over} au-delà du budget`) : L('tutti nei limiti', 'tous dans les limites')}</small></div>
+            <div className="pt t-i"><span className="pt-l"><CIcon name="trend" size={16} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(tot.inc)}</b>
+              <small>{L(`${shown.length} progetti attivi`, `${shown.length} projets actifs`)}</small></div>
+          </div>
+          {mix.length > 1 && (
+            <div className="pmix" aria-label={L('Dove vanno i fondi', 'Où vont les fonds')}>
+              <span className="pmix-l">{L('Dove vanno i fondi', 'Où vont les fonds')}</span>
+              <div className="pmix-b">{mix.map(({ p, v, c }) => <i key={p.id} title={`${p.name}: ${e0(v)}`} style={{ width: `${(v / tot.out) * 100}%`, background: c }} />)}</div>
+              <ul className="pmix-k">{mix.map(({ p, v, c }) => <li key={p.id}><i style={{ background: c }} />{p.name} <b className="num">{Math.round((v / tot.out) * 100)} %</b></li>)}</ul>
+            </div>
+          )}
+        </>);
+      })()}
       {shown.length === 0 ? <Empty text={t('prj_none_year').replace('{y}', String(year))} /> : (
         <div className="pcards">
           {shown.map((p) => {

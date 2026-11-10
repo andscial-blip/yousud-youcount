@@ -1,7 +1,7 @@
 import { nth } from '@/lib/palette';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { can, requireMe, RESP, STAFF } from '@/lib/session';
+import { can, requireMe, STAFF } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { Empty, PageHead, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
@@ -54,7 +54,6 @@ export default async function ProjectDetail({ params, searchParams }: {
   const used = bOut ? out / bOut : 0;
   const gparts = [...byG.entries()].sort((a, b) => b[1] - a[1]);
   const gtot = gparts.reduce((a, [, v]) => a + v, 0) || 1;
-  const back = `/progetti/${id}?anno=${year}`;
   return (
     <div className="stack">
       <PageHead title={`${p.name} · ${year}`} lead={<><Link className="btn ghost small" href={`/progetti?anno=${year}`}>← {t('nav_projects')}</Link><ProjectIcon p={p} size={34} /></>}>
@@ -85,8 +84,10 @@ export default async function ProjectDetail({ params, searchParams }: {
         </Panel>
       </div>
       {staff && (
-        <Panel title={L('Preventivo e consuntivo per codice', 'Budget et réalisé par code')} pad>
-          <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang} edit={can(me, RESP) ? { scope: 'project', id, year, back } : undefined} />
+        <Panel title={L('Preventivo e consuntivo per codice', 'Budget et réalisé par code')} pad
+          right={<Link className="eyebrow" href={`/preventivo?anno=${year}&vista=analisi&progetto=${id}`}>{L('modifica nel Preventivo', 'modifier dans le Budget')} →</Link>}>
+          {/* una sola fonte: il preventivo si modifica solo nella pagina Preventivo (versioni e delibera) */}
+          <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang} />
         </Panel>
       )}
       <div className="grid">

@@ -55,15 +55,26 @@ export function CashCounter({ accounts, lang, L }: { accounts: { id: string; lab
         );
       })}
       </div>
-      <div className="rec-sum" aria-live="polite">
-        <div><span>{L.counted}</span><b className="num">{total > 0 ? fmt(total) : '–'}</b></div>
-        <div><span>{L.expected}</span><b className="num">{fmt(a?.balance ?? 0)}</b></div>
-        <div className={diff === null ? '' : diff === 0 ? 'rec-ok' : 'rec-bad'}><span>{L.diff}</span><b className="num">{diff === null ? '–' : fmt(diff)}</b></div>
-      </div>
+      {(() => {
+        // risultato: contato e saldo dell'app su barre della stessa scala, differenza in evidenza
+        const exp = a?.balance ?? 0, max = Math.max(total, Math.abs(exp), 1);
+        const st = diff === null ? 'none' : diff === 0 ? 'ok' : diff < 0 ? 'low' : 'high';
+        const msg = st === 'none' ? L.diff : st === 'ok' ? (lang === 'fr' ? 'La caisse est juste' : 'La cassa quadra')
+          : st === 'low' ? (lang === 'fr' ? 'Il manque' : 'Mancano') : (lang === 'fr' ? 'En trop' : 'In più');
+        return (
+          <div className={`cc-res st-${st}`} aria-live="polite">
+            <div className="ccr-bars">
+              <div className="ccr-row"><span>{L.counted}</span><div className="ccr-b"><i className="c" style={{ width: `${(total / max) * 100}%` }} /></div><b className="num">{total > 0 ? fmt(total) : '–'}</b></div>
+              <div className="ccr-row"><span>{L.expected}</span><div className="ccr-b"><i className="e" style={{ width: `${(Math.max(exp, 0) / max) * 100}%` }} /></div><b className="num">{fmt(exp)}</b></div>
+            </div>
+            <div className="ccr-diff"><span>{msg}</span><b className="num">{diff === null ? '–' : st === 'ok' ? '✓' : fmt(Math.abs(diff))}</b></div>
+          </div>
+        );
+      })()}
       <p className="hint" style={{ margin: 0 }}>{L.hint}</p>
-      <div className="fgrid" style={{ alignItems: 'end' }}>
+      <div className="cc-foot">
         <div className="field"><label htmlFor="cc-notes">{L.notes}</label><input className="input" id="cc-notes" name="notes" maxLength={1000} /></div>
-        <div><button className="btn primary" type="submit" disabled={!(total > 0 || Object.values(q).some((v) => v !== ''))}>{L.save}</button></div>
+        <button className="btn primary" type="submit" disabled={!(total > 0 || Object.values(q).some((v) => v !== ''))}>{L.save}</button>
       </div>
     </form>
   );
