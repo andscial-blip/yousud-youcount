@@ -7,7 +7,7 @@ import { RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, money, num } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
-import { advanceStep, closeSettled, createAdvanceAccount, deliverAdvance, moveAdvance, requestAdvance } from './actions';
+import { advanceStep, closeSettled, createAdvanceAccount, deleteRequest, deliverAdvance, moveAdvance, requestAdvance } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +50,10 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const reqs = reqRaw ?? [];
   const accName = (a?: { holder?: string | null; name_it?: string | null; name_fr?: string | null } | null) => a ? (a.holder || (lang === 'fr' ? a.name_fr || a.name_it : a.name_it) || '–') : '–';
   const pickAcc = (advAcc ?? []).map((a) => ({ id: a.id, label: `${accName(a)} · ${a.currency}` }));
+  // nella richiesta la persona compare una volta sola: la valuta (euro o ariary) si sceglie a parte
+  const seenH = new Set<string>();
+  const pickReq = (advAcc ?? []).filter((a) => { const k = accName(a).toLowerCase(); if (seenH.has(k)) return false; seenH.add(k); return true; }).map((a) => ({ id: a.id, label: accName(a) }));
+  const isSA = me.role === 'super_admin';
   const holders = new Set((advAcc ?? []).map((a) => (a.holder ?? '').toLowerCase()));
   const pickUsers = (people ?? []).filter((p) => p.full_name && !holders.has(String(p.full_name).toLowerCase())).map((p) => ({ id: p.id as string, name: p.full_name as string }));
   const accBy = new Map((advAcc ?? []).map((a) => [a.id, a]));
@@ -65,7 +69,9 @@ export default async function Advances({ searchParams }: { searchParams: Promise
     not_settled: ['Il saldo non è a zero: mancano ricevute o la restituzione del resto.', 'Le solde n’est pas à zéro : il manque des reçus ou la restitution du reste.'] };
   const errKey = err?.split(':')[0] ?? '';
   const errText = err ? (ERR[errKey] ? LL(...ERR[errKey]!) : err === 'no_rate' ? t('adv_no_rate') : (() => { const k = `err_${errKey}` as Key; const v = t(k); return v && v !== k ? v : err; })()) : null;
-  const okText = ok === 'req' ? LL('Richiesta inviata: ora la autorizza il direttore o un responsabile.', 'Demande envoyée : le directeur ou un responsable va l’autoriser.')
+  const okText = ok === 'req_auth' ? LL('Richiesta registrata e già autorizzata (super amministratore): ora si consegnano i contanti.', 'Demande enregistrée et déjà autorisée (super administrateur) : on remet maintenant les espèces.')
+    : ok === 'deleted' ? LL('Richiesta eliminata.', 'Demande supprimée.') : ok === 'deleted_moved' ? LL('Richiesta eliminata. La consegna già registrata resta nei movimenti.', 'Demande supprimée. La remise déjà enregistrée reste dans les mouvements.')
+    : ok === 'req' ? LL('Richiesta inviata: ora la autorizza il direttore o un responsabile.', 'Demande envoyée : le directeur ou un responsable va l’autoriser.')
     : ok === 'authorize' ? LL('Anticipo autorizzato: ora si consegnano i contanti.', 'Avance autorisée : on remet maintenant les espèces.') : ok === 'reject' ? LL('Richiesta respinta.', 'Demande refusée.')
     : ok === 'deliver' ? LL('Consegna registrata: ora la ricevuta di consegna si firma sul telefono o sul computer.', 'Remise enregistrée : le reçu de remise se signe maintenant sur le téléphone ou l’ordinateur.')
     : ok === 'closed' ? LL(`Saldo a zero: ${sp.n ?? 1} anticipo chiuso.`, `Solde à zéro : ${sp.n ?? 1} avance clôturée.`)
@@ -99,7 +105,6 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const W = persona ? rows.find((r) => r.account_id === persona) ?? null : null;
   const wAcc = persona ? accBy.get(persona) : undefined;
   const wReqs = persona ? reqs.filter((r) => r.account_id === persona) : [];
-  const wOpen = wReqs.filter((r) => ['requested', 'authorized'].includes(r.status));
   const wBal = W ? Number(W.balance) : 0;
   const wCur = W?.currency ?? wAcc?.currency ?? 'MGA';
   const settled = W && Math.abs(wBal) < 0.005 && wReqs.some((r) => r.status === 'delivered' || r.status === 'reported');
@@ -114,7 +119,16 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const chip = (s: string) => <span className={`chip ${STATUS[s]?.[0] ?? ''}`}>{LL(STATUS[s]?.[1] ?? s, STATUS[s]?.[2] ?? s)}</span>;
   const docLink = (id: string | null | undefined, txt: string) => (id && docUrl.get(id) ? <a className="adv-doc" href={docUrl.get(id)} target="_blank" rel="noreferrer"><CIcon name="file" size={14} />{txt}</a> : id ? <span className="adv-doc">{txt}</span> : null);
   const nuova = sp.nuova === '1' && writer;
-  const perDef = /^[0-9a-f-]{36}$/.test(sp.per ?? '') && accBy.has(sp.per!) ? `acc:${sp.per}` : undefined;
+  const perAcc = /^[0-9a-f-]{36}$/.test(sp.per ?? '') ? accBy.get(sp.per!) : undefined;
+  const perDef = perAcc ? `acc:${pickReq.find((x) => x.label.toLowerCase() === accName(perAcc).toLowerCase())?.id ?? perAcc.id}` : undefined;
+  const delBtn = (r: Req) => isSA ? (
+    <details className="ar-pop"><summary className="btn small ghost">{LL('Elimina', 'Supprimer')}</summary>
+      <form action={deleteRequest} className="ar-form">
+        <input type="hidden" name="id" value={r.id} /><input type="hidden" name="ret_persona" value={persona} />
+        <p className="muted small" style={{ margin: 0 }}>{r.delivery_movement_id ? LL('La consegna già registrata resta come giroconto nei movimenti: se serve, eliminala o stornala a parte.', 'La remise déjà enregistrée reste comme virement dans les mouvements : si besoin, supprimez-la à part.')
+          : LL('La richiesta sparisce; resta traccia nel registro modifiche.', 'La demande disparaît ; la trace reste dans l’historique.')}</p>
+        <button className="btn small danger" type="submit">{LL('Elimina la richiesta', 'Supprimer la demande')}</button>
+      </form></details>) : null;
   const reqLine = (r: Req) => (
     <div className="aw-rq-m">
       <b>{accName(accBy.get(r.account_id))}</b> <span className="num">{money(amt(r), r.currency, lang)}</span>
@@ -150,7 +164,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
         <Panel title={`${LL('Da autorizzare', 'À autoriser')} · ${toAuth.length}`}>
           <ul className="aw-rq">
             {toAuth.map((r) => {
-              const self = r.requested_by === me.id || r.beneficiary_id === me.id;
+              const self = !isSA && (r.requested_by === me.id || r.beneficiary_id === me.id);
               return (
                 <li key={r.id}>{reqLine(r)}
                   <div className="aw-act">
@@ -170,6 +184,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                           <label className="field"><span className="flabel">{LL('Motivo', 'Motif')}</span><input className="input" name="note" maxLength={500} /></label>
                           <button className="btn" type="submit">{LL('Respingi la richiesta', 'Refuser la demande')}</button>
                         </form></details></>)}
+                    {delBtn(r)}
                   </div>
                 </li>
               );
@@ -184,7 +199,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             {toGive.map((r) => (
               <li key={r.id}>{reqLine(r)}
                 <div className="aw-act">
-                  {r.beneficiary_id === me.id ? <span className="muted small">{LL('la consegna un’altra persona', 'remise par une autre personne')}</span> : (
+                  {r.beneficiary_id === me.id && !isSA ? <span className="muted small">{LL('la consegna un’altra persona', 'remise par une autre personne')}</span> : (
                     <details className="ar-pop"><summary className="btn small primary">{LL('Consegna i contanti', 'Remettre les espèces')}</summary>
                       <form action={deliverAdvance} className="ar-form">
                         <input type="hidden" name="id" value={r.id} /><input type="hidden" name="client_uuid" value={randomUUID()} />
@@ -195,6 +210,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                       </form></details>)}
                   <form action={advanceStep}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="step" value="cancel" />
                     <button className="btn small ghost" type="submit">{LL('Annulla', 'Annuler')}</button></form>
+                  {delBtn(r)}
                 </div>
               </li>
             ))}
@@ -235,7 +251,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                   {(r.status === 'requested' || r.status === 'authorized') && writer && r.requested_by === me.id && (
                     <form action={advanceStep}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="step" value="cancel" />
                       <button className="btn small ghost" type="submit">{LL('Annulla', 'Annuler')}</button></form>)}
-                  {r.status === 'delivered' && <Link className="btn small" href={`/nuovo?tipo=expense&conto=${r.account_id}`}>+ {LL('Ricevuta', 'Reçu')}</Link>}</div></li>))}
+                  {r.status === 'delivered' && <Link className="btn small" href={`/nuovo?tipo=expense&conto=${r.account_id}`}>+ {LL('Ricevuta', 'Reçu')}</Link>}{delBtn(r)}</div></li>))}
             </ul>
           )}
         </Panel>
@@ -306,9 +322,12 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                   <button className="btn" type="submit">{LL('Saldo a zero: chiudi', 'Solde à zéro : clôturer')}</button></form>}
               </div>
 
-              {wOpen.length > 0 && <ul className="aw-st">{wOpen.map((r) => (
-                <li key={r.id}><span className="aw-d">{date(r.requested_at.slice(0, 10))}</span><span>{LL('Richiesta', 'Demande')} · {r.purpose} {chip(r.status)}</span>
-                  <b className="num muted">{money(amt(r), r.currency, lang)}</b></li>))}</ul>}
+              {wReqs.length > 0 && (<>
+                <h3 className="aw-h">{LL('Richieste', 'Demandes')}</h3>
+                <ul className="aw-st">{wReqs.slice(0, 20).map((r) => (
+                  <li key={r.id}><span className="aw-d">{date(r.requested_at.slice(0, 10))}</span>
+                    <span><Link href={`/anticipi/${r.id}`}>{r.purpose}</Link> {chip(r.status)}{isSA && <span className="aw-del">{delBtn(r)}</span>}</span>
+                    <b className="num muted">{money(amt(r), r.currency, lang)}</b></li>))}</ul></>)}
 
               <h3 className="aw-h">{LL('Estratto', 'Relevé')}</h3>
               {(movs ?? []).length === 0 ? <p className="muted">{LL('Ancora nessun movimento.', 'Encore aucun mouvement.')}</p> : (
@@ -348,7 +367,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               <Link className="btn ghost" href={href({ persona: persona || undefined })} scroll={false}>{LL('Chiudi', 'Fermer')}</Link></div>
             <div className="sheet-b">
               <form action={requestAdvance} className="fgrid" id="nuova-richiesta">
-                <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={pickAcc} users={pickUsers} def={perDef} />
+                <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={pickReq} users={pickUsers} def={perDef} defCur={perAcc?.currency} />
                 <div className="field"><label htmlFor="rq-amt">{t('amount')}</label><input className="input num" id="rq-amt" name="amount" inputMode="decimal" required placeholder="0" /></div>
                 <div className="field span2"><label htmlFor="rq-p">{LL('Cosa devi comprare o pagare', 'Que dois-tu acheter ou payer')}</label>
                   <input className="input" id="rq-p" name="purpose" required minLength={3} maxLength={500} placeholder={LL('Es. tessuti, filo e aghi per il laboratorio di cucito', 'Ex. tissus, fil et aiguilles pour l’atelier de couture')} /></div>

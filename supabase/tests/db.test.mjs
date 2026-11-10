@@ -355,6 +355,14 @@ test('anticipi: richiesta, autorizzazione a quattro occhi, soglie, consegna coll
   assert.equal((await sql(`select a.currency from accounts a where a.id = $1`, [u1.account_id]))[0].currency, 'EUR');
   await assert.rejects(rpc(U.op, 'advance_request', { holder: 'X', currency: 'MGA', amount: 10, purpose: 'Nome troppo corto', use_date: today }), /invalid/);
   await assert.rejects(rpc(U.op, 'advance_account', { holder: 'Qualcuno', currency: 'MGA' }), /forbidden/);
+  // super amministratore: la sua richiesta nasce autorizzata, consegna e chiude anche per sé; solo lui elimina le richieste
+  const s1 = await rpc(U.sa, 'advance_request', { beneficiary_id: U.sa, currency: 'EUR', amount: 40, purpose: 'Spese urgenti del super amministratore', use_date: today });
+  assert.equal(s1.status, 'authorized');
+  assert.equal(s1.authorized_by, U.sa);
+  const s2 = await rpc(U.op, 'advance_request', { holder: 'Rasoa Nirina', currency: 'MGA', amount: 500, purpose: 'Da eliminare', use_date: today });
+  await assert.rejects(rpc(U.admin, 'advance_delete', s2.id), /forbidden/);
+  await rpc(U.sa, 'advance_delete', s2.id);
+  assert.equal((await sql(`select count(*)::int n from advance_requests where id = $1`, [s2.id]))[0].n, 0);
 });
 
 test('bozze: si eliminano solo le bozze', async () => {

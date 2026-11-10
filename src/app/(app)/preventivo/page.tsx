@@ -5,7 +5,6 @@ import { Ico } from '@/components/Ui';
 import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, dateTime, money, num } from '@/lib/format';
 import { Denied, Empty, ErrorNote, PageHead, Panel } from '@/components/Page';
-import { BudgetGrid, type GCell, type GCol, type GGroup, type GRow } from '@/components/BudgetGrid';
 import { deleteBudget, approveBudget, deleteItem, discardBudget, draftBudget, saveItem } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -21,12 +20,13 @@ type Grp = { id: string; code: string; name_it: string; name_fr: string; directi
 
 const NEAR = 0.9;   // avviso quando l'eseguito arriva al 90% della voce
 
-// Preventivo annuale in una pagina sola (scelta 5 · proposta dell'esperto): una griglia codici × progetti dove si scrive
-// direttamente nella bozza, e la stessa griglia per il confronto con il consuntivo. Versioni e Mod. D si aprono solo quando servono.
+// Preventivo annuale (richiesta del 10/11): si scrive riga per riga come un preventivo vero — codice di spesa, progetto,
+// descrizione, quantità, unità, costo unitario, valuta (ariary con il tasso), totale e note — con la riga di inserimento
+// sempre pronta in fondo. Il confronto con il consuntivo è una tabella semplice: una riga per codice, previsto, speso, residuo.
 // Il preventivo è solo annuale: niente ripartizione mensile.
 export default async function BudgetPage({ searchParams }: {
-  searchParams: Promise<{ anno?: string; v?: string; vista?: string; progetto?: string; cella?: string; edit?: string; elimina?: string; add?: string;
-    schema?: string; ok?: string; err?: string; n?: string }>;
+  searchParams: Promise<{ anno?: string; v?: string; vista?: string; progetto?: string; edit?: string; elimina?: string; dir?: string;
+    schema?: string; ok?: string; err?: string; n?: string; lc?: string; lp?: string }>;
 }) {
   const sp = await searchParams;
   const year = Number(sp.anno) || new Date().getFullYear();
@@ -41,8 +41,10 @@ export default async function BudgetPage({ searchParams }: {
   const draft = vs.find((b) => b.status === 'draft') ?? null;
   // si apre sulla versione in vigore (la bozza da «Apri la bozza» o subito dopo «Prepara una revisione»)
   const shown = vs.find((b) => b.id === sp.v) ?? approved ?? draft ?? vs[vs.length - 1] ?? null;
-  // vecchi indirizzi: modifica/righe/riassunto/schema → griglia; analisi → confronto
-  const view: 'grid' | 'cmp' = sp.vista === 'confronto' || sp.vista === 'analisi' ? 'cmp' : 'grid';
+  // tre schede: voci (si compila riga per riga) · riepilogo (per entrate/uscite, codice, progetto; Mod. D) · confronto
+  // vecchi indirizzi: modifica/righe/preventivo → voci; riassunto/schema → riepilogo; analisi → confronto
+  const view: 'rows' | 'sum' | 'cmp' = sp.vista === 'confronto' || sp.vista === 'analisi' ? 'cmp'
+    : sp.vista === 'riepilogo' || sp.vista === 'riassunto' || sp.vista === 'schema' ? 'sum' : 'rows';
   const showSchema = sp.schema === '1' || sp.vista === 'schema' || sp.vista === 'riassunto';
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : sp.progetto === 'gen' ? 'gen' : '';
   const diffBase = shown?.status === 'draft' && approved ? approved : null;
@@ -59,7 +61,7 @@ export default async function BudgetPage({ searchParams }: {
     diffBase ? supabase.from('budget_items').select('project_id, category_id, amount_eur').eq('budget_id', diffBase.id)
       .returns<{ project_id: string | null; category_id: string; amount_eur: string }[]>() : Promise.resolve({ data: null }),
   ]);
-  const [{ data: stB }, { data: stA }] = showSchema && view === 'grid' ? await Promise.all([
+  const [{ data: stB }, { data: stA }] = showSchema && view === 'sum' ? await Promise.all([
     supabase.rpc('budget_statement', { p_year: year, p_budget: shown && shown.status !== 'approved' ? shown.id : null }),
     supabase.rpc('report_cash_statement', { p_year: year }),
   ]) : [{ data: null }, { data: null }];
@@ -100,97 +102,119 @@ export default async function BudgetPage({ searchParams }: {
   const baseOut = (baseItems ?? []).filter((i) => catBy.get(i.category_id)?.direction === 'out').reduce((s, i) => s + Number(i.amount_eur), 0);
   const draftOut = its.filter((i) => catBy.get(i.category_id)?.direction === 'out').reduce((s, i) => s + Number(i.amount_eur), 0);
 
-  // ── griglia: colonne (generale + progetti), righe (codici con importi, o aggiunti), celle ──
-  // «Generale» (righe senza progetto) solo se usata o se si sta scrivendo la bozza
-  const useGen = editing || its.some((i) => !i.project_id) || (baseItems ?? []).some((i) => !i.project_id) || rows.some((r) => !r.project_id && Number(r.actual_eur));
-  const allCols: GCol[] = [...(useGen ? [{ id: '', name: L('Generale', 'Général') }] : []),
-    ...(projects ?? []).filter((p) => p.active || its.some((i) => i.project_id === p.id) || rows.some((r) => r.project_id === p.id && Number(r.actual_eur)))
-      .sort((a, b) => (a.kind === 'structure' ? -1 : 0) - (b.kind === 'structure' ? -1 : 0) || String(a.name).localeCompare(String(b.name)))
-      .map((p) => ({ id: p.id as string, name: p.name as string }))];
-  const cols = prj ? allCols.filter((c) => (prj === 'gen' ? c.id === '' : c.id === prj)) : allCols;
-  const cellKey = (cat: string, p: string | null) => `${cat}|${p ?? ''}`;
-  const cells: Record<string, GCell> = {};
-  for (const i of its) {
-    const k = cellKey(i.category_id, i.project_id), c = cells[k] ?? { eur: 0, n: 0, simple: false };
-    c.eur = Math.round((c.eur + Number(i.amount_eur)) * 100) / 100; c.n += 1; c.simple = c.n === 1 && i.currency === 'EUR' && Number(i.qty) === 1; cells[k] = c;
-  }
-  if (diffBase) {
-    const base = new Map<string, number>();
-    for (const i of baseItems ?? []) base.set(cellKey(i.category_id, i.project_id), (base.get(cellKey(i.category_id, i.project_id)) ?? 0) + Number(i.amount_eur));
-    for (const [k, b] of base) cells[k] = { ...(cells[k] ?? { eur: 0, n: 0, simple: false }), base: b };
-    for (const k of Object.keys(cells)) if (cells[k].base === undefined) cells[k].base = null;
-  }
-  const addCat = /^[0-9a-f-]{36}$/.test(sp.add ?? '') ? sp.add! : '';
-  const usedCats = new Set([...its.map((i) => i.category_id), ...(baseItems ?? []).map((i) => i.category_id), ...(addCat ? [addCat] : [])]);
-  const grpBy = new Map((groups ?? []).map((g) => [g.id, g]));
-  const gridRows: GRow[] = (cats ?? []).filter((c) => usedCats.has(c.id))
-    .map((c) => ({ id: c.id, code: c.code, name: CL(c), dir: c.direction, group: c.group_id ?? `x-${c.direction}` }));
-  const gridGroups: GGroup[] = [...(groups ?? []).map((g) => ({ id: g.id, label: `${g.code} · ${CL(g)}`, dir: g.direction })),
-    { id: 'x-out', label: L('Altre uscite', 'Autres dépenses'), dir: 'out' as const }, { id: 'x-in', label: L('Altre entrate', 'Autres recettes'), dir: 'in' as const }];
-  const ret = `vista=preventivo${prj ? `&progetto=${prj}` : ''}`;
-  const detail: Record<string, string> = {};
-  if (editing || amending) for (const r of gridRows) for (const c of cols) {
-    const k = `${r.id}|${c.id}`;
-    if (editing || (cells[k]?.n ?? 0) > 0) detail[k] = href({ v: shown?.id, vista: 'preventivo', progetto: prj, cella: `${r.id}~${c.id || 'gen'}` });
-  }
-  const sig = `${shown?.id}|${its.map((i) => `${i.id}:${i.amount_eur}`).join(',')}|${prj}|${addCat}`;
 
-  // ── dettaglio di una cella (☰): righe con quantità × costo, valuta, tasso, note ──
-  const [selCat, selPrj] = (sp.cella ?? '').split('~');
-  const selC = selCat ? catBy.get(selCat) : undefined;
-  const selP = selPrj === 'gen' ? null : selPrj && prjBy.has(selPrj) ? selPrj : undefined;
-  const cellItems = selC && selP !== undefined ? its.filter((i) => i.category_id === selC.id && i.project_id === selP) : [];
-  const edit = selC ? cellItems.find((i) => i.id === sp.edit) : undefined;
-  const delRow = selC ? cellItems.find((i) => i.id === sp.elimina) : undefined;
-  const cellHref = (q: Record<string, string>) => href({ v: shown?.id, vista: 'preventivo', progetto: prj, cella: sp.cella, ...q });
-  const closeHref = href({ v: shown?.id, vista: 'preventivo', progetto: prj });
-
-  // ── confronto: stessa griglia, ogni cella speso su previsto con la barra (rosso solo oltre il 100%) ──
-  const cmpCell = new Map<string, { b: number; a: number; n: number }>();
-  for (const r of rows) {
-    const k = cellKey(r.category_id, r.project_id), x = cmpCell.get(k) ?? { b: 0, a: 0, n: 0 };
-    x.b += Number(r.budget_eur); x.a += Number(r.actual_eur); x.n += r.movements; cmpCell.set(k, x);
-  }
-  const cmpCats = (cats ?? []).filter((c) => cols.some((col) => { const x = cmpCell.get(cellKey(c.id, col.id || null)); return x && (x.b || x.a); }));
-  const pc = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : null);
-  const CmpCell = ({ b, a, hrefMov }: { b: number; a: number; hrefMov?: string }) => {
-    if (!b && !a) return <td className="cg-c" />;
-    const p = pc(a, b), w = b > 0 ? Math.min(a / b, 1) * 100 : 100, cls = b > 0 && a > b + 0.005 ? 'over' : !b ? 'nob' : '';
+  // ── righe del preventivo (filtro progetto), ordinate per sezione, codice, progetto ──
+  const prjList = (projects ?? []).filter((p) => p.active || its.some((i) => i.project_id === p.id))
+    .sort((a, b) => (a.kind === 'structure' ? -1 : 0) - (b.kind === 'structure' ? -1 : 0) || String(a.name).localeCompare(String(b.name)));
+  const rowsOf = (d: 'in' | 'out') => its.filter((i) => catBy.get(i.category_id)?.direction === d && inPrj(i.project_id))
+    .sort((a, b) => (catBy.get(a.category_id)?.code ?? '').localeCompare(catBy.get(b.category_id)?.code ?? '', 'it', { numeric: true })
+      || (prjBy.get(a.project_id ?? '') ?? '').localeCompare(prjBy.get(b.project_id ?? '') ?? ''));
+  const totOf = (d: 'in' | 'out') => rowsOf(d).reduce((s, i) => s + Number(i.amount_eur), 0);
+  const rowActions = editing || amending;
+  const edit = rowActions ? its.find((i) => i.id === sp.edit) : undefined;
+  const delRow = rowActions ? its.find((i) => i.id === sp.elimina) : undefined;
+  const ret = `vista=voci${prj ? `&progetto=${prj}` : ''}`;
+  const lastCat = /^[0-9a-f-]{36}$/.test(sp.lc ?? '') ? sp.lc! : '';
+  const lastPrj = /^[0-9a-f-]{36}$/.test(sp.lp ?? '') ? sp.lp! : prj && prj !== 'gen' ? prj : '';
+  const nf = (v: string | number) => String(Number(v)).replace('.', ',');
+  const catOptions = (d: 'in' | 'out' | null, keep?: string) => (['out', 'in'] as const).filter((x) => !d || x === d).map((x) => (
+    <optgroup key={x} label={x === 'out' ? L('Uscite', 'Dépenses') : L('Entrate', 'Recettes')}>
+      {(cats ?? []).filter((c) => c.direction === x && (c.active || c.id === keep)).map((c) => <option key={c.id} value={c.id}>{c.code} · {CL(c)}</option>)}
+    </optgroup>));
+  const prjOptions = (keep?: string | null) => (<>
+    <option value="">{L('Generale (struttura)', 'Général (structure)')}</option>
+    {prjList.filter((p) => p.active || p.id === keep).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</>);
+  // campi di una riga (nuova o in modifica): si usano dentro le celle della tabella, collegati al modulo con l'attributo form
+  const fields = (f: string, i?: Item) => (<>
+    <td data-l={L('Codice', 'Code')}><select className="input" name="category_id" form={f} required defaultValue={i?.category_id ?? lastCat} aria-label={L('Codice di spesa o entrata', 'Code de dépense ou recette')}>
+      <option value="" disabled>{L('Codice…', 'Code…')}</option>{catOptions(null, i?.category_id)}</select></td>
+    <td data-l={L('Progetto', 'Projet')}><select className="input" name="project_id" form={f} defaultValue={i ? i.project_id ?? '' : lastPrj} aria-label={L('Progetto', 'Projet')}>{prjOptions(i?.project_id)}</select></td>
+    <td data-l={L('Descrizione e note', 'Description et notes')}><div className="bl-two">
+      <input className="input" name="description" form={f} maxLength={300} defaultValue={i?.description ?? ''} placeholder={L('Cosa (es. quaderni e penne)', 'Quoi (ex. cahiers et stylos)')} aria-label={L('Descrizione', 'Description')} />
+      <input className="input bl-sm" name="notes" form={f} maxLength={500} defaultValue={i?.notes ?? ''} placeholder={L('Note (facoltative)', 'Notes (facultatives)')} aria-label={L('Note', 'Notes')} /></div></td>
+    <td data-l={L('Quantità e unità', 'Quantité et unité')}><div className="bl-qu">
+      <input className="input num" name="qty" form={f} inputMode="decimal" defaultValue={i ? nf(i.qty) : '1'} aria-label={L('Quantità', 'Quantité')} />
+      <input className="input" name="unit" form={f} maxLength={30} defaultValue={i?.unit ?? ''} placeholder={L('unità', 'unité')} aria-label={L('Unità (es. mesi, kit)', 'Unité (ex. mois, kits)')} /></div></td>
+    <td data-l={L('Costo unitario, valuta, tasso', 'Coût unitaire, devise, taux')}><div className="bl-cu">
+      <input className="input num" name="unit_cost" form={f} inputMode="decimal" required defaultValue={i ? nf(i.unit_cost) : ''} placeholder="0" aria-label={L('Costo unitario', 'Coût unitaire')} />
+      <select className="input" name="currency" form={f} defaultValue={i?.currency ?? 'EUR'} aria-label={L('Valuta', 'Devise')}><option>EUR</option><option>MGA</option></select>
+      <input className="input num bl-sm" name="fx_rate" form={f} inputMode="decimal" defaultValue={i?.fx_rate ? nf(i.fx_rate) : rate ? nf(Number(rate).toFixed(2)) : ''} placeholder={L('tasso', 'taux')} title={L('Tasso MGA per 1 EUR (solo ariary)', 'Taux MGA pour 1 EUR (ariary seulement)')} aria-label={L('Tasso MGA per 1 EUR (solo ariary)', 'Taux MGA pour 1 EUR (ariary seulement)')} /></div></td>
+  </>);
+  const sectionRows = (d: 'in' | 'out') => rowsOf(d).map((i) => {
+    const c = catBy.get(i.category_id);
+    if (edit?.id === i.id) return (
+      <tr key={i.id} className="bl-edit">
+        {fields('bl-ed', i)}
+        <td className="r num bl-tcell" data-l={L('Totale attuale', 'Total actuel')}>{m(i.amount_eur)}</td>
+        <td className="r bl-act" data-l="">
+          <button className="btn small primary" type="submit" form="bl-ed">{L('Salva', 'Enregistrer')}</button>
+          <Link className="btn small ghost" href={href({ v: shown?.id, vista: 'voci', progetto: prj })}>{L('Annulla', 'Annuler')}</Link></td>
+      </tr>);
     return (
-      <td className={`cg-c ${cls}`}>
-        <span className="cg-a num">{hrefMov && a ? <Link href={hrefMov}>{e0(a)}</Link> : e0(a)}</span>
-        <span className="cg-b num">{b ? `${L('su', 'sur')} ${e0(b)}` : L('non previsto', 'non prévu')}</span>
-        <span className="cg-bar" aria-hidden="true"><i style={{ width: `${w}%` }} />{b > 0 && <em style={{ left: `${Math.min(elapsed, 1) * 100}%` }} />}</span>
-        {p != null && <span className="cg-p">{p}%</span>}
-      </td>
-    );
+      <tr key={i.id} className={delRow?.id === i.id ? 'sel' : ''}>
+        <td data-l={L('Codice', 'Code')}><b>{c?.code}</b> <span className="muted bl-cn">{c ? CL(c) : ''}</span></td>
+        <td data-l={L('Progetto', 'Projet')}>{i.project_id ? prjBy.get(i.project_id) : <span className="muted">{L('Generale', 'Général')}</span>}</td>
+        <td data-l={L('Descrizione', 'Description')}>{i.description || <span className="muted">–</span>}{i.notes && <small className="muted bl-note">{i.notes}</small>}</td>
+        <td className="r num nw" data-l={L('Quantità', 'Quantité')}>{num(Number(i.qty), lang)}{i.unit ? ` ${i.unit}` : ''}</td>
+        <td className="r num nw" data-l={L('Costo unitario', 'Coût unitaire')}>{money(i.unit_cost, i.currency, lang)}{i.currency === 'MGA' && i.fx_rate ? <small className="muted bl-note">{L('tasso', 'taux')} {num(Number(i.fx_rate), lang)}</small> : null}</td>
+        <td className="r num nw" data-l={L('Totale', 'Total')}><b>{m(i.amount_eur)}</b>{i.currency !== 'EUR' && <small className="muted bl-orig">{money(i.amount, i.currency, lang)}</small>}</td>
+        {rowActions && <td className="r bl-act nw" data-l="">
+          <Link className="btn small" href={`${href({ v: shown?.id, vista: 'voci', progetto: prj, edit: i.id })}#r-${i.id}`} id={`r-${i.id}`}>{L('Modifica', 'Modifier')}</Link>
+          <Link className="btn small ghost" href={`${href({ v: shown?.id, vista: 'voci', progetto: prj, elimina: i.id })}#r-${i.id}`}>{L('Elimina', 'Supprimer')}</Link></td>}
+      </tr>);
+  });
+
+  // ── confronto: una riga per codice (progetti filtrati), raggruppata come nel rendiconto ──
+  const cmpByCat = new Map<string, { b: number; a: number; c: number; n: number }>();
+  for (const r of fr) { const x = cmpByCat.get(r.category_id) ?? { b: 0, a: 0, c: 0, n: 0 }; x.b += Number(r.budget_eur); x.a += Number(r.actual_eur); x.c += Number(r.committed_eur); x.n += r.movements; cmpByCat.set(r.category_id, x); }
+  const Bar = ({ b, a }: { b: number; a: number }) => {
+    const p = b > 0 ? a / b : a > 0 ? 2 : 0;
+    return <span className={`cb-bar${p > 1.0005 ? ' over' : ''}`} aria-hidden="true"><i style={{ width: `${Math.min(p, 1) * 100}%` }} />{b > 0 && year === now.getFullYear() && <em style={{ left: `${elapsed * 100}%` }} />}</span>;
   };
-  const cmpBody = (d: 'in' | 'out') => {
-    const gs = (groups ?? []).filter((g) => g.direction === d && cmpCats.some((c) => c.group_id === g.id));
-    return gs.map((g) => {
-      const cs = cmpCats.filter((c) => c.group_id === g.id);
-      const gx = (col: string | null) => cs.reduce((s, c) => { const x = cmpCell.get(cellKey(c.id, col)); return { b: s.b + (x?.b ?? 0), a: s.a + (x?.a ?? 0) }; }, { b: 0, a: 0 });
-      const gt = cols.reduce((s, col) => { const x = gx(col.id || null); return { b: s.b + x.b, a: s.a + x.a }; }, { b: 0, a: 0 });
-      return (
-        <tbody key={g.id}>
-          <tr className="bg-grp"><th scope="rowgroup" className="bg-sticky">{g.code} · {CL(g)}</th>
-            {cols.map((col) => { const x = gx(col.id || null); return <td key={col.id} className="r num">{x.b || x.a ? `${e0(x.a)} / ${e0(x.b)}` : ''}</td>; })}
-            {cols.length > 1 && <td className="r num bg-tot">{e0(gt.a)} / {e0(gt.b)}</td>}</tr>
-          {cs.map((c) => {
-            const rt = cols.reduce((s, col) => { const x = cmpCell.get(cellKey(c.id, col.id || null)); return { b: s.b + (x?.b ?? 0), a: s.a + (x?.a ?? 0) }; }, { b: 0, a: 0 });
-            return (
-              <tr key={c.id}>
-                <th scope="row" className="bg-sticky bg-code"><span className="bg-cw"><span className="bg-c">{c.code}</span><span className="bg-n">{CL(c)}</span></span></th>
-                {cols.map((col) => { const x = cmpCell.get(cellKey(c.id, col.id || null));
-                  return <CmpCell key={col.id} b={x?.b ?? 0} a={x?.a ?? 0} hrefMov={`/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}${col.id ? `&progetto=${col.id}` : ''}`} />; })}
-                {cols.length > 1 && <CmpCell b={rt.b} a={rt.a} />}
-              </tr>
-            );
-          })}
-        </tbody>
-      );
+  const cmpSection = (d: 'in' | 'out') => (groups ?? []).filter((g) => g.direction === d && (cats ?? []).some((c) => c.group_id === g.id && cmpByCat.has(c.id))).map((g) => {
+    const cs = (cats ?? []).filter((c) => c.group_id === g.id && cmpByCat.has(c.id));
+    const gb = cs.reduce((s, c) => s + cmpByCat.get(c.id)!.b, 0), ga = cs.reduce((s, c) => s + cmpByCat.get(c.id)!.a, 0);
+    return (
+      <tbody key={g.id}>
+        <tr className="cb-grp"><th scope="rowgroup" colSpan={2}>{g.code} · {CL(g)}</th><td className="r num">{e0(gb)}</td><td className="r num">{e0(ga)}</td>
+          <td className={`r num ${d === 'out' && gb - ga < 0 ? 'neg' : ''}`}>{e0(gb - ga)}</td><td className="r num">{gb > 0 ? `${Math.round((ga / gb) * 100)}%` : ''}</td><td /></tr>
+        {cs.map((c) => { const x = cmpByCat.get(c.id)!; const over = d === 'out' && x.a > x.b + 0.005;
+          return (
+            <tr key={c.id} className={over ? 'over' : ''}>
+              <td className="nw" data-l={L('Codice', 'Code')}><b>{c.code}</b></td>
+              <td data-l={L('Voce', 'Poste')}>{CL(c)}{!x.b && x.a > 0 && <span className="chip warn">{L('non prevista', 'non prévue')}</span>}</td>
+              <td className="r num" data-l={L('Previsto', 'Prévu')}>{e0(x.b)}</td>
+              <td className="r num" data-l={d === 'out' ? L('Speso', 'Dépensé') : L('Incassato', 'Encaissé')}>{x.n > 0
+                ? <Link href={`/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}${prj && prj !== 'gen' ? `&progetto=${prj}` : ''}`}>{e0(x.a)}</Link> : e0(x.a)}</td>
+              <td className={`r num ${d === 'out' && x.b - x.a < 0 ? 'neg' : ''}`} data-l={L('Residuo', 'Reste')}>{e0(x.b - x.a)}</td>
+              <td className="r num" data-l="%">{x.b > 0 ? `${Math.round((x.a / x.b) * 100)}%` : '–'}</td>
+              <td className="cb-bc"><Bar b={x.b} a={x.a} /></td>
+            </tr>); })}
+      </tbody>);
+  });
+
+  // ── riepilogo: il preventivo (versione mostrata, progetti filtrati) per codice e per progetto ──
+  const fil = its.filter((i) => inPrj(i.project_id));
+  const totIn = fil.filter((i) => catBy.get(i.category_id)?.direction === 'in').reduce((s, i) => s + Number(i.amount_eur), 0);
+  const totOut = fil.filter((i) => catBy.get(i.category_id)?.direction === 'out').reduce((s, i) => s + Number(i.amount_eur), 0);
+  const byCodeSum: SumRow[] = (['out', 'in'] as const).flatMap((d) => {
+    const tot = d === 'out' ? totOut : totIn;
+    const head: SumRow = { k: `s-${d}`, label: d === 'out' ? L('Uscite', 'Dépenses') : L('Entrate', 'Recettes'), v: tot, lvl: 0, share: 1, dir: d };
+    const gs = (groups ?? []).filter((g) => g.direction === d).flatMap((g) => {
+      const cs = (cats ?? []).filter((c) => c.group_id === g.id).map((c) => ({ c, v: fil.filter((i) => i.category_id === c.id).reduce((s, i) => s + Number(i.amount_eur), 0) })).filter((x) => x.v);
+      if (!cs.length) return [];
+      const gv = cs.reduce((s, x) => s + x.v, 0);
+      return [{ k: g.id, label: `${g.code} · ${CL(g)}`, v: gv, lvl: 1, share: tot ? gv / tot : 0, dir: d } as SumRow,
+        ...cs.map((x) => ({ k: x.c.id, label: `${x.c.code} · ${CL(x.c)}`, v: x.v, lvl: 2, share: tot ? x.v / tot : 0, dir: d } as SumRow))];
     });
-  };
+    return gs.length ? [head, ...gs] : [];
+  });
+  const byPrjSum: SumRow[] = [...new Set(fil.map((i) => i.project_id ?? ''))]
+    .map((p) => { const xs = fil.filter((i) => (i.project_id ?? '') === p);
+      const o = xs.filter((i) => catBy.get(i.category_id)?.direction === 'out').reduce((s, i) => s + Number(i.amount_eur), 0);
+      const n = xs.filter((i) => catBy.get(i.category_id)?.direction === 'in').reduce((s, i) => s + Number(i.amount_eur), 0);
+      return { k: p || 'gen', label: p ? prjBy.get(p) ?? '–' : L('Generale (struttura)', 'Général (structure)'), v: o, inc: n, lvl: 2 as const, share: totOut ? o / totOut : 0, dir: 'out' as const }; })
+    .sort((a, b) => b.v - a.v);
 
   return (
     <div className="stack">
@@ -295,159 +319,153 @@ export default async function BudgetPage({ searchParams }: {
               <small className={over.length ? 'neg' : ''}>{over.length ? L(`${over.length} codici oltre il previsto`, `${over.length} codes au-delà du prévu`) : L(`anno trascorso ${Math.round(elapsed * 100)} %`, `année écoulée ${Math.round(elapsed * 100)} %`)}</small></div>
           </div>
 
+
           <section className="panel">
             <div className="bv-tools">
               <div className="segs" role="tablist" aria-label={L('Vista', 'Vue')}>
-                <Link role="tab" aria-selected={view === 'grid'} href={href({ v: shown.id, vista: 'preventivo', progetto: prj })}>{L('Preventivo', 'Budget')}</Link>
+                <Link role="tab" aria-selected={view === 'rows'} href={href({ v: shown.id, vista: 'voci', progetto: prj })}>{L('Voci del preventivo', 'Postes du budget')} · {its.length}</Link>
+                <Link role="tab" aria-selected={view === 'sum'} href={href({ v: shown.id, vista: 'riepilogo', progetto: prj })}>{L('Riepilogo', 'Récapitulatif')}</Link>
                 <Link role="tab" aria-selected={view === 'cmp'} href={href({ v: shown.id, vista: 'confronto', progetto: prj })}>{L('Confronto con il consuntivo', 'Comparaison avec le réalisé')}</Link>
               </div>
               <div className="bv-tr">
-                <FilterBar action="/preventivo" lang={lang} hidden={{ anno: String(year), v: shown.id, vista: view === 'cmp' ? 'confronto' : 'preventivo' }}
+                <FilterBar action="/preventivo" lang={lang} hidden={{ anno: String(year), v: shown.id, vista: view === 'cmp' ? 'confronto' : view === 'sum' ? 'riepilogo' : 'voci' }}
                   inline={<select className="input" name="progetto" defaultValue={prj} aria-label={L('Progetto', 'Projet')}>
                     <option value="">{L('Tutti i progetti', 'Tous les projets')}</option>
                     <option value="gen">{L('Generale (struttura)', 'Général (structure)')}</option>
-                    {allCols.filter((c) => c.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {prjList.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>} />
                 <a className="btn" href={`/api/v1/export/budget?anno=${year}&v=${shown.id}`}><Ico name="download" />Excel</a>
               </div>
             </div>
 
-            {view === 'grid' ? (<>
+            {view === 'rows' ? (<>
               {!editing && !amending && <p className="bv-hint">{shown.status === 'draft'
                 ? L('Bozza in preparazione: la modificano gli amministratori e i responsabili.', 'Brouillon en préparation : il est modifié par les administrateurs et les responsables.')
                 : L('Questa versione non si modifica: per cambiare il preventivo si prepara una revisione.', 'Cette version ne se modifie pas : pour changer le budget, on prépare une révision.')}</p>}
               {amending && <p className="bv-hint">{shown.demo
-                ? L('Versione DEMO in vigore: con ☰ correggi o elimini le righe una per una.', 'Version DEMO en vigueur : avec ☰ vous corrigez ou supprimez les lignes une par une.')
-                : L('Versione approvata: con ☰ correggi o elimini una riga indicando il motivo (resta nello storico). Per aggiungere voci si prepara una revisione.', 'Version approuvée : avec ☰ vous corrigez ou supprimez une ligne en indiquant le motif (reste dans l\'historique). Pour ajouter des postes, on prépare une révision.')}</p>}
-              {gridRows.length === 0 ? <Empty text={editing ? L('Bozza vuota: aggiungi il primo codice qui sotto.', 'Brouillon vide : ajoutez le premier code ci-dessous.') : L('Nessuna voce.', 'Aucun poste.')} /> : (
-                <BudgetGrid budgetId={shown.id} rows={gridRows} groups={gridGroups} cols={cols} cells={cells} editable={Boolean(editing)} lang={lang}
-                  detail={detail} sig={sig} />
-              )}
-              {editing && (
-                <form className="bv-add" action="/preventivo" method="get">
-                  <input type="hidden" name="anno" value={year} /><input type="hidden" name="v" value={shown.id} /><input type="hidden" name="vista" value="preventivo" />
-                  {prj && <input type="hidden" name="progetto" value={prj} />}
-                  <label className="vh" htmlFor="bv-add">{L('Aggiungi codice', 'Ajouter un code')}</label>
-                  <select className="input" id="bv-add" name="add" required defaultValue="">
-                    <option value="" disabled>{L('+ Aggiungi codice…', '+ Ajouter un code…')}</option>
-                    {(['out', 'in'] as const).map((d) => (
-                      <optgroup key={d} label={d === 'out' ? L('Uscite', 'Dépenses') : L('Entrate', 'Recettes')}>
-                        {(cats ?? []).filter((c) => c.direction === d && c.active && !usedCats.has(c.id)).map((c) => <option key={c.id} value={c.id}>{c.code} · {CL(c)}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <button className="btn" type="submit">{L('Aggiungi', 'Ajouter')}</button>
+                ? L('Versione DEMO in vigore: puoi correggere o eliminare le righe una per una.', 'Version DEMO en vigueur : vous pouvez corriger ou supprimer les lignes une par une.')
+                : L('Versione approvata: puoi correggere o eliminare una riga indicando il motivo (resta nello storico). Per aggiungere righe si prepara una revisione.', 'Version approuvée : vous pouvez corriger ou supprimer une ligne en indiquant le motif (reste dans l\'historique). Pour ajouter des lignes, on prépare une révision.')}</p>}
+              {delRow && (
+                <form action={deleteItem} className="del-row bl-del">
+                  <input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={delRow.id} /><input type="hidden" name="budget_id" value={shown.id} />
+                  <input type="hidden" name="ret" value={ret} />
+                  <p style={{ margin: 0 }}><b>{L('Eliminare questa riga?', 'Supprimer cette ligne ?')}</b> {catBy.get(delRow.category_id)?.code} · {delRow.description || (catBy.get(delRow.category_id) ? CL(catBy.get(delRow.category_id)!) : '')} · {money(delRow.amount, delRow.currency, lang)}</p>
+                  {needReason && <input className="input" id="del-reason" name="reason" required minLength={5} maxLength={500} aria-label={L('Motivo', 'Motif')} placeholder={L('Motivo (es. voce annullata con delibera del…)', 'Motif (ex. poste annulé par délibération du…)')} />}
+                  <label className="chk"><input type="checkbox" name="confirm" required /> {L('Confermo', 'Je confirme')}</label>
+                  <button className="btn small danger" type="submit">{L('Elimina la riga', 'Supprimer la ligne')}</button>
+                  <Link className="btn small ghost" href={href({ v: shown.id, vista: 'righe', progetto: prj })}>{L('Annulla', 'Annuler')}</Link>
                 </form>
               )}
-              {editing && gridRows.length > 0 && <p className="bv-hint small">{L(
-                'Scrivi l\'importo in euro nella cella: Invio o uscita dalla cella salva e aggiorna i totali. ☰ apre il dettaglio (quantità × costo, ariary con il tasso, note). Bordo azzurro: cambiata rispetto alla versione in vigore.',
-                'Écrivez le montant en euros dans la cellule : Entrée ou sortie de la cellule enregistre et met à jour les totaux. ☰ ouvre le détail (quantité × coût, ariary avec le taux, notes). Bordure bleue : modifiée par rapport à la version en vigueur.')}</p>}
+              {edit && <form id="bl-ed" action={saveItem} className="vh-form">
+                <input type="hidden" name="year" value={year} /><input type="hidden" name="budget_id" value={shown.id} /><input type="hidden" name="id" value={edit.id} />
+                <input type="hidden" name="ret" value={ret} />
+                {needReason && <div className="bl-reason"><label htmlFor="bi-reason">{L('Motivo della modifica (resta nello storico)', 'Motif de la modification (reste dans l\'historique)')}</label>
+                  <input className="input" id="bi-reason" name="reason" required minLength={5} maxLength={500} placeholder={L('Es. importo corretto dopo il nuovo preventivo del fornitore', 'Ex. montant corrigé après le nouveau devis du fournisseur')} /></div>}
+              </form>}
+              {editing && <form id="bl-new" action={saveItem} className="vh-form">
+                <input type="hidden" name="year" value={year} /><input type="hidden" name="budget_id" value={shown.id} /><input type="hidden" name="ret" value={ret} />
+              </form>}
+              <div className="tscroll">
+                <table className="t keep blines">
+                  <thead><tr>
+                    <th>{L('Codice', 'Code')}</th><th>{L('Progetto', 'Projet')}</th><th>{L('Descrizione', 'Description')}</th><th className="r">{L('Quantità', 'Quantité')}</th>
+                    <th className="r">{L('Costo unitario', 'Coût unitaire')}</th><th className="r">{L('Totale', 'Total')} EUR</th>{rowActions && <th />}
+                  </tr></thead>
+                  {(['out', 'in'] as const).map((d) => (
+                    <tbody key={d}>
+                      <tr className="bl-sec"><th colSpan={5} scope="rowgroup">{d === 'out' ? L('Uscite', 'Dépenses') : L('Entrate', 'Recettes')} · {rowsOf(d).length}</th>
+                        <td className="r num"><b>{m(totOf(d))}</b></td>{rowActions && <td />}</tr>
+                      {sectionRows(d)}
+                    </tbody>
+                  ))}
+                  {editing && (
+                    <tbody>
+                      <tr className="bl-sec bl-newh"><th colSpan={rowActions ? 7 : 6} scope="rowgroup">{L('Nuova riga', 'Nouvelle ligne')}</th></tr>
+                      <tr className="bl-new">
+                        {fields('bl-new')}
+                        <td className="r muted bl-tcell" data-l="">=</td>
+                        <td className="r bl-act" data-l=""><button className="btn small primary" type="submit" form="bl-new">+ {L('Aggiungi', 'Ajouter')}</button></td>
+                      </tr>
+                    </tbody>
+                  )}
+                  <tfoot><tr className="bl-tot"><th colSpan={5}>{L('Saldo previsto (entrate − uscite)', 'Solde prévu (recettes − dépenses)')}</th>
+                    <td className={`r num ${totOf('in') - totOf('out') < 0 ? 'neg' : ''}`}><b>{m(totOf('in') - totOf('out'))}</b></td>{rowActions && <td />}</tr></tfoot>
+                </table>
+              </div>
+              {editing && <p className="bv-hint small">{L(
+                'Ogni riga è una voce del preventivo: codice, progetto, cosa, quantità × costo unitario. In ariary indica il tasso (MGA per 1 euro): il totale si converte in euro. Dopo «Aggiungi» la riga nuova ripropone codice e progetto dell\'ultima.',
+                'Chaque ligne est un poste du budget : code, projet, quoi, quantité × coût unitaire. En ariary indiquez le taux (MGA pour 1 euro) : le total est converti en euros. Après « Ajouter » la nouvelle ligne reprend le code et le projet de la précédente.')}</p>}
+            </>) : view === 'sum' ? (<>
+              <div className="sum-pairs">
+                <SumTable title={L('Per codice', 'Par code')} rows={byCodeSum} tot={totIn - totOut} lang={lang} L={L} m={e0} />
+                <SumTable title={L('Per progetto', 'Par projet')} rows={byPrjSum} tot={totIn - totOut} lang={lang} L={L} m={e0} cols />
+              </div>
             </>) : (<>
               {(over.length > 0 || near.length > 0) && (
-                <details className="alerts bv-al" open={over.length + near.length <= 4}>
-                  <summary className={`note ${over.length ? 'err' : ''}`}>{over.length ? (over.length === 1 ? L('1 codice oltre il preventivo', '1 code au-delà du budget') : L(`${over.length} codici oltre il preventivo`, `${over.length} codes au-delà du budget`)) : ''}{over.length && near.length ? ' · ' : ''}{near.length ? (near.length === 1 ? L('1 vicino al limite', '1 proche de la limite') : L(`${near.length} vicini al limite`, `${near.length} proches de la limite`)) : ''} <span className="muted">{L('· mostra il dettaglio', '· afficher le détail')}</span></summary>
-                  {over.map((x) => <div key={x.r.category_id} className="note err">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {L('speso', 'dépensé')} {m(x.a)} {L('su', 'sur')} {m(x.b)} {L('previsti', 'prévus')} ({x.b > 0 ? `+${m(x.a - x.b)}` : L('voce non prevista', 'poste non prévu')})</div>)}
-                  {near.map((x) => <div key={x.r.category_id} className="note">{x.r.category_code} {lang === 'fr' && x.r.cat_fr ? x.r.cat_fr : x.r.cat_it}: {Math.round(((x.a + x.c) / x.b) * 100)}% {L('del previsto, impegni compresi', 'du prévu, engagements compris')}</div>)}
-                </details>
+                <div className="cb-al">
+                  {over.length > 0 && <span className="chip bad">{over.length === 1 ? L('1 codice oltre il previsto', '1 code au-delà du prévu') : L(`${over.length} codici oltre il previsto`, `${over.length} codes au-delà du prévu`)}</span>}
+                  {near.length > 0 && <span className="chip warn">{near.length === 1 ? L('1 vicino al limite', '1 proche de la limite') : L(`${near.length} vicini al limite`, `${near.length} proches de la limite`)}</span>}
+                </div>
               )}
-              {cmpCats.length === 0 ? <Empty text={L('Nessuna voce.', 'Aucun poste.')} /> : (
-                <div className="tscroll bg-wrap">
-                  <table className="t keep bgrid cgrid">
-                    <thead><tr><th className="bg-sticky">{L('Codice', 'Code')}</th>{cols.map((c) => <th key={c.id} className="r">{c.name}</th>)}{cols.length > 1 && <th className="r bg-tot">{L('Totale', 'Total')}</th>}</tr></thead>
-                    {(['out', 'in'] as const).map((d) => cmpCats.some((c) => c.direction === d) && [
-                      <tbody key={`h${d}`}><tr className="bg-sec"><th scope="rowgroup" className="bg-sticky">{d === 'out' ? L('Uscite', 'Dépenses') : L('Entrate', 'Recettes')}</th>
-                        {cols.map((col) => <td key={col.id} />)}{cols.length > 1 && <td className="bg-tot" />}</tr></tbody>,
-                      ...cmpBody(d),
-                    ])}
+              {cmpByCat.size === 0 ? <Empty text={L('Nessuna voce.', 'Aucun poste.')} /> : (
+                <div className="tscroll">
+                  <table className="t keep cbudget">
+                    <thead><tr><th>{L('Codice', 'Code')}</th><th>{L('Voce', 'Poste')}</th><th className="r">{L('Previsto', 'Prévu')}</th><th className="r">{L('Speso / incassato', 'Dépensé / encaissé')}</th>
+                      <th className="r">{L('Residuo', 'Reste')}</th><th className="r">%</th><th className="cb-bc" /></tr></thead>
+                    <tbody><tr className="bl-sec"><th colSpan={2} scope="rowgroup">{L('Uscite', 'Dépenses')}</th><td className="r num"><b>{e0(outB)}</b></td><td className="r num"><b>{e0(outA)}</b></td>
+                      <td className={`r num ${outB - outA < 0 ? 'neg' : ''}`}><b>{e0(outB - outA)}</b></td><td className="r num"><b>{outB > 0 ? `${Math.round((outA / outB) * 100)}%` : ''}</b></td><td className="cb-bc"><Bar b={outB} a={outA} /></td></tr></tbody>
+                    {cmpSection('out')}
+                    <tbody><tr className="bl-sec"><th colSpan={2} scope="rowgroup">{L('Entrate', 'Recettes')}</th><td className="r num"><b>{e0(inB)}</b></td><td className="r num"><b>{e0(inA)}</b></td>
+                      <td className="r num"><b>{e0(inB - inA)}</b></td><td className="r num"><b>{inB > 0 ? `${Math.round((inA / inB) * 100)}%` : ''}</b></td><td className="cb-bc"><Bar b={inB} a={inA} /></td></tr></tbody>
+                    {cmpSection('in')}
                   </table>
                 </div>
               )}
-              <p className="bv-hint small">{L('Speso su previsto per codice e progetto. Tacca sulla barra = anno trascorso; rosso solo oltre il 100%. Clic sull\'importo: i movimenti.',
-                'Dépensé sur prévu par code et projet. Repère sur la barre = année écoulée ; rouge seulement au-delà de 100 %. Clic sur le montant : les mouvements.')}</p>
+              <p className="bv-hint small">{L('Una riga per codice, sommando i progetti scelti nel filtro. Barra: speso su previsto; tacca = parte dell\'anno trascorsa; rosso solo oltre il previsto. Clic sull\'importo speso: i movimenti.',
+                'Une ligne par code, en additionnant les projets du filtre. Barre : dépensé sur prévu ; repère = part de l\'année écoulée ; rouge seulement au-delà du prévu. Clic sur le montant : les mouvements.')}</p>
             </>)}
           </section>
 
-          {view === 'grid' && (showSchema ? (
+          {view === 'sum' && (showSchema ? (
             <Panel title={`${L('Schema del rendiconto per cassa (Mod. D)', 'Schéma du compte rendu de caisse (Mod. D)')} · ${vLabel(shown)}`}
-              right={<Link className="btn small ghost" href={href({ v: shown.id, vista: 'preventivo', progetto: prj })}>{L('Nascondi', 'Masquer')}</Link>}>
+              right={<Link className="btn small ghost" href={href({ v: shown.id, vista: 'riepilogo', progetto: prj })}>{L('Nascondi', 'Masquer')}</Link>}>
               <StatementTable budget={(stB ?? []) as StLine[]} actual={(stA ?? []) as StAct[]} lang={lang} />
             </Panel>
           ) : (
-            <Link className="bv-more" href={`${href({ v: shown.id, vista: 'preventivo', progetto: prj, schema: 1 })}#mod-d`}>
+            <Link className="bv-more" href={`${href({ v: shown.id, vista: 'riepilogo', progetto: prj, schema: 1 })}#mod-d`}>
               ▸ {L('Mostra lo schema del rendiconto (Mod. D) · per il commercialista', 'Afficher le schéma du compte rendu (Mod. D) · pour l\'expert-comptable')}</Link>
           ))}
           <span id="mod-d" />
-
-          {selC && selP !== undefined && (
-            <div className="sheet-bg dl-sheet-bg">
-              <Link className="dl-sheet-x" href={closeHref} scroll={false} aria-label={L('Chiudi', 'Fermer')} />
-              <aside className="sheet sheet-help dl-sheet bv-sheet" role="dialog" aria-modal="true" aria-label={`${selC.code} · ${selP ? prjBy.get(selP) : L('Generale', 'Général')}`}>
-                <div className="sheet-h"><h2>{selC.code} · {CL(selC)}</h2><div className="spacer" />
-                  <Link className="btn ghost" href={closeHref} scroll={false}>{L('Chiudi', 'Fermer')}</Link></div>
-                <div className="sheet-b">
-                  <p className="muted" style={{ margin: '0 0 10px' }}>{selP ? prjBy.get(selP) : L('Generale (struttura)', 'Général (structure)')} · {vLabel(shown)} · {L('totale', 'total')} <b className="num">{m(cellItems.reduce((s, i) => s + Number(i.amount_eur), 0))}</b></p>
-                  {cellItems.length === 0 ? <p className="muted">{L('Nessuna riga in questa cella.', 'Aucune ligne dans cette cellule.')}</p> : (
-                    <ul className="bv-items">
-                      {cellItems.map((i) => (
-                        <li key={i.id} className={i.id === sp.edit ? 'sel' : ''}>
-                          <div><b>{i.description || CL(selC)}</b>
-                            <small className="muted num">{num(Number(i.qty), lang)}{i.unit ? ` ${i.unit}` : ''} × {money(i.unit_cost, i.currency, lang)}{i.currency !== 'EUR' && i.fx_rate ? ` · ${L('tasso', 'taux')} ${num(Number(i.fx_rate), lang)}` : ''}{i.notes ? ` · ${i.notes}` : ''}</small></div>
-                          <span className="bv-amt"><b className="num">{money(i.amount, i.currency, lang)}</b>{i.currency !== 'EUR' && <small className="muted num">≈ {m(i.amount_eur)}</small>}</span>
-                          {(editing || amending) && <span className="row-btns">
-                            <Link className="btn small" href={cellHref({ edit: i.id })} scroll={false}>{L('Modifica', 'Modifier')}</Link>
-                            <Link className="btn small danger" href={cellHref({ elimina: i.id })} scroll={false}>{L('Elimina', 'Supprimer')}</Link></span>}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {delRow && (
-                    <form action={deleteItem} className="del-row stack" style={{ gap: 8 }}>
-                      <input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={delRow.id} /><input type="hidden" name="budget_id" value={shown.id} />
-                      <input type="hidden" name="ret" value={`${ret}&cella=${sp.cella}`} />
-                      <p style={{ margin: 0 }}><b>{L('Eliminare questa riga?', 'Supprimer cette ligne ?')}</b> {delRow.description || CL(selC)} · {money(delRow.amount, delRow.currency, lang)}</p>
-                      {needReason && <div className="field"><label htmlFor="del-reason">{L('Motivo', 'Motif')}</label>
-                        <input className="input" id="del-reason" name="reason" required minLength={5} maxLength={500} placeholder={L('Es. voce annullata con delibera del…', 'Ex. poste annulé par délibération du…')} /></div>}
-                      <label className="chk"><input type="checkbox" name="confirm" required /> {L('Confermo l\'eliminazione', 'Je confirme la suppression')}</label>
-                      <div className="row-actions"><button className="btn danger" type="submit">{L('Elimina la riga', 'Supprimer la ligne')}</button>
-                        <Link className="btn ghost" href={cellHref({})} scroll={false}>{L('Annulla', 'Annuler')}</Link></div>
-                    </form>
-                  )}
-                  {(editing || edit) && !delRow && (
-                    <form action={saveItem} className="fgrid" key={edit?.id ?? 'new'} id="riga">
-                      <input type="hidden" name="year" value={year} /><input type="hidden" name="budget_id" value={shown.id} />
-                      <input type="hidden" name="ret" value={`${ret}&cella=${sp.cella}`} />
-                      <input type="hidden" name="category_id" value={selC.id} /><input type="hidden" name="project_id" value={selP ?? ''} />
-                      {edit && <input type="hidden" name="id" value={edit.id} />}
-                      <h3 className="span2" style={{ margin: '6px 0 0' }}>{edit ? L('Modifica la riga', 'Modifier la ligne') : L('Nuova riga in questa cella', 'Nouvelle ligne dans cette cellule')}</h3>
-                      <div className="field span2"><label htmlFor="bi-desc">{L('Descrizione', 'Description')}</label>
-                        <input className="input" id="bi-desc" name="description" maxLength={300} defaultValue={edit?.description ?? ''} placeholder={L('Es. quaderni e penne', 'Ex. cahiers et stylos')} /></div>
-                      <div className="field"><label htmlFor="bi-qty">{L('Quantità', 'Quantité')}</label>
-                        <input className="input num" id="bi-qty" name="qty" inputMode="decimal" defaultValue={edit ? String(Number(edit.qty)).replace('.', ',') : '1'} /></div>
-                      <div className="field"><label htmlFor="bi-unit">{L('Unità (es. mesi, persone)', 'Unité (ex. mois, personnes)')}</label>
-                        <input className="input" id="bi-unit" name="unit" maxLength={30} defaultValue={edit?.unit ?? ''} /></div>
-                      <div className="field"><label htmlFor="bi-cost">{L('Costo unitario', 'Coût unitaire')}</label>
-                        <input className="input num" id="bi-cost" name="unit_cost" inputMode="decimal" required defaultValue={edit ? String(Number(edit.unit_cost)).replace('.', ',') : ''} /></div>
-                      <div className="field"><label htmlFor="bi-cur">{L('Valuta', 'Devise')}</label>
-                        <select className="input" id="bi-cur" name="currency" defaultValue={edit?.currency ?? 'EUR'}><option>EUR</option><option>MGA</option></select></div>
-                      <div className="field"><label htmlFor="bi-rate">{L('Tasso MGA per 1 EUR (solo ariary)', 'Taux MGA pour 1 EUR (ariary seulement)')}</label>
-                        <input className="input num" id="bi-rate" name="fx_rate" inputMode="decimal" defaultValue={edit?.fx_rate ? String(Number(edit.fx_rate)).replace('.', ',') : rate ? String(rate) : ''} /></div>
-                      <div className="field"><label htmlFor="bi-notes">{L('Note', 'Notes')}</label>
-                        <input className="input" id="bi-notes" name="notes" maxLength={500} defaultValue={edit?.notes ?? ''} /></div>
-                      {edit && needReason && <div className="field span2"><label htmlFor="bi-reason">{L('Motivo della modifica (resta nello storico)', 'Motif de la modification (reste dans l\'historique)')}</label>
-                        <input className="input" id="bi-reason" name="reason" required minLength={5} maxLength={500} placeholder={L('Es. importo corretto dopo il nuovo preventivo del fornitore', 'Ex. montant corrigé après le nouveau devis du fournisseur')} /></div>}
-                      <div className="span2 row-actions">
-                        <button className="btn primary" type="submit">{edit ? L('Salva la riga', 'Enregistrer la ligne') : L('Aggiungi la riga', 'Ajouter la ligne')}</button>
-                        {edit && <Link className="btn ghost" href={cellHref({})} scroll={false}>{L('Annulla', 'Annuler')}</Link>}
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </aside>
-            </div>
-          )}
         </>
       )}
     </div>
+  );
+}
+
+type SumRow = { k: string; label: string; v: number; inc?: number; lvl: 0 | 1 | 2; share: number; dir: 'in' | 'out' };
+// Riepilogo: una tabella con importo, quota sul totale e barra; per progetto anche le entrate previste.
+function SumTable({ title, rows, tot, lang, L, m, cols }: { title: string; rows: SumRow[]; tot: number; lang: 'it' | 'fr'; L: (it: string, fr: string) => string;
+  m: (v: number) => string; cols?: boolean }) {
+  return (
+    <section className="panel sum-t">
+      <div className="panel-h"><h2>{title}</h2></div>
+      {rows.length === 0 ? <Empty text={L('Nessuna voce.', 'Aucun poste.')} /> : (
+        <div className="tscroll">
+          <table className="t keep">
+            <thead><tr><th>{cols ? L('Progetto', 'Projet') : L('Voce', 'Poste')}</th>{cols && <th className="r">{L('Entrate', 'Recettes')}</th>}
+              <th className="r">{cols ? L('Uscite', 'Dépenses') : L('Importo', 'Montant')}</th><th className="r">{cols ? L('% uscite', '% dépenses') : '%'}</th><th className="sum-bc" /></tr></thead>
+            <tbody>{rows.map((r) => (
+              <tr key={r.k} className={`lv${r.lvl}`}>
+                <td>{r.label}</td>{cols && <td className="r num">{m(r.inc ?? 0)}</td>}
+                <td className="r num">{m(r.v)}</td>
+                <td className="r num">{r.lvl ? `${Math.round(r.share * 100)}%` : ''}</td>
+                <td className="sum-bc">{r.lvl > 0 && <span className={`sum-bar ${r.dir}`}><i style={{ width: `${Math.min(r.share, 1) * 100}%` }} /></span>}</td>
+              </tr>))}</tbody>
+            {!cols && <tfoot><tr className="lv0"><td>{L('Saldo previsto (entrate − uscite)', 'Solde prévu (recettes − dépenses)')}</td><td className={`r num ${tot < 0 ? 'neg' : ''}`}>{m(tot)}</td><td /><td /></tr></tfoot>}
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

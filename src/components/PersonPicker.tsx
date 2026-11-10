@@ -4,8 +4,8 @@ import { useState } from 'react';
 // Scelta della persona che riceve o restituisce un anticipo: chi ha già un conto anticipi, un utente dell'app,
 // oppure «Altra persona…» con il nome scritto (anche se non è utente). Valori: acc:<conto> · usr:<profilo> · new.
 // Per utente o persona nuova chiede anche la valuta, se serve (il conto anticipi si crea da solo, uno per valuta).
-export function PersonPicker({ id, label, accounts, users, lang, currency = true, def }: {
-  id: string; label: string; lang: 'it' | 'fr'; currency?: boolean; def?: string;
+export function PersonPicker({ id, label, accounts, users, lang, currency = true, def, defCur }: {
+  id: string; label: string; lang: 'it' | 'fr'; currency?: boolean; def?: string; defCur?: string;
   accounts: { id: string; label: string }[]; users: { id: string; name: string }[];
 }) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
@@ -25,9 +25,9 @@ export function PersonPicker({ id, label, accounts, users, lang, currency = true
           <input className="input" id={`${id}-n`} name="holder" required minLength={2} maxLength={120} autoComplete="off"
                  placeholder={L('Anche se non è utente dell’app', 'Même si ce n’est pas un utilisateur')} /></div>
       )}
-      {currency && !v.startsWith('acc:') && (
+      {currency && (
         <div className="field"><label htmlFor={`${id}-c`}>{L('Valuta', 'Devise')}</label>
-          <select className="input" id={`${id}-c`} name="currency" defaultValue="MGA"><option>MGA</option><option>EUR</option></select></div>
+          <select className="input" id={`${id}-c`} name="currency" defaultValue={defCur ?? 'MGA'}><option>MGA</option><option>EUR</option></select></div>
       )}
     </>
   );

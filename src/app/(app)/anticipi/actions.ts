@@ -8,7 +8,7 @@ import { parseAmount } from '@/lib/amount';
 // Valore del campo «persona» (PersonPicker): acc:<conto anticipi> · usr:<utente> · new (nome scritto).
 function readPerson(form: FormData) {
   const v = String(form.get('person') ?? form.get('account') ?? '');
-  if (v.startsWith('acc:')) return { account_id: v.slice(4) };
+  if (v.startsWith('acc:')) return { account_id: v.slice(4), ...(form.get('currency') ? { currency: String(form.get('currency')) } : {}) };
   if (v.startsWith('usr:')) return { beneficiary_id: v.slice(4), currency: String(form.get('currency') ?? 'MGA') };
   if (v && v !== 'new') return { account_id: v };
   return { holder: String(form.get('holder') ?? '').trim(), currency: String(form.get('currency') ?? 'MGA') };
@@ -103,8 +103,15 @@ export async function closeSettled(form: FormData) {
 export async function requestAdvance(form: FormData) {
   const supabase = await createClient();
   const amount = parseAmount(String(form.get('amount') ?? ''));
+  // persona già con un conto anticipi ma richiesta nell'altra valuta: si usa (o si crea) il suo conto in quella valuta
+  let who = readPerson(form) as unknown as Record<string, string>;
+  if (who.account_id && who.currency) {
+    const { data: a } = await supabase.from('accounts').select('holder, name_it, currency').eq('id', who.account_id).maybeSingle();
+    if (a && a.currency !== who.currency) who = { holder: a.holder || a.name_it, currency: who.currency };
+    else who = { account_id: who.account_id };
+  }
   const { data: rq, error } = await supabase.rpc('advance_request', { p: {
-    ...readPerson(form), amount, purpose: String(form.get('purpose') ?? '').trim(),
+    ...who, amount, purpose: String(form.get('purpose') ?? '').trim(),
     role_kind: String(form.get('role_kind') ?? 'volunteer'),
     project_id: String(form.get('project') ?? ''), category_id: String(form.get('category') ?? ''),
     use_date: String(form.get('use_date') ?? ''), report_by: String(form.get('report_by') ?? ''),
@@ -117,7 +124,7 @@ export async function requestAdvance(form: FormData) {
     if (ea) { revalidatePath('/', 'layout'); back(`ok=req&err=${encodeURIComponent(ea.message)}`); }
   }
   revalidatePath('/', 'layout');
-  back('ok=req');
+  back((rq as { status?: string } | null)?.status === 'authorized' ? 'ok=req_auth' : 'ok=req');
 }
 
 // 2 Autorizza o respingi · 4 rendiconto fatto · 5 chiusura · annulla
@@ -212,4 +219,13 @@ export async function signDelivery(id: string, receiverPng: string, giverPng: st
   if (error) return { ok: false, error: error.message };
   revalidatePath('/anticipi', 'layout');
   return { ok: true };
+}
+
+// Il super amministratore elimina una richiesta (resta traccia nel registro modifiche).
+export async function deleteRequest(form: FormData) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('advance_delete', { p_id: String(form.get('id') ?? '') });
+  revalidatePath('/', 'layout');
+  if (error) fail(error);
+  back((data as { had_delivery?: boolean } | null)?.had_delivery ? 'ok=deleted_moved' : 'ok=deleted', String(form.get('ret_persona') ?? ''));
 }
