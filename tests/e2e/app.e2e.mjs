@@ -553,7 +553,7 @@ try {
     await p.goto(`${base}/analisi`);
     const [{ out }] = (await pool.query(`select coalesce(sum(amount_eur), 0)::float out from v_ledger where kind = 'expense' and year = $1`, [year])).rows;
     const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
-    const figs = await p.locator('.figs').innerText();
+    const figs = await p.locator('.kpi4').innerText();
     assert.ok(figs.replace(/\s/g, '').includes(fmtEur.format(out).replace(/\s/g, '')), `uscite ${fmtEur.format(out)} in ${figs}`);
     await p.goto(`${base}/analisi?vista=uscite`);
     await p.getByText('Uscite per gruppo di spesa e preventivo').waitFor();

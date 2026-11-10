@@ -4,7 +4,7 @@ import { STAFF, can, requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { BudgetBar, HBars, Lines, MonthBars } from '@/components/Charts';
-import { colorFor } from '@/lib/palette';
+import { CIcon } from '@/components/CIcon';
 import { MESI } from '@/lib/viz';
 
 export const dynamic = 'force-dynamic';
@@ -138,26 +138,28 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           </select>} />
       </div>
       <ErrorNote prefix={t('error_load')} error={error} />
-      <section className="panel">
-        <div className="figs">
-          <div><span>{t('legend_in')}</span><b className="num amt-in">{money(totIn, 'EUR', lang)}</b><small>{lg('anno prima, stessi mesi', 'année précédente, mêmes mois')} {delta(same(months, 'inc'), same(pm, 'inc'))}</small></div>
-          <div><span>{t('legend_out')}</span><b className="num amt-out">{money(totOut, 'EUR', lang)}</b><small>{lg('anno prima, stessi mesi', 'année précédente, mêmes mois')} {delta(same(months, 'out'), same(pm, 'out'))}</small></div>
-          <div><span>{t('rep_result')}</span><b className={`num ${totIn - totOut < 0 ? 'neg' : ''}`}>{money(totIn - totOut, 'EUR', lang)}</b></div>
-          <div className={totBudget && totOut > totBudget ? 'bad' : ''}><span>{t('an_budget_used')}</span>
-            <b className="num">{totBudget ? pct(totOut, totBudget) : t('an_no_budget')}</b><small>{totBudget ? `${lg('su', 'sur')} ${money(totBudget, 'EUR', lang)} · ${lg('anno trascorso', 'année écoulée')} ${Math.round(elapsed * 100)} %` : ''}</small></div>
-        </div>
-      </section>
+      <div className="kpi4">
+        <div className="k4 k-in"><span className="k4-t"><CIcon name="trend" size={15} />{t('legend_in')}</span><b className="num">{money(totIn, 'EUR', lang)}</b>
+          <small>{lg('anno prima, stessi mesi', 'année précédente, mêmes mois')} {delta(same(months, 'inc'), same(pm, 'inc'))}</small></div>
+        <div className="k4 k-out"><span className="k4-t"><CIcon name="chart" size={15} />{t('legend_out')}</span><b className="num">{money(totOut, 'EUR', lang)}</b>
+          <small>{lg('anno prima, stessi mesi', 'année précédente, mêmes mois')} {delta(same(months, 'out'), same(pm, 'out'))}</small></div>
+        <div className="k4 k-net"><span className="k4-t"><CIcon name="calc" size={15} />{t('rep_result')}</span><b className={`num ${totIn - totOut < 0 ? 'neg' : 'pos'}`}>{money(totIn - totOut, 'EUR', lang)}</b>
+          <small>{lg('entrate meno uscite', 'recettes moins dépenses')}</small></div>
+        <div className="k4 k-liq"><span className="k4-t"><CIcon name="wallet" size={15} />{t('an_budget_used')}</span><b className="num">{totBudget ? pct(totOut, totBudget) : t('an_no_budget')}</b>
+          <small>{totBudget ? `${lg('su', 'sur')} ${money(totBudget, 'EUR', lang).replace(/,\d\d(?=\s?€)/, '')}` : '\u00a0'}</small>
+          {totBudget ? <span className={`cdp ${totOut > totBudget ? 'late' : totOut / totBudget > elapsed + 0.1 ? 'mid' : 'ok'}`}>{lg('anno trascorso', 'année écoulée')} {Math.round(elapsed * 100)} %</span> : null}</div>
+      </div>
 
       {view === 'panoramica' && <>
         {trend}
         <div className="grid2">
           <Panel title={t('dash_by_project')} pad>
             {byPrj.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-              : <HBars lang={lang} rows={byPrj.slice(0, 8).map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: q({ progetto: k }), color: colorFor(prjName.get(k) ?? k) }))} />}
+              : <HBars lang={lang} rows={byPrj.slice(0, 8).map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: q({ progetto: k }) }))} />}
           </Panel>
           <Panel title={t('an_in_by_group')} pad>
             {inGroups.size === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-              : <HBars lang={lang} many rows={[...inGroups].sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: gName.get(k) ?? t('an_unclassified'), value: v }))} />}
+              : <HBars lang={lang} color="var(--c-in)" rows={[...inGroups].sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: gName.get(k) ?? t('an_unclassified'), value: v }))} />}
           </Panel>
         </div>
       </>}
@@ -165,11 +167,11 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       {view === 'entrate' && <div className="grid2">
         <Panel title={t('an_in_by_group')} pad>
           {inGroups.size === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-            : <HBars lang={lang} many rows={[...inGroups].sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: gName.get(k) ?? t('an_unclassified'), value: v }))} />}
+            : <HBars lang={lang} color="var(--c-in)" rows={[...inGroups].sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: gName.get(k) ?? t('an_unclassified'), value: v }))} />}
         </Panel>
         <Panel title={lg('Principali donatori e finanziatori', 'Principaux donateurs et bailleurs')} pad>
           {byDonor.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-            : <HBars lang={lang} many rows={byDonor.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'income' }) }))} />}
+            : <HBars lang={lang} color="var(--c-in)" rows={byDonor.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'income' }) }))} />}
         </Panel>
         <Panel title={lg('Entrate per mese', 'Recettes par mois')} className="span2" pad>
           <MonthBars data={months.map((m) => ({ inc: m.inc, out: 0 }))} lang={lang} labels={{ in: lg('Entrate', 'Recettes'), out: '' }} />
@@ -181,7 +183,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <div className="grid2">
           <Panel title={t('an_top_cp')} pad>
             {byCp.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('an_no_cp')}</p>
-              : <HBars lang={lang} many rows={byCp.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'expense' }) }))} />}
+              : <HBars lang={lang} rows={byCp.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'expense' }) }))} />}
           </Panel>
           <Panel title={t('an_by_country')} pad>
             <HBars lang={lang} rows={(['IT', 'MG'] as const).map((k) => ({ label: t(k === 'IT' ? 'italy' : 'madagascar'), value: byLoc.get(k) ?? 0, color: k === 'IT' ? 'var(--pp4)' : 'var(--pp2)' }))} />
@@ -192,7 +194,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       {view === 'progetti' && (
         <Panel title={t('dash_by_project')} pad>
           {byPrj.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-            : <HBars lang={lang} rows={byPrj.map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: `/progetti/${k}?anno=${year}`, color: colorFor(prjName.get(k) ?? k) }))} />}
+            : <HBars lang={lang} rows={byPrj.map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: `/progetti/${k}?anno=${year}` }))} />}
           <p className="muted small" style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{lg('Schede dei progetti con preventivo e residuo', 'Fiches des projets avec budget et reste')} →</Link></p>
         </Panel>
       )}

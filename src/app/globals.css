@@ -1361,3 +1361,7 @@ ul.dl.dl2 .dl-act { justify-content: flex-start; }
   .gt-b { padding: 0 14px 16px 14px; }
 }
 @media print { .g-task { break-inside: avoid; } .gt-b { padding-left: 20px; } }
+@media (max-width: 760px) {
+  .an-top > .segs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .an-top > .segs > a { flex: 0 0 auto; white-space: nowrap; }
+}

@@ -5,7 +5,6 @@ import { donut, eur0, MESI, monthChart, svgBars, svgLines, svgMirror, VZ, type R
 // sul telefono quella stretta e alta (si sceglie con il CSS, nessun JavaScript).
 // Colori con lo stesso significato di Cairn: blu notte = reale, blu = previsto, lilla = ipotesi,
 // giallo = spese, verde acqua = netto, salmone = oltre il limite.
-import { nth } from '@/lib/palette';
 export const C_IN = 'var(--c-in)';   // entrate: verde della palette
 export const C_OUT = 'var(--c-out)'; // uscite: rosso tenue della palette
 export const C_PLAN = 'var(--vz-plan)';
@@ -97,16 +96,17 @@ export function MonthBars({ data, lang, labels, hrefFor }: {
 
 // Elenco a barre orizzontali (come «Dove vanno le spese» / righe .cbar di Cairn), con percentuale sul totale.
 // many: ogni riga con un colore diverso della palette (categorie, controparti); altrimenti un solo colore
-export function HBars({ rows, lang, color = C_OUT, total, many = false }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number; many?: boolean }) {
+// un solo colore per elenco (blu ardesia, verde delle entrate o rosso tenue delle uscite): il confronto è sulla lunghezza, non sul colore
+export function HBars({ rows, lang, color = 'var(--c-net)', total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number; many?: boolean }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   const tot = total ?? rows.reduce((s, r) => s + r.value, 0);
   // nome e importo su una riga (il nome va a capo, mai troncato), barra sotto
   return (
     <ul className="hcat pbars">
-      {rows.map((r, i) => (
+      {rows.map((r) => (
         <li key={r.label}>{r.href ? <a className="hc-n" href={r.href}>{r.label}</a> : <span className="hc-n">{r.label}</span>}
           <b className="num">{eur0(r.value, lang)}{tot > 0 && <small>{Math.round((r.value / tot) * 100)}{'\u00a0'}%</small>}</b>
-          <span className="hc-b"><i style={{ width: `${((r.value / max) * 100).toFixed(1)}%`, background: r.color ?? (many ? nth(i) : color) }} /></span></li>
+          <span className="hc-b"><i style={{ width: `${((r.value / max) * 100).toFixed(1)}%`, background: r.color ?? color }} /></span></li>
       ))}
     </ul>
   );
