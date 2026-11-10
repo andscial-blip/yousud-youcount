@@ -25,13 +25,14 @@ export default async function NewMovement({ searchParams }: { searchParams: SP }
     amount: Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : undefined,
     account_id: refData.accounts.some((a) => a.id === account) ? account : undefined,
     description: one(sp.desc).slice(0, 300) || undefined,
+    own: one(sp.tasca) === '1' ? true : undefined,
   };
-  const has = Object.values(prefill).some((v) => v !== undefined);
+  const has = Object.entries(prefill).some(([k, v]) => k !== 'own' && v !== undefined);
   return (
     <div className="stack">
       <PageHead title={t('f_new_title')} />
       {has && <div className="note info">{t('f_prefill_stmt')}</div>}
-      <MovementForm refData={refData} t={dictFor(lang)} prefill={has ? prefill : undefined} />
+      <MovementForm refData={refData} t={dictFor(lang)} prefill={has || prefill.own ? prefill : undefined} />
     </div>
   );
 }

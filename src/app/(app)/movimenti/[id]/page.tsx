@@ -139,11 +139,11 @@ export default async function MovementDetail({ params, searchParams }: {
             </div>
           </section>
           {m.demo && resp && m.status !== 'draft' && !rev && (
-            <form action={deleteDemoAction} className="note" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+            <form action={deleteDemoAction} className="note mv-demo">
               <input type="hidden" name="id" value={m.id} />
               <span>{lang === 'fr' ? 'Mouvement de démonstration (DEMO) : il peut être supprimé.' : 'Movimento dimostrativo (DEMO): si può eliminare.'}</span>
               <label className="check"><input type="checkbox" name="confirm" required /> {lang === 'fr' ? `Je confirme la suppression de ${m.ref ?? 'ce mouvement'}` : `Confermo l'eliminazione di ${m.ref ?? 'questo movimento'}`}</label>
-              <button className="btn danger small" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
+              <button className="btn" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
             </form>
           )}
           {canReopen && (
@@ -254,7 +254,7 @@ export default async function MovementDetail({ params, searchParams }: {
 
           {writer && !m.reverses_id && m.kind !== 'transfer' && (
             <Panel title={t('gen_docs')} pad>
-              <div className="row-actions">
+              <div className="gen-docs">
                 {(m.kind === 'income' ? ['RIC', 'NDD'] : ['QUI', 'NOT', 'NRS']).map((k) => (
                   <Link key={k} className="btn small" href={`/documenti-emessi/nuovo?tipo=${k}&mov=${m.id}`}>{t(`gen_${k}` as Key)}</Link>
                 ))}
@@ -278,22 +278,20 @@ export default async function MovementDetail({ params, searchParams }: {
           )}
 
           <Panel title={t('d_history')}>
-            <table className="t">
-              <tbody>
-                {((hist ?? []) as H[]).map((h, i) => {
-                  const changed = h.action === 'update' && h.old_row && h.new_row
-                    ? Object.keys(h.new_row).filter((k) => !SKIP.has(k) && JSON.stringify(h.new_row![k]) !== JSON.stringify(h.old_row![k]))
-                    : [];
-                  return (
-                    <tr key={i}>
-                      <td className="num nw">{dateTime(h.at, lang)}</td>
-                      <td>{h.actor ? name.get(h.actor) ?? '–' : '–'}</td>
-                      <td>{t(`a_${h.action}` as Key)}{changed.length > 0 && <span className="muted"> · {[...new Set(changed.map((k) => (FIELD[k] ? t(FIELD[k]) : k)))].join(', ')}</span>}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <ul className="hist">
+              {((hist ?? []) as H[]).map((h, i) => {
+                const changed = h.action === 'update' && h.old_row && h.new_row
+                  ? Object.keys(h.new_row).filter((k) => !SKIP.has(k) && JSON.stringify(h.new_row![k]) !== JSON.stringify(h.old_row![k]))
+                  : [];
+                return (
+                  <li key={i}>
+                    <span className="h-who">{h.actor ? name.get(h.actor) ?? '–' : '–'}</span>
+                    <span className="h-at">{dateTime(h.at, lang)}</span>
+                    <span className="h-what">{t(`a_${h.action}` as Key)}{changed.length > 0 && <span className="muted"> · {[...new Set(changed.map((k) => (FIELD[k] ? t(FIELD[k]) : k)))].join(', ')}</span>}</span>
+                  </li>
+                );
+              })}
+            </ul>
           </Panel>
         </aside>
       </div>

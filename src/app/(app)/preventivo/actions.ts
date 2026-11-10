@@ -20,7 +20,7 @@ export async function draftBudget(form: FormData) {
   if (error) err(year, error);
   // si apre subito la bozza appena creata (prima si tornava sulla versione in vigore, non modificabile)
   const id = (data as { id?: string } | null)?.id;
-  done(year, `ok=1&vista=voci${id ? `&v=${encodeURIComponent(id)}` : ''}`);
+  done(year, `ok=1&vista=voci${id ? `&v=${encodeURIComponent(id)}` : ''}#nuova-riga`);
 }
 
 export async function saveItem(form: FormData) {

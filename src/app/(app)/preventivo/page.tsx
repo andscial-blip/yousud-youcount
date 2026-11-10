@@ -151,16 +151,17 @@ export default async function BudgetPage({ searchParams }: {
           <Link className="btn small ghost" href={href({ v: shown?.id, vista: 'voci', progetto: prj })}>{L('Annulla', 'Annuler')}</Link></td>
       </tr>);
     return (
-      <tr key={i.id} className={delRow?.id === i.id ? 'sel' : ''}>
+      <tr key={i.id} className={`bl-row${delRow?.id === i.id ? ' sel' : ''}`}>
         <td data-l={L('Codice', 'Code')}><b>{c?.code}</b> <span className="muted bl-cn">{c ? CL(c) : ''}</span></td>
         <td data-l={L('Progetto', 'Projet')}>{i.project_id ? prjBy.get(i.project_id) : <span className="muted">{L('Generale', 'Général')}</span>}</td>
         <td data-l={L('Descrizione', 'Description')}>{i.description || <span className="muted">–</span>}{i.notes && <small className="muted bl-note">{i.notes}</small>}</td>
         <td className="r num nw" data-l={L('Quantità', 'Quantité')}>{num(Number(i.qty), lang)}{i.unit ? ` ${i.unit}` : ''}</td>
         <td className="r num nw" data-l={L('Costo unitario', 'Coût unitaire')}>{money(i.unit_cost, i.currency, lang)}{i.currency === 'MGA' && i.fx_rate ? <small className="muted bl-note">{L('tasso', 'taux')} {num(Number(i.fx_rate), lang)}</small> : null}</td>
         <td className="r num nw" data-l={L('Totale', 'Total')}><b>{m(i.amount_eur)}</b>{i.currency !== 'EUR' && <small className="muted bl-orig">{money(i.amount, i.currency, lang)}</small>}</td>
+        <td className="bl-meta" data-l="">{i.project_id ? prjBy.get(i.project_id) : L('Generale', 'Général')} · {num(Number(i.qty), lang)}{i.unit ? ` ${i.unit}` : ''} × {money(i.unit_cost, i.currency, lang)}</td>
         {rowActions && <td className="r bl-act nw" data-l="">
           <Link className="btn small" href={`${href({ v: shown?.id, vista: 'voci', progetto: prj, edit: i.id })}#r-${i.id}`} id={`r-${i.id}`}>{L('Modifica', 'Modifier')}</Link>
-          <Link className="btn small ghost" href={`${href({ v: shown?.id, vista: 'voci', progetto: prj, elimina: i.id })}#r-${i.id}`}>{L('Elimina', 'Supprimer')}</Link></td>}
+          <Link className="btn small bl-delb" href={`${href({ v: shown?.id, vista: 'voci', progetto: prj, elimina: i.id })}#r-${i.id}`}>{L('Elimina', 'Supprimer')}</Link></td>}
       </tr>);
   });
 
@@ -227,8 +228,8 @@ export default async function BudgetPage({ searchParams }: {
       {vs.length === 0 || !shown ? (
         <Panel pad title={L('Nessun preventivo per quest\'anno', 'Aucun budget pour cette année')}>
           <p className="muted" style={{ marginTop: 0 }}>{L(
-            'Il preventivo è una griglia: codici di spesa e di entrata sulle righe, progetti sulle colonne. Si scrive l\'importo nella cella; per quantità × costo o importi in ariary si apre il dettaglio. Si approva con gli estremi della delibera; dopo l\'approvazione si cambia con una revisione, e le versioni precedenti restano consultabili.',
-            'Le budget est une grille : codes de dépenses et de recettes en lignes, projets en colonnes. On écrit le montant dans la cellule ; pour quantité × coût ou montants en ariary on ouvre le détail. Il s\'approuve avec la référence de la délibération ; ensuite il change par une révision, et les versions précédentes restent consultables.')}</p>
+            'Il preventivo si scrive riga per riga: per ogni voce il codice (di uscita o di entrata), il progetto, cosa, quantità, costo unitario e valuta. Contiene sia le entrate sia le uscite, come il rendiconto per cassa. Si approva con gli estremi della delibera; dopo l\'approvazione si cambia con una revisione, e le versioni precedenti restano consultabili.',
+            'Le budget s\'écrit ligne par ligne : pour chaque poste le code (de dépense ou de recette), le projet, l\'objet, la quantité, le coût unitaire et la devise. Il contient les recettes et les dépenses, comme le compte rendu de caisse. Il s\'approuve avec la référence de la délibération ; ensuite il change par une révision, et les versions précédentes restent consultables.')}</p>
           {resp && (
             <div className="row-actions">
               <form action={draftBudget}><input type="hidden" name="year" value={year} />
@@ -342,6 +343,10 @@ export default async function BudgetPage({ searchParams }: {
               {!editing && !amending && <p className="bv-hint">{shown.status === 'draft'
                 ? L('Bozza in preparazione: la modificano gli amministratori e i responsabili.', 'Brouillon en préparation : il est modifié par les administrateurs et les responsables.')
                 : L('Questa versione non si modifica: per cambiare il preventivo si prepara una revisione.', 'Cette version ne se modifie pas : pour changer le budget, on prépare une révision.')}</p>}
+              {resp && !editing && (draft && shown.id !== draft.id
+                ? <div className="bl-addbar"><Link className="btn primary" href={href({ v: draft.id, vista: 'voci' }) + '#nuova-riga'}>+ {L('Aggiungi una riga (nella bozza di revisione)', 'Ajouter une ligne (dans le brouillon de révision)')}</Link></div>
+                : !draft && approved ? <form action={draftBudget} className="bl-addbar"><input type="hidden" name="year" value={year} />
+                  <button className="btn primary" type="submit">+ {L('Aggiungi una riga (apre una revisione)', 'Ajouter une ligne (ouvre une révision)')}</button></form> : null)}
               {amending && <p className="bv-hint">{shown.demo
                 ? L('Versione DEMO in vigore: puoi correggere o eliminare le righe una per una.', 'Version DEMO en vigueur : vous pouvez corriger ou supprimer les lignes une par une.')
                 : L('Versione approvata: puoi correggere o eliminare una riga indicando il motivo (resta nello storico). Per aggiungere righe si prepara una revisione.', 'Version approuvée : vous pouvez corriger ou supprimer une ligne en indiquant le motif (reste dans l\'historique). Pour ajouter des lignes, on prépare une révision.')}</p>}
@@ -380,7 +385,7 @@ export default async function BudgetPage({ searchParams }: {
                   ))}
                   {editing && (
                     <tbody>
-                      <tr className="bl-sec bl-newh"><th colSpan={rowActions ? 7 : 6} scope="rowgroup">{L('Nuova riga', 'Nouvelle ligne')}</th></tr>
+                      <tr className="bl-sec bl-newh" id="nuova-riga"><th colSpan={rowActions ? 7 : 6} scope="rowgroup">{L('Nuova riga', 'Nouvelle ligne')}</th></tr>
                       <tr className="bl-new">
                         {fields('bl-new')}
                         <td className="r muted bl-tcell" data-l="">=</td>

@@ -167,7 +167,7 @@ table.t td { vertical-align: middle; }
 table.t td.r, table.t th.r, td.r, th.r { text-align: right; }
 table.t td.c, table.t th.c { text-align: center; }
 table.t td:not(.nw):not(.num) { overflow-wrap: break-word; }
-@media (max-width: 1000px) { table.t td:not(.nw):not(.num) { overflow-wrap: anywhere; } }
+@media (max-width: 1000px) { table.t td:not(.nw):not(.num) { overflow-wrap: break-word; word-break: normal; } }
 table.t td.num { white-space: nowrap; }
 table.t tbody tr:hover td { background: var(--surface-2); }
 tr.tot td { font-weight: 600; background: var(--surface-2); border-top: 1px solid var(--line); }
@@ -189,7 +189,7 @@ a.rowlink:hover { color: var(--slate-2); text-decoration: underline; }
   table[data-cards] tr { padding: 10px 14px; border-bottom: 1px solid var(--line-2); }
   table[data-cards] tr:last-child { border-bottom: 0; }
   table[data-cards] td { display: flow-root; width: auto !important; padding: 3px 0 3px 118px !important; border: 0 !important;
-    text-align: left !important; overflow-wrap: anywhere; white-space: normal !important; background: transparent !important; }
+    text-align: left !important; overflow-wrap: break-word; white-space: normal !important; background: transparent !important; }
   table[data-cards] td::before { content: attr(data-label); float: left; width: 108px; margin-left: -118px; color: var(--muted);
     font-family: var(--f-ui); font-size: 12.5px; font-weight: 600; line-height: 1.35; padding-top: 1px; white-space: normal; }
   table[data-cards] td[data-label=""] { padding-left: 0 !important; }
@@ -581,7 +581,7 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 .saved-f .sf a { color: var(--fg); text-decoration: none; }
 .saved-f .sf a[aria-current="true"] { font-weight: 600; }
 .saved-f .sf button { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px 10px; font-size: 15px; line-height: 1; }
-.mv-sum { margin: 14px 18px; }
+.mv-sum { margin: 0; }
 .filters .more { position: relative; }
 .filters .more > summary { list-style: none; }
 .filters .more > summary::-webkit-details-marker { display: none; }
@@ -983,7 +983,7 @@ table.bal-fixed th.r, table.bal-fixed td.r { white-space: nowrap; }
   /* azioni delle versioni del preventivo: una per riga, tutte larghe uguali */
   .row-actions { flex-direction: column; align-items: stretch; }
   .row-actions > form, .row-actions > details { width: 100%; }
-  .row-actions > form > .btn, .row-actions > details > summary.btn { width: 100%; justify-content: center; }
+  .row-actions > form > .btn, .row-actions > details > summary.btn, .row-actions > .btn { width: 100%; justify-content: center; }
   .row-actions .inline-form .input { min-width: 0; flex: 1 1 100%; }
   .row-actions .inline-form .btn { width: 100%; justify-content: center; }
   /* fascia Entrate/Uscite a tutta larghezza */
@@ -1379,7 +1379,6 @@ ul.dl.dl2 .dl-act { justify-content: flex-start; }
 .chip.st.imp-n { background: color-mix(in srgb, var(--imp-n) 30%, var(--surface)); } .chip.st.imp-p { background: color-mix(in srgb, var(--imp-p) 28%, var(--surface)); }
 .chip.st.imp-f { background: color-mix(in srgb, var(--imp-f) 28%, var(--surface)); }
 a.cal-i { text-decoration: none; display: block; }
-.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .dl-t a { color: var(--fg); text-decoration: none; } .dl-t a:hover { text-decoration: underline; }
 
 /* ── Conta di cassa: righe simmetriche (taglio | pezzi | totale) e risultato a barre ── */
@@ -1672,3 +1671,59 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
   .cb-bc { width: 80px; }
 }
 .aw-del { display: inline-block; margin-left: 6px; vertical-align: middle; }
+/* ── Rimborsi: per persona, un solo tasto ── */
+.rb-k { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rb-list { list-style: none; margin: 0; padding: 0; }
+.rb-list > li { display: grid; grid-template-columns: 22px 78px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line-2); font-size: 14px; }
+.rb-list > li:first-child { border-top: 0; }
+.rb-list > li.nodoc { opacity: .75; }
+.rb-list input[type=checkbox] { width: 18px; height: 18px; align-self: center; }
+.rb-d { color: var(--muted); font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rb-t { display: flex; flex-direction: column; min-width: 0; } .rb-t > a { color: var(--navy); font-weight: 600; text-decoration: none; }
+.rb-pay { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--line-2); }
+.rb-f { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 10px 12px; align-items: end; } .rb-f .field { margin: 0; }
+.rb-more { justify-self: start; }
+.rb-go { width: 100%; justify-content: center; min-height: 46px; font-size: 15px; } .rb-go small { font-weight: 400; opacity: .85; margin-left: 4px; }
+@media (max-width: 760px) { .rb-f { grid-template-columns: minmax(0, 1fr); } .rb-list > li { grid-template-columns: 22px 66px minmax(0, 1fr) auto; } }
+/* Movimento › Storico delle modifiche: una riga per modifica (data e persona sopra, cosa è cambiato sotto), niente parole spezzate */
+.hist { list-style: none; margin: 0; padding: 0; }
+.hist > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 18px; border-top: 1px solid var(--line-2); font-size: 14px; }
+.hist > li:first-child { border-top: 0; }
+.hist .h-who { font-weight: 600; color: var(--navy); } .hist .h-at { color: var(--muted); font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hist .h-what { grid-column: 1 / -1; color: var(--fg); }
+/* Genera un documento: pulsanti tutti larghi uguali */
+.gen-docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.gen-docs > .btn { justify-content: center; width: 100%; }
+@media (max-width: 760px) { .gen-docs { grid-template-columns: minmax(0, 1fr); } }
+.bl-addbar { display: flex; justify-content: flex-end; margin: 0 0 12px; }
+@media (max-width: 760px) { .bl-addbar > .btn, .bl-addbar > form > .btn { width: 100%; justify-content: center; } }
+/* Voci del preventivo: Modifica ed Elimina sono due pulsanti uguali; su telefono ogni voce è compatta
+   (codice e totale sulla prima riga, descrizione, poi progetto · quantità × costo unitario) */
+.blines .bl-delb { color: var(--red); }
+@media (max-width: 760px) {
+  .blines tbody tr.bl-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "c t" "d d" "m m" "a a"; gap: 2px 12px; padding: 10px 14px; }
+  .blines tbody tr.bl-row > td::before { content: none !important; }
+  .blines tbody tr.bl-row > td:nth-child(1) { grid-area: c; grid-column: auto; }
+  .blines tbody tr.bl-row > td:nth-child(6) { grid-area: t; text-align: right; }
+  .blines tbody tr.bl-row > td:nth-child(3) { grid-area: d; grid-column: auto; }
+  .blines tbody tr.bl-row > td:nth-child(2), .blines tbody tr.bl-row > td:nth-child(4), .blines tbody tr.bl-row > td:nth-child(5) { display: none; }
+  .blines tbody tr.bl-row > td.bl-meta { display: block; grid-area: m; font-size: 12.5px; color: var(--muted); }
+  .blines tbody tr.bl-row > td.bl-act { grid-area: a; grid-column: 1 / -1; width: auto !important; white-space: normal; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 6px; }
+  .blines tbody tr.bl-row > td.bl-act .btn { margin: 0 !important; }
+}
+@media (min-width: 761px) { .blines td.bl-meta { display: none; } }
+/* Movimento: eliminazione DEMO e zone «Correggi / Elimina definitivamente» allineate al bordo delle schede, pulsanti a tutta larghezza su telefono */
+.mv-demo { display: grid; gap: 10px; justify-items: start; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.mv-demo .btn, .detail-main .danger-zone > summary.btn { color: var(--red); }
+@media (max-width: 760px) {
+  .mv-demo { justify-items: stretch; }
+  .mv-demo .btn, .detail-main .danger-zone > summary.btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 760px) {
+  /* intestazioni «Uscite · n  totale», «Nuova riga»: fascia intera, totale a destra */
+  .blines tbody tr.bl-sec { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 14px; background: var(--band); }
+  .blines tbody tr.bl-newh { background: color-mix(in srgb, var(--vz-plan) 14%, var(--surface)); }
+  .blines tbody tr.bl-sec > th, .blines tbody tr.bl-sec > td { background: transparent !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
+  .blines tbody tr.bl-sec > :empty { display: none; }
+  .blines tbody tr.bl-sec > td.num { margin-left: auto; text-align: right; }
+}

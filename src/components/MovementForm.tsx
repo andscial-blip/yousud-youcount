@@ -37,7 +37,7 @@ type Dup = { id: string; ref: string | null; op_date: string; amount: string; cu
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Precompilazione di un movimento nuovo (es. da una riga dell'estratto conto senza corrispondenza)
-export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string };
+export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string; own?: boolean };
 type Props = { refData: RefData; t: Dict; initial?: Initial; prefill?: Prefill };
 
 // Dopo un salvataggio senza rete il modulo riparte vuoto (nuova chiave) per il movimento successivo.
@@ -75,8 +75,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
   // come è stata pagata una spesa: dall'ente (conto), di tasca propria (da rimborsare) o con l'anticipo di una persona
   const advances = R.accounts.filter((a) => a.kind === 'advance');
-  const [payMode, setPayMode] = useState<'org' | 'own' | 'adv'>(initial?.reimb_status === 'due' ? 'own'
-    : R.accounts.find((a) => a.id === initial?.account_id)?.kind === 'advance' ? 'adv' : 'org');
+  // dal portafoglio anticipi (conto anticipi già scelto) o da Rimborsi («di tasca propria») il modulo parte già impostato
+  const [payMode, setPayMode] = useState<'org' | 'own' | 'adv'>(initial?.reimb_status === 'due' || (!initial && P?.own) ? 'own'
+    : R.accounts.find((a) => a.id === (initial?.account_id ?? P?.account_id))?.kind === 'advance' ? 'adv' : 'org');
   const ownPocket = payMode === 'own';
   const choosePay = (m: 'org' | 'own' | 'adv') => {
     setPayMode(m);

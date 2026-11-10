@@ -307,8 +307,9 @@ try {
     assert.deepEqual(m, { status: 'draft', reimb_status: 'due', account_id: null, paid_by: 'Operatore di prova', currency: 'MGA', amount: 18000 });
     // l'operatore vede la spesa in "Da rimborsare" ma non può rimborsarla
     await p.goto(`${base}/rimborsi`);
+    await p.locator('.aw-list > li', { hasText: 'Operatore di prova' }).getByRole('link').click();
     await p.getByText('PROVA taxi da rimborsare').waitFor();
-    assert.equal(await p.getByRole('button', { name: /Registra il rimborso/ }).count(), 0);
+    assert.equal(await p.getByRole('button', { name: /^Rimborsa/ }).count(), 0);
   });
   const rs = await login('resp@test.local');
   const sa = await login('andrea@test.local');
@@ -317,9 +318,12 @@ try {
     await p.goto(`${base}/`);
     await p.getByRole('link', { name: /1 spesa da rimborsare/ }).click();
     await p.waitForURL(/\/rimborsi$/);
-    const panel = p.locator('section.panel', { hasText: 'PROVA taxi da rimborsare' });
-    await panel.locator('select[name=account_id]').selectOption({ label: 'Cassa Madagascar (contanti)' });
-    await panel.getByRole('button', { name: /Registra il rimborso/ }).click();
+    // una riga per persona; aprendola: spese, cassa già proposta, un solo tasto «Rimborsa …»
+    await p.locator('.aw-list > li', { hasText: 'Operatore di prova' }).getByRole('link').click();
+    const sheet = p.locator('.aw-sheet');
+    await sheet.getByText('PROVA taxi da rimborsare').waitFor();
+    assert.equal(await sheet.locator('select[name=account_id] option:checked').innerText(), 'Cassa Madagascar (contanti)');
+    await sheet.getByRole('button', { name: /^Rimborsa 18\.000 MGA/ }).click();
     await p.waitForURL(/\/rimborsi\?ok=MOV-/);
     await p.getByText('Nessuna spesa da rimborsare.').waitFor();
     await p.getByText('Ultimi rimborsi').waitFor();

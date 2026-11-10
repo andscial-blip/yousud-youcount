@@ -14,6 +14,7 @@ export async function reimburse(form: FormData) {
     device_id: 'web',
   } });
   revalidatePath('/', 'layout');
-  if (error) redirect(`/rimborsi?err=${encodeURIComponent(error.message)}`);
+  const back = `&p=${encodeURIComponent(String(form.get('person') ?? ''))}&c=${encodeURIComponent(String(form.get('currency') ?? ''))}`;
+  if (error) redirect(`/rimborsi?err=${encodeURIComponent(error.message)}${back}`);
   redirect(`/rimborsi?ok=${encodeURIComponent((data?.refs ?? []).join(', '))}`);
 }
