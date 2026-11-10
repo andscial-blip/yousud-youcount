@@ -130,3 +130,17 @@ export async function saveMgSeat(form: FormData) {
   revalidatePath('/', 'layout');
   redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#sede-mg` : '/admin/impostazioni?ok=mg#sede-mg');
 }
+
+// Anticipi: soglie di autorizzazione in euro (responsabile fino a…, amministratore fino a…; oltre serve la delibera del Consiglio).
+export async function saveAdvLimits(form: FormData) {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const { data: me } = await supabase.from('profiles').select('org_id').eq('id', auth.user!.id).single();
+  const n = (k: string) => { const v = Number(String(form.get(k) ?? '').replace(/\./g, '').replace(',', '.')); return Number.isFinite(v) && v > 0 ? Math.round(v) : null; };
+  const resp = n('resp'), admin = n('admin');
+  if (resp && admin && resp > admin) redirect('/admin/impostazioni?err=' + encodeURIComponent('La soglia del responsabile non può superare quella dell’amministratore.') + '#soglie-anticipi');
+  const { error } = await supabase.from('settings').upsert({ org_id: me!.org_id, key: 'adv_limits',
+    value: { resp, admin, ref: String(form.get('ref') ?? '').trim().slice(0, 200) || null }, updated_by: auth.user!.id, updated_at: new Date().toISOString() });
+  revalidatePath('/', 'layout');
+  redirect(error ? `/admin/impostazioni?err=${encodeURIComponent(error.message)}#soglie-anticipi` : '/admin/impostazioni?ok=adv#soglie-anticipi');
+}

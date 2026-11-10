@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { RESP, STAFF, can, requireMe } from '@/lib/session';
-import { date, money } from '@/lib/format';
+import { date, money, num } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { advanceStep, createAdvanceAccount, deliverAdvance, moveAdvance, requestAdvance } from './actions';
@@ -48,7 +48,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const accBy = new Map((advAcc ?? []).map((a) => [a.id, a]));
   const who = new Map((people ?? []).map((p) => [p.id, p.full_name as string]));
   const prjBy = new Map((prj ?? []).map((p) => [p.id, p.name as string]));
-  const limits = (lim?.value ?? {}) as { resp?: number; admin?: number };
+  const limits = (lim?.value ?? {}) as { resp?: number; admin?: number; ref?: string | null };
   const shown = reqs.filter((r) => (chiusi ? true : OPEN.includes(r.status)));
   const cnt = (st: string) => reqs.filter((r) => r.status === st).length;
   const STEP: Record<string, [string, string, string]> = {
@@ -172,7 +172,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               <input className="input" id="rq-by" name="report_by" type="date" defaultValue={plus(today2, 15)} /></div>
             <div className="span2"><button className="btn primary" type="submit">{LL('Invia la richiesta', 'Envoyer la demande')}</button>
               <span className="muted small" style={{ marginLeft: 10 }}>{limits.resp || limits.admin
-                ? LL(`Soglie: responsabile fino a ${limits.resp ?? '–'} €, amministratore fino a ${limits.admin ?? '–'} €, oltre serve la delibera del Consiglio.`, `Seuils : responsable jusqu’à ${limits.resp ?? '–'} €, administrateur jusqu’à ${limits.admin ?? '–'} €, au-delà délibération du Conseil.`)
+                ? LL(`Soglie: responsabile fino a ${num(limits.resp ?? 0, lang)} €, amministratore fino a ${num(limits.admin ?? 0, lang)} €, oltre serve la delibera del Consiglio.`, `Seuils : responsable jusqu’à ${num(limits.resp ?? 0, lang)} €, administrateur jusqu’à ${num(limits.admin ?? 0, lang)} €, au-delà délibération du Conseil.`) + (limits.ref ? ` (${limits.ref})` : '')
                 : LL('Soglie di autorizzazione non ancora impostate: autorizza un responsabile o un amministratore.', 'Seuils d’autorisation non encore définis : un responsable ou un administrateur autorise.')}</span></div>
           </form>
         </Panel>

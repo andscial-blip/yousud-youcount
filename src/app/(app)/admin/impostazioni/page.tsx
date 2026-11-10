@@ -1,7 +1,7 @@
 import { ADMIN, can, requireMe } from '@/lib/session';
 import type { Key } from '@/lib/i18n';
 import { Denied, PageHead, Panel } from '@/components/Page';
-import { removeLogo, saveLogo, saveDocDetails, saveMgSeat, toggleSetting } from './actions';
+import { removeLogo, saveAdvLimits, saveLogo, saveDocDetails, saveMgSeat, toggleSetting } from './actions';
 import { CountryMark } from '@/components/CountryMark';
 import { LogoUpload } from '@/components/LogoUpload';
 import { LOGO_MAX } from '@/lib/org';
@@ -28,6 +28,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const lg = ((data ?? []).find((s) => s.key === 'org_logo')?.value ?? {}) as { mime?: string; data?: string };
   const logoUrl = lg.mime && lg.data ? `data:${lg.mime};base64,${lg.data}` : null;
   const mg = ((data ?? []).find((s) => s.key === 'mg_seat')?.value ?? {}) as Record<string, string | undefined>;
+  const al = ((data ?? []).find((s) => s.key === 'adv_limits')?.value ?? {}) as { resp?: number | null; admin?: number | null; ref?: string | null };
   const FR = lang === 'fr', L = (it: string, fr: string) => (FR ? fr : it);
   const dmy = (d?: string) => (d ? d.split('-').reverse().join('/') : '');
   const remind = mg.expires_on ? (() => { const d = new Date(`${mg.expires_on}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 6); return d.toISOString().slice(0, 10); })() : '';
@@ -40,7 +41,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       <PageHead title={t('nav_settings')} />
       {ok && <div className="note ok" role="status">{ok === 'demo_loaded' ? (lang === 'fr' ? 'Données de démonstration chargées.' : 'Dati dimostrativi caricati.')
         : ok === 'demo_purged' ? (lang === 'fr' ? 'Données de démonstration supprimées.' : 'Dati dimostrativi eliminati.')
-        : ok === 'mg' ? L('Dati della sede in Madagascar salvati.', 'Données du siège à Madagascar enregistrées.') : ok === 'reset' ? (lang === 'fr' ? 'Comptabilité remise à zéro : mouvements et budgets supprimés. La numérotation repart de 001.' : 'Contabilità azzerata: movimenti e preventivi eliminati. La numerazione riparte da 001.') : '✓'}</div>}
+        : ok === 'adv' ? L('Soglie degli anticipi salvate.', 'Seuils des avances enregistrés.') : ok === 'mg' ? L('Dati della sede in Madagascar salvati.', 'Données du siège à Madagascar enregistrées.') : ok === 'reset' ? (lang === 'fr' ? 'Comptabilité remise à zéro : mouvements et budgets supprimés. La numérotation repart de 001.' : 'Contabilità azzerata: movimenti e preventivi eliminati. La numerazione riparte da 001.') : '✓'}</div>}
       {err && <div className="note err">{err}</div>}
       <Panel>
         <table className="t">
@@ -91,6 +92,22 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <LogoUpload current={logoUrl} action={saveLogo} removeAction={removeLogo} max={LOGO_MAX}
           labels={{ pick: t('logo_pick'), hint: t('logo_hint'), save: t('logo_save'), remove: t('logo_remove'), big: t('logo_big'), bad: t('logo_bad') }} />
       </Panel>
+      <section className="panel" id="soglie-anticipi">
+        <div className="panel-h"><h2>{L('Anticipi · soglie di autorizzazione', 'Avances · seuils d’autorisation')}</h2></div>
+        <div className="panel-b">
+          <p className="muted" style={{ marginTop: 0 }}>{L('Chi può autorizzare un anticipo, in euro (per gli ariary vale il tasso del mese). Oltre la soglia dell’amministratore serve la delibera del Consiglio. Vuoto = nessun limite.',
+            'Qui peut autoriser une avance, en euros (pour l’ariary, taux du mois). Au-delà du seuil de l’administrateur, il faut la délibération du Conseil. Vide = aucune limite.')}</p>
+          <form action={saveAdvLimits} className="fgrid">
+            <div className="field"><label htmlFor="al-r">{L('Responsabile fino a (€)', 'Responsable jusqu’à (€)')}</label>
+              <input className="input num" id="al-r" name="resp" inputMode="numeric" defaultValue={al.resp ?? ''} /></div>
+            <div className="field"><label htmlFor="al-a">{L('Amministratore fino a (€)', 'Administrateur jusqu’à (€)')}</label>
+              <input className="input num" id="al-a" name="admin" inputMode="numeric" defaultValue={al.admin ?? ''} /></div>
+            <div className="field span2"><label htmlFor="al-ref">{L('Decise con (delibera, verbale)', 'Fixés par (délibération, procès-verbal)')}</label>
+              <input className="input" id="al-ref" name="ref" maxLength={200} defaultValue={al.ref ?? ''} placeholder={L('Es. provvisorie, in attesa della delibera del Consiglio', 'Ex. provisoires, en attente de la délibération du Conseil')} /></div>
+            <div className="span2"><button className="btn primary" type="submit">{t('save')}</button></div>
+          </form>
+        </div>
+      </section>
       <section className="panel country" id="sede-mg">
         <div className="panel-h"><CountryMark loc="MG" label="Madagascar" /><h2>{L('Sede in Madagascar · accordo di sede', 'Siège à Madagascar · accord de siège')}</h2></div>
         <div className="panel-b">

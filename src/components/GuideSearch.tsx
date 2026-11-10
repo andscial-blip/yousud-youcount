@@ -11,12 +11,13 @@ export function GuideSearch({ placeholder, none }: { placeholder: string; none: 
     setQ(v);
     const words = norm(v).split(/\s+/).filter(Boolean);
     let shown = 0;
-    document.querySelectorAll<HTMLDetailsElement>('details.g-topic').forEach((d) => {
-      const hit = words.every((w) => norm(d.textContent ?? '').includes(w));
+    document.querySelectorAll<HTMLDetailsElement>('details.g-topic, details.g-task').forEach((d) => {
+      const hit = words.every((w) => norm(`${d.textContent ?? ''} ${d.dataset.k ?? ''}`).includes(w));
       d.hidden = !hit;
-      d.open = words.length > 0 && hit;
+      d.open = words.length > 0 && hit && d.classList.contains('g-topic') ? true : words.length > 0 && hit && shown < 3;
       if (hit) shown++;
     });
+    document.querySelectorAll<HTMLElement>('.g-tasks').forEach((s) => { s.hidden = !s.querySelector('details.g-task:not([hidden])'); });
     document.querySelectorAll<HTMLElement>('.g-sec').forEach((s) => { s.hidden = !s.querySelector('details.g-topic:not([hidden])'); });
     setEmpty(words.length > 0 && shown === 0);
   };

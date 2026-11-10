@@ -997,6 +997,18 @@ try {
     await p.goto(`${base}/documenti?q=rendiconto-firmato`);
     assert.equal(await p.locator('main tbody tr').count(), 0, 'il rendiconto firmato non è un giustificativo');
   });
+  await check('guida «Come faccio a…»: la ricerca trova la domanda giusta, passi numerati e «Portami lì»', async () => {
+    const p = sa.page;
+    await p.goto(`${base}/guida`);
+    await p.getByRole('searchbox').fill('tasca');
+    const t = p.locator('details.g-task:not([hidden])');
+    await t.first().waitFor();
+    assert.equal(await t.count(), 1);
+    assert.match(await t.innerText(), /Rimborsare una spesa pagata di tasca propria[\s\S]*Pagato da/);
+    assert.equal(await t.getByRole('link', { name: 'Portami lì →' }).getAttribute('href'), '/rimborsi');
+    await p.getByRole('searchbox').fill('');
+    assert.ok(await p.locator('details.g-task:not([hidden])').count() >= 15);
+  });
   await check('impostazioni: sede in Madagascar salvata, promemoria di rinnovo 6 mesi prima in Scadenze', async () => {
     const p = sa.page;
     await p.goto(`${base}/admin/impostazioni`);
@@ -1022,7 +1034,7 @@ try {
     for (const [path, text] of [['/admin/utenti', 'Responsabile di prova'], ['/admin/piano-conti', 'Retribuzioni personale locale'],
       ['/admin/registro', 'Movimenti'], ['/admin/periodi', 'Aperto|da verificare'], ['/admin/impostazioni', 'Quattro occhi'], ['/admin/dati', 'Backup'],
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
-      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Come si usa YouCount']]) {
+      ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Come faccio a…']]) {
       await sa.page.goto(base + path);
       assert.match(await sa.page.locator('main').innerText(), new RegExp(text, 'i'), path);
     }
