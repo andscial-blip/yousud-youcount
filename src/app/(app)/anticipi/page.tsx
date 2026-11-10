@@ -31,7 +31,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
     staff ? supabase.rpc('advance_summary') : Promise.resolve({ data: [], error: null }),
     supabase.from('accounts').select('id, name_it, name_fr, currency').eq('active', true).neq('kind', 'advance').order('sort'),
     supabase.from('advance_requests').select('*').order('requested_at', { ascending: false }).limit(300).returns<Req[]>(),
-    supabase.from('accounts').select('id, holder, currency').eq('kind', 'advance').eq('active', true).order('holder'),
+    supabase.from('accounts').select('id, holder, name_it, name_fr, currency').eq('kind', 'advance').eq('active', true).order('holder'),
     supabase.from('profiles').select('id, full_name').eq('active', true).order('full_name'),
     supabase.from('projects').select('id, name').eq('active', true).order('name'),
     supabase.from('settings').select('value').eq('key', 'adv_limits').maybeSingle(),
@@ -45,6 +45,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const errText = err ? (() => { const k = `err_${err.split(':')[0]}` as Key; const v = t(k); return v && v !== k ? v : err; })() : null;
   const active = rows.filter((r) => r.active);
   const reqs = reqRaw ?? [];
+  const accName = (a?: { holder?: string | null; name_it?: string | null; name_fr?: string | null } | null) => a ? (a.holder || (lang === 'fr' ? a.name_fr || a.name_it : a.name_it) || '–') : '–';
   const accBy = new Map((advAcc ?? []).map((a) => [a.id, a]));
   const who = new Map((people ?? []).map((p) => [p.id, p.full_name as string]));
   const prjBy = new Map((prj ?? []).map((p) => [p.id, p.name as string]));
@@ -93,7 +94,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               return (
                 <li key={r.id} className={st[0]}>
                   <div className="ar-main">
-                    <div className="ar-top"><span className={`chip st ${st[0]}`}>{LL(st[1], st[2])}</span><b>{acc?.holder ?? '–'}</b>
+                    <div className="ar-top"><span className={`chip st ${st[0]}`}>{LL(st[1], st[2])}</span><b>{accName(acc)}</b>
                       <span className="num ar-amt">{money(amt, r.currency, lang)}</span></div>
                     <div className="ar-p">{r.purpose}{r.project_id && prjBy.get(r.project_id) ? <span className="muted"> · {prjBy.get(r.project_id)}</span> : null}</div>
                     <div className="muted small">{LL('uso', 'usage')} {date(r.use_date)} · {LL('giustificare entro', 'justifier avant le')} <span className={late ? 'neg' : ''}>{date(r.report_by)}</span>
@@ -154,7 +155,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
         <Panel title={LL('Nuova richiesta', 'Nouvelle demande')} pad>
           <form action={requestAdvance} className="fgrid">
             <div className="field"><label htmlFor="rq-acc">{LL('Chi riceve l’anticipo', 'Qui reçoit l’avance')}</label>
-              <select className="input" id="rq-acc" name="account" required>{(advAcc ?? []).map((a) => <option key={a.id} value={a.id}>{a.holder} · {a.currency}</option>)}</select></div>
+              <select className="input" id="rq-acc" name="account" required>{(advAcc ?? []).map((a) => <option key={a.id} value={a.id}>{accName(a)} · {a.currency}</option>)}</select></div>
             <div className="field"><label htmlFor="rq-ben">{LL('È un utente dell’app?', 'Est-ce un utilisateur de l’app ?')}</label>
               <select className="input" id="rq-ben" name="beneficiary" defaultValue=""><option value="">{LL('No / non so', 'Non / je ne sais pas')}</option>
                 {(people ?? []).map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}</select></div>
@@ -206,7 +207,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                   const bal = Number(r.balance), d = days(r.open_since), late = bal > 0 && d > LATE_DAYS;
                   return (
                     <tr key={r.account_id} className={r.active ? '' : 'muted'}>
-                      <td><Link href={`/movimenti?conto=${r.account_id}`}><b>{r.holder}</b></Link> <span className="muted">· {r.currency}</span></td>
+                      <td><Link href={`/movimenti?conto=${r.account_id}`}><b>{accName(r)}</b></Link> <span className="muted">· {r.currency}</span></td>
                       <td className="r num">{money(r.given, r.currency, lang)}</td>
                       <td className="r num">{money(r.spent, r.currency, lang)}</td>
                       <td className="r num">{money(r.returned, r.currency, lang)}</td>
@@ -237,7 +238,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             <div className="field">
               <label htmlFor="adv">{t('adv_person')}</label>
               <select className="input" id="adv" name="advance" required>
-                {active.map((r) => <option key={r.account_id} value={r.account_id}>{r.holder} · {r.currency}</option>)}
+                {active.map((r) => <option key={r.account_id} value={r.account_id}>{accName(r)} · {r.currency}</option>)}
               </select>
             </div>
             <div className="field">

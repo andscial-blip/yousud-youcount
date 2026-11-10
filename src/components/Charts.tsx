@@ -88,7 +88,7 @@ export function MonthBars({ data, lang, labels, hrefFor }: {
         <Svg className="ch-d" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names })} />
         <Svg className="ch-m" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, phone: true })} />
       </div>
-      <figcaption><Legend className="under" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }, { label: labels.out, color: C_OUT, value: eur0(tout, lang) },
+      <figcaption><Legend className="under trio" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }, { label: labels.out, color: C_OUT, value: eur0(tout, lang) },
         { label: net, color: 'var(--c-net)', value: `${tn < 0 ? '\u2212' : ''}${eur0(Math.abs(tn), lang)}` }]} /></figcaption>
     </figure>
   );

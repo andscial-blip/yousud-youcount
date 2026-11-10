@@ -116,7 +116,7 @@ export default async function Deadlines({ searchParams }: {
   const soon = soonL.length;
   const lateL = items.filter((i) => i.applies && i.status === 'open' && i.date < td).sort((a, b) => b.date.localeCompare(a.date));
   // importanza (scelta 4A): critica = sanzioni (fiscali, RUNTS/ETS); alta = finanziatori o priorità alta; normale = pagamenti e incassi; promemoria = il resto
-  const imp = (i: Item): 'c' | 'a' | 'n' | 'p' | 'f' => i.status !== 'open' ? 'f' : i.cat === 'fisc' || i.cat === 'ets' ? 'c' : i.cat === 'prj' || i.priority === 'high' ? 'a' : i.cat === 'pay' || i.cat === 'inc' ? 'n' : 'p';
+  const imp = (i: Item): 'c' | 'a' | 'n' | 'p' | 'f' => i.status !== 'open' ? 'f' : i.cat === 'fisc' || i.cat === 'ets' ? 'c' : i.cat === 'prj' || (i.priority === 'high' && !i.auto) ? 'a' : i.cat === 'pay' || i.cat === 'inc' ? 'n' : 'p';
   const IMP: [ReturnType<typeof imp>, string, string][] = [['c', 'critica (sanzioni)', 'critique (sanctions)'], ['a', 'alta (finanziatori)', 'haute (bailleurs)'],
     ['n', 'normale (pagamenti)', 'normale (paiements)'], ['p', 'promemoria', 'rappel'], ['f', 'fatta', 'faite']];
   const fxr = Number((rate.data as number | null) ?? 0);

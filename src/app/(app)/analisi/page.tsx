@@ -155,7 +155,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <div className="grid2">
           <Panel title={t('dash_by_project')} pad>
             {byPrj.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-              : <HBars lang={lang} rows={byPrj.slice(0, 8).map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: q({ progetto: k }) }))} />}
+              : <HBars lang={lang} color="var(--c-out)" rows={byPrj.slice(0, 8).map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: q({ progetto: k }) }))} />}
           </Panel>
           <Panel title={t('an_in_by_group')} pad>
             {inGroups.size === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
@@ -183,7 +183,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <div className="grid2">
           <Panel title={t('an_top_cp')} pad>
             {byCp.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('an_no_cp')}</p>
-              : <HBars lang={lang} rows={byCp.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'expense' }) }))} />}
+              : <HBars lang={lang} color="var(--c-out)" rows={byCp.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'expense' }) }))} />}
           </Panel>
           <Panel title={t('an_by_country')} pad>
             <HBars lang={lang} rows={(['IT', 'MG'] as const).map((k) => ({ label: t(k === 'IT' ? 'italy' : 'madagascar'), value: byLoc.get(k) ?? 0, color: k === 'IT' ? 'var(--pp4)' : 'var(--pp2)' }))} />
@@ -194,7 +194,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       {view === 'progetti' && (
         <Panel title={t('dash_by_project')} pad>
           {byPrj.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p>
-            : <HBars lang={lang} rows={byPrj.map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: `/progetti/${k}?anno=${year}` }))} />}
+            : <HBars lang={lang} color="var(--c-out)" rows={byPrj.map(([k, v]) => ({ label: prjName.get(k) ?? '–', value: v, href: `/progetti/${k}?anno=${year}` }))} />}
           <p className="muted small" style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{lg('Schede dei progetti con preventivo e residuo', 'Fiches des projets avec budget et reste')} →</Link></p>
         </Panel>
       )}

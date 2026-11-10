@@ -60,7 +60,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
             <div className="pmix" aria-label={L('Dove vanno i fondi', 'Où vont les fonds')}>
               <span className="pmix-l">{L('Dove vanno i fondi', 'Où vont les fonds')}</span>
               <div className="pmix-b">{mix.map(({ p, v, c }) => <i key={p.id} title={`${p.name}: ${e0(v)}`} style={{ width: `${(v / tot.out) * 100}%`, background: c }} />)}</div>
-              <ul className="pmix-k">{mix.map(({ p, v, c }) => <li key={p.id}><i style={{ background: c }} />{p.name} <b className="num">{Math.round((v / tot.out) * 100)} %</b></li>)}</ul>
+              <ul className="pmix-k">{mix.map(({ p, v, c }) => <li key={p.id}><i style={{ background: c }} /><span>{p.name}</span><b className="num">{Math.round((v / tot.out) * 100)} %</b></li>)}</ul>
             </div>
           )}
         </>);

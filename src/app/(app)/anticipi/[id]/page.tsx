@@ -24,7 +24,7 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
   const { data: r } = await supabase.from('advance_requests').select('*').eq('id', id).maybeSingle<Req>();
   if (!r) notFound();
   const [{ data: acc }, { data: ppl }, { data: prj }, { data: movs }, { data: org }] = await Promise.all([
-    supabase.from('accounts').select('id, holder, currency').eq('id', r.account_id).maybeSingle(),
+    supabase.from('accounts').select('id, holder, name_it, name_fr, currency').eq('id', r.account_id).maybeSingle(),
     supabase.from('profiles').select('id, full_name'),
     r.project_id ? supabase.from('projects').select('name').eq('id', r.project_id).maybeSingle() : Promise.resolve({ data: null }),
     r.delivered_at ? supabase.from('movements').select('id, ref, op_date, kind, amount, sign, description, account_id, to_account_id, status, movement_documents(document_id)')
@@ -32,6 +32,7 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
       .lte('op_date', r.closed_at ? r.closed_at.slice(0, 10) : '2999-12-31').order('op_date').returns<Mov[]>() : Promise.resolve({ data: [] as Mov[] }),
     supabase.from('settings').select('value').eq('key', 'org_details').maybeSingle(),
   ]);
+  const holder = acc ? (acc.holder || (lang === 'fr' ? acc.name_fr || acc.name_it : acc.name_it) || '–') : '–';
   const who = new Map((ppl ?? []).map((p) => [p.id, p.full_name as string]));
   const cur = r.currency, given = Number(r.authorized_amount ?? r.amount);
   const rows = (movs ?? []).filter((m) => m.id !== r.delivery_movement_id);
@@ -46,14 +47,14 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
   const steps: [string, string, string, string | null, string | null][] = [
     ['s1', LL('Richiesta', 'Demande'), LL('chi chiede', 'demandeur'), who.get(r.requested_by) ?? '–', r.requested_at],
     ['s2', r.status === 'rejected' ? LL('Respinta', 'Refusée') : LL('Autorizzazione', 'Autorisation'), LL('chi autorizza', 'qui autorise'), r.authorized_by ? who.get(r.authorized_by) ?? '–' : null, r.authorized_at],
-    ['s3', LL('Consegna', 'Remise'), LL('giroconto dalla cassa', 'virement depuis la caisse'), r.delivered_at ? acc?.holder ?? '–' : null, r.delivered_at],
-    ['s4', LL('Rendiconto', 'Rapport'), LL('spese registrate e giustificativi', 'dépenses et justificatifs'), r.reported_at ? acc?.holder ?? '–' : null, r.reported_at],
+    ['s3', LL('Consegna', 'Remise'), LL('giroconto dalla cassa', 'virement depuis la caisse'), r.delivered_at ? holder : null, r.delivered_at],
+    ['s4', LL('Rendiconto', 'Rapport'), LL('spese registrate e giustificativi', 'dépenses et justificatifs'), r.reported_at ? holder : null, r.reported_at],
     ['s5', LL('Chiusura', 'Clôture'), LL('residuo restituito o eccedenza rimborsata', 'reliquat restitué ou excédent remboursé'), r.closed_by ? who.get(r.closed_by) ?? '–' : null, r.closed_at],
   ];
 
   return (
     <div className="stack adv-sheet">
-      <PageHead title={`${LL('Anticipo', 'Avance')} · ${acc?.holder ?? ''}`}>
+      <PageHead title={`${LL('Anticipo', 'Avance')} · ${holder}`}>
         <Link className="btn ghost no-print" href="/anticipi">← {LL('Anticipi', 'Avances')}</Link>
         <PrintButton label={LL('Stampa o salva in PDF', 'Imprimer ou enregistrer en PDF')} />
       </PageHead>
@@ -68,7 +69,7 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
         <div className="panel-b">
           <p className="muted small" style={{ marginTop: 0 }}>{ente} · {LL('Scheda anticipo di cassa', 'Fiche d’avance de caisse')}</p>
           <dl className="adv-dl">
-            <dt>{LL('Beneficiario', 'Bénéficiaire')}</dt><dd><b>{acc?.holder ?? '–'}</b> ({LL(...(ROLE[r.role_kind] ?? ROLE.other!))})</dd>
+            <dt>{LL('Beneficiario', 'Bénéficiaire')}</dt><dd><b>{holder}</b> ({LL(...(ROLE[r.role_kind] ?? ROLE.other!))})</dd>
             <dt>{LL('Importo richiesto', 'Montant demandé')}</dt><dd className="num">{money(r.amount, cur, lang)}{r.amount_eur && cur !== 'EUR' ? ` (≈ ${money(r.amount_eur, 'EUR', lang)})` : ''}</dd>
             <dt>{LL('Importo autorizzato', 'Montant autorisé')}</dt><dd className="num">{r.authorized_amount ? money(r.authorized_amount, cur, lang) : '–'}</dd>
             <dt>{LL('Motivo', 'Objet')}</dt><dd>{r.purpose}{prj?.name ? ` · ${prj.name}` : ''}</dd>
