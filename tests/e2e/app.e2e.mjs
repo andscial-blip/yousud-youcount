@@ -674,13 +674,23 @@ try {
     await p.getByRole('link', { name: 'Apri la ricevuta di consegna →' }).click();
     await p.getByRole('heading', { name: 'Ricevuta di consegna' }).waitFor();
     assert.match((await p.locator('main').innerText()).replace(/[  ]/g, ' '), /Hery[\s\S]*dichiara di aver ricevuto[\s\S]*80\.000 MGA/);
+    // firma sul dispositivo: chi riceve e chi consegna, poi il PDF firmato archiviato con l'anticipo
+    for (const c of await p.locator('canvas.sig-pad').all()) {
+      const bx = await c.boundingBox();
+      await p.mouse.move(bx.x + 20, bx.y + bx.height / 2); await p.mouse.down();
+      for (let k = 1; k <= 8; k++) await p.mouse.move(bx.x + 20 + k * 25, bx.y + bx.height / 2 + (k % 2 ? 20 : -20));
+      await p.mouse.up();
+    }
+    await p.getByRole('button', { name: 'Salva la ricevuta firmata' }).click();
+    await p.locator('.sig-done', { hasText: 'Ricevuta firmata ✓' }).waitFor();
+    const [sg] = (await pool.query(`select d.doc_type, d.mime from advance_requests r join documents d on d.id = r.delivery_document_id where r.purpose = 'PROVA materiale laboratorio'`)).rows;
+    assert.deepEqual([sg.doc_type, sg.mime], ['delivery_receipt', 'application/pdf']);
     // avviso in Scadenze per le ricevute
     await o.goto(`${base}/scadenze?periodo=30`);
     await o.locator('ul.dl').getByRole('link', { name: 'Giustificare l’anticipo: Hery' }).waitFor();
     // portafoglio di Hery: ricevuta di consegna firmata caricata, poi restituzione del resto → saldo a zero e chiusura automatica
     const [{ acc }] = (await pool.query(`select id acc from accounts where kind = 'advance' and holder = 'Hery'`)).rows;
     await p.goto(`${base}/anticipi?persona=${acc}`);
-    await p.locator('.aw-rc input[type=file]').setInputFiles({ name: 'ricevuta-firmata.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 firmata') });
     await p.locator('.aw-rc', { hasText: 'firmata ✓' }).waitFor();
     assert.match((await p.locator('.aw-top > b').innerText()).replace(/[  ]/g, ' '), /230\.000 MGA/);
     await p.locator('.aw-btns summary', { hasText: 'Restituzione' }).click();

@@ -67,7 +67,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const errText = err ? (ERR[errKey] ? LL(...ERR[errKey]!) : err === 'no_rate' ? t('adv_no_rate') : (() => { const k = `err_${errKey}` as Key; const v = t(k); return v && v !== k ? v : err; })()) : null;
   const okText = ok === 'req' ? LL('Richiesta inviata: ora la autorizza il direttore o un responsabile.', 'Demande envoyée : le directeur ou un responsable va l’autoriser.')
     : ok === 'authorize' ? LL('Anticipo autorizzato: ora si consegnano i contanti.', 'Avance autorisée : on remet maintenant les espèces.') : ok === 'reject' ? LL('Richiesta respinta.', 'Demande refusée.')
-    : ok === 'deliver' ? LL('Consegna registrata: stampa la ricevuta di consegna e falla firmare.', 'Remise enregistrée : imprimez le reçu de remise et faites-le signer.')
+    : ok === 'deliver' ? LL('Consegna registrata: ora la ricevuta di consegna si firma sul telefono o sul computer.', 'Remise enregistrée : le reçu de remise se signe maintenant sur le téléphone ou l’ordinateur.')
     : ok === 'closed' ? LL(`Saldo a zero: ${sp.n ?? 1} anticipo chiuso.`, `Solde à zéro : ${sp.n ?? 1} avance clôturée.`)
     : ok === 'cancel' ? LL('Richiesta annullata.', 'Demande annulée.') : ok ? t('adv_saved') : null;
 
@@ -129,7 +129,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
       <PageHead title={t('nav_advances')}>
         {writer && <Link className="btn primary" href={href({ nuova: '1', per: persona || undefined })} scroll={false}>+ {LL('Nuova richiesta', 'Nouvelle demande')}</Link>}
       </PageHead>
-      {okText && <div className="note ok" role="status">{okText}{ok === 'deliver' && sp.ric ? <> <Link href={`/anticipi/${sp.ric}`}>{LL('Apri la ricevuta di consegna →', 'Ouvrir le reçu de remise →')}</Link></> : null}</div>}
+      {okText && <div className="note ok" role="status">{okText}{ok === 'deliver' && sp.ric ? <> <Link href={`/anticipi/${sp.ric}#firma`}>{LL('Apri la ricevuta di consegna →', 'Ouvrir le reçu de remise →')}</Link></> : null}</div>}
       {errText && <div className="note err">{errText}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
@@ -324,7 +324,8 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                           {rq && <span className="aw-rc">
                             <Link href={`/anticipi/${rq.id}`}>{LL('ricevuta di consegna', 'reçu de remise')}</Link>
                             {rq.delivery_document_id ? <> · {docLink(rq.delivery_document_id, LL('firmata ✓', 'signé ✓'))}</>
-                              : resp ? <AdvanceDoc orgId={me.org_id} kind="delivery" lang={lang} reqId={rq.id} compact label={LL('Carica la ricevuta firmata', 'Charger le reçu signé')} />
+                              : resp ? <><Link className="btn small primary" href={`/anticipi/${rq.id}#firma`}>{LL('Firma ora', 'Signer maintenant')}</Link>
+                                  <AdvanceDoc orgId={me.org_id} kind="delivery" lang={lang} reqId={rq.id} compact label={LL('o carica la copia firmata', 'ou charger la copie signée')} /></>
                                 : <span className="neg"> · {LL('da firmare', 'à signer')}</span>}</span>}
                         </span>
                         <b className={`num ${v > 0 ? 'pos' : ''}`}>{v > 0 ? '+' : '−'}{money(Math.abs(v), wCur, lang)}</b>

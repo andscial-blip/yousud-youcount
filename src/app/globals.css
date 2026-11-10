@@ -1641,3 +1641,13 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
 .aw-st .aw-d { white-space: nowrap; }
 .aw-st > li > span > a:first-child { color: var(--navy); font-weight: 600; text-decoration: none; }
 @media (max-width: 760px) { .aw-st > li { grid-template-columns: 76px minmax(0, 1fr) auto; } }
+/* firma della ricevuta di consegna sul dispositivo */
+.sig-box { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-2); }
+.sig-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.sig { display: flex; flex-direction: column; gap: 6px; }
+.sig-h { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); }
+.sig-pad { width: 100%; height: 170px; border: 1px dashed var(--line); border-radius: 12px; background: var(--surface); touch-action: none; cursor: crosshair; }
+.sig-n { font-size: 13px; font-weight: 600; color: var(--navy); }
+.sig-f { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; } .sig-f .field { flex: 1 1 220px; margin: 0; }
+.sig-done { margin: 12px 0 0; }
+@media (max-width: 760px) { .sig-grid { grid-template-columns: minmax(0, 1fr); } .sig-pad { height: 190px; } .sig-f .btn { width: 100%; justify-content: center; } }

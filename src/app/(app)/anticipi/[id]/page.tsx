@@ -4,13 +4,14 @@ import { requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { Denied, PageHead } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
+import { DeliverySign } from '@/components/DeliverySign';
 
 export const dynamic = 'force-dynamic';
 
 type Req = { id: string; account_id: string; role_kind: string; amount: string; currency: string; amount_eur: string | null; purpose: string;
   project_id: string | null; use_date: string; report_by: string; status: string; requested_by: string; requested_at: string;
   authorized_by: string | null; authorized_at: string | null; authorized_amount: string | null; board_ref: string | null; decision_note: string | null;
-  delivery_movement_id: string | null; delivered_at: string | null; reported_at: string | null; closed_by: string | null; closed_at: string | null; close_note: string | null };
+  delivery_movement_id: string | null; delivery_document_id: string | null; delivered_at: string | null; reported_at: string | null; closed_by: string | null; closed_at: string | null; close_note: string | null };
 type Mov = { id: string; ref: string | null; op_date: string; kind: string; amount: string; sign: number; description: string | null; account_id: string;
   to_account_id: string | null; status: string; movement_documents: { document_id: string }[] };
 
@@ -32,6 +33,12 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
       .lte('op_date', r.closed_at ? r.closed_at.slice(0, 10) : '2999-12-31').order('op_date').returns<Mov[]>() : Promise.resolve({ data: [] as Mov[] }),
     supabase.from('settings').select('value').eq('key', 'org_details').maybeSingle(),
   ]);
+  // ricevuta firmata già archiviata: link temporaneo al PDF
+  const signedUrl = r.delivery_document_id ? await (async () => {
+    const { data: d } = await supabase.from('documents').select('original_path, created_at').eq('id', r.delivery_document_id!).maybeSingle();
+    return d ? { url: (await supabase.storage.from('documents').createSignedUrl(d.original_path, 900)).data?.signedUrl ?? null, at: d.created_at as string } : null;
+  })() : null;
+  const canSign = ['super_admin', 'admin', 'responsabile'].includes(me.role);
   const holder = acc ? (acc.holder || (lang === 'fr' ? acc.name_fr || acc.name_it : acc.name_it) || '–') : '–';
   const who = new Map((ppl ?? []).map((p) => [p.id, p.full_name as string]));
   const cur = r.currency, given = Number(r.authorized_amount ?? r.amount);
@@ -73,10 +80,16 @@ export default async function AdvanceSheet({ params }: { params: Promise<{ id: s
             <p>{LL('Il/la sottoscritto/a', 'Je soussigné(e)')} <b>{holder}</b> {LL('dichiara di aver ricevuto in contanti da', 'déclare avoir reçu en espèces de')} {ente}
               {' '}{LL('la somma di', 'la somme de')} <b className="num">{money(given, cur, lang)}</b> {LL('il', 'le')} {date(r.delivered_at)}, {LL('per', 'pour')}: <b>{r.purpose}</b>{prj?.name ? ` (${prj.name})` : ''}.</p>
             <p>{LL(`Si impegna a consegnare le ricevute o fatture delle spese entro il ${date(r.report_by)} e a restituire la parte non spesa.`, `Je m’engage à remettre les reçus ou factures des dépenses avant le ${date(r.report_by)} et à restituer la partie non dépensée.`)}</p>
-            <div className="sign-row">
-              <div><span>{LL('Chi riceve', 'Qui reçoit')} · {holder}</span><i /></div>
-              <div><span>{LL('Chi consegna', 'Qui remet')}</span><i /></div>
-            </div>
+            {signedUrl ? (
+              <p className="note ok sig-done">{LL('Ricevuta firmata', 'Reçu signé')} ✓ · {date(signedUrl.at.slice(0, 10))}
+                {signedUrl.url && <> · <a href={signedUrl.url} target="_blank" rel="noreferrer">{LL('apri il PDF firmato', 'ouvrir le PDF signé')}</a></>}</p>
+            ) : (<>
+              <div className="sign-row">
+                <div><span>{LL('Chi riceve', 'Qui reçoit')} · {holder}</span><i /></div>
+                <div><span>{LL('Chi consegna', 'Qui remet')}</span><i /></div>
+              </div>
+              {canSign && <DeliverySign id={r.id} holder={holder} giver={me.full_name} lang={lang} />}
+            </>)}
           </div>
         </section>
       )}

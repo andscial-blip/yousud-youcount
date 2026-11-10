@@ -162,3 +162,54 @@ export async function deliverAdvance(form: FormData) {
   if (e2) fail(e2);
   back(`ok=deliver&ric=${id}`);
 }
+
+// Ricevuta di consegna firmata sul telefono o sul computer: le due firme (chi riceve, chi consegna) arrivano come PNG,
+// si genera il PDF con la dichiarazione, si archivia come «ricevuta di consegna» e si collega alla richiesta.
+// Firma elettronica semplice: vale come prova scritta, liberamente valutabile (come la firma su carta fotografata).
+export async function signDelivery(id: string, receiverPng: string, giverPng: string, giverName: string): Promise<{ ok: boolean; error?: string }> {
+  const { requireMe } = await import('@/lib/session');
+  const { money, date } = await import('@/lib/format');
+  const { renderDeliveryPdf } = await import('@/lib/delivery-pdf');
+  const { storePdf } = await import('@/lib/store-pdf');
+  const { supabase, me, lang } = await requireMe();
+  if (!me || !['super_admin', 'admin', 'responsabile'].includes(me.role)) return { ok: false, error: 'forbidden' };
+  const png = (s: string) => { const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(s); if (!m || m[1].length > 1_500_000) return null; return Uint8Array.from(Buffer.from(m[1], 'base64')); };
+  const a = png(receiverPng), b = png(giverPng);
+  if (!a || !b) return { ok: false, error: lang === 'fr' ? 'Il manque une signature.' : 'Manca una firma.' };
+  const { data: r } = await supabase.from('advance_requests').select('id, status, amount, authorized_amount, currency, purpose, delivered_at, report_by, project_id, accounts(holder, name_it)')
+    .eq('id', id).maybeSingle<{ id: string; status: string; amount: string; authorized_amount: string | null; currency: string; purpose: string; delivered_at: string | null;
+      report_by: string; project_id: string | null; accounts: { holder: string | null; name_it: string } | null }>();
+  if (!r || !r.delivered_at) return { ok: false, error: lang === 'fr' ? 'Il faut d’abord enregistrer la remise.' : 'Prima si registra la consegna.' };
+  const [{ data: org }, { data: prj }] = await Promise.all([
+    supabase.from('settings').select('value').eq('key', 'org_details').maybeSingle(),
+    r.project_id ? supabase.from('projects').select('name').eq('id', r.project_id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const ente = ((org?.value ?? {}) as { legal_name?: string }).legal_name || 'YouSud ODV';
+  const holder = r.accounts?.holder || r.accounts?.name_it || '–';
+  const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
+  const amt = money(Number(r.authorized_amount ?? r.amount), r.currency, lang);
+  const now = new Date();
+  const stamp = now.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { timeZone: 'Indian/Antananarivo', dateStyle: 'short', timeStyle: 'short' });
+  const gName = giverName.trim().slice(0, 120) || me.full_name;
+  const bytes = await renderDeliveryPdf({
+    org: ente, title: L('Ricevuta di consegna di contanti', 'Reçu de remise d’espèces'),
+    paragraphs: [
+      L(`Il/la sottoscritto/a ${holder} dichiara di aver ricevuto in contanti da ${ente} la somma di ${amt} il ${date(r.delivered_at)}, per: ${r.purpose}${prj?.name ? ` (${prj.name})` : ''}.`,
+        `Je soussigné(e) ${holder} déclare avoir reçu en espèces de ${ente} la somme de ${amt} le ${date(r.delivered_at)}, pour : ${r.purpose}${prj?.name ? ` (${prj.name})` : ''}.`),
+      L(`Si impegna a consegnare le ricevute o fatture delle spese entro il ${date(r.report_by)} e a restituire la parte non spesa.`,
+        `Je m’engage à remettre les reçus ou factures des dépenses avant le ${date(r.report_by)} et à restituer la partie non dépensée.`),
+    ],
+    rows: [[L('Importo', 'Montant'), amt], [L('Consegnato il', 'Remis le'), date(r.delivered_at)], [L('Ricevute entro il', 'Reçus avant le'), date(r.report_by)], [L('Rif. richiesta', 'Réf. demande'), r.id.slice(0, 8)]],
+    receiver: { label: L('Firma di chi riceve', 'Signature de qui reçoit'), name: holder, png: a },
+    giver: { label: L('Firma di chi consegna', 'Signature de qui remet'), name: gName, png: b },
+    footer: L(`Firmato sul dispositivo nell'app YouCount il ${stamp} (ora di Antananarivo), registrato da ${me.full_name}.`,
+      `Signé sur l'appareil dans l'app YouCount le ${stamp} (heure d'Antananarivo), enregistré par ${me.full_name}.`),
+  });
+  const stored = await storePdf(supabase, { orgId: me.org_id, bytes, number: `ricevuta-anticipo-${r.id.slice(0, 8)}`, date: now.toISOString().slice(0, 10),
+    clientUuid: randomUUID(), docType: 'delivery_receipt', total: Number(r.authorized_amount ?? r.amount), currency: r.currency });
+  if (stored.error || !stored.id) return { ok: false, error: stored.error ?? 'store' };
+  const { error } = await supabase.rpc('advance_attach', { p: { id: r.id, kind: 'delivery', document_id: stored.id } });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/anticipi', 'layout');
+  return { ok: true };
+}
