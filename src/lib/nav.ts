@@ -19,7 +19,7 @@ export const SECTIONS: Section[] = [
   { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo', '/verifica'], subs: [
     { href: '/movimenti', key: 'sub_register' }, { href: '/rimborsi', key: 'nav_reimb' }, { href: '/controparti', key: 'sub_parties' }] },
   { id: 'cassa', key: 'nav_accounts', hint: 'hint_cassa', ic: 'bank', subs: [
-    { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances', roles: STAFF },
+    { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances' },
     { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }, { href: '/cambi', key: 'sub_fx' }] },
   { id: 'bud', key: 'nav_budget', hint: 'hint_bud', ic: 'wallet', roles: STAFF, subs: [{ href: '/preventivo', key: 'nav_budget' }] },
   { id: 'prj', key: 'nav_projects', hint: 'hint_prj', ic: 'brief', subs: [

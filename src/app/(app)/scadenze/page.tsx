@@ -35,7 +35,7 @@ export default async function Deadlines({ searchParams }: {
   const view: string = 'list'; // calendario sempre in alto, elenco sotto (scelta 4A)
   const month = /^\d{4}-\d{2}$/.test(sp.mese ?? '') ? sp.mese! : td.slice(0, 7);
 
-  const [{ data: saved, error }, { data: projects }, { data: users }, inc0, inc1, inc2, drafts, due, unver, periods, rate, grants, adv, bud] = await Promise.all([
+  const [{ data: saved, error }, { data: projects }, { data: users }, inc0, inc1, inc2, drafts, due, unver, periods, rate, grants, adv, bud, areq] = await Promise.all([
     supabase.from('deadlines').select('id, rule_key, title, category, due_date, amount, currency, project_id, owner_id, priority, status, repeat, notes, done_at')
       .gte('due_date', `${Y - 1}-01-01`).order('due_date').returns<D[]>(),
     supabase.from('projects').select('id, name').eq('active', true).order('name'),
@@ -51,6 +51,7 @@ export default async function Deadlines({ searchParams }: {
     supabase.from('grants').select('id, title, end_date').eq('status', 'active').not('end_date', 'is', null),
     staff ? supabase.rpc('advance_summary') : Promise.resolve({ data: [] }),
     staff ? supabase.from('budgets').select('id, status').eq('year', Y + 1) : Promise.resolve({ data: [] }),
+    supabase.from('advance_requests').select('id, status, report_by, use_date, accounts(holder)').in('status', ['requested', 'authorized', 'delivered']),
   ]);
   const inc = (y: number) => Number((y === Y - 2 ? inc0.data : y === Y - 1 ? inc1.data : inc2.data) ?? 0);
   const prjBy = new Map((projects ?? []).map((p) => [p.id, p.name]));
@@ -88,6 +89,13 @@ export default async function Deadlines({ searchParams }: {
   for (const g of grants.data ?? []) if (g.end_date && daysTo(g.end_date) <= 90 && daysTo(g.end_date) >= -30)
     auto(`a-g-${g.id}`, g.end_date, 'prj', L(`Fine del finanziamento: ${g.title}`, `Fin du financement : ${g.title}`),
       L('Verifica che tutte le spese siano registrate e giustificate; prepara il rendiconto.', 'Vérifiez que toutes les dépenses sont saisies et justifiées ; préparez le rapport.'), `/finanziamenti/${g.id}`);
+  // anticipi della procedura: da autorizzare, da consegnare, da giustificare (avviso dalla scadenza, 15 o 30 giorni dopo l'uso)
+  for (const q of (areq.data ?? []) as unknown as { id: string; status: string; report_by: string; use_date: string; accounts: { holder: string | null } | null }[]) {
+    const h = q.accounts?.holder ?? '';
+    if (q.status === 'requested') auto(`a-areq-${q.id}`, q.use_date < td ? td : q.use_date, 'int', L(`Anticipo da autorizzare: ${h}`, `Avance à autoriser : ${h}`), L('Richiesta in attesa di un responsabile o amministratore.', 'Demande en attente d’un responsable ou administrateur.'), '/anticipi');
+    else if (q.status === 'authorized') auto(`a-areq-${q.id}`, q.use_date < td ? td : q.use_date, 'int', L(`Anticipo da consegnare: ${h}`, `Avance à remettre : ${h}`), L('Autorizzato, manca la consegna dalla cassa.', 'Autorisée, remise depuis la caisse à faire.'), '/anticipi');
+    else auto(`a-areq-${q.id}`, q.report_by, 'doc', L(`Giustificare l’anticipo: ${h}`, `Justifier l’avance : ${h}`), L('Spese e giustificativi entro questa data, poi la chiusura.', 'Dépenses et justificatifs avant cette date, puis la clôture.'), '/anticipi');
+  }
   for (const a of (adv.data ?? []) as { account_id: string; holder: string; balance: string; open_since: string | null; aut_to_sign: number }[]) {
     if (Number(a.balance) > 0 && a.open_since && daysTo(a.open_since) < -30) auto(`a-adv-${a.account_id}`, td, 'doc', L(`Anticipo da giustificare: ${a.holder}`, `Avance à justifier : ${a.holder}`),
       L(`Aperto dal ${date(a.open_since)}.`, `Ouverte depuis le ${date(a.open_since)}.`), '/anticipi');
