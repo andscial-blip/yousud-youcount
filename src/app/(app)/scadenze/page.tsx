@@ -246,7 +246,7 @@ export default async function Deadlines({ searchParams }: {
           <ul className="dl dl2">
             {list.map((i) => (
               <li key={i.key} className={`${i.status !== 'open' ? 'done' : ''} i-${imp(i)}`}>
-                <div className="dl-day num"><b>{i.date.slice(8)}</b><span>{MS[Number(i.date.slice(5, 7)) - 1]}</span></div>
+                <div className="dl-day"><b>{i.date.slice(8)}</b><span>{MS[Number(i.date.slice(5, 7)) - 1]}</span></div>
                 <div className="dl-body">
                   <div className="dl-t">{i.href ? <Link href={i.href}>{i.title}</Link> : i.title}</div>
                   <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>

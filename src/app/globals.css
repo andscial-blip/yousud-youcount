@@ -1256,3 +1256,4 @@ ul.dl.dl2 .dl-act { justify-content: flex-start; }
   .fb-inline > a { flex: 0 0 auto; }
 }
 .vline a { color: var(--slate); }
+.dl-day b { font-variant-numeric: tabular-nums; }
