@@ -4,11 +4,12 @@ import { money } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { ReconcileForm, type Leg } from '@/components/ReconcileForm';
+import { CountryMark } from '@/components/CountryMark';
 import { cancelReconciliation } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-type Acc = { id: string; code: string; name_it: string; name_fr: string | null; currency: string; kind: string; opening_balance: string };
+type Acc = { id: string; code: string; name_it: string; name_fr: string | null; currency: string; kind: string; opening_balance: string; location: string | null };
 type LegRow = { movement_id: string; side: 'from' | 'to'; ref: string | null; op_date: string; description: string;
   amount: string; reconciliation_id: string | null; statement_date: string | null };
 type Rec = { id: string; statement_date: string; statement_balance: string; previous_balance: string; items_count: number;
@@ -25,7 +26,7 @@ export default async function Reconciliation({ searchParams }: {
   if (!can(me, STAFF)) return <Denied text={t('only_staff')} />;
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
   const { data: accData, error } = await supabase.from('accounts')
-    .select('id, code, name_it, name_fr, currency, kind, opening_balance').eq('active', true)
+    .select('id, code, name_it, name_fr, currency, kind, opening_balance, location').eq('active', true)
     .not('kind', 'in', '(cash,advance)').order('sort').returns<Acc[]>();
   const accounts = accData ?? [];
   const legsOf = async (id: string) => ((await supabase.rpc('account_legs', { p_account: id })).data ?? []) as LegRow[];
@@ -55,26 +56,31 @@ export default async function Reconciliation({ searchParams }: {
       <div className="stack">
         <PageHead title={t('nav_rec')} />
         <ErrorNote prefix={t('error_load')} error={error} />
-        <Panel>
-          {rows.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('rec_no_accounts')}</p> : (
-            <table className="t">
-              <thead><tr><th>{t('account')}</th><th>{t('rec_last')}</th><th className="r">{t('rec_balance')}</th><th className="r">{t('rec_app_balance')}</th>
-                <th className="r">{t('rec_open')}</th><th /></tr></thead>
-              <tbody>
-                {rows.map(({ a, s }) => (
-                  <tr key={a.id}>
-                    <td><Link className="rowlink" href={`/riconciliazione?conto=${a.id}`}>{L(a)}</Link></td>
-                    <td className="num">{s.last ? day(s.last) : <span className="muted">{t('rec_never')}</span>}</td>
-                    <td className="r num nw">{money(s.balance, a.currency, lang)}</td>
-                    <td className="r num nw">{money(appBal.get(a.id) ?? null, a.currency, lang)}</td>
-                    <td className="r num">{s.open.length}</td>
-                    <td className="r"><Link className="btn" href={`/riconciliazione?conto=${a.id}`}>{t('rec_go')}</Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Panel>
+        {rows.length === 0 ? <Panel><p className="panel-b muted" style={{ margin: 0 }}>{t('rec_no_accounts')}</p></Panel> : (
+          <div className="rec-grid">
+            {rows.map(({ a, s }) => {
+              // stato: verde entro 35 giorni dall'ultimo estratto, giallo entro 65, corallo oltre o mai riconciliato
+              const age = s.last ? Math.floor((Date.now() - Date.parse(`${s.last}T00:00:00Z`)) / 864e5) : null;
+              const st = age == null ? 'r' : age <= 35 ? 'g' : age <= 65 ? 'y' : 'r';
+              const app = appBal.get(a.id) ?? null, gap = app == null ? null : Math.round((app - s.balance) * 100) / 100;
+              return (
+                <Link key={a.id} className={`rec-card st-${st}`} href={`/riconciliazione?conto=${a.id}`}>
+                  <div className="rc-h"><CountryMark loc={a.location === 'IT' ? 'IT' : 'MG'} label={a.location === 'IT' ? 'Italia' : 'Madagascar'} />
+                    <div className="rc-t"><b>{L(a)}</b><span className="muted small">{a.currency}</span></div>
+                    <span className={`cdp ${st === 'g' ? 'ok' : st === 'y' ? 'mid' : 'late'}`}>{s.last ? (lang === 'fr' ? `il y a ${age} j` : `${age} giorni fa`) : t('rec_never')}</span></div>
+                  <dl className="rc-n">
+                    <div><dt>{t('rec_balance')}</dt><dd className="num">{money(s.balance, a.currency, lang)}</dd></div>
+                    <div><dt>{t('rec_app_balance')}</dt><dd className="num">{money(app, a.currency, lang)}</dd></div>
+                    <div><dt>{t('rec_open')}</dt><dd className="num">{s.open.length}</dd></div>
+                  </dl>
+                  <div className="rc-f"><span className="muted small">{t('rec_last')}: {s.last ? day(s.last) : '–'}
+                    {gap ? <> · {lang === 'fr' ? 'écart à pointer' : 'da spuntare'} <b className="num">{money(gap, a.currency, lang)}</b></> : null}</span>
+                    <span className="btn small">{t('rec_go')} →</span></div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
