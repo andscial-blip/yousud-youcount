@@ -5,6 +5,15 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { parseAmount } from '@/lib/amount';
 
+// Valore del campo «persona» (PersonPicker): acc:<conto anticipi> · usr:<utente> · new (nome scritto).
+function readPerson(form: FormData) {
+  const v = String(form.get('person') ?? form.get('account') ?? '');
+  if (v.startsWith('acc:')) return { account_id: v.slice(4) };
+  if (v.startsWith('usr:')) return { beneficiary_id: v.slice(4), currency: String(form.get('currency') ?? 'MGA') };
+  if (v && v !== 'new') return { account_id: v };
+  return { holder: String(form.get('holder') ?? '').trim(), currency: String(form.get('currency') ?? 'MGA') };
+}
+
 const back = (q: string) => redirect(`/anticipi?${q}`);
 const fail = (e: { message: string } | null | undefined, fallback = 'invalid') => back(`err=${encodeURIComponent(e?.message ?? fallback)}`);
 
@@ -23,11 +32,21 @@ export async function createAdvanceAccount(form: FormData) {
 // Stessa valuta tra i due conti; per gli ariary il tasso del mese (o il precedente) da Tassi di cambio.
 export async function moveAdvance(form: FormData) {
   const supabase = await createClient();
-  const adv = String(form.get('advance') ?? ''), cash = String(form.get('cash') ?? '');
+  const cash = String(form.get('cash') ?? '');
   const give = form.get('op') !== 'return';
   const amount = parseAmount(String(form.get('amount') ?? ''));
   const opDate = String(form.get('date') ?? '') || new Date().toISOString().slice(0, 10);
-  if (!adv || !cash || !amount || amount <= 0) back('err=missing');
+  if (!cash || !amount || amount <= 0) back('err=missing');
+  // persona: conto anticipi esistente, oppure utente / nome nuovo nella valuta della cassa (il conto si crea da solo)
+  const who = readPerson(form);
+  let adv = 'account_id' in who ? who.account_id ?? '' : '';
+  if (!adv) {
+    const { data: ca } = await supabase.from('accounts').select('currency').eq('id', cash).maybeSingle();
+    const { data: id, error: ea } = await supabase.rpc('advance_account', { p: { ...who, currency: ca?.currency ?? 'MGA' } });
+    if (ea) fail(ea);
+    adv = String(id ?? '');
+  }
+  if (!adv) back('err=missing');
   const { data: accs } = await supabase.from('accounts').select('id, currency, kind').in('id', [adv, cash]);
   const a = accs?.find((x) => x.id === adv), c = accs?.find((x) => x.id === cash);
   if (!a || !c || a.kind !== 'advance' || c.kind === 'advance') back('err=invalid');
@@ -38,7 +57,8 @@ export async function moveAdvance(form: FormData) {
     rate = data ? Number(data) : null;
     if (!rate) back('err=no_rate');
   }
-  const holder = String(form.get('holder') ?? '');
+  const { data: hd } = await supabase.from('accounts').select('holder, name_it').eq('id', adv).maybeSingle();
+  const holder = hd?.holder || hd?.name_it || '';
   const { error } = await supabase.rpc('save_movement', { p: {
     client_uuid: String(form.get('client_uuid') || randomUUID()), kind: 'transfer', status: 'recorded', op_date: opDate,
     amount, to_amount: amount, currency: a!.currency, fx_rate: rate,
@@ -57,8 +77,8 @@ export async function requestAdvance(form: FormData) {
   const supabase = await createClient();
   const amount = parseAmount(String(form.get('amount') ?? ''));
   const { error } = await supabase.rpc('advance_request', { p: {
-    account_id: String(form.get('account') ?? ''), amount, purpose: String(form.get('purpose') ?? '').trim(),
-    role_kind: String(form.get('role_kind') ?? 'volunteer'), beneficiary_id: String(form.get('beneficiary') ?? ''),
+    ...readPerson(form), amount, purpose: String(form.get('purpose') ?? '').trim(),
+    role_kind: String(form.get('role_kind') ?? 'volunteer'),
     project_id: String(form.get('project') ?? ''), category_id: String(form.get('category') ?? ''),
     use_date: String(form.get('use_date') ?? ''), report_by: String(form.get('report_by') ?? ''),
   } });

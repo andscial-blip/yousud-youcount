@@ -27,9 +27,9 @@ function Chk({ k, label, x }: { k: string; label: string; x: Record<string, unkn
 
 // Modulo di un documento con anteprima live: l'anteprima si aggiorna mentre si scrive, prima di salvare.
 // Senza JavaScript il modulo funziona comunque (righe fisse, quelle vuote si ignorano) e l'anteprima arriva dopo il salvataggio.
-export function DocForm({ init, lang, projects, methods, back, org, rates, movementRate, movementRef, signer }: {
+export function DocForm({ init, lang, projects, methods, back, org, rates, movementRate, movementRef, signer, people = [] }: {
   init: DocInit; lang: 'it' | 'fr'; projects: { id: string; name: string }[]; methods: string[]; back: string; org: Org;
-  rates: Record<string, number>; movementRate?: number | null; movementRef?: string | null; signer: { name?: string; role?: string } }) {
+  rates: Record<string, number>; movementRate?: number | null; movementRef?: string | null; signer: { name?: string; role?: string }; people?: string[] }) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const x = init.data;
   const s = (k: string) => (x[k] == null ? '' : String(x[k]));
@@ -76,6 +76,7 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
         <input type="hidden" name="type" value={t} />
         {init.movement_id && <input type="hidden" name="movement_id" value={init.movement_id} />}
         {init.counterparty_id && <input type="hidden" name="counterparty_id" value={init.counterparty_id} />}
+        <datalist id="df-people">{people.map((n) => <option key={n} value={n} />)}</datalist>
         <datalist id="df-methods">{methods.map((m) => <option key={m} value={m} />)}</datalist>
         <div className="field"><label htmlFor="df-lang">{L('Lingua del documento', 'Langue du document')}</label>
           <select className="input" id="df-lang" name="lang" defaultValue={init.lang}>
@@ -86,7 +87,8 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
             <select className="input" id="df-tpl" name="tpl" value={tpl} onChange={(e) => setTpl(e.target.value)}>
               {(Object.keys(DIC_TPL) as (keyof typeof DIC_TPL)[]).map((k) => <option key={k} value={k}>{L(DIC_TPL[k][0], DIC_TPL[k][1])}</option>)}</select></div>
         )}
-        <Fld x={x} k="party_name" label={partyLabel} def={init.party_name ?? ''} req={t !== 'DIC' || tpl !== 'free'} span />
+        <Fld x={x} k="party_name" label={partyLabel} def={init.party_name ?? ''} req={t !== 'DIC' || tpl !== 'free'} span list="df-people"
+             ph={L('Scegli dalla lista o scrivi un nome nuovo', 'Choisir dans la liste ou écrire un nouveau nom')} />
         <Fld x={x} k="party_tax_id" label={L('Codice fiscale / NIF / documento', 'Code fiscal / NIF / pièce')} def={init.party_tax_id ?? ''} />
         <Fld x={x} k="party_address" label={L('Indirizzo', 'Adresse')} def={init.party_address ?? ''} />
         <div className="field"><label htmlFor="df-prj">{L('Progetto', 'Projet')}</label>

@@ -44,7 +44,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
       {(() => {
         const over = shown.filter((p) => A(p.id).bOut && A(p.id).out > A(p.id).bOut).length;
         const used = tot.b ? tot.out / tot.b : 0;
-        const tones = ['#23735F', '#5B7FA6', '#5FB8A3', '#8FAFD6', '#A9D9CB', '#C9D6EA'];
+        const tones = ['#00A060', '#5B7FA6', '#5FB8A3', '#8FAFD6', '#A9D9CB', '#C9D6EA'];
         const mix = shown.filter((p) => A(p.id).out > 0).map((p, i) => ({ p, v: A(p.id).out, c: p.kind === 'structure' ? '#3E5470' : tones[i % tones.length] }));
         return (<>
           <div className="kpi4 ptiles">

@@ -619,6 +619,22 @@ try {
     assert.match(txt, /200\.000 MGA[\s\S]*50\.000 MGA[\s\S]*150\.000 MGA/);
     await p.screenshot({ path: `${SHOTS}/resp_anticipi.png`, fullPage: true });
   });
+  await check('anticipi: richiesta per una persona che non è utente (nome scritto, conto creato da solo)', async () => {
+    const o = op.page;
+    await o.goto(`${base}/anticipi`);
+    await o.locator('#rq-acc').selectOption('new');
+    await o.locator('#rq-acc-n').fill('Voahangy Prova');
+    await o.locator('#rq-acc-c').selectOption('MGA');
+    await o.locator('#rq-amt').fill('15.000');
+    await o.locator('#rq-p').fill('PROVA persona nuova');
+    await o.getByRole('button', { name: 'Invia la richiesta' }).click();
+    await o.waitForURL(/ok=req/);
+    const [r] = (await pool.query(`select a.holder, a.currency, r.amount from advance_requests r join accounts a on a.id = r.account_id where r.purpose = 'PROVA persona nuova'`)).rows;
+    assert.deepEqual([r.holder, r.currency, r.amount], ['Voahangy Prova', 'MGA', '15000.00']);
+    // ora compare nella lista di chi ha un conto anticipi
+    await o.goto(`${base}/anticipi`);
+    assert.equal(await o.locator('#rq-acc option', { hasText: 'Voahangy Prova · MGA' }).count(), 1);
+  });
   await check('anticipi: procedura in 5 passi (richiesta, autorizzazione a quattro occhi, consegna collegata, rendiconto, chiusura)', async () => {
     const o = op.page, p = rs.page;
     // 1 richiesta dell'operatore

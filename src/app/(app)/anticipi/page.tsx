@@ -1,3 +1,4 @@
+import { PersonPicker } from '@/components/PersonPicker';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { RESP, STAFF, can, requireMe } from '@/lib/session';
@@ -46,6 +47,9 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const active = rows.filter((r) => r.active);
   const reqs = reqRaw ?? [];
   const accName = (a?: { holder?: string | null; name_it?: string | null; name_fr?: string | null } | null) => a ? (a.holder || (lang === 'fr' ? a.name_fr || a.name_it : a.name_it) || '–') : '–';
+  const pickAcc = (advAcc ?? []).map((a) => ({ id: a.id, label: `${accName(a)} · ${a.currency}` }));
+  const holders = new Set((advAcc ?? []).map((a) => (a.holder ?? '').toLowerCase()));
+  const pickUsers = (people ?? []).filter((p) => p.full_name && !holders.has(String(p.full_name).toLowerCase())).map((p) => ({ id: p.id as string, name: p.full_name as string }));
   const accBy = new Map((advAcc ?? []).map((a) => [a.id, a]));
   const who = new Map((people ?? []).map((p) => [p.id, p.full_name as string]));
   const prjBy = new Map((prj ?? []).map((p) => [p.id, p.name as string]));
@@ -68,7 +72,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   return (
     <div className="stack">
       <PageHead title={t('nav_advances')}>
-        {writer && (advAcc ?? []).length > 0 && <a className="btn primary" href="#nuova-richiesta">+ {LL('Richiedi anticipo', 'Demander une avance')}</a>}
+        {writer && <a className="btn primary" href="#nuova-richiesta">+ {LL('Richiedi anticipo', 'Demander une avance')}</a>}
       </PageHead>
       {ok && <div className="note ok" role="status">{ok === 'req' ? LL('Richiesta registrata: ora la deve autorizzare un responsabile o un amministratore.', 'Demande enregistrée : un responsable ou un administrateur doit l’autoriser.')
         : ok === 'authorize' ? LL('Anticipo autorizzato.', 'Avance autorisée.') : ok === 'reject' ? LL('Richiesta respinta.', 'Demande refusée.')
@@ -150,15 +154,11 @@ export default async function Advances({ searchParams }: { searchParams: Promise
         )}
       </Panel>
 
-      {writer && (advAcc ?? []).length > 0 && (<>
+      {writer && (<>
         <div id="nuova-richiesta" />
         <Panel title={LL('Nuova richiesta', 'Nouvelle demande')} pad>
           <form action={requestAdvance} className="fgrid">
-            <div className="field"><label htmlFor="rq-acc">{LL('Chi riceve l’anticipo', 'Qui reçoit l’avance')}</label>
-              <select className="input" id="rq-acc" name="account" required>{(advAcc ?? []).map((a) => <option key={a.id} value={a.id}>{accName(a)} · {a.currency}</option>)}</select></div>
-            <div className="field"><label htmlFor="rq-ben">{LL('È un utente dell’app?', 'Est-ce un utilisateur de l’app ?')}</label>
-              <select className="input" id="rq-ben" name="beneficiary" defaultValue=""><option value="">{LL('No / non so', 'Non / je ne sais pas')}</option>
-                {(people ?? []).map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}</select></div>
+            <PersonPicker id="rq-acc" label={LL('Chi riceve l’anticipo', 'Qui reçoit l’avance')} lang={lang} accounts={pickAcc} users={pickUsers} />
             <div className="field"><label htmlFor="rq-rk">{LL('Ruolo', 'Rôle')}</label>
               <select className="input" id="rq-rk" name="role_kind" defaultValue="volunteer"><option value="volunteer">{LL('Volontario', 'Bénévole')}</option>
                 <option value="employee">{LL('Dipendente o collaboratore', 'Salarié ou collaborateur')}</option><option value="contact">{LL('Referente locale', 'Référent local')}</option>
@@ -230,17 +230,12 @@ export default async function Advances({ searchParams }: { searchParams: Promise
         )}
       </Panel>}
 
-      {resp && active.length > 0 && (
+      {resp && (
         <Panel title={LL('Consegna o restituzione senza richiesta (per la restituzione del residuo)', 'Remise ou restitution sans demande (restitution du reliquat)')} pad>
           <p className="muted" style={{ marginTop: 0 }}>{t('adv_move_text')}</p>
           <form action={moveAdvance} className="fgrid">
             <input type="hidden" name="client_uuid" value={randomUUID()} />
-            <div className="field">
-              <label htmlFor="adv">{t('adv_person')}</label>
-              <select className="input" id="adv" name="advance" required>
-                {active.map((r) => <option key={r.account_id} value={r.account_id}>{accName(r)} · {r.currency}</option>)}
-              </select>
-            </div>
+            <PersonPicker id="adv" label={t('adv_person')} lang={lang} accounts={pickAcc} users={pickUsers} currency={false} />
             <div className="field">
               <span className="flabel" id="advop">{t('adv_op')}</span>
               <div className="seg" role="radiogroup" aria-labelledby="advop">

@@ -343,6 +343,18 @@ test('anticipi: richiesta, autorizzazione a quattro occhi, soglie, consegna coll
   // l'operatore vede solo le richieste sue
   const seen = await as(U.op2, (q) => q('select count(*)::int n from advance_requests'));
   assert.equal(seen[0].n, 0);
+  // persona nuova (non utente): il conto anticipi si crea con la richiesta, uno per valuta, senza doppioni
+  const n1 = await rpc(U.op, 'advance_request', { holder: '  Rasoa   Nirina ', currency: 'MGA', amount: 20000, purpose: 'Trasporto materiale', use_date: today });
+  const n2 = await rpc(U.op, 'advance_request', { holder: 'rasoa nirina', currency: 'MGA', amount: 1000, purpose: 'Secondo anticipo', use_date: today });
+  assert.equal(n1.account_id, n2.account_id);
+  const [na] = await sql(`select holder, currency, kind, location from accounts where id = $1`, [n1.account_id]);
+  assert.deepEqual([na.holder, na.currency, na.kind, na.location], ['Rasoa Nirina', 'MGA', 'advance', 'MG']);
+  // utente dell'app scelto dalla lista: conto a suo nome, beneficiario collegato
+  const u1 = await rpc(U.op, 'advance_request', { beneficiary_id: U.op, currency: 'EUR', amount: 30, purpose: 'Spese varie', use_date: today });
+  assert.equal(u1.beneficiary_id, U.op);
+  assert.equal((await sql(`select a.currency from accounts a where a.id = $1`, [u1.account_id]))[0].currency, 'EUR');
+  await assert.rejects(rpc(U.op, 'advance_request', { holder: 'X', currency: 'MGA', amount: 10, purpose: 'Nome troppo corto', use_date: today }), /invalid/);
+  await assert.rejects(rpc(U.op, 'advance_account', { holder: 'Qualcuno', currency: 'MGA' }), /forbidden/);
 });
 
 test('bozze: si eliminano solo le bozze', async () => {
