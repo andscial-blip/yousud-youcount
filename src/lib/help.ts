@@ -66,14 +66,14 @@ export const HELP: HelpEntry[] = [
       'Qui paie de sa poche enregistre la dépense avec « De sa poche, à rembourser » : elle ne touche pas les comptes avant le remboursement.',
       'Un responsable rembourse depuis cette page en choisissant le compte qui paie : la dépense entre en comptabilité à la date du remboursement.',
       'Dépenses payées de sa poche. Elles ne touchent pas les comptes tant qu’elles ne sont pas remboursées : le remboursement les enregistre à la date où l’argent sort, comme le veut le compte de caisse.']] },
-  { href: '/documenti', sec: 'mov',
+  { href: '/documenti', sec: 'docs',
     it: ['Giustificativi', [
       'Archivio di scontrini, fatture e ricevute caricati con i movimenti. Ogni file prende il nome del movimento a cui è collegato; lo stesso file caricato due volte non crea un doppione (si riconosce dall\'impronta).',
-      'Da qui si cercano i giustificativi e si vede a quale movimento appartengono. I documenti generati dall\'app (ricevute, notule…) sono invece nella sezione Documenti.',
+      'Da qui si cercano i giustificativi e si vede a quale movimento appartengono. I documenti generati dall\'app (ricevute, notule…) sono in Documenti › Emessi; i rendiconti approvati in Documenti › Rendiconti.',
       '«Scarica tutti (ZIP)» raccoglie in un solo file i giustificativi dell\'anno o del mese scelto, con i nomi data_MOV-… (per il commercialista). Un giustificativo rimasto senza movimento si scarica dal suo nome e si collega scrivendo il numero del movimento.']],
     fr: ['Justificatifs', [
       'Archive des tickets, factures et reçus chargés avec les mouvements. Chaque fichier prend le nom du mouvement lié ; le même fichier chargé deux fois ne crée pas de doublon (reconnu par son empreinte).',
-      'Ici on recherche les justificatifs et on voit à quel mouvement ils appartiennent. Les documents générés par l\'application (reçus, notes d\'honoraires…) sont dans la section Documents.',
+      'Ici on recherche les justificatifs et on voit à quel mouvement ils appartiennent. Les documents générés par l\'application (reçus, notes d\'honoraires…) sont dans Documents › Émis ; les comptes rendus approuvés dans Documents › Comptes rendus.',
       '« Tout télécharger (ZIP) » rassemble dans un seul fichier les justificatifs de l\'année ou du mois choisi, nommés date_MOV-… (pour le comptable). Un justificatif sans mouvement se télécharge depuis son nom et se lie en saisissant le numéro du mouvement.']] },
   { href: '/controparti', sec: 'mov',
     it: ['Controparti', [
@@ -171,11 +171,13 @@ export const HELP: HelpEntry[] = [
       'Le budget est annuel : pour savoir si la dépense va trop vite, on compare la part utilisée à la part de l\'année écoulée (« au-delà du rythme » = plus de 10 % au-dessus).',
       'Pays du compte d’où sort l’argent.',
       'Euros, mouvements enregistrés et vérifiés. Cliquez sur un mois pour ses mouvements.']] },
-  { href: '/rendiconto', sec: 'anal',
-    it: ['Rendiconto', [
-      'Bozza del rendiconto per cassa (Mod. D, enti del Terzo settore) calcolata dai movimenti, con le voci collegate alle categorie. La conformità la verifica il commercialista.']],
-    fr: ['Compte rendu', [
-      'Brouillon du compte rendu de caisse (modèle D, organismes du Tiers secteur italien) calculé à partir des mouvements. La conformité est vérifiée par l\'expert-comptable.']] },
+  { href: '/rendiconto', sec: 'docs',
+    it: ['Rendiconti', [
+      'Bozza del rendiconto per cassa (Mod. D, enti del Terzo settore) calcolata dai movimenti, con le voci collegate alle categorie. La conformità la verifica il commercialista.',
+      'In alto, «Versioni approvate e firmate»: dopo l\'approvazione in assemblea l\'amministratore archivia il PDF firmato con anno, data ed estremi del verbale («Archivia versione approvata»). Ogni versione si apre in anteprima e si scarica; non finisce fra i giustificativi.']],
+    fr: ['Comptes rendus', [
+      'Brouillon du compte rendu de caisse (modèle D, organismes du Tiers secteur italien) calculé à partir des mouvements. La conformité est vérifiée par l\'expert-comptable.',
+      'En haut, « Versions approuvées et signées » : après l\'approbation par l\'assemblée, l\'administrateur archive le PDF signé avec l\'année, la date et les références du procès-verbal (« Archiver la version approuvée »). Chaque version s\'ouvre en aperçu et se télécharge ; elle ne figure pas parmi les justificatifs.']] },
   { href: '/report', sec: 'anal',
     it: ['Report', [
       'Report contabili dell\'anno con grafico e tabella, stampabili in PDF dal browser ed esportabili in Excel con gli stessi numeri.']],
@@ -184,11 +186,11 @@ export const HELP: HelpEntry[] = [
   { href: '/documenti-emessi', sec: 'docs',
     it: ['Documenti emessi', [
       'Qui ci sono solo i documenti generati e salvati da YouSud (non i modelli), divisi per tipo: ricevute e quietanze, notule, note di rimborso, autocertificazioni, autorizzazioni di spesa, dichiarazioni, note di debito e buoni d\'ordine. Le fatture non si emettono: YouSud non ha partita IVA.',
-      '«+ Emetti nuovo documento»: scegli il tipo, compila i dati (precompilati se parti da un movimento o da un progetto) e guarda l\'anteprima che si aggiorna mentre scrivi. Il documento può essere in italiano, francese o bilingue; gli importi sono in euro (grande) e in ariary (piccolo) al tasso del mese o del movimento.',
+      '«+ Emetti»: scegli il tipo, compila i dati (precompilati se parti da un movimento o da un progetto) e guarda l\'anteprima che si aggiorna mentre scrivi. Il documento può essere in italiano, francese o bilingue; gli importi sono in euro (grande) e in ariary (piccolo) al tasso del mese o del movimento.',
       'La bozza non ha numero. «Emetti» assegna il numero definitivo (es. RIC-2026-004), genera il PDF con logo e dati dell\'associazione e lo collega al movimento. Un documento emesso non si modifica: «Correggi» crea una nuova bozza con gli stessi dati e l\'originale si annulla con il motivo. «Archivia» toglie dall\'elenco i documenti chiusi senza cancellarli.']],
     fr: ['Documents émis', [
       'Ici se trouvent seulement les documents générés et enregistrés par YouSud (pas les modèles), par type : reçus et quittances, notes d\'honoraires, notes de frais, attestations, autorisations de dépense, déclarations, notes de débit et bons de commande. Pas de factures : YouSud n\'a pas de numéro de TVA.',
-      '« + Émettre un nouveau document » : choisissez le type, remplissez les données (préremplies si vous partez d\'un mouvement ou d\'un projet) et regardez l\'aperçu qui se met à jour pendant la saisie. Le document peut être en italien, en français ou bilingue ; les montants sont en euros (grand) et en ariary (petit) au taux du mois ou du mouvement.',
+      '« + Émettre » : choisissez le type, remplissez les données (préremplies si vous partez d\'un mouvement ou d\'un projet) et regardez l\'aperçu qui se met à jour pendant la saisie. Le document peut être en italien, en français ou bilingue ; les montants sont en euros (grand) et en ariary (petit) au taux du mois ou du mouvement.',
       'Le brouillon n\'a pas de numéro. « Émettre » attribue le numéro définitif (ex. RIC-2026-004), génère le PDF avec logo et données de l\'association et le lie au mouvement. Un document émis ne se modifie pas : « Corriger » crée un nouveau brouillon avec les mêmes données et l\'original s\'annule avec le motif. « Archiver » retire de la liste les documents clos sans les supprimer.']] },
   { href: '/account', sec: 'set',
     it: ['Il tuo account', ['Nome, lingua dell\'app (italiano o francese) e password.']],

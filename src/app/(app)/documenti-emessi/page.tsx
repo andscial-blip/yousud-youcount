@@ -61,8 +61,8 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
     : <span className="two"><b>{money(r.amount, r.currency, lang)}</b></span>;
   return (
     <div className="stack">
-      <PageHead title={L('Documenti', 'Documents')}>
-        {writer && <Link className="btn primary" href="/documenti-emessi/nuovo">+ {L('Emetti nuovo documento', 'Émettre un nouveau document')}</Link>}
+      <PageHead title={L('Documenti emessi', 'Documents émis')}>
+        {writer && <Link className="btn primary" href="/documenti-emessi/nuovo">+ {L('Emetti', 'Émettre')}</Link>}
       </PageHead>
       {sp.ok === 'deleted' && <div className="note ok" role="status">{L('Bozza eliminata.', 'Brouillon supprimé.')}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />

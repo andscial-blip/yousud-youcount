@@ -5,6 +5,8 @@ import type { Lang, T } from '@/lib/i18n';
 import { Denied, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
 import { Ico } from '@/components/Ui';
+import { ArchiveStatement } from '@/components/ArchiveStatement';
+import { ADMIN } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,16 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
     supabase.from('report_lines').select('direction, key, section_fr, name_fr'),
     supabase.rpc('member_fees', { p_year: year }),
   ]);
+  // versioni approvate e firmate (archivio), con link di download di breve durata
+  type Arc = { id: string; year: number; kind: string; approved_on: string; approval_ref: string; notes: string | null; doc: { original_path: string; file_name: string | null } | null };
+  const { data: arcRaw } = await supabase.from('statement_archive').select('id, year, kind, approved_on, approval_ref, notes, doc:documents(original_path, file_name)')
+    .order('year', { ascending: false }).order('approved_on', { ascending: false }).returns<Arc[]>();
+  const arc = await Promise.all((arcRaw ?? []).map(async (a) => ({ ...a,
+    url: a.doc ? (await supabase.storage.from('documents').createSignedUrl(a.doc.original_path, 600, { download: `Rendiconto_${a.year}_approvato.pdf` })).data?.signedUrl ?? null : null,
+    view: a.doc ? (await supabase.storage.from('documents').createSignedUrl(a.doc.original_path, 600)).data?.signedUrl ?? null : null })));
+  const KIND: Record<string, [string, string]> = { cash: ['Rendiconto per cassa', 'Compte de caisse'], model_e: ['Rendiconto aggregato (Mod. E)', 'Compte agrégé (Mod. E)'],
+    social: ['Bilancio sociale', 'Bilan social'], other: ['Altro atto', 'Autre acte'] };
+  const LL = (k: [string, string]) => (lang === 'fr' ? k[1] : k[0]);
   const q = (y: number, m = modelE, c = compact) => `/rendiconto?anno=${y}${m ? '&modello=E' : ''}${c ? '&compatto=1' : ''}`;
   const fr = new Map((labels ?? []).map((l) => [`${l.direction}/${l.key}`, l]));
   const lines = ((data ?? []) as Line[]).map((l) => ({ ...l, ...(fr.get(`${l.direction}/${l.key}`) ?? {}) }));
@@ -55,6 +67,19 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
         <a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}><Ico name="download" />{t('rep_xlsx')}</a>
         <PrintButton label={t('rep_print')} />
       </div>
+      <section className="panel noprint">
+        <div className="panel-h"><H2 icon="stamp" text={lang === 'fr' ? 'Versions approuvées et signées' : 'Versioni approvate e firmate'} />
+          <div className="spacer" />{can(me, ADMIN) && <ArchiveStatement orgId={me!.org_id} year={year - (new Date().getMonth() < 6 ? 1 : 0)} lang={lang} />}</div>
+        {arc.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{lang === 'fr'
+          ? 'Aucune version archivée. Après l’approbation par l’assemblée, archivez ici le PDF signé : il reste avec ses références.'
+          : 'Nessuna versione archiviata. Dopo l’approvazione in assemblea, archivia qui il PDF firmato: resta con i suoi estremi.'}</p> : (
+          <ul className="arch-list">{arc.map((a) => (
+            <li key={a.id}><span className="ar-y num">{a.year}</span>
+              <div className="ar-b"><b>{LL(KIND[a.kind] ?? KIND.other!)}</b><span className="muted small">{lang === 'fr' ? 'approuvé le' : 'approvato il'} {a.approved_on.split('-').reverse().join('/')} · {a.approval_ref}{a.notes ? ` · ${a.notes}` : ''}</span></div>
+              <div className="ar-a">{a.view && <a className="btn small ghost" href={a.view} target="_blank" rel="noopener">{lang === 'fr' ? 'Aperçu' : 'Anteprima'}</a>}
+                {a.url && <a className="btn small" href={a.url}><Ico name="download" />{lang === 'fr' ? 'Télécharger' : 'Scarica'}</a>}</div></li>))}</ul>
+        )}
+      </section>
       <div className="note">{t('rep_draft')}</div>
       <ErrorNote prefix={t('error_load')} error={error} />
       {missing > 0 && <div className="note err">{missing} {t('rep_missing_rate')}</div>}

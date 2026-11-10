@@ -17,8 +17,7 @@ export const SECTIONS: Section[] = [
     { href: '/', key: 'sub_overview' }, { href: '/scadenze', key: 'nav_deadlines' }] },
   // «Da verificare» non è una scheda: è un filtro del registro e un indicatore della Dashboard (la pagina /verifica resta per la verifica in blocco)
   { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo', '/verifica'], subs: [
-    { href: '/movimenti', key: 'sub_register' }, { href: '/rimborsi', key: 'nav_reimb' },
-    { href: '/documenti', key: 'sub_receipts' }, { href: '/controparti', key: 'sub_parties' }] },
+    { href: '/movimenti', key: 'sub_register' }, { href: '/rimborsi', key: 'nav_reimb' }, { href: '/controparti', key: 'sub_parties' }] },
   { id: 'cassa', key: 'nav_accounts', hint: 'hint_cassa', ic: 'bank', subs: [
     { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances', roles: STAFF },
     { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }, { href: '/cambi', key: 'sub_fx' }] },
@@ -26,8 +25,10 @@ export const SECTIONS: Section[] = [
   { id: 'prj', key: 'nav_projects', hint: 'hint_prj', ic: 'brief', subs: [
     { href: '/progetti', key: 'nav_projects' }, { href: '/finanziamenti', key: 'nav_grants' }] },
   { id: 'anal', key: 'nav_analysis', hint: 'hint_anal', ic: 'chart', roles: STAFF, subs: [
-    { href: '/analisi', key: 'nav_analysis' }, { href: '/rendiconto', key: 'nav_report' }, { href: '/report', key: 'nav_reports' }, { href: '/chiedi', key: 'nav_ask' }] },
-  { id: 'docs', key: 'nav_documents', hint: 'hint_docs', ic: 'receipt', subs: [{ href: '/documenti-emessi', key: 'nav_documents' }] },
+    { href: '/analisi', key: 'nav_analysis' }, { href: '/report', key: 'nav_reports' }, { href: '/chiedi', key: 'nav_ask' }] },
+  // Documenti in tre sottoschede (scelta 7B): rendiconti (prospetto aggiornato e versioni approvate), emessi, giustificativi
+  { id: 'docs', key: 'nav_documents', hint: 'hint_docs', ic: 'receipt', subs: [
+    { href: '/rendiconto', key: 'sub_statements', roles: STAFF }, { href: '/documenti-emessi', key: 'sub_issued' }, { href: '/documenti', key: 'sub_receipts' }] },
   { id: 'guide', key: 'nav_guide', hint: 'hint_guide', ic: 'info', subs: [{ href: '/guida', key: 'nav_guide' }] },
   { id: 'set', key: 'nav_settings', hint: 'hint_set', ic: 'gear', also: ['/altro'], subs: [
     { href: '/account', key: 'nav_account' },

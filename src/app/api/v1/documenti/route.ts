@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   if (!(year >= 2000 && year <= 2100) || !(month >= 0 && month <= 12)) return NextResponse.json({ error: 'periodo' }, { status: 400 });
   const { data, error } = await supabase.from('documents')
     .select('id, doc_date, created_at, original_path, pdf_path, file_name, links:movement_documents(seq, movement:movements(ref, op_date, doc_date))')
-    .order('created_at').limit(3000).returns<Row[]>();
+    .neq('doc_type', 'statement').order('created_at').limit(3000).returns<Row[]>();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const prefix = month ? `${year}-${String(month).padStart(2, '0')}` : `${year}`;
   const pick = (data ?? []).map((d) => {

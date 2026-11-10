@@ -933,6 +933,26 @@ try {
     await sa.page.goto(`${base}/admin/dati`);
     await sa.page.getByText('Ultimo backup:', { exact: false }).waitFor();
   });
+  await check('documenti › rendiconti: versione approvata e firmata archiviata, anteprima e download, non fra i giustificativi', async () => {
+    const p = sa.page;
+    await p.goto(`${base}/rendiconto?anno=${year}`);
+    await p.getByText('Archivia versione approvata').click();
+    await p.locator('#ar-y').fill(String(year - 1));
+    await p.locator('#ar-d').fill(today);
+    await p.locator('#ar-r').fill('Verbale assemblea di prova e2e');
+    const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n' + randomUUID());
+    await p.locator('#ar-f').setInputFiles({ name: 'rendiconto-firmato.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await p.getByRole('button', { name: 'Archivia', exact: true }).click();
+    await p.getByText('Versione approvata archiviata.').waitFor();
+    const li = p.locator('.arch-list li', { hasText: 'Verbale assemblea di prova e2e' });
+    await li.waitFor();
+    assert.match(await li.innerText(), new RegExp(String(year - 1)));
+    assert.equal(await li.getByRole('link', { name: 'Scarica' }).count(), 1);
+    const [{ n }] = (await pool.query(`select count(*)::int n from statement_archive a join documents d on d.id = a.document_id where d.doc_type = 'statement'`)).rows;
+    assert.equal(n, 1);
+    await p.goto(`${base}/documenti?q=rendiconto-firmato`);
+    assert.equal(await p.locator('main tbody tr').count(), 0, 'il rendiconto firmato non è un giustificativo');
+  });
   await check('impostazioni: sede in Madagascar salvata, promemoria di rinnovo 6 mesi prima in Scadenze', async () => {
     const p = sa.page;
     await p.goto(`${base}/admin/impostazioni`);

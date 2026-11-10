@@ -1257,3 +1257,13 @@ ul.dl.dl2 .dl-act { justify-content: flex-start; }
 }
 .vline a { color: var(--slate); }
 .dl-day b { font-variant-numeric: tabular-nums; }
+.arch-list { list-style: none; margin: 0; padding: 0; }
+.arch-list li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--line-2); }
+.arch-list .ar-y { font-size: 20px; font-weight: 600; color: var(--navy); }
+.arch-list .ar-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.arch-list .ar-a { display: flex; gap: 6px; }
+.arch-new > summary { list-style: none; } .arch-new > summary::-webkit-details-marker { display: none; }
+.arch-new[open] { flex-basis: 100%; }
+.panel-h:has(.arch-new[open]) { flex-wrap: wrap; }
+.ok-t { color: var(--green); font-size: 14px; } .err-t { color: var(--red); font-size: 14px; }
+@media (max-width: 760px) { .arch-list li { grid-template-columns: 48px minmax(0, 1fr); } .arch-list .ar-a { grid-column: 2; } }

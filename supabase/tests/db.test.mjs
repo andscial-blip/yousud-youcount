@@ -292,6 +292,59 @@ test('documenti: stesso file non si duplica, percorso vincolato, niente cancella
   assert.equal(u.outcome, 'applied');
 });
 
+test('rendiconti approvati: archiviati solo dagli amministratori, fuori dai giustificativi', async () => {
+  const label = randomUUID();
+  const d = await rpc(U.admin, 'register_document', { client_uuid: randomUUID(), sha256: sha(label), original_path: `${ORG}/rendiconti/${year}/${label}.pdf`,
+    mime: 'application/pdf', doc_type: 'statement', doc_date: today, doc_number: 'Assemblea di prova' });
+  const p = { document_id: d.id, year: year - 1, approved_on: today, approval_ref: 'Verbale assemblea di prova' };
+  await assert.rejects(rpc(U.op, 'archive_statement', p), /forbidden/);
+  const a = await rpc(U.admin, 'archive_statement', p);
+  assert.equal(a.year, year - 1);
+  const again = await rpc(U.admin, 'archive_statement', { ...p, approval_ref: 'Verbale corretto' });
+  assert.equal(again.id, a.id, 'stesso documento: si aggiorna, non si duplica');
+  const other = await doc(U.admin);
+  await assert.rejects(rpc(U.admin, 'archive_statement', { ...p, document_id: other }), /not_found/);
+  assert.equal((await as(U.op, (q) => q('select count(*)::int n from statement_archive')))[0].n, 0, 'l\'operatore non vede l\'archivio');
+});
+
+test('anticipi: richiesta, autorizzazione a quattro occhi, soglie, consegna collegata, rendiconto, chiusura', async () => {
+  const acc = (await rpc(U.resp, 'create_advance_account', 'Volontario di prova', 'EUR', 'IT')).id;
+  const req = await rpc(U.op, 'advance_request', { account_id: acc, amount: 300, purpose: 'Materiale per il laboratorio', use_date: today, beneficiary_id: U.op });
+  assert.equal(req.status, 'requested');
+  assert.equal(Number(req.amount_eur), 300);
+  assert.equal(req.report_by, new Date(Date.parse(today) + 15 * 864e5).toISOString().slice(0, 10), 'giustificare entro 15 giorni');
+  await assert.rejects(rpc(U.op, 'advance_step', { id: req.id, step: 'authorize' }), /forbidden/);
+  // soglie: il responsabile fino a 200 €, l'amministratore fino a 250 €, oltre serve la delibera
+  await sql(`insert into settings(org_id, key, value) values ($1, 'adv_limits', '{"resp": 200, "admin": 250}') on conflict (org_id, key) do update set value = excluded.value`, [ORG]);
+  await assert.rejects(rpc(U.resp, 'advance_step', { id: req.id, step: 'authorize' }), /over_limit/);
+  await assert.rejects(rpc(U.admin, 'advance_step', { id: req.id, step: 'authorize' }), /board_needed/);
+  const auth = await rpc(U.admin, 'advance_step', { id: req.id, step: 'authorize', board_ref: 'Delibera CdA di prova' });
+  assert.equal(auth.status, 'authorized');
+  await sql(`delete from settings where key = 'adv_limits'`);
+  // chi chiede non autorizza
+  const req2 = await rpc(U.resp, 'advance_request', { account_id: acc, amount: 50, purpose: 'Trasporti', use_date: today });
+  await assert.rejects(rpc(U.resp, 'advance_step', { id: req2.id, step: 'authorize' }), /four_eyes/);
+  // consegna: il giroconto deve andare sul conto anticipi della persona
+  const wrong = await rpc(U.resp, 'save_movement', mov({ status: 'recorded', kind: 'transfer', category_id: null, project_id: null, amount: 300, to_amount: 300,
+    account_id: R.acc['Banca Italia'], to_account_id: R.acc['Cassa Italia'], no_doc_reason: 'giroconto' }));
+  await assert.rejects(rpc(U.resp, 'advance_step', { id: req.id, step: 'deliver', movement_id: wrong.id }), /invalid/);
+  const mv = await rpc(U.resp, 'save_movement', mov({ status: 'recorded', kind: 'transfer', category_id: null, project_id: null, amount: 300, to_amount: 300,
+    account_id: R.acc['Cassa Italia'], to_account_id: acc, no_doc_reason: 'consegna anticipo' }));
+  const del = await rpc(U.resp, 'advance_step', { id: req.id, step: 'deliver', movement_id: mv.id });
+  assert.equal(del.status, 'delivered');
+  // anticipo scaduto e non giustificato: niente nuova richiesta per la stessa persona
+  await sql(`update advance_requests set use_date = current_date - 40, report_by = current_date - 25 where id = $1`, [req.id]);
+  await assert.rejects(rpc(U.op, 'advance_request', { account_id: acc, amount: 10, purpose: 'Altro', use_date: today }), /advance_overdue/);
+  const rep = await rpc(U.op, 'advance_step', { id: req.id, step: 'report' });
+  assert.equal(rep.status, 'reported');
+  await assert.rejects(rpc(U.op, 'advance_step', { id: req.id, step: 'close' }), /forbidden/);
+  const cl = await rpc(U.resp, 'advance_step', { id: req.id, step: 'close', note: 'residuo restituito' });
+  assert.equal(cl.status, 'closed');
+  // l'operatore vede solo le richieste sue
+  const seen = await as(U.op2, (q) => q('select count(*)::int n from advance_requests'));
+  assert.equal(seen[0].n, 0);
+});
+
 test('bozze: si eliminano solo le bozze', async () => {
   const d = await rpc(U.op, 'save_movement', mov());
   await assert.rejects(rpc(U.op2, 'discard_draft', d.id), /forbidden|not_found/);
