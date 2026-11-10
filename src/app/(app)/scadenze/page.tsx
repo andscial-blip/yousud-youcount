@@ -5,6 +5,7 @@ import { DL_CAT, THRESHOLDS, ruleItems, type DlCat } from '@/lib/deadline-rules'
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
 import { CIcon } from '@/components/CIcon';
+import { FilterBar } from '@/components/FilterBar';
 import { saveDeadline, setDeadlineStatus } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export default async function Deadlines({ searchParams }: {
   const td = today(), Y = Number(td.slice(0, 4));
   const per = ['late', '14', '30', '90', 'all'].includes(sp.periodo ?? '') ? sp.periodo! : '90';
   const tipo = (Object.keys(DL_CAT) as DlCat[]).includes(sp.tipo as DlCat) ? sp.tipo as DlCat : '';
-  const view = sp.vista === 'calendario' ? 'cal' : 'list';
+  const view: string = 'list'; // calendario sempre in alto, elenco sotto (scelta 4A)
   const month = /^\d{4}-\d{2}$/.test(sp.mese ?? '') ? sp.mese! : td.slice(0, 7);
 
   const [{ data: saved, error }, { data: projects }, { data: users }, inc0, inc1, inc2, drafts, due, unver, periods, rate, grants, adv, bud] = await Promise.all([
@@ -100,7 +101,25 @@ export default async function Deadlines({ searchParams }: {
       : (i.status === 'open' && i.date < td) || (i.date >= td && i.date <= addDays(td, Number(per)));
   const list = items.filter((i) => (!tipo || i.cat === tipo) && i.applies && (view === 'cal' || inPeriod(i))).sort((a, b) => a.date.localeCompare(b.date) || (b.priority === 'high' ? 1 : -1));
   const late = items.filter((i) => i.applies && i.status === 'open' && i.date < td).length;
-  const soon = items.filter((i) => i.applies && i.status === 'open' && i.date >= td && i.date <= addDays(td, 14)).length;
+  const soonL = items.filter((i) => i.applies && i.status === 'open' && i.date >= td && i.date <= addDays(td, 14)).sort((a, b) => a.date.localeCompare(b.date));
+  const soon = soonL.length;
+  const lateL = items.filter((i) => i.applies && i.status === 'open' && i.date < td).sort((a, b) => b.date.localeCompare(a.date));
+  // importanza (scelta 4A): critica = sanzioni (fiscali, RUNTS/ETS); alta = finanziatori o priorità alta; normale = pagamenti e incassi; promemoria = il resto
+  const imp = (i: Item): 'c' | 'a' | 'n' | 'p' | 'f' => i.status !== 'open' ? 'f' : i.cat === 'fisc' || i.cat === 'ets' ? 'c' : i.cat === 'prj' || i.priority === 'high' ? 'a' : i.cat === 'pay' || i.cat === 'inc' ? 'n' : 'p';
+  const IMP: [ReturnType<typeof imp>, string, string][] = [['c', 'critica (sanzioni)', 'critique (sanctions)'], ['a', 'alta (finanziatori)', 'haute (bailleurs)'],
+    ['n', 'normale (pagamenti)', 'normale (paiements)'], ['p', 'promemoria', 'rappel'], ['f', 'fatta', 'faite']];
+  const fxr = Number((rate.data as number | null) ?? 0);
+  const toPay = items.filter((i) => i.applies && i.status === 'open' && i.cat === 'pay' && i.amount && i.date <= addDays(td, 30));
+  const toPayEur = toPay.reduce((s, i) => s + (i.currency === 'MGA' ? (fxr ? i.amount! / fxr : 0) : i.amount!), 0);
+  const calItems = items.filter((i) => i.applies && (!tipo || i.cat === tipo));
+  const dm = (d: string) => d.slice(8) + '/' + d.slice(5, 7);
+  const MS = lang === 'fr' ? ['JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'] : ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC'];
+  // soglie ETS su un righello logaritmico, con la stima di fine anno al ritmo di oggi
+  const dayOfYear = Math.max(1, Math.round((Date.parse(`${td}T00:00:00Z`) - Date.UTC(Y, 0, 1)) / 864e5) + 1);
+  const est = inc(Y) * (365 / dayOfYear);
+  const lmin = Math.log10(20000), lmax = Math.log10(1500000);
+  const pos = (v: number) => Math.max(0, Math.min(100, ((Math.log10(Math.max(v, 20000)) - lmin) / (lmax - lmin)) * 100));
+  const k = (v: number) => v >= 1e6 ? `${(v / 1e6).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}M` : `${Math.round(v / 1000)}k`;
   const tag = (i: Item) => {
     if (i.status === 'done') return <span className="chip ok">{L('Fatta', 'Faite')}</span>;
     if (i.status === 'cancelled') return <span className="chip">{L('Annullata', 'Annulée')}</span>;
@@ -108,7 +127,7 @@ export default async function Deadlines({ searchParams }: {
     return n < 0 ? <span className="chip bad">{L(`Scaduta da ${-n} gg`, `En retard de ${-n} j`)}</span> : n === 0 ? <span className="chip bad">{L('Oggi', 'Aujourd\'hui')}</span>
       : n <= 14 ? <span className="chip warn">{L(`Tra ${n} gg`, `Dans ${n} j`)}</span> : <span className="chip">{L(`Tra ${n} gg`, `Dans ${n} j`)}</span>;
   };
-  const href = (q: Record<string, string>) => { const u = new URLSearchParams({ periodo: per, ...(tipo ? { tipo } : {}), ...(view === 'cal' ? { vista: 'calendario', mese: month } : {}), ...q });
+  const href = (q: Record<string, string>) => { const u = new URLSearchParams({ periodo: per, ...(tipo ? { tipo } : {}), ...(month !== td.slice(0, 7) ? { mese: month } : {}), ...q });
     for (const [k, v] of [...u.entries()]) if (!v) u.delete(k); return `/scadenze?${u}`; };
   const edit = sv.find((d) => d.id === sp.edit && !d.rule_key);
   const showForm = writer && (Boolean(edit) || sp.nuovo === '1');
@@ -143,16 +162,16 @@ export default async function Deadlines({ searchParams }: {
       <div className="h-tiles s-tiles">
         <div className={`htile${late ? ' t-warn' : ''}`}>
           <span className="ht-l"><CIcon name="alert" size={14} />{L('Scadute', 'En retard')}</span>
-          <b className={`num${late ? ' neg' : ''}`}>{late}</b><small>{late ? L('da chiudere subito', 'à traiter tout de suite') : L('nessuna in ritardo', 'aucune en retard')}</small>
+          <b className={`num${late ? ' neg' : ''}`}>{late}</b><small className="ht-t">{lateL[0] ? `${lateL[0].title}, ${dm(lateL[0].date)}` : L('nessuna in ritardo', 'aucune en retard')}</small>
         </div>
         <div className={`htile${soon ? ' t-do' : ''}`}>
-          <span className="ht-l"><CIcon name="cal" size={14} />{L('Nei prossimi 14 giorni', 'Dans les 14 prochains jours')}</span>
-          <b className="num">{soon}</b><small>{L('da preparare', 'à préparer')}</small>
+          <span className="ht-l"><CIcon name="cal" size={14} />{L('Prossimi 14 giorni', '14 prochains jours')}</span>
+          <b className="num">{soon}</b><small className="ht-t">{soonL[0] ? L(`la prima il ${dm(soonL[0].date)}`, `la première le ${dm(soonL[0].date)}`) : L('niente in arrivo', 'rien à venir')}</small>
         </div>
-        {staff && <div className="htile">
-          <span className="ht-l"><CIcon name="trend" size={14} />{L(`Entrate registrate ${Y}`, `Recettes enregistrées ${Y}`)}</span>
-          <b className="num amt-in">{money(inc(Y), 'EUR', lang)}</b><small>{Y - 1}: {money(inc(Y - 1), 'EUR', lang)} · {L('servono per le soglie ETS', 'servent aux seuils ETS')}</small>
-        </div>}
+        <div className="htile">
+          <span className="ht-l"><CIcon name="wallet" size={14} />{L('Da pagare in 30 giorni', 'À payer sous 30 jours')}</span>
+          <b className="num">{money(Math.round(toPayEur), 'EUR', lang).replace(/,00(?=\s?€)/, '')}</b><small>{toPay.length === 1 ? L('1 pagamento', '1 paiement') : L(`${toPay.length} pagamenti`, `${toPay.length} paiements`)}</small>
+        </div>
       </div>
 
       {showForm && (
@@ -191,71 +210,76 @@ export default async function Deadlines({ searchParams }: {
         </Panel>
       )}
 
-      <div className="segs" role="tablist" aria-label={L('Vista', 'Vue')}>
-        <Link role="tab" aria-selected={view === 'list'} href={`/scadenze?periodo=${per}${tipo ? `&tipo=${tipo}` : ''}`}>{L('Elenco', 'Liste')}</Link>
-        <Link role="tab" aria-selected={view === 'cal'} href={`/scadenze?vista=calendario&mese=${month}${tipo ? `&tipo=${tipo}` : ''}`}>{L('Calendario', 'Calendrier')}</Link>
-      </div>
-      <nav className="quick" aria-label={L('Filtri', 'Filtres')}>
-        {view === 'list' && ([['late', L('Scadute', 'En retard')], ['14', L('14 giorni', '14 jours')], ['30', L('30 giorni', '30 jours')], ['90', L('90 giorni', '90 jours')], ['all', L('Tutte', 'Toutes')]] as const)
-          .map(([k, l]) => <Link key={k} href={href({ periodo: k })} aria-current={per === k ? 'true' : undefined}>{l}</Link>)}
-        <span className="qsep" aria-hidden="true" />
-        <Link href={href({ tipo: '' })} aria-current={!tipo ? 'true' : undefined}>{L('Tutti i tipi', 'Tous les types')}</Link>
-        {(Object.keys(DL_CAT) as DlCat[]).map((k) => <Link key={k} href={href({ tipo: k })} aria-current={tipo === k ? 'true' : undefined}>{L(...DL_CAT[k])}</Link>)}
-      </nav>
+      <section className="panel">
+        <div className="panel-h cal-h">
+          <Link className="btn small ghost" href={href({ mese: prevM })} aria-label={L('Mese precedente', 'Mois précédent')}>‹</Link>
+          <h2 style={{ textTransform: 'capitalize' }}>{monthName}</h2>
+          <Link className="btn small ghost" href={href({ mese: nextM })} aria-label={L('Mese successivo', 'Mois suivant')}>›</Link>
+        </div>
+        <div className="cal" role="grid">
+          {wd.map((w) => <div key={w} className="cal-wd" role="columnheader">{w}</div>)}
+          {daysGrid.map((d) => {
+            const its = calItems.filter((i) => i.date === d);
+            return (
+              <div key={d} className={`cal-d ${d.slice(0, 7) !== month ? 'out' : ''} ${d === td ? 'today' : ''} ${its.length ? 'has' : ''}`} role="gridcell">
+                <span className="cal-n">{Number(d.slice(8))}</span>
+                {its.slice(0, 3).map((i) => <span key={i.key} className={`cal-i i-${imp(i)}`} title={i.title}>{i.title}</span>)}
+                {its.length > 3 && <span className="cal-more">+{its.length - 3}</span>}
+              </div>
+            );
+          })}
+        </div>
+        <ul className="imp-leg">{IMP.map(([c, it, fr]) => <li key={c}><i className={`i-${c}`} />{L(it, fr)}</li>)}</ul>
+      </section>
 
-      {view === 'list' ? (
-        <Panel>
-          {list.length === 0 ? <div className="panel-b muted">{L('Nessuna scadenza nel periodo.', 'Aucune échéance sur la période.')}</div> : (
-            <ul className="dl">
-              {list.map((i) => (
-                <li key={i.key} className={`${i.status !== 'open' ? 'done' : ''} p-${i.priority}`}>
-                  <div className="dl-date num"><b>{date(i.date)}</b>{tag(i)}</div>
-                  <div className="dl-body">
-                    <div className="dl-t">{i.href ? <Link href={i.href}>{i.title}</Link> : i.title}</div>
-                    <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
-                  </div>
-                  <div className="dl-amt num">{i.amount ? money(i.amount, i.currency ?? 'EUR', lang) : ''}</div>
-                  <div className="dl-act">
-                    {!i.auto && writer && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
-                    {!i.auto && !i.rule_key && writer && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
-                    {i.auto && <span className="chip">{L('dai dati', 'des données')}</span>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      ) : (
-        <section className="panel">
-          <div className="panel-h cal-h">
-            <Link className="btn small" href={href({ mese: prevM })} aria-label={L('Mese precedente', 'Mois précédent')}>←</Link>
-            <h2 style={{ textTransform: 'capitalize' }}>{monthName}</h2>
-            <Link className="btn small" href={href({ mese: nextM })} aria-label={L('Mese successivo', 'Mois suivant')}>→</Link>
-          </div>
-          <div className="cal" role="grid">
-            {wd.map((w) => <div key={w} className="cal-wd" role="columnheader">{w}</div>)}
-            {daysGrid.map((d) => {
-              const its = list.filter((i) => i.date === d);
-              return (
-                <div key={d} className={`cal-d ${d.slice(0, 7) !== month ? 'out' : ''} ${d === td ? 'today' : ''}`} role="gridcell">
-                  <span className="cal-n">{Number(d.slice(8))}</span>
-                  {its.slice(0, 3).map((i) => <span key={i.key} className={`cal-i ${i.status !== 'open' ? 'done' : i.date < td ? 'late' : ''}`} title={i.title}>{i.title}</span>)}
-                  {its.length > 3 && <span className="cal-more">+{its.length - 3}</span>}
+      <Panel>
+        <FilterBar action="/scadenze" lang={lang} hidden={{ periodo: per, mese: month !== td.slice(0, 7) ? month : undefined }}
+          inline={<nav className="quick fb-inline" aria-label={L('Periodo', 'Période')}>
+            {([['late', L('Scadute', 'En retard')], ['14', L('14 giorni', '14 jours')], ['30', L('30 giorni', '30 jours')], ['90', L('90 giorni', '90 jours')], ['all', L('Tutte', 'Toutes')]] as const)
+              .map(([k, l]) => <Link key={k} href={href({ periodo: k })} scroll={false} aria-current={per === k ? 'true' : undefined}>{l}</Link>)}</nav>}
+          active={tipo ? 1 : 0} reset={tipo ? href({ tipo: '' }) : null}>
+          <label className="field"><span className="flabel">{L('Tipo', 'Type')}</span>
+            <select className="input" name="tipo" defaultValue={tipo}><option value="">{L('Tutti i tipi', 'Tous les types')}</option>
+              {(Object.keys(DL_CAT) as DlCat[]).map((k) => <option key={k} value={k}>{L(...DL_CAT[k])}</option>)}</select></label>
+        </FilterBar>
+        {list.length === 0 ? <div className="panel-b muted">{L('Nessuna scadenza nel periodo.', 'Aucune échéance sur la période.')}</div> : (
+          <ul className="dl dl2">
+            {list.map((i) => (
+              <li key={i.key} className={`${i.status !== 'open' ? 'done' : ''} i-${imp(i)}`}>
+                <div className="dl-day num"><b>{i.date.slice(8)}</b><span>{MS[Number(i.date.slice(5, 7)) - 1]}</span></div>
+                <div className="dl-body">
+                  <div className="dl-t">{i.href ? <Link href={i.href}>{i.title}</Link> : i.title}</div>
+                  <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                <div className="dl-amt num">{i.amount ? money(i.amount, i.currency ?? 'EUR', lang) : ''}</div>
+                <div className="dl-tag">{tag(i)}</div>
+                <div className="dl-act">
+                  {!i.auto && writer && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
+                  {!i.auto && !i.rule_key && writer && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
+                  {i.auto && <span className="chip">{L('dai dati', 'des données')}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
 
       {staff && (
-        <Panel title={L(`Soglie di entrata ${Y}`, `Seuils de recettes ${Y}`)} pad>
-          <div className="thr">
-            {THRESHOLDS.map((th) => { const v = inc(Y), p = Math.min(100, (v / th.v) * 100); return (
-              <div key={th.v}><div className="thr-r"><span>{L(th.it, th.fr)}</span><span className="muted num">{v > th.v ? L('superata', 'dépassée') : `${Math.round(p)}%`}</span></div>
-                <span className="meter" aria-hidden="true"><i style={{ width: `${p}%` }} /></span></div>
-            ); })}
+        <Panel title={L(`Soglie ETS · entrate ${Y}`, `Seuils ETS · recettes ${Y}`)} pad>
+          <p className="muted small" style={{ marginTop: 0 }}>{L('Entrate', 'Recettes')} {Y - 1}: <b className="num">{money(inc(Y - 1), 'EUR', lang)}</b> · {Y} {L('finora', 'à ce jour')}: <b className="num">{money(inc(Y), 'EUR', lang)}</b> · {L('fine anno stimata', 'fin d’année estimée')}: <b className="num">≈ {money(Math.round(est / 1000) * 1000, 'EUR', lang).replace(/,00(?=\s?€)/, '')}</b></p>
+          <div className="ruler" role="img" aria-label={L('Righello delle soglie', 'Règle des seuils')}>
+            <div className="ru-track"><i style={{ width: `${pos(inc(Y))}%` }} /></div>
+            {THRESHOLDS.map((th) => <span key={th.v} className={`ru-th${inc(Y) > th.v ? ' past' : ''}`} style={{ left: `${pos(th.v)}%` }}><span>{k(th.v)}</span></span>)}
+            <span className="ru-now" style={{ left: `${pos(inc(Y))}%` }}><b>{k(inc(Y))}</b> {L('oggi', 'auj.')}</span>
+            {est > inc(Y) && <span className="ru-est" style={{ left: `${pos(est)}%` }} title={L('stima di fine anno', 'estimation de fin d’année')} />}
           </div>
+          <ul className="thr2">
+            {THRESHOLDS.map((th) => { const v = inc(Y), past = v > th.v; return (
+              <li key={th.v} className={past ? 'past' : ''}><b className="num">{k(th.v)}</b><span>{L(th.it, th.fr)}</span>
+                <span className={`cdp ${past ? 'mid' : 'ok'}`}>{past ? L('superata', 'dépassée') : `${Math.round((v / th.v) * 100)} %`}</span></li>); })}
+          </ul>
+          <p className="muted small" style={{ marginBottom: 0 }}>{L('Scala logaritmica: le soglie sono molto distanti fra loro. La tacca lilla è la stima di fine anno al ritmo di oggi. La lettura delle soglie la conferma il commercialista.',
+            'Échelle logarithmique : les seuils sont très éloignés. Le repère lilas est l’estimation de fin d’année au rythme actuel. La lecture des seuils est confirmée par l’expert-comptable.')}</p>
         </Panel>
       )}
     </div>

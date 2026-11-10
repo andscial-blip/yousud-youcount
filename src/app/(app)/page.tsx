@@ -144,18 +144,27 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <div className="stack">
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
-      <div className="home v2">
-        <div className="h-left">
-          <section className="panel hero h-hero">
-            <div className="hero-h"><div><h2>{L(`Il ${year} in sintesi`, `${year} en synthèse`)}</h2><span className="eyebrow">{eye} · {L('movimenti registrati e verificati, in euro', 'mouvements enregistrés et vérifiés, en euros')}</span></div>
+      <div className="home v3">
+        {/* 4 cifre dell'anno, tutte uguali (scelta 2C): colore solo sul filo in alto e sulla pastiglia */}
+        <div className="kpi4">
+          <div className="k4 k-in"><span className="k4-t"><CIcon name="trend" size={15} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(inc)}</b>
+            <small>{eye}</small>{bIn ? <span className="cdp ok">{pct(inc, bIn)} {L('del previsto', 'du prévu')}</span> : null}</div>
+          <div className="k4 k-out"><span className="k4-t"><CIcon name="chart" size={15} />{L('Uscite', 'Dépenses')}</span><b className="num">{e0(out)}</b>
+            <small>{curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : '\u00a0'}</small>{bOut ? <span className={`cdp ${aOut / bOut > elapsed + 0.1 ? 'late' : 'mid'}`}>{pct(aOut, bOut)} {L('del preventivo', 'du budget')}</span> : null}</div>
+          <div className="k4 k-net"><span className="k4-t"><CIcon name="calc" size={15} />{net >= 0 ? L('Avanzo', 'Excédent') : L('Disavanzo', 'Déficit')}</span>
+            <b className={`num ${net < 0 ? 'neg' : 'pos'}`}>{net < 0 ? '−' : ''}{e0(Math.abs(net))}</b><small>{L('entrate meno uscite', 'recettes moins dépenses')}</small></div>
+          {staff ? <div className="k4 k-liq"><span className="k4-t"><CIcon name="bank" size={15} />{L('Liquidità oggi', 'Liquidités aujourd\'hui')}</span><b className={`num ${liq < 0 ? 'neg' : ''}`}>{e0(liq)}</b>
+            <small>{L('tutti i conti, Italia e Madagascar', 'tous les comptes, Italie et Madagascar')}</small>{runway != null ? <span className={`cdp ${runway < 3 ? 'late' : 'ok'}`}>{runway.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })} {L('mesi di spesa', 'mois de dépenses')}</span> : null}</div>
+            : <Link className="k4 k-liq" href={verHref}><span className="k4-t"><CIcon name="check" size={15} />{L('Da verificare', 'À vérifier')}</span><b className="num">{toVerify ?? 0}</b><small>{L('movimenti', 'mouvements')}</small></Link>}
+        </div>
+
+        {/* pannelli sempre a coppie, della stessa altezza */}
+        <div className="pairs">
+          <section className="panel h-card h-hero">
+            <div className="panel-h"><H2 text={L(`Il ${year} mese per mese`, `${year} mois par mois`)} /><span className="eyebrow" style={{ marginLeft: 4 }}>{L('registrati e verificati, in euro', 'enregistrés et vérifiés, en euros')}</span><div className="spacer" />
               {over.size > 0 && <Link className="cdp late nolink" href={`/preventivo?anno=${year}&vista=confronto`}>{over.size === 1 ? L('1 codice oltre il preventivo', '1 code au-delà du budget') : L(`${over.size} codici oltre il preventivo`, `${over.size} codes au-delà du budget`)}</Link>}</div>
-            <div className="hero-nums">
-              <div className="hn-main"><span><CIcon name="trend" size={14} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(inc)}</b><small>{bIn ? `${pct(inc, bIn)} ${L('del previsto', 'du prévu')}` : L('nessun preventivo', 'aucun budget')}</small></div>
-              <div><span><CIcon name="chart" size={14} />{L('Uscite', 'Dépenses')}</span><b className="num">{e0(out)}</b><small>{curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : ''}</small></div>
-              <div><span><CIcon name="calc" size={14} />{net >= 0 ? L('Avanzo', 'Excédent') : L('Disavanzo', 'Déficit')}</span><b className={`num ${net < 0 ? 'neg' : 'pos'}`}>{net < 0 ? '−' : ''}{e0(Math.abs(net))}</b><small>{L('entrate meno uscite', 'recettes moins dépenses')}</small></div>
-              {staff && <div><span><CIcon name="bank" size={14} />{L('Liquidità oggi', 'Liquidités aujourd\'hui')}</span><b className={`num ${liq < 0 ? 'neg' : ''}`}>{e0(liq)}</b><small>{runway != null ? L(`circa ${runway.toLocaleString('it-IT', { maximumFractionDigits: 1 })} mesi di spesa`, `environ ${runway.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mois de dépenses`) : L('Italia + Madagascar', 'Italie + Madagascar')}</small></div>}
-            </div>
-            <div className="hero-chart">
+            <div className="panel-b">
+              <div className="hero-chart">
               <MonthBars data={months} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }}
                 hrefFor={(m) => `/movimenti?dal=${year}-${String(m).padStart(2, '0')}-01&al=${year}-${String(m).padStart(2, '0')}-${String(new Date(year, m, 0).getDate()).padStart(2, '0')}`} />
             </div>
@@ -171,8 +180,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 </>}
               </div>
             )}
+            </div>
           </section>
-
+          <section className="panel h-todo">
+            <div className="panel-h"><H2 text={L('Da fare', 'À faire')} /><span className="eyebrow tday" style={{ marginLeft: 4 }}>{L('oggi', 'aujourd\'hui')} {date(td)}</span></div>
+            <ul className="tlist">{todo.slice(0, TODO_MAX).map((x, i) => (
+              <li key={i} className={x.lvl}><span className={`dot ${x.lvl}`}><CIcon name={x.ic} size={13} /></span>
+                <div className="tm"><div className="tt"><Link href={x.href}>{x.title}</Link></div>{x.sub && <div className="ts">{x.sub}</div>}</div>
+                <div className="tr">{x.big && <b className="num">{x.big}</b>}{x.chip && <span className={`cdp ${x.chip.c}`}>{x.chip.t}</span>}</div>
+                <div className="ta">{x.act && <Link className="btn small ghost" href={x.href}>{x.act}</Link>}</div></li>))}</ul>
+            {todo.length > TODO_MAX && <div className="more"><Link className="btn small ghost" href="/scadenze">{L(`Altre ${todo.length - TODO_MAX}`, `${todo.length - TODO_MAX} autres`)}</Link></div>}
+          </section>
           <section className="panel h-card">
             <div className="panel-h"><H2 text={L('Uscite per progetto', 'Dépenses par projet')} /><div className="spacer" /><span className="eyebrow">{year}</span></div>
             <div className="panel-b">{projects.length ? (
@@ -182,7 +200,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             ) : <p className="muted" style={{ margin: 0 }}>{t('none')}</p>}
               {projects.length > 7 && <p style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{L(`${String(projects.length).startsWith('8') || projects.length === 11 ? 'Tutti gli' : 'Tutti i'} ${projects.length} progetti`, `Les ${projects.length} projets`)} →</Link></p>}</div>
           </section>
-
           <section className="panel h-card">
             <div className="panel-h"><H2 text={L('Dove vanno le spese', 'Où vont les dépenses')} /></div>
             <div className="panel-b">
@@ -194,9 +211,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               </>}
             </div>
           </section>
-
           {staff && (
-            <section className="panel h-card span2">
+            <section className="panel h-card">
               <div className="panel-h"><H2 text={L('Cassa e autonomia', 'Trésorerie et autonomie')} /><div className="spacer" /><span className="eyebrow">{L('oggi', 'aujourd\'hui')} {date(td)}</span></div>
               <div className="panel-b">
                 <div className="h3n">
@@ -210,21 +226,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               </div>
             </section>
           )}
+          <section className="panel h-card">
+            <div className="panel-h"><H2 text={L('Saldo dei conti', 'Solde des comptes')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
+            <ul className="acclist">{rows.filter((r) => r.kind !== 'advance').map((r) => (
+              <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
+                <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
+          </section>
         </div>
 
-        <div className="h-side">
-          <section className="panel h-todo">
-            <div className="panel-h"><H2 text={L('Da fare', 'À faire')} /><span className="eyebrow tday" style={{ marginLeft: 4 }}>{L('oggi', 'aujourd\'hui')} {date(td)}</span></div>
-            <ul className="tlist">{todo.slice(0, TODO_MAX).map((x, i) => (
-              <li key={i} className={x.lvl}><span className={`dot ${x.lvl}`}><CIcon name={x.ic} size={13} /></span>
-                <div className="tm"><div className="tt"><Link href={x.href}>{x.title}</Link></div>{x.sub && <div className="ts">{x.sub}</div>}</div>
-                <div className="tr">{x.big && <b className="num">{x.big}</b>}{x.chip && <span className={`cdp ${x.chip.c}`}>{x.chip.t}</span>}</div>
-                <div className="ta">{x.act && <Link className="btn small ghost" href={x.href}>{x.act}</Link>}</div></li>))}</ul>
-            {todo.length > TODO_MAX && <div className="more"><Link className="btn small ghost" href="/scadenze">{L(`Altre ${todo.length - TODO_MAX}`, `${todo.length - TODO_MAX} autres`)}</Link></div>}
-          </section>
-
-          {/* riquadri piccoli: cambio e le cifre da tenere d'occhio */}
-          <div className="h-tiles">
+          <div className="kpi4 k-small">
             <Link className="htile" href="/cambi">
               <span className="ht-l"><CIcon name="euro" size={14} />{L('Tasso di cambio', 'Taux de change')}</span>
               {fx ? <><b className="num">{money(rate, 'MGA', lang)}</b>
@@ -248,20 +258,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </div>
 
           <section className="panel h-card">
-            <div className="panel-h"><H2 text={L('Saldo dei conti', 'Solde des comptes')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
-            <ul className="acclist">{rows.filter((r) => r.kind !== 'advance').map((r) => (
-              <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
-                <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
-          </section>
-
-          <section className="panel h-card">
             <div className="panel-h"><H2 icon="pen" text={L('Note', 'Notes')} /><div className="spacer" /><span className="eyebrow">{L('condivise', 'partagées')}</span></div>
             <div className="panel-b">
               <DashNotes text={notes?.text ?? ''} lang={lang} canWrite={me!.role !== 'read_only'}
                 meta={notes?.at ? `${notes.by_name ?? ''} · ${new Date(notes.at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''} />
             </div>
           </section>
-        </div>
       </div>
     </div>
   );

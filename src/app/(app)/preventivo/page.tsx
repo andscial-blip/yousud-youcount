@@ -37,7 +37,9 @@ export default async function BudgetPage({ searchParams }: {
   const draft = vs.find((b) => b.status === 'draft') ?? null;
   // si apre sulla versione in vigore; la bozza (revisione in preparazione) si apre dall'elenco versioni o da «Righe»
   const shown = vs.find((b) => b.id === sp.v) ?? approved ?? draft ?? vs[vs.length - 1] ?? null;
-  const view = sp.vista === 'schema' ? 'schema' : sp.vista === 'righe' || (!approved && shown?.status === 'draft') ? 'righe' : 'confronto';
+  // sottoschede (scelta 5A): Modifica (righe e versioni) · Riassunto (totali e schema del rendiconto) · Analisi (speso rispetto al preventivo)
+  const vq = sp.vista === 'modifica' ? 'righe' : sp.vista === 'riassunto' ? 'schema' : sp.vista === 'analisi' ? 'confronto' : sp.vista;
+  const view = vq === 'schema' ? 'schema' : vq === 'righe' || (!approved && shown?.status === 'draft') ? 'righe' : vq === 'confronto' || approved ? 'confronto' : 'righe';
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : '';
 
   const [{ data: items }, { data: cmp, error }, { data: cats }, { data: groups }, { data: projects }, { data: rate }, { data: prev }] = await Promise.all([
@@ -155,6 +157,18 @@ export default async function BudgetPage({ searchParams }: {
         </Panel>
       ) : (
         <>
+          <div className="segs" role="tablist" aria-label={L('Sottoschede', 'Sous-onglets')}>
+            <Link role="tab" aria-selected={view === 'righe'} href={href({ v: shown?.id, vista: 'modifica' })}>{resp ? L('Modifica', 'Modifier') : L('Righe', 'Lignes')} · {its.length}</Link>
+            <Link role="tab" aria-selected={view === 'schema'} href={href({ v: shown?.id, vista: 'riassunto' })}>{L('Riassunto', 'Résumé')}</Link>
+            <Link role="tab" aria-selected={view === 'confronto'} href={href({ v: shown?.id, vista: 'analisi', progetto: prj })}>{L('Analisi', 'Analyse')}</Link>
+            <a href={`/api/v1/export/budget?anno=${year}${shown ? `&v=${shown.id}` : ''}`}>{L('Excel', 'Excel')}</a>
+          </div>
+          {shown && view !== 'righe' && (
+            <p className="vline">{L('Versione', 'Version')} <b>{vLabel(shown)}</b> <span className={`chip ${shown.status === 'approved' ? 'ok' : shown.status === 'draft' ? 'warn' : ''}`}>{stLabel(shown.status)}</span>
+              {shown.approval_ref ? <span className="muted"> · {shown.approval_ref}</span> : null}
+              {vs.length > 1 && <> · <Link href={href({ v: shown.id, vista: 'modifica' })}>{L(`tutte le versioni (${vs.length})`, `toutes les versions (${vs.length})`)}</Link></>}</p>
+          )}
+          {view === 'righe' && (<>
           <section className="panel">
             <div className="panel-h"><H2 text={L('Versioni', 'Versions')} /></div>
             <ol className="versions">
@@ -206,6 +220,8 @@ export default async function BudgetPage({ searchParams }: {
             )}
           </section>
 
+          </>)}
+          {view === 'schema' && (<>
           <section className="panel">
             <div className="figs">
               <div><span>{L('Entrate previste', 'Recettes prévues')}</span><b className="num">{m(inB)}</b><small>{L('incassate', 'encaissées')} {m(inA)}</small></div>
@@ -217,19 +233,15 @@ export default async function BudgetPage({ searchParams }: {
             </div>
           </section>
 
-          <div className="segs" role="tablist" aria-label={L('Vista', 'Vue')}>
-            <Link role="tab" aria-selected={view === 'confronto'} href={href({ v: shown?.id, vista: 'confronto', progetto: prj })}>{L('Preventivo e consuntivo', 'Budget et réalisé')}</Link>
-            <Link role="tab" aria-selected={view === 'schema'} href={href({ v: shown?.id, vista: 'schema' })}>{L('Schema del rendiconto', 'Schéma du compte rendu')}</Link>
-            <Link role="tab" aria-selected={view === 'righe'} href={href({ v: shown?.id, vista: 'righe' })}>{L('Righe del preventivo', 'Lignes du budget')} · {its.length}</Link>
-            <a href={`/api/v1/export/budget?anno=${year}${shown ? `&v=${shown.id}` : ''}`}>{L('Excel', 'Excel')}</a>
-          </div>
+          </>)}
+
 
           {view === 'schema' ? (
             <Panel title={`${L('Schema del rendiconto per cassa', 'Schéma du compte rendu de caisse')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
               <StatementTable budget={(stB ?? []) as StLine[]} actual={(stA ?? []) as StAct[]} lang={lang} />
             </Panel>
           ) : view === 'confronto' ? (
-            <Panel title={`${L('Confronto', 'Comparaison')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
+            <Panel title={`${L('Preventivo e consuntivo', 'Budget et réalisé')} · ${shown ? `${vLabel(shown)} (${stLabel(shown.status).toLowerCase()})` : ''}`}>
               <FilterBar action="/preventivo" lang={lang} hidden={{ anno: String(year), v: shown?.id }}
                 inline={<select className="input" name="progetto" defaultValue={prj} aria-label={L('Progetto', 'Projet')}>
                   <option value="">{L('Tutti i progetti', 'Tous les projets')}</option>
