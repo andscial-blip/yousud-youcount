@@ -44,16 +44,16 @@ export default async function Projects({ searchParams }: { searchParams: Promise
       {(() => {
         const over = shown.filter((p) => A(p.id).bOut && A(p.id).out > A(p.id).bOut).length;
         const used = tot.b ? tot.out / tot.b : 0;
-        const tones = ['#2F6FB3', '#5B93CF', '#4FA88A', '#8CC9B2', '#B9D7EE', '#CDEBDF'];
-        const mix = shown.filter((p) => A(p.id).out > 0).map((p, i) => ({ p, v: A(p.id).out, c: p.kind === 'structure' ? '#C9D2DF' : tones[i % tones.length] }));
+        const tones = ['#23735F', '#5B7FA6', '#5FB8A3', '#8FAFD6', '#A9D9CB', '#C9D6EA'];
+        const mix = shown.filter((p) => A(p.id).out > 0).map((p, i) => ({ p, v: A(p.id).out, c: p.kind === 'structure' ? '#3E5470' : tones[i % tones.length] }));
         return (<>
-          <div className="ptiles">
-            <div className="pt t-b"><span className="pt-l"><CIcon name="wallet" size={16} />{L('Previsto', 'Prévu')}</span><b className="num">{e0(tot.b)}</b><small>{L(`uscite ${year}`, `dépenses ${year}`)}</small></div>
-            <div className="pt t-s"><span className="pt-l"><CIcon name="chart" size={16} />{L('Speso', 'Dépensé')}</span><b className="num">{e0(tot.out)}</b>
+          <div className="kpi4 ptiles">
+            <div className="k4 k-plan"><span className="k4-t"><CIcon name="wallet" size={15} />{L('Previsto', 'Prévu')}</span><b className="num">{e0(tot.b)}</b><small>{L(`uscite ${year}`, `dépenses ${year}`)}</small></div>
+            <div className="k4 k-spent"><span className="k4-t"><CIcon name="chart" size={15} />{L('Speso', 'Dépensé')}</span><b className="num">{e0(tot.out)}</b>
               <small>{tot.b ? L(`${Math.round(used * 100)} % del previsto · anno ${Math.round(elapsed * 100)} %`, `${Math.round(used * 100)} % du prévu · année ${Math.round(elapsed * 100)} %`) : L('nessun preventivo', 'aucun budget')}</small></div>
-            <div className={`pt t-r${over ? ' warn' : ''}`}><span className="pt-l"><CIcon name="calc" size={16} />{L('Residuo', 'Reste')}</span><b className="num">{tot.b ? e0(tot.b - tot.out) : '–'}</b>
-              <small>{over ? L(`${over} oltre il preventivo`, `${over} au-delà du budget`) : L('tutti nei limiti', 'tous dans les limites')}</small></div>
-            <div className="pt t-i"><span className="pt-l"><CIcon name="trend" size={16} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(tot.inc)}</b>
+            <div className={`k4 k-res${tot.b && tot.out > tot.b ? ' warn' : ''}`}><span className="k4-t"><CIcon name="calc" size={15} />{L('Residuo', 'Reste')}</span><b className={`num ${tot.b && tot.out > tot.b ? 'neg' : 'pos'}`}>{tot.b ? e0(tot.b - tot.out) : '–'}</b>
+              <small className={over ? 'neg' : ''}>{over ? L(`${over} oltre il preventivo`, `${over} au-delà du budget`) : L('tutti nei limiti', 'tous dans les limites')}</small></div>
+            <div className="k4 k-in"><span className="k4-t"><CIcon name="trend" size={15} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(tot.inc)}</b>
               <small>{L(`${shown.length} progetti attivi`, `${shown.length} projets actifs`)}</small></div>
           </div>
           {mix.length > 1 && (
