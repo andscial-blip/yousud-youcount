@@ -989,7 +989,8 @@ try {
     const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n' + randomUUID());
     await p.locator('#ar-f').setInputFiles({ name: 'rendiconto-firmato.pdf', mimeType: 'application/pdf', buffer: pdf });
     await p.getByRole('button', { name: 'Archivia', exact: true }).click();
-    await p.getByText('Versione approvata archiviata.').waitFor();
+    await p.locator('.arch-new .ok-t, .arch-new .err-t').waitFor();
+    assert.equal(await p.locator('.arch-new [role=status]').innerText(), 'Versione approvata archiviata.');
     const li = p.locator('.arch-list li', { hasText: 'Verbale assemblea di prova e2e' });
     await li.waitFor();
     assert.match(await li.innerText(), new RegExp(String(year - 1)));
