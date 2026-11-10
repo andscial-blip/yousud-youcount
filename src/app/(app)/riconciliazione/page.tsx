@@ -72,9 +72,9 @@ export default async function Reconciliation({ searchParams }: {
                     <div><dt>{t('rec_balance')}</dt><dd className="num">{money(s.balance, a.currency, lang)}</dd></div>
                     <div><dt>{t('rec_app_balance')}</dt><dd className="num">{money(app, a.currency, lang)}</dd></div>
                     <div><dt>{t('rec_open')}</dt><dd className="num">{s.open.length}</dd></div>
+                    <div><dt>{t('rec_last')}</dt><dd className="num">{s.last ? day(s.last) : '–'}</dd></div>
                   </dl>
-                  <div className="rc-f"><span className="muted small">{t('rec_last')}: {s.last ? day(s.last) : '–'}
-                    {gap ? <> · {lang === 'fr' ? 'écart à pointer' : 'da spuntare'} <b className="num">{money(gap, a.currency, lang)}</b></> : null}</span>
+                  <div className="rc-f"><span className="muted small">{gap ? <>{lang === 'fr' ? 'Écart à pointer' : 'Differenza da spuntare'} <b className="num">{money(gap, a.currency, lang)}</b></> : (lang === 'fr' ? 'Aucun écart' : 'Nessuna differenza')}</span>
                     <span className="btn small">{t('rec_go')} →</span></div>
                 </Link>
               );
