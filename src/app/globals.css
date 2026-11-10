@@ -1512,10 +1512,9 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
   .pmix-k b { text-align: right; }
 }
 
-/* Marchio su telefono su due righe: «YOU» sopra, «COUNT» sotto, stessa larghezza (le lettere di YOU si distribuiscono
-   sulla larghezza di COUNT), altezza del blocco pari al logo. */
+/* Marchio su telefono su due righe: «YOU» sopra, «COUNT» sotto, stessa spaziatura e allineati a sinistra;
+   altezza del blocco pari al logo. */
 @media (max-width: 760px) {
   .phead .pbrand .pb-wm.pb-stack { display: inline-grid; font-size: 18px; line-height: .9; font-weight: 700; letter-spacing: .08em; margin-right: -.08em; }
-  .pb-stack .wm-you { display: flex; justify-content: space-between; letter-spacing: 0; padding-right: .08em; }
-  .pb-stack .wm-you > span { font-style: normal; }
+  .pb-stack .wm-you { display: block; }
 }

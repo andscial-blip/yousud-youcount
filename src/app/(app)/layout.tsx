@@ -52,7 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Suspense fallback={<header className="phead"><div className="phead-row" /></header>}>
             <PageHeader secs={secs} canWrite={canWrite} years={years}
               labels={{ lang, search: t('cmd_search'), year: t('year_label'), newMov: t('nav_new_long').replace('+ ', ''), subnav: t('nav_sections'), brand: 'YouCount', cmdPh: t('cmd_ph'), searchMov: t('cmd_mov'), goTo: t('cmd_go'), none: t('cmd_none') }}
-              phoneBrand={<><Logo size={32} /><b className="yc-wm pb-wm pb-stack" aria-label="YouCount"><span className="wm-you" aria-hidden="true"><span>Y</span><span>O</span><span>U</span></span><span className="wm-count" aria-hidden="true">Count</span></b></>} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
+              phoneBrand={<><Logo size={32} /><b className="yc-wm pb-wm pb-stack" aria-label="YouCount"><span className="wm-you" aria-hidden="true">You</span><span className="wm-count" aria-hidden="true">Count</span></b></>} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
           </Suspense>
           <main className="main" id="main" tabIndex={-1}><div id="app" className="view">{children}</div></main>
         </div>
