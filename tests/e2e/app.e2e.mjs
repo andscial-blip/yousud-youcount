@@ -679,13 +679,17 @@ try {
     const [{ st }] = (await pool.query(`select status st from advance_requests where purpose = 'PROVA materiale laboratorio'`)).rows;
     assert.equal(st, 'closed');
   });
-  await check('preventivo: bozza, righe in euro e ariary, approvazione con delibera, confronto con il consuntivo, Excel', async () => {
+  await check('preventivo: griglia codici × progetti (cella scritta e dettaglio in ariary), approvazione con delibera, confronto, Excel', async () => {
     const p = rs.page;
     await p.goto(`${base}/preventivo?anno=${year}`);
     await p.getByRole('button', { name: 'Nuovo preventivo vuoto' }).click();
     await p.waitForURL(/vista=modifica/);
-    await p.selectOption('#bi-cat', { label: '401 · Materiali di consumo' });
-    await p.selectOption('#bi-prj', { label: 'École Piccolino' });
+    // codice aggiunto alla griglia, poi il dettaglio della cella (quantità × costo in ariary)
+    await p.selectOption('#bv-add', { label: '401 · Materiali di consumo' });
+    await p.getByRole('button', { name: 'Aggiungi', exact: true }).click();
+    await p.waitForURL(/add=/);
+    await p.getByRole('link', { name: 'Dettaglio 401 · École Piccolino' }).click();
+    await p.waitForURL(/cella=/);
     await p.fill('#bi-desc', 'Quaderni e penne');
     await p.fill('#bi-qty', '10');
     await p.fill('#bi-unit', 'kit');
@@ -693,30 +697,40 @@ try {
     await p.selectOption('#bi-cur', 'MGA');
     await p.fill('#bi-rate', '5000');
     await p.getByRole('button', { name: 'Aggiungi la riga' }).click();
-    await p.locator('td', { hasText: 'Quaderni e penne' }).waitFor();
-    await p.selectOption('#bi-cat', { label: 'E101 · Donazioni da privati' });
-    await p.fill('#bi-cost', '3.000');
-    await p.getByRole('button', { name: 'Aggiungi la riga' }).click();
-    await p.locator('td', { hasText: 'Donazioni da privati' }).waitFor();
+    await p.waitForURL(/ok=1.*cella=|cella=.*ok=1/);
+    await p.locator('.bv-items li', { hasText: 'Quaderni e penne' }).waitFor();
+    // entrata scritta direttamente nella cella (Invio salva)
+    await p.goto(`${base}/preventivo?anno=${year}&vista=modifica`);
+    await p.selectOption('#bv-add', { label: 'E101 · Donazioni da privati' });
+    await p.getByRole('button', { name: 'Aggiungi', exact: true }).click();
+    await p.waitForURL(/add=/);
+    const cell = p.getByRole('textbox', { name: 'E101 · Generale' });
+    await cell.fill('3.000');
+    await cell.press('Enter');
+    for (let i = 0; i < 40; i++) { if ((await pool.query(`select count(*)::int n from budget_items`)).rows[0].n === 2) break; await p.waitForTimeout(250); }
     const [{ n, eur }] = (await pool.query(`select count(*)::int n, sum(amount_eur)::text eur from budget_items`)).rows;
     assert.deepEqual([n, eur], [2, '3200.00']);
+    // cella con ariary: non si scrive direttamente, si apre il dettaglio
+    assert.equal(await p.getByRole('textbox', { name: '401 · École Piccolino' }).count(), 0);
     // il responsabile non approva: lo fa un amministratore con la delibera
-    assert.equal(await p.getByRole('button', { name: /^Approva/ }).count(), 0);
+    assert.equal(await p.getByRole('button', { name: /^Approva (originale|revisione)/i }).count(), 0);
+    assert.equal(await p.getByText('Approva…').count(), 0);
     const a = sa.page;
     await a.goto(`${base}/preventivo?anno=${year}`);
+    await a.getByText('Approva…').click();
     await a.fill('#apref', 'Delibera CdA di prova');
-    await a.getByRole('button', { name: /^Approva/ }).click();
+    await a.getByRole('button', { name: /^Approva originale/i }).click();
     await a.waitForURL(/ok=1/);
     assert.equal((await pool.query(`select status from budgets`)).rows[0].status, 'approved');
-    const txt = (await a.locator('main').innerText()).replace(/[  ]/g, ' ');
-    assert.match(txt, /In vigore/);
-    assert.match(txt, /Preventivo e consuntivo/);
+    assert.match((await a.locator('main').innerText()).replace(/[\u00a0\u202f]/g, ' '), /In vigore/);
+    await a.goto(`${base}/preventivo?anno=${year}&vista=confronto`);
+    const txt = (await a.locator('table.cgrid').innerText()).replace(/[\u00a0\u202f]/g, ' ');
     assert.match(txt, /401/);
-    // la spesa in ariary dei dati di prova (1.010.000 MGA ≈ 200 €) supera i 200 € previsti
-    assert.match(txt, /Oltre il preventivo|Vicino al limite|In linea/);
+    // la spesa in ariary dei dati di prova (1.010.000 MGA ≈ 200 €) confrontata con i 200 € previsti
+    assert.match(txt, /su 200 €/);
     // schema del rendiconto: totale uscite previste = righe del preventivo in uscita
     await a.goto(`${base}/preventivo?anno=${year}&vista=schema`);
-    const st = (await a.locator('table.stmt').innerText()).replace(/[  ]/g, ' ');
+    const st = (await a.locator('table.stmt').innerText()).replace(/[\u00a0\u202f]/g, ' ');
     assert.match(st, /Totale uscite\s+200,00/);
     assert.match(st, /Totale entrate\s+3\.000,00/);
     const x = await a.request.get(`${base}/api/v1/export/budget?anno=${year}`);
@@ -726,17 +740,20 @@ try {
     assert.equal(await op.page.request.get(`${base}/api/v1/export/budget?anno=${year}`).then((r) => r.status()), 403);
     await a.screenshot({ path: `${SHOTS}/sa_preventivo.png`, fullPage: true });
     // versione in vigore: il responsabile non tocca le righe; l'amministratore le corregge ed elimina con il motivo
-    await p.goto(`${base}/preventivo?anno=${year}&vista=righe`);
-    assert.equal(await p.getByRole('link', { name: 'Modifica', exact: true }).count(), 0);
-    await a.goto(`${base}/preventivo?anno=${year}&vista=righe`);
-    await a.locator('tr', { hasText: 'Quaderni e penne' }).getByRole('link', { name: 'Modifica', exact: true }).first().click();
+    await p.goto(`${base}/preventivo?anno=${year}`);
+    assert.equal(await p.locator('a.bg-det').count(), 0);
+    await a.goto(`${base}/preventivo?anno=${year}`);
+    await a.getByRole('link', { name: 'Dettaglio 401 · École Piccolino' }).click();
+    await a.locator('.bv-items li', { hasText: 'Quaderni e penne' }).getByRole('link', { name: 'Modifica', exact: true }).click();
     await a.waitForURL(/edit=/);
     await a.fill('#bi-cost', '120.000');
     await a.fill('#bi-reason', 'nuovo preventivo del fornitore');
     await a.getByRole('button', { name: 'Salva la riga' }).click();
     await a.waitForURL(/ok=1/);
-    await a.locator('td', { hasText: '1.200.000' }).first().waitFor();
-    await a.locator('tr', { hasText: 'Donazioni da privati' }).getByRole('link', { name: 'Elimina', exact: true }).first().click();
+    await a.locator('.bv-items', { hasText: '1.200.000' }).waitFor();
+    await a.goto(`${base}/preventivo?anno=${year}`);
+    await a.getByRole('link', { name: 'Dettaglio E101 · Generale' }).click();
+    await a.locator('.bv-items li', { hasText: 'Donazioni da privati' }).getByRole('link', { name: 'Elimina', exact: true }).click();
     await a.waitForURL(/elimina=/);
     await a.fill('#del-reason', 'voce annullata');
     await a.locator('form.del-row input[name=confirm]').check();
