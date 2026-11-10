@@ -332,7 +332,7 @@ try {
   await check('responsabile: riconciliazione bancaria con l\'estratto (quadra solo al centesimo)', async () => {
     const p = rs.page;
     await p.goto(`${base}/riconciliazione`);
-    await p.locator('tr', { hasText: 'Satispay' }).getByRole('link', { name: 'Riconcilia' }).click();
+    await p.locator('a.rec-card', { hasText: 'Satispay' }).click();
     await p.waitForURL(/\/riconciliazione\?conto=/);
     const [{ bal, n }] = (await pool.query(`select a.opening_balance + coalesce(sum(case when m.id is null then 0
         when m.account_id = a.id then (case when m.kind = 'income' then m.amount else -m.amount end) * m.sign
@@ -822,7 +822,7 @@ try {
   await check('riconciliazione: estratto CSV letto nel browser, movimenti abbinati e spuntati', async () => {
     const p = rs.page;
     await p.goto(`${base}/riconciliazione`);
-    await p.locator('tr', { hasText: 'Banca Italia' }).getByRole('link', { name: 'Riconcilia' }).click();
+    await p.locator('a.rec-card', { hasText: 'Banca Italia' }).click();
     await p.waitForURL(/\/riconciliazione\?conto=/);
     await p.locator('.rec-import').waitFor();
     const legs = await p.locator('tbody input[type=checkbox]').count();
@@ -847,7 +847,7 @@ try {
     const [dd, mm, yy] = d.split('/');
     ws.addRow([new Date(Date.UTC(+yy, +mm - 1, +dd)), 'Donazione', Number(amt)]);
     await p.goto(`${base}/riconciliazione`);
-    await p.locator('tr', { hasText: 'Banca Italia' }).getByRole('link', { name: 'Riconcilia' }).click();
+    await p.locator('a.rec-card', { hasText: 'Banca Italia' }).click();
     await p.locator('.rec-import').waitFor();
     await p.locator('.rec-import input[type=file]').setInputFiles({ name: 'estratto.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(await wb.xlsx.writeBuffer()) });
     await p.getByText(/Righe dell'estratto: 1; movimenti abbinati e spuntati: 1/).waitFor();
