@@ -4,7 +4,7 @@ import { RESP, can, requireMe } from '@/lib/session';
 import { date, dateTime } from '@/lib/format';
 import { MESI_L } from '@/lib/viz';
 import { ErrorNote, PageHead, Panel } from '@/components/Page';
-import { Lines } from '@/components/Charts';
+import { Lines, Viz } from '@/components/Charts';
 import { saveRate } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +58,11 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
   const cur12 = current ? byKey.get(`${current.year - 1}-${String(current.month).padStart(2, '0')}`) : null;
   const edit = sp.mese && /^\d{4}-\d{2}$/.test(sp.mese) ? byKey.get(sp.mese) : null;
   const writer = can(me, RESP);
+  const prev = current ? prevOf(current) : null;
+  const last12 = current ? all.slice(Math.max(0, all.indexOf(current) - 11), all.indexOf(current) + 1) : [];
+  const dmy = (iso: string) => new Date(iso).toLocaleDateString(loc, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  // barre a scala allargata: lo zero del grafico sta poco sotto il minimo, così si vedono differenze dell'1–2 %
+  const spark = (vs: number[]) => { const nz = vs.filter((v) => v > 0); if (!nz.length) return vs; const mn = Math.min(...nz), mx = Math.max(...nz), base = mn - Math.max((mx - mn) * 0.6, mn * 0.004); return vs.map((v) => (v > 0 ? v - base : 0)); };
 
   return (
     <div className="stack">
@@ -66,19 +71,30 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
       {sp.err && <div className="note err">{sp.err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
-      <div className="kpis fx-kpis">
+      {/* riquadri nel disegno di Cairn: niente fili colorati, il colore sta nel mini grafico (scala allargata: il cambio varia di pochi punti) */}
+      <div className="kpis dk">
         <div className="kpi"><div className="l">{L('Tasso corrente', 'Taux courant')}</div>
-          <div className="v num">{current ? mga(Number(current.rate)) : '–'}</div>
-          <div className="s">{current ? `${M[current.month - 1]} ${current.year}${current.source ? ` · ${current.source}` : ''}` : L('Nessun tasso inserito', 'Aucun taux saisi')}</div></div>
-        <div className="kpi"><div className="l">{L('Rispetto al mese prima', 'Par rapport au mois précédent')}</div>
-          <div className="v num">{current && prevOf(current) ? chg(Number(current.rate), Number(prevOf(current)!.rate)) : '–'}</div>
-          <div className="s">{current && prevOf(current) ? `${M[prevOf(current)!.month - 1]}: ${mga(Number(prevOf(current)!.rate))}` : ''}</div></div>
-        <div className="kpi"><div className="l">{L('Rispetto a un anno prima', 'Par rapport à un an plus tôt')}</div>
+          <div className="v num long">{current ? mga(Number(current.rate)) : '–'}</div>
+          {last12.length > 1 && <><Viz.Cols vals={spark(last12.map((r) => Number(r.rate)))} colors={last12.map((r) => (r === current ? 'var(--vz-real)' : 'var(--c-soft)'))} tip={last12.map((r) => `${M[r.month - 1]} ${r.year}: ${mga(Number(r.rate))}`).join('\n')} />
+            <div className="vzl"><span>{M[last12[0]!.month - 1]!.slice(0, 3).toLowerCase()} {last12[0]!.year}</span><span>{M[current!.month - 1]!.slice(0, 3).toLowerCase()} {current!.year}</span></div></>}
+          <div className="s" title={current?.source ?? undefined}>{current ? `${L('inserito il', 'saisi le')} ${dmy(current.updated_at)}${current.source ? ` · ${current.source}` : ''}` : L('Nessun tasso inserito', 'Aucun taux saisi')}</div></div>
+        <div className="kpi"><div className="l">{L('Sul mese prima', 'Sur un mois')}</div>
+          <div className="v num">{current && prev ? chg(Number(current.rate), Number(prev.rate)) : '–'}</div>
+          {current && prev && <><Viz.Cols vals={spark([Number(prev.rate), Number(current.rate)])} colors={['var(--c-soft)', 'var(--vz-real)']} tip={`${M[prev.month - 1]} ${prev.year}: ${mga(Number(prev.rate))}\n${M[current.month - 1]} ${current.year}: ${mga(Number(current.rate))}`} />
+            <div className="vzl"><span>{M[prev.month - 1]!.toLowerCase()}</span><span>{M[current.month - 1]!.toLowerCase()}</span></div></>}
+          <div className="s">{current && prev ? `${M[prev.month - 1]}: ${mga(Number(prev.rate))}` : L('Manca il tasso del mese prima', 'Taux du mois précédent manquant')}</div></div>
+        <div className="kpi"><div className="l">{L('Su un anno prima', 'Sur un an')}</div>
           <div className="v num">{current && cur12 ? chg(Number(current.rate), Number(cur12.rate)) : '–'}</div>
+          {current && cur12 && <><Viz.Cols vals={spark([Number(cur12.rate), Number(current.rate)])} colors={['var(--c-soft)', 'var(--vz-real)']} tip={`${M[cur12.month - 1]} ${cur12.year}: ${mga(Number(cur12.rate))}\n${M[current.month - 1]} ${current.year}: ${mga(Number(current.rate))}`} />
+            <div className="vzl"><span>{cur12.year}</span><span>{current.year}</span></div></>}
           <div className="s">{cur12 ? `${M[cur12.month - 1]} ${cur12.year}: ${mga(Number(cur12.rate))}` : L('Manca il tasso di un anno prima', 'Taux d\'il y a un an manquant')}</div></div>
         <div className="kpi"><div className="l">{L(`Media ${year}`, `Moyenne ${year}`)}</div>
-          <div className="v num">{vals.length ? mga(Math.round(avg)) : '–'}</div>
-          <div className="s">{lo && hi ? `${L('min', 'min')} ${mga(Number(lo.rate))} (${M[lo.month - 1]}) · ${L('max', 'max')} ${mga(Number(hi.rate))} (${M[hi.month - 1]})` : `${vals.length} ${L('mesi', 'mois')}`}</div></div>
+          <div className="v num long">{vals.length ? mga(Math.round(avg)) : '–'}</div>
+          {vals.length > 1 && <><Viz.Cols vals={spark(M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : 0; }))}
+            colors={M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return !r ? 'var(--band)' : r === hi ? 'var(--vz-sp)' : r === lo ? 'var(--green-soft)' : 'var(--vz-plan)'; })}
+            tip={yr.map((r) => `${M[r.month - 1]}: ${mga(Number(r.rate))}`).join('\n')} />
+            <div className="vzl"><span>{M[0]!.slice(0, 3).toLowerCase()}</span><span>{M[11]!.slice(0, 3).toLowerCase()}</span></div></>}
+          <div className="s">{lo && hi ? `min ${n(Math.round(Number(lo.rate)))} (${M[lo.month - 1]!.slice(0, 3).toLowerCase()}) · max ${n(Math.round(Number(hi.rate)))} (${M[hi.month - 1]!.slice(0, 3).toLowerCase()})` : `${vals.length} ${L('mesi', 'mois')}`}</div></div>
       </div>
 
       <div className="grid">
@@ -138,6 +154,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               );
             })}
           </ul>
+          <div className="fx-scroll">
           <table className="t fx-t" data-cards="">
             <thead><tr><th>{t('period')}</th><th className="r">{L('Tasso del mese', 'Taux du mois')}</th><th className="r">{L('Variazione', 'Variation')}</th>
               <th className="r">{L('Applicato (media)', 'Appliqué (moyenne)')}</th><th className="r">{L('Movimenti', 'Mouvements')}</th><th>{t('fx_source')}</th><th>{L('Inserito da', 'Saisi par')}</th>{writer && <th />}</tr></thead>
@@ -160,6 +177,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               })}
             </tbody>
           </table>
+          </div>
           </>
         )}
         <div className="panel-f"><span className="muted">{L('Tasso corrente aggiornato al', 'Taux courant au')} {current ? date(`${key(current)}-01`).slice(3) : '–'}</span>

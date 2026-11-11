@@ -417,7 +417,23 @@ try {
   await check('operatore: conta di cassa con differenza rispetto al saldo', async () => {
     const p = op.page;
     await p.goto(`${base}/conti`);
+    // in alto 4 riquadri (liquidità, Italia, Madagascar, anticipi); i conti di anticipo non sono tra i conti
+    assert.equal(await p.locator('.kpis.dk .kpi').count(), 4);
+    assert.match(await p.locator('.kpis.dk').innerText(), /Liquidità totale[\s\S]*Italia[\s\S]*Madagascar[\s\S]*Anticipi aperti/);
+    assert.equal(await p.locator('.bal-t tbody tr', { hasText: /Anticipi/ }).count(), 0);
+    // il nome del conto apre il suo dettaglio, con il collegamento a tutti i suoi movimenti
+    await p.locator('.bal-t a.bal-a', { hasText: 'Cassa Madagascar' }).click();
+    await p.waitForURL(/\/conti\?conto=[0-9a-f-]{36}$/);
+    const sh = p.locator('.acc-sheet');
+    await sh.getByText('Saldo di oggi').waitFor();
+    assert.match(await sh.getByRole('link', { name: 'Tutti i movimenti' }).getAttribute('href'), /^\/movimenti\?conto=[0-9a-f-]{36}$/);
+    await sh.getByRole('link', { name: 'Chiudi' }).click();
+    await p.waitForURL(/\/conti$/);
     await p.selectOption('#cc-account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    // in Madagascar solo banconote: niente colonna delle monete, niente taglio da 50
+    assert.equal(await p.locator('.cc-tab', { hasText: 'Monete' }).count(), 0);
+    assert.equal(await p.getByLabel('Quantità del taglio 50', { exact: true }).count(), 0);
+    assert.equal(await p.locator('.cc-tab').count(), 2);
     // conta per tagli: 2 × 20.000 + 3 × 500 = 41.500 MGA, differenza calcolata subito
     await p.getByLabel('Quantità del taglio 20.000', { exact: true }).fill('2');
     await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('3');

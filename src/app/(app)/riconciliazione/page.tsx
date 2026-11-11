@@ -5,6 +5,7 @@ import type { Key } from '@/lib/i18n';
 import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { ReconcileForm, type Leg } from '@/components/ReconcileForm';
 import { CountryMark } from '@/components/CountryMark';
+import { Viz } from '@/components/Charts';
 import { cancelReconciliation } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,7 @@ export default async function Reconciliation({ searchParams }: {
       balance: Math.round((Number(a.opening_balance) + done.reduce((s, l) => s + Number(l.amount), 0)) * 100) / 100,
       last: done.reduce<string | null>((m, l) => (!m || (l.statement_date ?? '') > m ? l.statement_date : m), null),
       open: legs.filter((l) => !l.reconciliation_id),
+      done: done.length,
     };
   };
   const errKey = err ? (`err_${err.split(':')[0]}` as Key) : null;
@@ -64,10 +66,16 @@ export default async function Reconciliation({ searchParams }: {
               const st = age == null ? 'r' : age <= 35 ? 'g' : age <= 65 ? 'y' : 'r';
               const app = appBal.get(a.id) ?? null, gap = app == null ? null : Math.round((app - s.balance) * 100) / 100;
               return (
-                <Link key={a.id} className={`rec-card st-${st}`} href={`/riconciliazione?conto=${a.id}`}>
+                <Link key={a.id} className="rec-card" href={`/riconciliazione?conto=${a.id}`}>
                   <div className="rc-h"><CountryMark loc={a.location === 'IT' ? 'IT' : 'MG'} label={a.location === 'IT' ? 'Italia' : 'Madagascar'} />
                     <div className="rc-t"><b>{L(a)}</b><span className="muted small">{a.currency}</span></div>
                     <span className={`cdp ${st === 'g' ? 'ok' : st === 'y' ? 'mid' : 'late'}`}>{s.last ? (lang === 'fr' ? `il y a ${age} j` : `${age} giorni fa`) : t('rec_never')}</span></div>
+                  {/* quanta parte dei movimenti del conto è già spuntata su un estratto */}
+                  <div className="rc-vz">
+                    <Viz.Stack segs={[{ v: s.done, c: 'var(--vz-real)' }, { v: s.open.length, c: 'var(--vz-sp)' }]} max={Math.max(1, s.done + s.open.length)}
+                      tip={lang === 'fr' ? `Pointés : ${s.done}\nÀ pointer : ${s.open.length}` : `Spuntati: ${s.done}\nDa spuntare: ${s.open.length}`} />
+                    <div className="vzl"><span>{lang === 'fr' ? `pointés ${s.done}` : `spuntati ${s.done}`}</span><span>{lang === 'fr' ? `à pointer ${s.open.length}` : `da spuntare ${s.open.length}`}</span></div>
+                  </div>
                   <dl className="rc-n">
                     <div><dt>{t('rec_balance')}</dt><dd className="num">{money(s.balance, a.currency, lang)}</dd></div>
                     <div><dt>{t('rec_app_balance')}</dt><dd className="num">{money(app, a.currency, lang)}</dd></div>

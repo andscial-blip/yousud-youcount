@@ -108,8 +108,10 @@ main:focus { outline: none; }
 .docind.miss { color: var(--amber); }
 .docind small { font-size: 11px; font-weight: 600; }
 .place { display: inline-block; font-family: var(--f-ui); font-weight: 600; font-size: 12px; padding: 1px 7px; border-radius: 6px; }
-.place.it { color: var(--green); background: var(--ok-bg); }
-.place.mg { color: var(--lilac-ink); background: var(--lilac-bg); }
+.place.it { color: #fff; background: var(--navy); }
+.place.mg { color: #1F2A44; background: var(--green-soft); }
+:root[data-theme="dark"] .place.it { background: var(--vz-plan); color: #10151C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .place.it { background: var(--vz-plan); color: #10151C; } }
 
 /* stato vuoto */
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 32px 16px; color: var(--muted); }
@@ -1059,10 +1061,11 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
   form.filters:has(> details.more):has(> select ~ select) > details.more:not([open]) .mf-l { display: none; }
 }
 /* Conti: sagoma del paese accanto al titolo (Italia in blu, Madagascar in verde acqua) */
-.cmark { display: inline-grid; place-items: center; border-radius: 50%; flex: none; box-shadow: 0 1px 2px rgba(20, 30, 45, .12); }
-.cmark .f-g { fill: #7DBFA2; } .cmark .f-w { fill: #F7F8FA; } .cmark .f-r { fill: #E59A8C; }
-.cmark .f-ring { fill: none; stroke: rgba(31, 42, 68, .14); stroke-width: 1; }
-:root[data-theme="dark"] .cmark .f-ring { stroke: rgba(255, 255, 255, .25); }
+.cmark { display: inline-grid; place-items: center; border-radius: 50%; flex: none; font-family: var(--f-ui); font-weight: 700; line-height: 1; letter-spacing: .03em; }
+.cmark.it { background: var(--navy); color: #fff; }
+.cmark.mg { background: var(--green-soft); color: #1F2A44; }
+:root[data-theme="dark"] .cmark.it { background: var(--vz-plan); color: #10151C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmark.it { background: var(--vz-plan); color: #10151C; } }
 .panel.country > .panel-h { gap: 10px; }
 /* conta di cassa: tabella compatta per tagli, banconote e monete separate */
 .cc-tab { border: 1px solid var(--line-2); border-radius: var(--r-sm, 10px); overflow: hidden; max-width: 460px; }
@@ -1095,10 +1098,6 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
 .cc-row .input { min-height: 34px; }
 @media (min-width: 900px) { .cc-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; } }
 /* Tassi di cambio: un tocco di colore della palette */
-.fx-kpis .kpi { border-top: 3px solid var(--pp1); }
-.fx-kpis .kpi:nth-child(2) { border-top-color: var(--pp4); }
-.fx-kpis .kpi:nth-child(3) { border-top-color: var(--pp2); }
-.fx-kpis .kpi:nth-child(4) { border-top-color: var(--pp3); }
 .fxchg { display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
 .kpi .v .fxchg { font-size: .8em; padding: 2px 10px; }
 .fxchg.up { background: color-mix(in srgb, #8FAFD6 24%, transparent); color: #3F6491; }
@@ -1320,7 +1319,6 @@ ul.dl.dl2 .dl-act { justify-content: flex-start; }
 .rec-card { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-1);
   border-top: 3px solid var(--line); color: inherit; text-decoration: none; }
 .rec-card:hover { transform: translateY(-1px); }
-.rec-card.st-g { border-top-color: var(--imp-f, #5FB8A3); } .rec-card.st-y { border-top-color: var(--imp-a, #E8BE5A); } .rec-card.st-r { border-top-color: var(--imp-c, #E2917F); }
 .rc-h { display: flex; align-items: center; gap: 12px; }
 .rc-t { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
 .rc-t b { color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1838,4 +1836,61 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
   .rb-empty { padding: 14px; align-items: flex-start; }
   .rb-recent > li { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t a" "d d"; gap: 2px 12px; padding: 11px 14px; }
   .rb-recent .rb-t { grid-area: t; } .rb-recent .rb-a { grid-area: a; align-self: start; } .rb-recent .rb-d { grid-area: d; font-size: 12px; }
+}
+
+/* ---------- Conti, Anticipi, Riconciliazione, Tasso di cambio (11/11): riquadri di Cairn, niente fili colorati ---------- */
+.rec-card { border: 1px solid var(--line-2); border-top: 1px solid var(--line-2) !important; border-radius: var(--r-lg, 16px); }
+.rec-card .rc-vz svg.vz { display: block; width: 100%; height: 28px; }
+.rec-card .rc-vz .vzl { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-family: var(--f-ui); }
+.kpis.dk a.kpi { text-decoration: none; color: inherit; }
+.kpi .v .fxchg { white-space: nowrap; }
+/* tabella dei saldi: nome cliccabile, saldo verde se positivo e rosso se negativo, «da verificare» cliccabile */
+.bal-a { color: var(--navy); font-weight: 600; text-decoration: none; }
+.bal-a:hover { text-decoration: underline; text-decoration-color: var(--c-soft); text-underline-offset: 3px; }
+.bal-t td.bal-v { font-weight: 600; } .bal-t td.bal-v.pos { color: var(--green); } .bal-t td.bal-v.neg { color: var(--red); }
+.bal-cards .bc-bal.pos { color: var(--green); }
+a.chip.warn { text-decoration: none; } a.chip.warn:hover { filter: brightness(.96); }
+.panel.country > .panel-h .eyebrow { white-space: nowrap; }
+.panel.country > .panel-h .eyebrow b { font-size: 15px; color: var(--navy); margin-left: 4px; }
+.panel.country > .panel-h .eyebrow b.pos { color: var(--green); } .panel.country > .panel-h .eyebrow b.neg { color: var(--red); }
+.panel.country, #conta { scroll-margin-top: 90px; }
+/* dettaglio del conto (scheda laterale) */
+.acc-sheet .sheet-h { gap: 10px; }
+.acc-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
+.acc-3 > div { border: 1px solid var(--line-2); background: var(--surface-2); border-radius: var(--r); padding: 9px 12px; min-width: 0; }
+.acc-3 dt { font-size: 12px; color: var(--muted); } .acc-3 dd { margin: 2px 0 0; font-weight: 600; color: var(--navy); white-space: nowrap; font-size: 14px; }
+.acc-h3 { margin: 16px 0 2px; font: 600 14px/1.3 var(--f-ui); color: var(--navy); }
+.aw-st.acc-st { margin-top: 4px; }
+.aw-st.acc-st > li { align-items: center; }
+.aw-st.acc-st .acc-ref { display: block; font-size: 12px; }
+.aw-st.acc-st .two small { font-weight: 400; }
+/* Anticipi: icona della persona colorata secondo lo stato */
+.pst { flex: none; width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center; }
+.pst.g { background: color-mix(in srgb, var(--green-soft) 26%, var(--surface)); color: var(--green); }
+.pst.o { background: color-mix(in srgb, var(--amber-soft) 34%, var(--surface)); color: var(--amber-ink); }
+.pst.r { background: color-mix(in srgb, var(--tax) 28%, var(--surface)); color: var(--red); }
+.pst.n { background: var(--band); color: var(--muted); }
+.aw-list.aw-who > li > a { grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; }
+.pst-leg { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px 12px; border-top: 1px solid var(--line-2); font-size: 12.5px; color: var(--muted); }
+.pst-leg span { display: inline-flex; align-items: center; gap: 6px; }
+.pst-leg i.pst { width: 10px; height: 10px; }
+.pst-leg i.pst.g { background: var(--green-soft); } .pst-leg i.pst.o { background: var(--amber-soft); } .pst-leg i.pst.r { background: var(--tax); }
+@media (max-width: 760px) {
+  .acc-3 { gap: 6px; } .acc-3 > div { padding: 8px 9px; } .acc-3 dd { font-size: 12.5px; }
+  .aw-list.aw-who > li > a { gap: 10px; padding: 12px 14px; }
+  .pst-leg { padding: 10px 14px 12px; }
+  .panel.country > .panel-h .eyebrow { font-size: 0; } .panel.country > .panel-h .eyebrow b { font-size: 14px; margin-left: 0; }
+}
+
+/* riquadri: niente sbordi su telefono (cifre lunghe in ariary più piccole, etichette del grafico troncate con i puntini) */
+.kpis.dk .kpi { overflow: hidden; }
+.kpis.dk .kpi .vzl { gap: 8px; }
+.kpis.dk .kpi .vzl span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.kpis.dk .kpi .vzl span:last-child { flex: none; }
+@media (max-width: 760px) { .kpis.dk .kpi .v.long { font-size: 16.5px; line-height: 1.6; } }
+@media (max-width: 380px) { .kpis.dk .kpi .v.long { font-size: 15px; line-height: 1.75; } }
+/* Tassi di cambio su tablet: via le colonne meno utili, e se ancora non basta la tabella scorre dentro il suo riquadro */
+.fx-scroll { overflow-x: auto; }
+@media (min-width: 761px) and (max-width: 1180px) {
+  .fx-t th:nth-child(5), .fx-t td:nth-child(5), .fx-t th:nth-child(7), .fx-t td:nth-child(7) { display: none; }
 }

@@ -106,7 +106,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
       <div className="kpis dk rbk">
         <div className="kpi">
           <div className="l">{LL('Da rimborsare', 'À rembourser')}</div>
-          <div className="v num">{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
+          <div className={`v num${due.length && curs.length === 1 && money(totals.get(curs[0]!)!, curs[0]!, lang).length > 11 ? ' long' : ''}`}>{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
           {dueEur > 0 && <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: `var(--dn${i + 1})` }))} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
             <div className="vzl"><span>{people[0]!.n.split(' ')[0]}</span><span>{people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></>}
           <div className="s">{due.length === 0 ? LL('non dobbiamo niente a nessuno', 'nous ne devons rien à personne')

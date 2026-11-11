@@ -1,4 +1,5 @@
 import type { Lang, T } from '@/lib/i18n';
+import Link from 'next/link';
 import { money, nm } from '@/lib/format';
 import { Place } from './Ui';
 
@@ -7,21 +8,27 @@ export type Balance = {
   opening_balance: string; movements_in: string; movements_out: string; balance: string; unverified: number;
 };
 
-export function BalancesTable({ rows, t, lang, detail = false, noPlace = false }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean; noPlace?: boolean }) {
+export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, hrefFor, verHref }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean; noPlace?: boolean;
+  hrefFor?: (r: Balance) => string; verHref?: (r: Balance) => string }) {
+  // saldo: verde se positivo, rosso se negativo
+  const tone = (r: Balance) => (Number(r.balance) > 0 ? ' pos' : Number(r.balance) < 0 ? ' neg' : '');
+  const nameOf = (r: Balance) => (hrefFor ? <Link className="bal-a" href={hrefFor(r)} scroll={false}>{nm(lang, r)}</Link> : nm(lang, r));
+  const ver = (r: Balance, tiny = false) => { const c = `chip warn${tiny ? ' tiny' : ''}`, tx = tiny ? `${r.unverified} ${t('nav_verify').toLowerCase()}` : String(r.unverified);
+    return verHref ? <Link className={c} href={verHref(r)} title={t('nav_verify')}>{tx}</Link> : <span className={c}>{tx}</span>; };
   return (
     <>
     {/* telefono: una scheda per conto (nome e saldo sulla stessa riga, dettagli sotto a pezzi interi) */}
     <ul className="bal-cards">
       {rows.map((r) => (
         <li key={r.account_id}>
-          <div className="bc-top"><b>{nm(lang, r)}</b>
-            <span className={`num bc-bal${Number(r.balance) < 0 ? ' neg' : ''}`}>{money(r.balance, r.currency, lang)}</span></div>
+          <div className="bc-top"><b>{nameOf(r)}</b>
+            <span className={`num bc-bal${tone(r)}`}>{money(r.balance, r.currency, lang)}</span></div>
           {detail && <dl className="bc-det">
             <div><dt>{lang === 'fr' ? 'Initial' : 'Iniziale'}</dt><dd className="num">{money(r.opening_balance, r.currency, lang)}</dd></div>
             <div><dt>{t('acc_in')}</dt><dd className="num">{money(r.movements_in, r.currency, lang)}</dd></div>
             <div><dt>{lang === 'fr' ? 'Sorties' : 'Uscite'}</dt><dd className="num">{money(r.movements_out, r.currency, lang)}</dd></div>
           </dl>}
-          {r.unverified > 0 && <span className="chip warn tiny">{r.unverified} {t('nav_verify').toLowerCase()}</span>}
+          {r.unverified > 0 && ver(r, true)}
         </li>
       ))}
     </ul>
@@ -41,16 +48,15 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false }
       <tbody>
         {rows.map((r) => (
           <tr key={r.account_id}>
-            <td>{nm(lang, r)}</td>
+            <td>{nameOf(r)}</td>
             {!noPlace && <td><Place loc={r.location} label={r.location === 'IT' ? t('italy') : t('madagascar')} /></td>}
             {detail && <>
               <td className="r num">{money(r.opening_balance, r.currency, lang)}</td>
               <td className="r num">{money(r.movements_in, r.currency, lang)}</td>
               <td className="r num">{money(r.movements_out, r.currency, lang)}</td>
             </>}
-            <td className="r num" style={Number(r.balance) < 0 && r.kind === 'cash' ? { color: 'var(--red)', fontWeight: 600 } : undefined}>
-              {money(r.balance, r.currency, lang)}</td>
-            <td className="r num">{r.unverified > 0 ? <span className="chip warn">{r.unverified}</span> : '–'}</td>
+            <td className={`r num bal-v${tone(r)}`}>{money(r.balance, r.currency, lang)}</td>
+            <td className="r num">{r.unverified > 0 ? ver(r) : '–'}</td>
           </tr>
         ))}
       </tbody>

@@ -1,12 +1,13 @@
 import { PersonPicker } from '@/components/PersonPicker';
 import { AdvanceDoc } from '@/components/AdvanceDoc';
 import { CIcon } from '@/components/CIcon';
+import { Viz } from '@/components/Charts';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, money, num } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
-import { Denied, Empty, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
+import { Denied, Empty, ErrorNote, Panel, H2 } from '@/components/Page';
 import { advanceStep, closeSettled, createAdvanceAccount, deleteRequest, deliverAdvance, moveAdvance, requestAdvance } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const staff = can(me, STAFF), resp = can(me, RESP), writer = me.role !== 'read_only';
   const FR = lang === 'fr', LL = (it: string, fr: string) => (FR ? fr : it);
   const persona = /^[0-9a-f-]{36}$/.test(sp.persona ?? '') ? sp.persona! : '';
-  const [{ data, error }, { data: cash }, { data: reqRaw }, { data: advAcc }, { data: people }, { data: prj }, { data: lim }, { data: movs }] = await Promise.all([
+  const [{ data, error }, { data: cash }, { data: reqRaw }, { data: advAcc }, { data: people }, { data: prj }, { data: lim }, { data: movs }, { data: fxl }] = await Promise.all([
     staff ? supabase.rpc('advance_summary') : Promise.resolve({ data: [], error: null }),
     supabase.from('accounts').select('id, name_it, name_fr, currency').eq('active', true).neq('kind', 'advance').order('sort'),
     supabase.from('advance_requests').select('*').order('requested_at', { ascending: false }).limit(300).returns<Req[]>(),
@@ -42,7 +43,10 @@ export default async function Advances({ searchParams }: { searchParams: Promise
     supabase.from('settings').select('value').eq('key', 'adv_limits').maybeSingle(),
     persona && staff ? supabase.from('movements').select('id, ref, op_date, kind, amount, to_amount, account_id, to_account_id, description, status, movement_documents(document_id)')
       .or(`account_id.eq.${persona},to_account_id.eq.${persona}`).order('op_date', { ascending: false }).limit(200).returns<Mov[]>() : Promise.resolve({ data: [] as Mov[] }),
+    supabase.from('fx_rates').select('rate').order('year', { ascending: false }).order('month', { ascending: false }).limit(1),
   ]);
+  const fxNow = Number(fxl?.[0]?.rate ?? 0);
+  const toEur = (v: number, c: string) => (c === 'EUR' ? v : fxNow > 0 ? v / fxNow : 0);
   const rows = (data ?? []) as S[];
   const today = new Date().toISOString().slice(0, 10);
   const plus = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
@@ -140,25 +144,50 @@ export default async function Advances({ searchParams }: { searchParams: Promise
 
   return (
     <div className="stack">
-      <PageHead title={t('nav_advances')}>
-        {writer && <Link className="btn primary" href={href({ nuova: '1', per: persona || undefined })} scroll={false}>+ {LL('Nuova richiesta', 'Nouvelle demande')}</Link>}
-      </PageHead>
       {okText && <div className="note ok" role="status">{okText}{ok === 'deliver' && sp.ric ? <> <Link href={`/anticipi/${sp.ric}#firma`}>{LL('Apri la ricevuta di consegna →', 'Ouvrir le reçu de remise →')}</Link></> : null}</div>}
       {errText && <div className="note err">{errText}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
-      {staff && (
-        <div className="kpi4 aw-k">
-          <div className="k4 k-in"><span className="k4-t"><CIcon name="wallet" size={15} />{LL('In mano alle persone', 'Entre les mains des personnes')}</span>
-            <b className="num">{[...inHand.entries()].map(([c, v]) => money(v, c, lang)).join(' · ') || '–'}</b><small>{(() => { const n = wallets.filter((w) => Number(w.balance) > 0).length; return n === 1 ? LL('1 persona', '1 personne') : LL(`${n} persone`, `${n} personnes`); })()}</small></div>
-          <div className={`k4 ${toAuth.length ? 'k-warn' : 'k-net'}`}><span className="k4-t"><CIcon name="check" size={15} />{LL('Da autorizzare', 'À autoriser')}</span><b className="num">{toAuth.length}</b>
-            <small>{LL('richieste in attesa', 'demandes en attente')}</small></div>
-          <div className={`k4 ${toGive.length ? 'k-warn' : 'k-net'}`}><span className="k4-t"><CIcon name="send" size={15} />{LL('Da consegnare', 'À remettre')}</span><b className="num">{toGive.length}</b>
-            <small>{LL('autorizzate', 'autorisées')}</small></div>
-          <div className={`k4 ${wallets.some((w) => lateReq(w.account_id)) ? 'k-out' : 'k-net'}`}><span className="k4-t"><CIcon name="clock" size={15} />{LL('Ricevute in ritardo', 'Reçus en retard')}</span>
-            <b className="num">{wallets.filter((w) => lateReq(w.account_id)).length}</b><small>{LL('oltre la data per giustificare', 'au-delà de la date prévue')}</small></div>
-        </div>
-      )}
+      {staff && (() => {
+        // riquadri nel disegno di Cairn: cifra, mini grafico, una riga di contesto; nessun filo colorato
+        const open = wallets.filter((w) => Number(w.balance) > 0).sort((x, y) => toEur(Number(y.balance), y.currency) - toEur(Number(x.balance), x.currency));
+        const openEur = open.reduce((a, w) => a + toEur(Number(w.balance), w.currency), 0), curs = [...inHand.keys()];
+        const sumTxt = (rs: Req[]) => { const m = new Map<string, number>(); for (const r of rs) m.set(r.currency, (m.get(r.currency) ?? 0) + amt(r)); return [...m.entries()].map(([c, v]) => money(v, c, lang)).join(' + '); };
+        const segReq = (rs: Req[], col: string) => rs.slice(0, 8).map((r) => ({ v: Math.max(toEur(amt(r), r.currency), 0.01), c: col }));
+        const tipReq = (rs: Req[]) => rs.map((r) => `${accName(accBy.get(r.account_id))}: ${money(amt(r), r.currency, lang)}`).join('\n');
+        const lateN = open.filter((w) => lateReq(w.account_id)).length, okN = open.length - lateN;
+        return (
+          <div className="kpis dk">
+            <div className="kpi">
+              <div className="l">{LL('Anticipi in corso', 'Avances en cours')}</div>
+              <div className={`v num${open.length && curs.length === 1 && money(inHand.get(curs[0]!)!, curs[0]!, lang).length > 11 ? ' long' : ''}`}>{open.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 ? money(inHand.get(curs[0]!)!, curs[0]!, lang) : money(openEur, 'EUR', lang)}</div>
+              {openEur > 0 && <><Viz.Stack segs={open.slice(0, 6).map((w, i) => ({ v: toEur(Number(w.balance), w.currency), c: `var(--dn${i + 1})` }))} max={openEur} tip={open.map((w) => `${accName(w)}: ${money(w.balance, w.currency, lang)}`).join('\n')} />
+                <div className="vzl"><span>{accName(open[0]!)}</span><span>{open.length === 1 ? LL('1 persona', '1 personne') : LL(`${open.length} persone`, `${open.length} personnes`)}</span></div></>}
+              <div className="s">{open.length === 0 ? LL('nessun contante da giustificare', 'aucune espèce à justifier') : curs.length > 1 ? [...inHand.entries()].map(([c, v]) => money(v, c, lang)).join(' + ') : curs[0] !== 'EUR' && fxNow > 0 ? `≈ ${money(openEur, 'EUR', lang)}` : LL('contanti ancora da giustificare', 'espèces encore à justifier')}</div>
+            </div>
+            <div className="kpi">
+              <div className="l">{LL('Da autorizzare', 'À autoriser')}</div>
+              <div className={`v num${toAuth.length ? ' amb' : ''}`}>{toAuth.length}</div>
+              {toAuth.length > 0 && <><Viz.Stack segs={segReq(toAuth, 'var(--amber-soft)')} max={segReq(toAuth, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toAuth)} />
+                <div className="vzl"><span>{toAuth.length === 1 ? LL('1 richiesta', '1 demande') : LL(`${toAuth.length} richieste`, `${toAuth.length} demandes`)}</span><span>{sumTxt(toAuth)}</span></div></>}
+              <div className="s">{toAuth.length ? LL('richieste in attesa di autorizzazione', 'demandes en attente d’autorisation') : LL('nessuna richiesta in attesa', 'aucune demande en attente')}</div>
+            </div>
+            <div className="kpi">
+              <div className="l">{LL('Da consegnare', 'À remettre')}</div>
+              <div className={`v num${toGive.length ? ' amb' : ''}`}>{toGive.length}</div>
+              {toGive.length > 0 && <><Viz.Stack segs={segReq(toGive, 'var(--vz-plan)')} max={segReq(toGive, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toGive)} />
+                <div className="vzl"><span>{toGive.length === 1 ? LL('1 autorizzata', '1 autorisée') : LL(`${toGive.length} autorizzate`, `${toGive.length} autorisées`)}</span><span>{sumTxt(toGive)}</span></div></>}
+              <div className="s">{toGive.length ? LL('contanti da consegnare alla persona', 'espèces à remettre à la personne') : LL('niente da consegnare', 'rien à remettre')}</div>
+            </div>
+            <div className="kpi">
+              <div className="l">{LL('Giustificativi in ritardo', 'Justificatifs en retard')}</div>
+              <div className={`v num${lateN ? ' neg' : ''}`}>{lateN}</div>
+              {open.length > 0 && <><Viz.Stack segs={[{ v: okN, c: 'var(--green-soft)' }, { v: lateN, c: 'var(--tax)' }]} max={open.length} tip={LL(`Nei termini: ${okN}\nIn ritardo: ${lateN}`, `Dans les délais : ${okN}\nEn retard : ${lateN}`)} />
+                <div className="vzl"><span>{LL(`nei termini ${okN}`, `dans les délais ${okN}`)}</span><span>{LL(`in ritardo ${lateN}`, `en retard ${lateN}`)}</span></div></>}
+              <div className="s">{lateN ? LL('oltre la data per portare le ricevute', 'au-delà de la date pour apporter les reçus') : open.length ? LL('tutti nei termini', 'tous dans les délais') : LL('nessun anticipo aperto', 'aucune avance en cours')}</div>
+            </div>
+          </div>);
+      })()}
 
       {resp && toAuth.length > 0 && (
         <Panel title={`${LL('Da autorizzare', 'À autoriser')} · ${toAuth.length}`}>
@@ -219,14 +248,20 @@ export default async function Advances({ searchParams }: { searchParams: Promise
       )}
 
       {staff && (
-        <Panel title={LL('Chi ha contanti in mano', 'Qui a des espèces')}>
+        <Panel title={LL('Anticipi aperti per persona', 'Avances en cours par personne')} icon="users" className="rb-panel"
+          right={writer ? <Link className="btn primary" href={href({ nuova: '1', per: persona || undefined })} scroll={false}><CIcon name="plus" size={15} />{LL('Nuova richiesta', 'Nouvelle demande')}</Link> : undefined}>
           {wallets.length === 0 ? <Empty text={LL('Nessuno ha contanti da giustificare.', 'Personne n’a d’espèces à justifier.')} /> : (
-            <ul className="aw-list">
+            <ul className="aw-list aw-who">
               {wallets.map((w) => {
                 const bal = Number(w.balance), late = lateReq(w.account_id), due = nextDue(w.account_id), pend = reqs.filter((q) => q.account_id === w.account_id && ['requested', 'authorized'].includes(q.status)).length;
+                // stato della persona: rosso = ricevute in ritardo; arancione = c'è qualcosa da seguire (richiesta in corso, spese senza ricevuta, scadenza entro 7 giorni); verde = in regola
+                const soon = due ? (Date.parse(due) - Date.parse(today)) / 86400000 <= 7 : false;
+                const st = late ? 'r' : pend || w.spent_no_doc > 0 || soon ? 'o' : 'g';
+                const stTxt = st === 'r' ? LL('In ritardo', 'En retard') : st === 'o' ? LL('Da seguire', 'À suivre') : LL('In regola', 'En règle');
                 return (
                   <li key={w.account_id}>
                     <Link href={href({ persona: w.account_id })} scroll={false} className={w.account_id === persona ? 'sel' : ''}>
+                      <span className={`pst ${st}`} title={stTxt} role="img" aria-label={stTxt}><CIcon name="user" size={17} /></span>
                       <span className="aw-n"><b>{accName(w)}</b><small className="muted">{late ? <span className="neg">{LL(`ricevute in ritardo dal ${date(late.report_by)}`, `reçus en retard depuis le ${date(late.report_by)}`)}</span>
                         : due ? LL(`ricevute entro il ${date(due)}`, `reçus avant le ${date(due)}`) : bal < 0 ? LL('da rimborsare alla persona', 'à rembourser à la personne') : LL('nessuna scadenza', 'aucune échéance')}
                         {w.spent_no_doc > 0 ? ` · ${LL(`${w.spent_no_doc} senza ricevuta`, `${w.spent_no_doc} sans reçu`)}` : ''}{pend ? ` · ${LL(`${pend} richiesta in corso`, `${pend} demande en cours`)}` : ''}</small></span>
@@ -237,13 +272,15 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               })}
             </ul>
           )}
+          {wallets.length > 0 && <div className="pst-leg" aria-hidden="true"><span><i className="pst g" />{LL('in regola', 'en règle')}</span><span><i className="pst o" />{LL('da seguire: richiesta in corso, spese senza ricevuta o scadenza entro 7 giorni', 'à suivre : demande en cours, dépenses sans reçu ou échéance sous 7 jours')}</span><span><i className="pst r" />{LL('ricevute in ritardo', 'reçus en retard')}</span></div>}
           {others.length > 0 && <details className="aw-more"><summary>{others.length === 1 ? LL('Un’altra persona senza contanti in mano', 'Une autre personne sans espèces') : LL(`Altre ${others.length} persone senza contanti in mano`, `${others.length} autres personnes sans espèces`)}</summary>
-            <ul className="aw-list">{others.map((w) => <li key={w.account_id}><Link href={href({ persona: w.account_id })} scroll={false}><span className="aw-n"><b>{accName(w)}</b><small className="muted">{w.currency}</small></span><span className="aw-b num">{money(0, w.currency, lang)}</span></Link></li>)}</ul></details>}
+            <ul className="aw-list aw-who">{others.map((w) => <li key={w.account_id}><Link href={href({ persona: w.account_id })} scroll={false}><span className="pst n" aria-hidden="true"><CIcon name="user" size={17} /></span><span className="aw-n"><b>{accName(w)}</b><small className="muted">{w.currency}</small></span><span className="aw-b num">{money(0, w.currency, lang)}</span></Link></li>)}</ul></details>}
         </Panel>
       )}
 
       {!staff && (
-        <Panel title={LL('Le mie richieste', 'Mes demandes')}>
+        <Panel title={LL('Le mie richieste', 'Mes demandes')} className="rb-panel"
+          right={writer ? <Link className="btn primary" href={href({ nuova: '1' })} scroll={false}><CIcon name="plus" size={15} />{LL('Nuova richiesta', 'Nouvelle demande')}</Link> : undefined}>
           {mine.length === 0 ? <Empty text={LL('Nessuna richiesta. Per chiedere contanti usa «+ Nuova richiesta».', 'Aucune demande. Pour demander des espèces, utilisez « + Nouvelle demande ».')} /> : (
             <ul className="aw-rq">
               {mine.slice(0, 30).map((r) => (

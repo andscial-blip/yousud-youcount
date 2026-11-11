@@ -6,12 +6,13 @@ import { recordCashCount } from '@/app/(app)/conti/actions';
 
 // Verifica di cassa per tagli (come il Gestionale): si contano banconote e monete, il totale si calcola da sé
 // e si confronta con il saldo dell'app. Il database registra il saldo alla data e la differenza.
-const DEN: Record<string, number[]> = { MGA: [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50], EUR: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02] };
+const DEN: Record<string, number[]> = { MGA: [20000, 10000, 5000, 2000, 1000, 500, 200, 100], EUR: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02] };
 // da quale taglio in giù sono monete
-const COIN_BELOW: Record<string, number> = { MGA: 200, EUR: 5 };
+// In Madagascar si contano solo banconote (da 100 a 20.000 ariary): niente colonna delle monete, i tagli si dividono in due colonne
+const COIN_BELOW: Record<string, number> = { MGA: 0, EUR: 5 };
 
 export function CashCounter({ accounts, lang, L }: { accounts: { id: string; label: string; currency: string; balance: number }[]; lang: Lang;
-  L: { account: string; date: string; den: string; qty: string; total: string; counted: string; expected: string; diff: string; notes: string; save: string; hint: string; pieces: string; notes_bank: string; coins: string } }) {
+  L: { account: string; date: string; den: string; qty: string; total: string; counted: string; expected: string; diff: string; notes: string; save: string; hint: string; pieces: string; notes_bank: string; coins: string; notes_small: string } }) {
   const [acc, setAcc] = useState(accounts[0]?.id ?? '');
   const [q, setQ] = useState<Record<string, string>>({});
   const a = accounts.find((x) => x.id === acc) ?? accounts[0];
@@ -34,8 +35,11 @@ export function CashCounter({ accounts, lang, L }: { accounts: { id: string; lab
           <input className="input" type="date" id="cc-date" name="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
       </div>
       <div className="cc-groups">
-      {([['notes', L.notes_bank], ['coins', L.coins]] as const).map(([g, title]) => {
-        const list = den.filter((v) => (g === 'coins' ? v < (COIN_BELOW[a?.currency ?? 'EUR'] ?? 5) : v >= (COIN_BELOW[a?.currency ?? 'EUR'] ?? 5)));
+      {(() => {
+        const below = COIN_BELOW[a?.currency ?? 'EUR'] ?? 5, notes = den.filter((v) => v >= below), coins = den.filter((v) => v < below);
+        const half = Math.ceil(notes.length / 2);
+        return (coins.length ? [['notes', L.notes_bank, notes], ['coins', L.coins, coins]] : [['notes', L.notes_bank, notes.slice(0, half)], ['small', L.notes_small, notes.slice(half)]]) as [string, string, number[]][];
+      })().map(([g, title, list]) => {
         if (!list.length) return null;
         return (
           <div key={g} className="cc-tab" role="group" aria-label={`${L.den}: ${title}`}>
