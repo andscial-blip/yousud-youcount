@@ -1795,3 +1795,47 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
   .mv-saved { padding: 10px 14px; }
   .kpis.dk.mvk .kpi .v { font-size: 18px; }
 }
+
+/* ---------- Da rimborsare (11/11): riquadri come le altre pagine, elenco per persona con sigla e tasto, ultimi rimborsi allineati ---------- */
+.kpis.dk .kpi { position: relative; }
+.kpis.dk .kpi > div:has(> svg.vzr) { position: absolute; top: 14px; right: 14px; width: 42px; height: 42px; }
+.kpis.dk .kpi .vzr { display: block; width: 42px; height: 42px; }
+.kpis.dk .kpi .v.amb { color: var(--amber-ink); }
+.rb-panel > .panel-h .btn { font-size: 14px; white-space: nowrap; }
+.rb-av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--band); color: var(--navy); font: 600 12.5px/1 var(--f-ui); letter-spacing: .02em; }
+.rb-av.ok { background: color-mix(in srgb, var(--green-soft) 22%, var(--surface)); color: var(--green); }
+.aw-list.rb-who > li > a { grid-template-columns: auto minmax(0, 1fr) auto auto auto; gap: 14px; }
+.rb-who .aw-n b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-who .rb-nd { white-space: nowrap; }
+.rb-who .rb-nd { grid-column: 3; } .rb-who .aw-b { grid-column: 4; min-width: 8.5em; } .rb-who .rb-go { grid-column: 5; }
+.rb-who .rb-go { pointer-events: none; }
+.rb-who > li > a:hover .rb-go { border-color: var(--navy); }
+.rb-empty { display: flex; gap: 14px; align-items: center; padding: 18px; }
+.rb-empty > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rb-empty b { color: var(--navy); } .rb-empty small { font-size: 13px; line-height: 1.45; }
+.rb-recent { list-style: none; margin: 0; padding: 0; }
+.rb-recent > li { display: grid; grid-template-columns: 6.2em minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 11px 18px; border-top: 1px solid var(--line-2); font-size: 14px; }
+.rb-recent > li:first-child { border-top: 0; }
+.rb-recent .rb-d { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.rb-recent .rb-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rb-recent .rb-t b { color: var(--navy); font-weight: 600; }
+.rb-recent .rb-t small { font-size: 12.5px; }
+.rb-recent .rb-t a { color: inherit; text-decoration: underline; text-decoration-color: var(--c-soft); text-underline-offset: 3px; }
+.rb-recent .rb-t a:hover { color: var(--navy); }
+.rb-recent .rb-t a { white-space: nowrap; }
+.kpis.dk .kpi .vzl span { white-space: nowrap; }
+.rb-recent .rb-a { white-space: nowrap; color: var(--navy); }
+@media (max-width: 760px) {
+  .kpis.dk .kpi > div:has(> svg.vzr) { display: none; }
+  .rb-panel > .panel-h { flex-wrap: wrap; gap: 10px; }
+  .rb-panel > .panel-h .spacer { display: none; }
+  .rb-panel > .panel-h .btn { flex: 1 0 100%; justify-content: center; }
+  .aw-list.rb-who > li > a { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av n b" "av nd nd"; gap: 4px 12px; padding: 12px 14px; }
+  .rb-who .rb-av { grid-area: av; align-self: start; } .rb-who .aw-n { grid-area: n; } .rb-who .aw-b { grid-area: b; grid-column: auto; min-width: 0; }
+  .rb-who .rb-nd { grid-area: nd; grid-column: auto; justify-self: start; }
+  .rb-who .rb-go { display: none; }
+  .rb-who .aw-n b { white-space: normal; }
+  .rb-empty { padding: 14px; align-items: flex-start; }
+  .rb-recent > li { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t a" "d d"; gap: 2px 12px; padding: 11px 14px; }
+  .rb-recent .rb-t { grid-area: t; } .rb-recent .rb-a { grid-area: a; align-self: start; } .rb-recent .rb-d { grid-area: d; font-size: 12px; }
+}

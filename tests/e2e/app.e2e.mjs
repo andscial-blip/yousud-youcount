@@ -318,6 +318,11 @@ try {
     await p.goto(`${base}/`);
     await p.getByRole('link', { name: /1 spesa da rimborsare/ }).click();
     await p.waitForURL(/\/rimborsi$/);
+    // riquadri in alto: quanto dobbiamo (nella valuta della spesa, con il controvalore), giustificativi, rimborsato nell'anno
+    const tiles = (await p.locator('.kpis.dk.rbk').innerText()).replace(/[\u00a0\u202f]/g, ' ');
+    assert.match(tiles, /Da rimborsare\s+18\.000 MGA[\s\S]*1 persona[\s\S]*≈ [\d,]+ €/);
+    assert.match(tiles, /In attesa da[\s\S]*Senza giustificativo\s+0[\s\S]*Rimborsato nel \d{4}\s+0,00 €/);
+    assert.equal(await p.locator('.kpis.dk.rbk .kpi').count(), 4);
     // una riga per persona; aprendola: spese, cassa già proposta, un solo tasto «Rimborsa …»
     await p.locator('.aw-list > li', { hasText: 'Operatore di prova' }).getByRole('link').click();
     const sheet = p.locator('.aw-sheet');
@@ -327,6 +332,9 @@ try {
     await p.waitForURL(/\/rimborsi\?ok=MOV-/);
     await p.getByText('Nessuna spesa da rimborsare.').waitFor();
     await p.getByText('Ultimi rimborsi').waitFor();
+    const after = (await p.locator('.kpis.dk.rbk').innerText()).replace(/[\u00a0\u202f]/g, ' ');
+    assert.match(after, /Da rimborsare\s+0,00 €[\s\S]*Rimborsato nel \d{4}\s+[\d,]+ €[\s\S]*1 rimborso · ultimo il/);
+    assert.match((await p.locator('.rb-recent > li').first().innerText()).replace(/[\u00a0\u202f]/g, ' '), /Operatore di prova[\s\S]*Cassa Madagascar \(contanti\) · MOV-\d{4}-\d{3}[\s\S]*18\.000 MGA/);
     const [m] = (await pool.query(`select m.status, m.reimb_status, a.code, m.op_date::text d, m.ref, m.recorded_by = (select id from profiles where full_name = 'Responsabile di prova') by_resp
       from movements m join accounts a on a.id = m.account_id where m.description = 'PROVA taxi da rimborsare'`)).rows;
     assert.deepEqual([m.status, m.reimb_status, m.code, m.d, m.by_resp], ['recorded', 'paid', 'Cassa Missione', today, true]);

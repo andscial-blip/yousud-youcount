@@ -64,11 +64,13 @@ export const HELP: HelpEntry[] = [
   { href: '/rimborsi', sec: 'mov',
     it: ['Spese da rimborsare', [
       'Chi paga di tasca propria registra la spesa con «Di tasca propria, da rimborsare»: non tocca i conti finché non viene rimborsata.',
-      'Un responsabile rimborsa da questa pagina scegliendo il conto da cui escono i soldi: la spesa entra in contabilità con la data del rimborso.',
+      'In alto quattro riquadri: quanto dobbiamo in tutto (la barra mostra a chi), da quanti giorni aspetta la spesa più vecchia, quante spese non hanno ancora il giustificativo e quanto è stato rimborsato nell\'anno, mese per mese.',
+      'Sotto, una riga per persona: «Rimborsa» apre le sue spese, con la cassa già proposta e un solo tasto per registrare il rimborso. La spesa entra in contabilità con la data del rimborso e il conto da cui escono i soldi.',
       'Spese pagate di tasca propria. Non toccano i conti finché non si rimborsano: il rimborso le registra con la data in cui escono i soldi, come vuole il rendiconto per cassa.']],
     fr: ['Dépenses à rembourser', [
       'Qui paie de sa poche enregistre la dépense avec « De sa poche, à rembourser » : elle ne touche pas les comptes avant le remboursement.',
-      'Un responsable rembourse depuis cette page en choisissant le compte qui paie : la dépense entre en comptabilité à la date du remboursement.',
+      'En haut, quatre encadrés : le total dû (la barre montre à qui), depuis combien de jours attend la dépense la plus ancienne, combien de dépenses n\'ont pas encore leur pièce et le total remboursé dans l\'année, mois par mois.',
+      'Dessous, une ligne par personne : « Rembourser » ouvre ses dépenses, avec la caisse déjà proposée et un seul bouton pour enregistrer le remboursement. La dépense entre en comptabilité à la date du remboursement et sur le compte qui paie.',
       'Dépenses payées de sa poche. Elles ne touchent pas les comptes tant qu’elles ne sont pas remboursées : le remboursement les enregistre à la date où l’argent sort, comme le veut le compte de caisse.']] },
   { href: '/documenti', sec: 'docs',
     it: ['Giustificativi', [
