@@ -3,7 +3,9 @@ import { can, requireMe } from '@/lib/session';
 import { purgeAllAction } from './actions';
 import { AutoTranslate } from '@/components/AutoTranslate';
 import { date, money, nm, num } from '@/lib/format';
-import { ErrorNote, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, Panel } from '@/components/Page';
+import { Viz } from '@/components/Charts';
+import { MESI } from '@/lib/viz';
 import { DocIndicator, EmptyState, Ico, KindIcon, StatusChip } from '@/components/Ui';
 import { SavedFilters } from '@/components/SavedFilters';
 import { FilterBar } from '@/components/FilterBar';
@@ -70,7 +72,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
              method:payment_methods(name_it, name_fr), tr:movement_translations(source, it, fr)`, { count: 'exact' }))
       .order('op_date', { ascending: false }).order('created_at', { ascending: false })
       .range((page - 1) * PAGE, page * PAGE - 1).returns<Row[]>(),
-    apply(supabase.from('movements').select('kind, sign, amount_eur, status')).neq('status', 'draft').neq('kind', 'transfer').limit(20000),
+    apply(supabase.from('movements').select('kind, sign, amount_eur, status, op_date')).neq('status', 'draft').neq('kind', 'transfer').limit(20000),
     supabase.from('projects').select('id, name').order('name'),
     supabase.from('accounts').select('id, name_it, name_fr').order('sort'),
     supabase.from('categories').select('id, code, name_it, name_fr, direction').eq('active', true).order('code'),
@@ -83,6 +85,31 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const pages = Math.max(1, Math.ceil(total / PAGE));
   const inc = (sums ?? []).filter((r: { kind: string }) => r.kind === 'income').reduce((a: number, r: { amount_eur: string | null; sign: number }) => a + Number(r.amount_eur ?? 0) * r.sign, 0);
   const out = (sums ?? []).filter((r: { kind: string }) => r.kind === 'expense').reduce((a: number, r: { amount_eur: string | null; sign: number }) => a + Number(r.amount_eur ?? 0) * r.sign, 0);
+  // mini grafici dei riquadri: una barra per mese del periodo filtrato (per giorno se il periodo sta in un mese, per anno oltre i 3 anni)
+  type SR = { kind: string; sign: number; amount_eur: string | null; status: string; op_date: string };
+  const sr = (sums ?? []) as SR[];
+  const ds = sr.map((r) => r.op_date).sort();
+  const d0 = f.from || ds[0] || '', d1 = f.to || ds[ds.length - 1] || '';
+  const span = d0 && d1 ? (Number(d1.slice(0, 4)) - Number(d0.slice(0, 4))) * 12 + Number(d1.slice(5, 7)) - Number(d0.slice(5, 7)) + 1 : 0;
+  const mode: 'd' | 'm' | 'y' = span <= 1 ? 'd' : span > 36 ? 'y' : 'm';
+  const keys: string[] = [];
+  if (d0 && d1 && d0 <= d1) {
+    if (mode === 'd') { const n = new Date(Number(d0.slice(0, 4)), Number(d0.slice(5, 7)), 0).getDate(); for (let k = 1; k <= n; k++) keys.push(`${d0.slice(0, 8)}${String(k).padStart(2, '0')}`); }
+    else if (mode === 'y') for (let k = Number(d0.slice(0, 4)); k <= Number(d1.slice(0, 4)); k++) keys.push(String(k));
+    else for (let k = 0; k < span; k++) { const m0 = Number(d0.slice(0, 4)) * 12 + Number(d0.slice(5, 7)) - 1 + k; keys.push(`${Math.floor(m0 / 12)}-${String((m0 % 12) + 1).padStart(2, '0')}`); }
+  }
+  const keyOf = (d: string) => (mode === 'd' ? d : mode === 'y' ? d.slice(0, 4) : d.slice(0, 7));
+  const kLabel = (k: string) => (mode === 'd' ? `${k.slice(8)}/${k.slice(5, 7)}` : mode === 'y' ? k : `${MESI[lang][Number(k.slice(5, 7)) - 1]!.toLowerCase()} ${k.slice(0, 4)}`);
+  const idx = new Map(keys.map((k, i) => [k, i] as const));
+  const bIn = keys.map(() => 0), bOut = keys.map(() => 0), bN = keys.map(() => 0);
+  let nIn = 0, nOut = 0, nRec = 0;
+  for (const r of sr) {
+    const i = idx.get(keyOf(r.op_date)), v = Number(r.amount_eur ?? 0) * r.sign;
+    if (r.kind === 'income') nIn++; else if (r.kind === 'expense') nOut++;
+    if (r.status === 'recorded') nRec++;
+    if (i == null) continue;
+    bN[i]!++; if (r.kind === 'income') bIn[i]! += v; else if (r.kind === 'expense') bOut[i]! += v;
+  }
   const cur: SP = { stato, q: term, progetto: f.prj, conto: f.acc, dal: f.from, al: f.to, codice: f.cat, tipo: f.tipo, cp: f.cp, metodo: f.pm, valuta: f.cur, doc: f.doc, demo: f.demo };
   const qs = (over: SP) => { const u = new URLSearchParams(); for (const [k, x] of Object.entries({ ...cur, p: '', ...over })) if (x) u.set(k, String(x)); return u.toString(); };
   const href = (over: SP) => { const s = qs(over); return s ? `/movimenti?${s}` : '/movimenti'; };
@@ -96,6 +123,10 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     [L(`Anno ${y}`, `Année ${y}`), `${y}-01-01`, `${y}-12-31`],
   ];
   const e0 = (v: number) => money(v, 'EUR', lang);
+  const net = inc - out;
+  const bTip = (title: string, vals: number[], fmt: (v: number) => string) => keys.length > 31 ? title : `${title}\n${keys.map((k, i) => (vals[i] ? `${kLabel(k)}: ${fmt(vals[i]!)}` : '')).filter(Boolean).join('\n')}`;
+  const axis = keys.length > 1 ? <div className="vzl"><span>{kLabel(keys[0]!)}</span><span>{kLabel(keys[keys.length - 1]!)}</span></div> : null;
+  const expHref = `/api/v1/export/movimenti?anno=${(f.from || f.to || String(y)).slice(0, 4)}${stato && stato !== 'storni' ? `&stato=${stato}` : ''}`;
   const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Contre-passations')]];
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
@@ -113,10 +144,45 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       {sp.ok === 'purged' && <div className="note ok" role="status">{L('Movimento eliminato definitivamente. I suoi dati restano nel registro modifiche.', 'Mouvement supprimé définitivement. Ses données restent dans le journal des modifications.')}</div>}
       {sp.ok === 'purged_all' && <div className="note ok" role="status">{L('Tutti i movimenti sono stati eliminati. I loro dati restano nel registro modifiche e nel backup.', 'Tous les mouvements ont été supprimés. Leurs données restent dans le journal et la sauvegarde.')}</div>}
       {sp.err && <div className="note err" role="alert">{sp.err}</div>}
-      <PageHead title={t('nav_movements')} />
+      {/* riquadri nel disegno di Cairn: riguardano i movimenti filtrati (bozze e giroconti esclusi dai totali), con una barra per mese del periodo */}
+      <div className="kpis dk mvk">
+        <div className="kpi">
+          <div className="l">{L('Movimenti', 'Mouvements')}</div>
+          <div className="v num">{num(total, lang)}</div>
+          <Viz.Cols vals={bN} colors={bN.map((v) => (v ? 'var(--vz-plan)' : 'var(--band)'))} tip={bTip(L('Movimenti', 'Mouvements'), bN, (v) => num(v, lang))} />
+          {bN.some(Boolean) && axis}
+          <div className="s">{nRec > 0 ? <Link href={href({ stato: 'recorded' })} scroll={false}>{nRec === 1 ? L('1 da verificare', '1 à vérifier') : L(`${num(nRec, lang)} da verificare`, `${num(nRec, lang)} à vérifier`)}</Link> : L('niente da verificare', 'rien à vérifier')}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Entrate', 'Recettes')}</div>
+          <div className="v num">{e0(inc)}</div>
+          <Viz.Cols vals={bIn} colors={bIn.map((v) => (v ? 'var(--vz-real)' : 'var(--band)'))} tip={bTip(L('Entrate', 'Recettes'), bIn, e0)} />
+          {bIn.some(Boolean) && axis}
+          <div className="s">{nIn === 1 ? L('1 movimento', '1 mouvement') : L(`${num(nIn, lang)} movimenti`, `${num(nIn, lang)} mouvements`)}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Uscite', 'Dépenses')}</div>
+          <div className="v num">{e0(out)}</div>
+          <Viz.Cols vals={bOut} colors={bOut.map((v) => (v ? 'var(--vz-sp)' : 'var(--band)'))} tip={bTip(L('Uscite', 'Dépenses'), bOut, e0)} />
+          {bOut.some(Boolean) && axis}
+          <div className="s">{nOut === 1 ? L('1 movimento', '1 mouvement') : L(`${num(nOut, lang)} movimenti`, `${num(nOut, lang)} mouvements`)}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Saldo', 'Solde')}</div>
+          <div className={`v num ${net < 0 ? 'neg' : 'pos'}`}>{e0(net)}</div>
+          {inc > 0 || out > 0 ? (net >= 0
+            ? <><Viz.Stack segs={[{ v: out, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }]} max={Math.max(1, inc)} tip={`${L('Entrate', 'Recettes')}: ${e0(inc)}\n${L('Uscite', 'Dépenses')}: ${e0(out)}\n${L('Saldo', 'Solde')}: ${e0(net)}`} />
+              <div className="vzl"><span>{L('uscite', 'dépenses')}</span><span>{L('avanzo', 'excédent')}</span></div></>
+            : <><Viz.Stack segs={[{ v: inc, c: 'var(--vz-real)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, out)} tip={`${L('Entrate', 'Recettes')}: ${e0(inc)}\n${L('Uscite', 'Dépenses')}: ${e0(out)}\n${L('Saldo', 'Solde')}: ${e0(net)}`} />
+              <div className="vzl"><span>{L('entrate', 'recettes')}</span><span>{L('disavanzo', 'déficit')}</span></div></>) : null}
+          <div className="s">{L('entrate meno uscite', 'recettes moins dépenses')}</div>
+        </div>
+      </div>
+      <ErrorNote prefix={t('error_load')} error={error} />
 
       <Panel>
         <FilterBar action="/movimenti" lang={lang} search={{ value: term, placeholder: t('search_mov') }}
+          after={<a className="btn fb-exp" href={expHref} aria-label={t('exp_xlsx')}><Ico name="download" /><span>{t('exp_xlsx')}</span></a>}
           active={active + (stato ? 1 : 0)} reset={term || stato || active > 0 ? '/movimenti' : null}
           result={L(`Mostra ${num(total, lang)} movimenti`, `Afficher ${num(total, lang)} mouvements`)}
           quick={<>
@@ -155,21 +221,9 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 <select className="input" name="demo" defaultValue={f.demo}><option value="">{L('Reali e dimostrativi', 'Réelles et de démonstration')}</option>
                   <option value="no">{L('Solo reali', 'Seulement réelles')}</option><option value="si">{L('Solo dimostrativi (DEMO)', 'Seulement DEMO')}</option></select></label>
         </FilterBar>
-        <div className="mv-bar">
-          <div className="mv-tools"><SavedFilters current={qs({})} lang={lang} />
-            <a className="btn small" href={`/api/v1/export/movimenti?anno=${(f.from || f.to || String(y)).slice(0, 4)}${stato && stato !== 'storni' ? `&stato=${stato}` : ''}`}><Ico name="download" />{t('exp_xlsx')}</a></div>
-        </div>
-        <div className="sstrip mv-sum">
-          <div><span>{L('Movimenti', 'Mouvements')}</span><b className="num">{num(total, lang)}</b></div>
-          <div><span>{L('Entrate', 'Recettes')}</span><b className="num amt-in">{e0(inc)}</b></div>
-          <div><span>{L('Uscite', 'Dépenses')}</span><b className="num amt-out">{e0(out)}</b></div>
-          <div><span>{L('Saldo', 'Solde')}</span><b className={`num ${inc - out < 0 ? 'neg' : 'amt-in'}`}>{e0(inc - out)}</b></div>
-        </div>
+        <SavedFilters current={qs({})} lang={lang} />
         {demoCount > 0 && <div className="note" style={{ margin: '0 18px 14px' }}>{L(`Stai vedendo ${demoCount} movimenti dimostrativi. Per eliminarli tutti, con conferma del numero, vai a `, `Vous voyez ${demoCount} mouvements de démonstration. Pour tous les supprimer, avec confirmation du nombre, allez à `)}
           <Link href="/admin/dati#demo">{L('Impostazioni › Dati e sicurezza', 'Paramètres › Données et sécurité')}</Link>.</div>}
-      </Panel>
-      <ErrorNote prefix={t('error_load')} error={error} />
-      <Panel>
         {(data ?? []).length === 0 && (term || stato || active > 0 || page > 1) ? <p className="panel-b muted" style={{ margin: 0 }}>{t('empty_search')}</p>
           : (data ?? []).length === 0 ? <EmptyState title={t('empty_mov')} text={t('empty_mov_t')} badge="plus"
             action={<Link className="btn primary" href="/nuovo"><Ico name="plus" />{t('nav_new_long').replace('+ ', '')}</Link>} /> : <>
@@ -214,7 +268,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
                     <span className="mc-c"><StatusChip s={m.status} label={t(`st_${m.status}`)} />{m.demo && <span className="chip warn tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('senza giustificativo', 'sans justificatif')}</span>}</span></div>
-                  <span className={`mc-a num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
+                  <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                     <b>{eur != null ? `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}` : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>
                     {eur != null && <small>{money(m.kind === 'transfer' ? Number(m.amount) : signed, m.currency, lang)}</small>}</span>
                 </Link></li>

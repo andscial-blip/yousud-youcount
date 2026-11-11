@@ -20,13 +20,14 @@ export function SavedFilters({ current, lang }: { current: string; lang: 'it' | 
     write(next); setList(next);
   };
   const del = (name: string) => { const next = read().filter((x) => x.name !== name); write(next); setList(next); };
+  if (!list.length && !current) return null;
   return (
-    <div className="saved-f">
+    <div className="saved-f mv-saved">
       {list.map((x) => (
         <span key={x.name} className="sf"><Link href={x.qs ? `/movimenti?${x.qs}` : '/movimenti'} aria-current={x.qs === current ? 'true' : undefined}>{x.name}</Link>
           <button type="button" onClick={() => del(x.name)} aria-label={`${L('Elimina il filtro', 'Supprimer le filtre')} ${x.name}`}>×</button></span>
       ))}
-      {current && <button type="button" className="btn small ghost" onClick={save}>+ {L('Salva questo filtro', 'Enregistrer ce filtre')}</button>}
+      {current && <button type="button" className="btn small" onClick={save}>+ {L('Salva questo filtro', 'Enregistrer ce filtre')}</button>}
     </div>
   );
 }

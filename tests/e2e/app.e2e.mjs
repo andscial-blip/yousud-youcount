@@ -803,6 +803,15 @@ try {
     await p.waitForURL(/ok=1/);
     const li = p.locator('ul.dl li', { hasText: 'PROVA pagare affitto sede' });
     await li.getByText('Oggi').waitFor();
+    // riquadri in alto: il pagamento di oggi entra in «Da pagare in 30 gg» (con il mini grafico) e nei prossimi 14 giorni; un clic filtra l'elenco
+    const tilePay = p.locator('.kpis.dk a.kpi', { hasText: 'Da pagare in 30 gg' });
+    assert.match((await tilePay.innerText()).replace(/[\u00a0\u202f]/g, ' '), /450 €[\s\S]*1 pagamento/);
+    assert.equal(await tilePay.locator('svg.vz').count(), 1, 'mini grafico dei pagamenti');
+    assert.equal(await p.locator('.kpis.dk a.kpi').count(), 4);
+    await tilePay.click();
+    await p.waitForURL(/periodo=30&tipo=pay#elenco/);
+    await p.locator('ul.dl li', { hasText: 'PROVA pagare affitto sede' }).waitFor();
+    await p.goto(`${base}/scadenze?ok=1`);
     // clic sul titolo: si aprono i dettagli della scadenza
     await li.locator('.dl-t a').click();
     await p.locator('.dl-sheet').waitFor();

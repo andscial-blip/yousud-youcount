@@ -853,7 +853,6 @@ table.bal-fixed th.r, table.bal-fixed td.r { white-space: nowrap; }
 /* misuratori del preventivo con gli stessi colori del grafico */
 .home .hero-soglia .meter > i { background: var(--c-out); }
 .home .hero-soglia .meter.m-in > i { background: var(--c-in); }
-.h-tiles.s-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .s-tiles .htile b { font-size: 24px; }
 .htile b.neg { color: var(--red); }
 @media (max-width: 600px) { .h-tiles.s-tiles { grid-template-columns: minmax(0, 1fr); } }
@@ -1764,7 +1763,35 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
 @media (max-width: 760px) {
   .kpis.dk { gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpis.dk .kpi .v { font-size: 21px; }
-  .kpis.dk .kpi .s { white-space: normal; min-height: 2.6em; line-height: 1.3; }
+  .kpis.dk .kpi .s { white-space: normal; min-height: 2.6em; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .home.v2.yc .h-note textarea { padding: 10px 14px 12px; }
   .home.v2.yc .h-note .dn-f { padding: 8px 14px 12px; }
+}
+
+/* ---------- Scadenze, parte alta (11/11): riquadri come la Panoramica; mese e pulsanti sulla stessa riga del calendario ---------- */
+.anchor { scroll-margin-top: 90px; }
+.cal-h { gap: 12px; }
+.cal-nav { display: flex; align-items: center; gap: 4px; }
+.cal-nav h2 { min-width: 9.5em; justify-content: center; text-align: center; white-space: nowrap; }
+.cal-act { display: flex; align-items: center; gap: 8px; }
+.cal-act .btn { white-space: nowrap; font-size: 14px; }
+@media (max-width: 760px) {
+  .cal-h { flex-wrap: wrap; }
+  .cal-nav { flex: 1 0 100%; justify-content: space-between; }
+  .cal-nav h2 { min-width: 0; }
+  .cal-act { flex: 1 0 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cal-act.one { grid-template-columns: minmax(0, 1fr); }
+  .cal-act .btn { justify-content: center; padding-left: 8px; padding-right: 8px; }
+}
+
+/* ---------- Registro, parte alta (11/11): riquadri come la Dashboard; ricerca, Filtri ed «Esporta in Excel» su una riga ---------- */
+.fb-exp { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.mv-saved { padding: 10px 18px; border-bottom: 1px solid var(--line-2); }
+.kpis.dk .kpi .s a { color: inherit; text-decoration: underline; text-decoration-color: var(--c-soft); text-underline-offset: 3px; }
+@media (max-width: 1280px) { .kpis.dk.mvk .kpi .v { font-size: 22px; } }
+@media (max-width: 760px) {
+  .fb-exp > span { display: none; }
+  .fb-exp { padding: 0 12px; }
+  .mv-saved { padding: 10px 14px; }
+  .kpis.dk.mvk .kpi .v { font-size: 18px; }
 }

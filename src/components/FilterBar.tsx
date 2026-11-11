@@ -17,12 +17,13 @@ type Props = {
   quick?: ReactNode;           // scorciatoie (link) in cima al pannello
   active?: number;             // filtri del pannello attivi, per il numero sul pulsante
   reset?: string | null;       // indirizzo «Azzera» (solo se c'è qualcosa da azzerare)
+  after?: ReactNode;           // azioni a destra dei filtri (es. «Esporta in Excel» nel Registro)
   result?: string;             // testo del pulsante di chiusura, es. «Mostra 214 movimenti»
   children?: ReactNode;        // campi del pannello
   className?: string;
 };
 
-export function FilterBar({ action, lang, hidden, search, inline, quick, active = 0, reset, result, children, className }: Props) {
+export function FilterBar({ action, lang, hidden, search, inline, quick, active = 0, reset, after, result, children, className }: Props) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const router = useRouter();
   const form = useRef<HTMLFormElement>(null);
@@ -73,6 +74,7 @@ export function FilterBar({ action, lang, hidden, search, inline, quick, active 
         </button>
       )}
       {reset && <Link className="btn ghost fb-reset" href={reset} scroll={false}>{L('Azzera', 'Réinitialiser')}</Link>}
+      {after}
       <noscript><button className="btn" type="submit">{L('Mostra risultati', 'Afficher les résultats')}</button></noscript>
       {sheet && (
         <>

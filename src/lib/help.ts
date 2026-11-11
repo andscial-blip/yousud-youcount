@@ -41,10 +41,12 @@ export const HELP: HelpEntry[] = [
       'Autonomie de trésorerie : nombre de mois que la trésorerie actuelle couvre au rythme moyen des trois derniers mois clos ; remboursements dus déduits, avances au personnel exclues.']] },
   { href: '/scadenze', sec: 'home',
     it: ['Scadenze', [
+      'In alto quattro riquadri: scadute (colore = importanza), prossimi 14 giorni, pagamenti e incassi attesi entro 30 giorni, con una barra per giorno a partire da oggi. Un clic sul riquadro filtra l\'elenco in fondo alla pagina. «Nuova scadenza» e il file del calendario sono nella riga del mese.',
       'Elenco delle scadenze: quelle inserite a mano (pagamenti, rendicontazioni ai finanziatori) e gli adempimenti dell\'associazione proposti dall\'app (es. 770, dichiarazioni). Si segnano come fatte o si annullano.',
       'Le scadenze vicine e quelle scadute compaiono anche in «Da fare» nella Dashboard. Le date degli adempimenti fiscali vanno confermate con il commercialista.',
       'Le soglie si applicano alle entrate dell\'esercizio e vanno confermate con il commercialista. Gli adempimenti ricorrenti sono promemoria con la fonte indicata: le date si verificano ogni anno.']],
     fr: ['Échéances', [
+      'En haut, quatre encadrés : en retard (couleur = importance), 14 prochains jours, paiements et encaissements attendus sous 30 jours, avec une barre par jour à partir d\'aujourd\'hui. Un clic sur l\'encadré filtre la liste en bas de page. « Nouvelle échéance » et le fichier d\'agenda sont sur la ligne du mois.',
       'Liste des échéances : celles saisies à la main (paiements, rapports aux bailleurs) et les obligations de l\'association proposées par l\'application. On les marque comme faites ou on les annule.',
       'Les échéances proches et en retard apparaissent aussi dans « À faire » du tableau de bord. Les dates fiscales sont à confirmer avec l\'expert-comptable.',
       'Les seuils s\'appliquent aux recettes de l\'exercice et sont à confirmer avec l\'expert-comptable. Les obligations récurrentes sont des rappels avec leur source : les dates se vérifient chaque année.']] },
@@ -52,12 +54,12 @@ export const HELP: HelpEntry[] = [
     it: ['Registro dei movimenti', [
       'Ogni movimento nasce come bozza (non conta), viene registrato (riceve il numero MOV e conta nei saldi) e poi verificato da un responsabile. Il filtro «Da verificare» mostra i registrati non ancora controllati; dal dettaglio un responsabile li verifica.',
       'Ricerca e filtri si combinano: periodo, tipo, codice, progetto, fornitore o donatore, modalità di pagamento, conto, valuta, stato, giustificativo, dati reali o dimostrativi. Restano nell\'indirizzo della pagina: «Salva questo filtro» li ricorda su questo dispositivo, oppure mandi il link a un collega.',
-      'I totali in alto riguardano tutti i movimenti filtrati (bozze e giroconti esclusi), in euro. Gli importi in ariary mostrano sotto il controvalore in euro.',
+      'I riquadri in alto riguardano tutti i movimenti filtrati (bozze e giroconti esclusi dai totali), in euro, con una barra per mese del periodo (per giorno se il filtro copre un solo mese). Gli importi in ariary mostrano sotto il controvalore in euro. «Esporta in Excel», accanto a «Filtri», scarica i movimenti dell\'anno.',
       'Un movimento registrato non si cancella: si corregge con uno storno dal dettaglio, così il registro resta completo. Si eliminano solo le bozze e i dati dimostrativi (DEMO).']],
     fr: ['Registre des mouvements', [
       'Chaque mouvement naît comme brouillon (il ne compte pas), puis il est enregistré (numéro MOV, il compte dans les soldes) et enfin vérifié par un responsable. Le filtre « À vérifier » montre les enregistrés pas encore contrôlés ; un responsable les vérifie depuis le détail.',
       'Recherche et filtres se combinent : période, type, code, projet, fournisseur ou donateur, mode de paiement, compte, devise, statut, justificatif, données réelles ou de démonstration. Ils restent dans l\'adresse de la page : « Enregistrer ce filtre » les garde sur cet appareil, ou envoyez le lien à un collègue.',
-      'Les totaux en haut portent sur tous les mouvements filtrés (hors brouillons et virements internes), en euros. Les montants en ariary montrent dessous la contre-valeur en euros.',
+      'Les encadrés en haut portent sur tous les mouvements filtrés (hors brouillons et virements internes pour les totaux), en euros, avec une barre par mois de la période (par jour si le filtre couvre un seul mois). Les montants en ariary montrent dessous la contre-valeur en euros. « Exporter en Excel », à côté de « Filtres », télécharge les mouvements de l\'année.',
       'Un mouvement enregistré ne se supprime pas : on le corrige par une contre-passation depuis le détail, pour que le registre reste complet. On supprime seulement les brouillons et les données de démonstration (DEMO).']] },
   { href: '/rimborsi', sec: 'mov',
     it: ['Spese da rimborsare', [

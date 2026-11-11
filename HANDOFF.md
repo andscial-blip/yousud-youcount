@@ -52,6 +52,8 @@ Andrea vuole rivedere l'app una pagina alla volta fino alla versione definitiva,
 | Pagina | Stato |
 |---|---|
 | Dashboard | Fatta l'11/11: riquadri `.kpis.dk` con mini grafico (niente fili colorati né icone), layout `.home.v2.yc` (schede a coppie a sinistra, Da fare e Note a destra). Colori: blu notte = entrate, giallo = uscite, verde = avanzo. Tolta la riga dei 4 riquadri piccoli: rimborsi dovuti e tasso di cambio sono in «Cassa e autonomia», verifiche e scadenze in «Da fare» |
+| Dashboard › Scadenze | Parte alta fatta l'11/11: 4 riquadri `.kpis.dk` (scadute per importanza, prossimi 14 gg, da pagare e da incassare in 30 gg con una barra per giorno; un clic filtra l'elenco `#elenco`); «Calendario (.ics)» e «Nuova scadenza» nella testata del calendario (`.cal-nav`, `.cal-act`) |
+| Movimenti › Registro | Parte alta fatta l'11/11: riquadri `.kpis.dk.mvk` (movimenti, entrate, uscite, saldo dei movimenti filtrati, una barra per mese del periodo); ricerca, Filtri ed «Esporta in Excel» su una riga (prop `after` di `FilterBar`), tabella nello stesso pannello. L'esportazione scarica ancora l'anno intero, non l'elenco filtrato: proposto ad Andrea di farle seguire i filtri |
 | Altre pagine | Da fare, nell'ordine che indica Andrea. Analisi, Progetti, Preventivo usano ancora verde = entrate e salmone = uscite (`--c-in`, `--c-out`) e i riquadri `.k4` con filo colorato: da allineare quando ci si arriva |
 
 ## Fatto di recente (10–11/11)

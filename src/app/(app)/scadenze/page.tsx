@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { DL_CAT, THRESHOLDS, ruleItems, type DlCat } from '@/lib/deadline-rules';
-import { ErrorNote, PageHead, Panel } from '@/components/Page';
+import { ErrorNote, Panel } from '@/components/Page';
+import { Viz } from '@/components/Charts';
 import { Ico } from '@/components/Ui';
-import { CIcon } from '@/components/CIcon';
 import { FilterBar } from '@/components/FilterBar';
 import { saveDeadline, setDeadlineStatus } from './actions';
 
@@ -74,11 +74,11 @@ export default async function Deadlines({ searchParams }: {
   const auto = (key: string, dt: string, cat: DlCat, title: string, sub: string, href: string, amount?: number) =>
     items.push({ key, date: dt, cat, title, sub, href, status: 'open', priority: 'high', applies: true, auto: true, amount, currency: amount ? 'EUR' : undefined });
   const dueList = due.data ?? [];
-  if (dueList.length) auto('a-reimb', td, 'pay', L(`Rimborsi da pagare: ${dueList.length}`, `Remboursements à payer : ${dueList.length}`),
+  if (dueList.length) auto('a-reimb', td, 'pay', L(`Rimborsi da pagare: ${dueList.length}`, `Remboursements à payer : ${dueList.length}`),
     L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses avancées sur fonds propres à rembourser.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
-  if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare: ${drafts.count}`, `Mouvements à compléter : ${drafts.count}`),
+  if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare: ${drafts.count}`, `Mouvements à compléter : ${drafts.count}`),
     L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas enregistrés.'), '/movimenti?stato=draft');
-  if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),
+  if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),
     L('Controllo a quattro occhi prima della chiusura del mese.', 'Contrôle à quatre yeux avant la clôture du mois.'), '/verifica');
   const lastClosed = (periods.data ?? [])[0];
   const prevMonth = (() => { const d = new Date(`${td}T00:00:00Z`); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); })();
@@ -121,9 +121,22 @@ export default async function Deadlines({ searchParams }: {
     ['n', 'normale (pagamenti)', 'normale (paiements)'], ['p', 'promemoria', 'rappel'], ['f', 'fatta', 'faite']];
   const fxr = Number((rate.data as number | null) ?? 0);
   const toPay = items.filter((i) => i.applies && i.status === 'open' && i.cat === 'pay' && i.amount && i.date <= addDays(td, 30));
-  const toPayEur = toPay.reduce((s, i) => s + (i.currency === 'MGA' ? (fxr ? i.amount! / fxr : 0) : i.amount!), 0);
+  const inEur = (i: Item) => (i.currency === 'MGA' ? (fxr ? i.amount! / fxr : 0) : i.amount!);
+  const toPayEur = toPay.reduce((s, i) => s + inEur(i), 0);
+  const toGet = items.filter((i) => i.applies && i.status === 'open' && i.cat === 'inc' && i.amount && i.date <= addDays(td, 30));
+  const toGetEur = toGet.reduce((s, i) => s + inEur(i), 0);
+  // mini grafici dei riquadri: una barra per giorno da oggi in avanti (quel che è già scaduto pesa su oggi)
+  const dayIdx = (d: string) => Math.max(0, daysTo(d));
+  const perDay = (n: number, its: Item[], f: (i: Item) => number) => { const a = Array.from({ length: n + 1 }, () => 0); for (const i of its) { const k = dayIdx(i.date); if (k <= n) a[k]! += f(i); } return a; };
+  const eur0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const soonDays = perDay(14, soonL, () => 1), payDays = perDay(30, toPay, inEur), getDays = perDay(30, toGet, inEur);
+  const lateBy = { c: 0, a: 0, n: 0, p: 0, f: 0 }; for (const i of lateL) lateBy[imp(i)]++;
+  const lateMax = lateL.length ? -daysTo(lateL[lateL.length - 1]!.date) : 0;
+  const lateMix = ([['c', 'critica', 'critiche', 'critique', 'critiques'], ['a', 'alta', 'alte', 'haute', 'hautes'], ['n', 'normale', 'normali', 'normale', 'normales'], ['p', 'promemoria', 'promemoria', 'rappel', 'rappels']] as const)
+    .filter(([c]) => lateBy[c] > 0).slice(0, 2).map(([c, i1, iN, f1, fN]) => `${lateBy[c]} ${lateBy[c] === 1 ? L(i1, f1) : L(iN, fN)}`).join(' · ');
   const calItems = items.filter((i) => i.applies && (!tipo || i.cat === tipo));
   const dm = (d: string) => d.slice(8) + '/' + d.slice(5, 7);
+  const tipOf = (its: Item[], amt = false) => its.slice(0, 8).map((i) => `${dm(i.date)} ${i.title}${amt && i.amount ? ` · ${money(i.amount, i.currency ?? 'EUR', lang)}` : ''}`).join('\n') + (its.length > 8 ? `\n+${its.length - 8}` : '');
   const MS = lang === 'fr' ? ['JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'] : ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC'];
   // soglie ETS su un righello logaritmico, con la stima di fine anno al ritmo di oggi
   const dayOfYear = Math.max(1, Math.round((Date.parse(`${td}T00:00:00Z`) - Date.UTC(Y, 0, 1)) / 864e5) + 1);
@@ -162,27 +175,41 @@ export default async function Deadlines({ searchParams }: {
 
   return (
     <div className="stack">
-      <PageHead title={L('Scadenze', 'Échéances')}>
-        <a className="btn" href="/api/v1/scadenze.ics"><Ico name="download" />{L('Calendario (.ics)', 'Agenda (.ics)')}</a>
-        {writer && <Link className="btn primary" href={href({ nuovo: '1' })}><Ico name="plus" />{L('Nuova scadenza', 'Nouvelle échéance')}</Link>}
-      </PageHead>
       {sp.ok && <div className="note ok" role="status">{L('Salvato.', 'Enregistré.')}</div>}
       {sp.err && <div className="note err">{sp.err === 'missing' ? L('Indica descrizione e data.', 'Indiquez description et date.') : sp.err}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
 
-      <div className="h-tiles s-tiles">
-        <div className={`htile${late ? ' t-warn' : ''}`}>
-          <span className="ht-l"><CIcon name="alert" size={14} />{L('Scadute', 'En retard')}</span>
-          <b className={`num${late ? ' neg' : ''}`}>{late}</b><small className="ht-t">{lateL[0] ? `${lateL[0].title}, ${dm(lateL[0].date)}` : L('nessuna in ritardo', 'aucune en retard')}</small>
-        </div>
-        <div className={`htile${soon ? ' t-do' : ''}`}>
-          <span className="ht-l"><CIcon name="cal" size={14} />{L('Prossimi 14 giorni', '14 prochains jours')}</span>
-          <b className="num">{soon}</b><small className="ht-t">{soonL[0] ? L(`la prima il ${dm(soonL[0].date)}`, `la première le ${dm(soonL[0].date)}`) : L('niente in arrivo', 'rien à venir')}</small>
-        </div>
-        <div className="htile">
-          <span className="ht-l"><CIcon name="wallet" size={14} />{L('Da pagare in 30 giorni', 'À payer sous 30 jours')}</span>
-          <b className="num">{money(Math.round(toPayEur), 'EUR', lang).replace(/,00(?=\s?€)/, '')}</b><small>{toPay.length === 1 ? L('1 pagamento', '1 paiement') : L(`${toPay.length} pagamenti`, `${toPay.length} paiements`)}</small>
-        </div>
+      {/* riquadri nel disegno di Cairn, uguali a quelli della Panoramica: etichetta, cifra, mini grafico, una riga di contesto.
+          Un clic filtra l'elenco in fondo alla pagina */}
+      <div className="kpis dk">
+        <Link className="kpi" href={`${href({ periodo: 'late', tipo: '' })}#elenco`}>
+          <div className="l">{L('Scadute', 'En retard')}</div>
+          <div className={`v num${late ? ' neg' : ''}`}>{late}</div>
+          {late > 0 && <><Viz.Stack segs={(['c', 'a', 'n', 'p'] as const).map((c) => ({ v: lateBy[c], c: `var(--imp-${c})` }))} max={late} tip={tipOf(lateL)} />
+            <div className="vzl"><span>{lateMix}</span><span>{L(`da ${lateMax} gg`, `depuis ${lateMax} j`)}</span></div></>}
+          <div className="s" title={lateL[0] ? `${lateL[0].title}, ${dm(lateL[0].date)}` : undefined}>{lateL[0] ? `${lateL[0].title}, ${dm(lateL[0].date)}` : L('nessuna in ritardo', 'aucune en retard')}</div>
+        </Link>
+        <Link className="kpi" href={`${href({ periodo: '14', tipo: '' })}#elenco`}>
+          <div className="l">{L('Prossimi 14 gg', '14 prochains j')}</div>
+          <div className="v num">{soon}</div>
+          {soon > 0 && <><Viz.Cols vals={soonDays} colors={soonDays.map((v) => (v ? 'var(--vz-plan)' : 'var(--band)'))} tip={tipOf(soonL)} />
+            <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 14))}</span></div></>}
+          <div className="s">{soonL[0] ? (soonL[0].date === td ? L('la prima oggi', 'la première aujourd\'hui') : L(`la prima il ${dm(soonL[0].date)}`, `la première le ${dm(soonL[0].date)}`)) : L('niente in arrivo', 'rien à venir')}</div>
+        </Link>
+        <Link className="kpi" href={`${href({ periodo: '30', tipo: 'pay' })}#elenco`}>
+          <div className="l">{L('Da pagare in 30 gg', 'À payer sous 30 j')}</div>
+          <div className="v num">{eur0(toPayEur)}</div>
+          {toPayEur > 0 && <><Viz.Cols vals={payDays} colors={payDays.map((v) => (v ? 'var(--vz-sp)' : 'var(--band)'))} tip={tipOf(toPay, true)} />
+            <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 30))}</span></div></>}
+          <div className="s">{toPay.length === 0 ? L('nessun pagamento', 'aucun paiement') : toPay.length === 1 ? L('1 pagamento', '1 paiement') : L(`${toPay.length} pagamenti`, `${toPay.length} paiements`)}</div>
+        </Link>
+        <Link className="kpi" href={`${href({ periodo: '30', tipo: 'inc' })}#elenco`}>
+          <div className="l">{L('Da incassare in 30 gg', 'À encaisser sous 30 j')}</div>
+          <div className="v num">{eur0(toGetEur)}</div>
+          {toGetEur > 0 && <><Viz.Cols vals={getDays} colors={getDays.map((v) => (v ? 'var(--vz-real)' : 'var(--band)'))} tip={tipOf(toGet, true)} />
+            <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 30))}</span></div></>}
+          <div className="s">{toGet.length === 0 ? L('nessun incasso atteso', 'aucun encaissement attendu') : toGet.length === 1 ? L('1 incasso atteso', '1 encaissement attendu') : L(`${toGet.length} incassi attesi`, `${toGet.length} encaissements attendus`)}</div>
+        </Link>
       </div>
 
       {showForm && (
@@ -223,9 +250,15 @@ export default async function Deadlines({ searchParams }: {
 
       <section className="panel">
         <div className="panel-h cal-h">
-          <Link className="btn small ghost" href={href({ mese: prevM })} aria-label={L('Mese precedente', 'Mois précédent')}>‹</Link>
-          <h2 style={{ textTransform: 'capitalize' }}>{monthName}</h2>
-          <Link className="btn small ghost" href={href({ mese: nextM })} aria-label={L('Mese successivo', 'Mois suivant')}>›</Link>
+          <div className="cal-nav">
+            <Link className="btn small ghost" href={href({ mese: prevM })} aria-label={L('Mese precedente', 'Mois précédent')}>‹</Link>
+            <h2 style={{ textTransform: 'capitalize' }}>{monthName}</h2>
+            <Link className="btn small ghost" href={href({ mese: nextM })} aria-label={L('Mese successivo', 'Mois suivant')}>›</Link>
+          </div>
+          <div className={`cal-act${writer ? '' : ' one'}`}>
+            <a className="btn" href="/api/v1/scadenze.ics"><Ico name="download" />{L('Calendario (.ics)', 'Agenda (.ics)')}</a>
+            {writer && <Link className="btn primary" href={href({ nuovo: '1' })}><Ico name="plus" />{L('Nuova scadenza', 'Nouvelle échéance')}</Link>}
+          </div>
         </div>
         <div className="cal" role="grid">
           {wd.map((w) => <div key={w} className="cal-wd" role="columnheader">{w}</div>)}
@@ -244,6 +277,7 @@ export default async function Deadlines({ searchParams }: {
         <ul className="imp-leg">{IMP.map(([c, it, fr]) => <li key={c}><i className={`i-${c}`} />{L(it, fr)}</li>)}</ul>
       </section>
 
+      <div id="elenco" className="anchor">
       <Panel>
         <FilterBar action="/scadenze" lang={lang} hidden={{ periodo: per, mese: month !== td.slice(0, 7) ? month : undefined }}
           inline={<nav className="quick fb-inline" aria-label={L('Periodo', 'Période')}>
@@ -275,6 +309,7 @@ export default async function Deadlines({ searchParams }: {
           </ul>
         )}
       </Panel>
+      </div>
 
       {staff && (
         <Panel title={L(`Soglie ETS · entrate ${Y}`, `Seuils ETS · recettes ${Y}`)} pad>
