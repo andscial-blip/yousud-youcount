@@ -1,5 +1,5 @@
 import type { Lang } from '@/lib/i18n';
-import { donut, eur0, MESI, monthChart, svgBars, svgLines, svgMirror, VZ, type Ref, type Series } from '@/lib/viz';
+import { donut, eur0, flowMini, MESI, monthChart, svgBars, svgLines, svgMirror, VZ, type Ref, type Series } from '@/lib/viz';
 
 // Componenti grafici con gli stessi disegni di Cairn (src/lib/viz.ts). Sul computer la versione larga,
 // sul telefono quella stretta e alta (si sceglie con il CSS, nessun JavaScript).
@@ -92,6 +92,13 @@ export function MonthBars({ data, lang, labels, hrefFor }: {
         { label: net, color: 'var(--c-net)', value: `${tn < 0 ? '\u2212' : ''}${eur0(Math.abs(tn), lang)}` }]} /></figcaption>
     </figure>
   );
+}
+
+// Dashboard: entrate sopra e uscite sotto per mese, nel disegno essenziale della scheda «Entrate e uscite» di Cairn.
+export function FlowMini({ data, curM, lang, names, hrefFor }: {
+  data: { inc: number; out: number }[]; curM: number; lang: Lang; names: [string, string, string]; hrefFor?: (month: number) => string;
+}) {
+  return <figure className="hflow chart"><Svg html={flowMini(data, curM, lang, names, hrefFor ? data.map((_, i) => hrefFor(i + 1)) : undefined)} /></figure>;
 }
 
 // Elenco a barre orizzontali (come «Dove vanno le spese» / righe .cbar di Cairn), con percentuale sul totale.

@@ -45,6 +45,15 @@ Altro in sospeso: nota art. 17 con il commercialista; ratifica soglie da parte d
 - Dati: `report_cash_statement(p_year)` (`amount_eur`, `amount_eur_prev`), `budget_statement(p_year, p_budget)`, `loadOrg` per l'intestazione.
 - Proposta: route `/api/v1/rendiconto-pdf?anno=&tipo=consuntivo|preventivo&modello=D|E` con pdf-lib (Helvetica, testo pulito WinAnsi come in `src/lib/delivery-pdf.ts`), pulsanti nelle due pagine.
 
+## Revisione pagina per pagina (dall'11/11)
+
+Andrea vuole rivedere l'app una pagina alla volta fino alla versione definitiva, con grafica e colori di Cairn (repository `andscial-blip/cairn`, CSS già copiato in `src/app/cairn-*.css`).
+
+| Pagina | Stato |
+|---|---|
+| Dashboard | Fatta l'11/11: riquadri `.kpis.dk` con mini grafico (niente fili colorati né icone), layout `.home.v2.yc` (schede a coppie a sinistra, Da fare e Note a destra). Colori: blu notte = entrate, giallo = uscite, verde = avanzo. Tolta la riga dei 4 riquadri piccoli: rimborsi dovuti e tasso di cambio sono in «Cassa e autonomia», verifiche e scadenze in «Da fare» |
+| Altre pagine | Da fare, nell'ordine che indica Andrea. Analisi, Progetti, Preventivo usano ancora verde = entrate e salmone = uscite (`--c-in`, `--c-out`) e i riquadri `.k4` con filo colorato: da allineare quando ci si arriva |
+
 ## Fatto di recente (10–11/11)
 
 - Preventivo riga per riga: schede «Voci del preventivo», «Riepilogo» (per codice e per progetto, link al Mod. D), «Confronto con il consuntivo». Contiene entrate e uscite. La versione approvata non si modifica: «+ Aggiungi una riga» apre la bozza di revisione sulla riga nuova (`#nuova-riga`). Su telefono voci compatte.

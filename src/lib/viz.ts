@@ -180,6 +180,27 @@ export function donut(items: { label: string; value: number; color: string; tip?
 }
 
 // Mini grafici dei riquadri numerici (VZ di Cairn).
+// Dashboard, «Entrate e uscite» (disegno della scheda omonima di Cairn: niente griglia, mesi con una lettera, mese corrente in evidenza).
+// Entrate sopra la linea, uscite sotto, pallino = saldo del mese. Colori di Cairn: blu notte = incassato, giallo = spese, verde = saldo positivo.
+export function flowMini(rows: { inc: number; out: number }[], curM: number, lang: Lang, names: [string, string, string], hrefs?: (string | null)[], W = 320, H = 280) {
+  const L = 4, R = 4, T = 12, B = 22, n = rows.length, sx = (W - L - R) / n, bw = Math.min(16, sx * 0.55);
+  const hi = Math.max(1, ...rows.map((r) => r.inc)), lo = Math.max(0, ...rows.map((r) => r.out));
+  const y = (v: number) => T + ((H - T - B) * (hi - v)) / (hi + lo || 1), z = y(0);
+  let o = `<line x1="${L}" x2="${W - R}" y1="${z.toFixed(1)}" y2="${z.toFixed(1)}" stroke="var(--c-soft)"/>`, dots = '';
+  rows.forEach((r, i) => {
+    const x = L + sx * i + sx / 2, a = Math.max(0, r.inc), b = Math.max(0, r.out), net = a - b, any = a > 0 || b > 0;
+    if (a > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${y(a).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, z - y(a)).toFixed(1)}" rx="3" fill="var(--vz-real)"/>`;
+    if (b > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${z.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y(-b) - z).toFixed(1)}" rx="3" fill="var(--vz-sp)"/>`;
+    if (any) dots += `<circle cx="${x.toFixed(1)}" cy="${y(net).toFixed(1)}" r="3.4" fill="${net < 0 ? 'var(--tax)' : 'var(--green-soft)'}" stroke="var(--surface)" stroke-width="1.6"/>`;
+    o += `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="${i + 1 === curM ? 'var(--fg)' : 'var(--muted)'}"${i + 1 === curM ? ' font-weight="600"' : ''}>${MESI[lang][i]!.slice(0, 1)}</text>`;
+    const tl = [MESI_L[lang][i]!, `${names[0]}: ${eur0(a, lang)}`, `${names[1]}: ${eur0(b, lang)}`, `${names[2]}: ${net < 0 ? '−' : ''}${eur0(Math.abs(net), lang)}`];
+    const hov = `<rect class="hov" x="${(L + sx * i).toFixed(1)}" y="${T}" width="${sx.toFixed(1)}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
+    const href = hrefs?.[i];
+    dots += href && any ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(`${names[0]} / ${names[1]}`)}" tabindex="0" data-kbd="1">${o}${dots}</svg>`;
+}
+
 export const VZ = {
   ring: (p: number, col: string, tip = '') => {
     const r = 19, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, p));

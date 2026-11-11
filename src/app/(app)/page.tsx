@@ -2,21 +2,21 @@ import Link from 'next/link';
 import { ruleItems } from '@/lib/deadline-rules';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money, num } from '@/lib/format';
-import { MESI_L } from '@/lib/viz';
+import { MESI, MESI_L } from '@/lib/viz';
 import { ErrorNote, H2 } from '@/components/Page';
 import { type Balance } from '@/components/Balances';
-import { MonthBars } from '@/components/Charts';
+import { FlowMini, Viz } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
 import { DashNotes } from '@/components/DashNotes';
-import { colorFor } from '@/lib/palette';
 
 export const dynamic = 'force-dynamic';
 
 type Led = { month: number; kind: string; amount_eur: string | null; project_id: string | null; project_name: string | null; category_id: string | null };
 type Todo = { lvl: 'warn' | 'do' | 'ok'; ic: string; title: string; sub?: string; big?: string; chip?: { c: string; t: string }; href: string; act?: string };
 
-// Dashboard nello schema di Cairn: a sinistra l'anno in sintesi (entrate, uscite, avanzo, liquidità, mesi, preventivo)
-// e le schede su progetti, spese e cassa; a destra le cose da fare, il cambio e i saldi. Tutti i numeri vengono dal database.
+// Dashboard nello schema di Cairn: in alto 4 riquadri con mini grafico (entrate, uscite, avanzo, liquidità); sotto, a sinistra
+// le schede a coppie (mesi, spese, preventivo, cassa, progetti, conti) e a destra le cose da fare e le note.
+// Colori con il significato di Cairn: blu notte = entrate, giallo = uscite, verde = avanzo. Tutti i numeri vengono dal database.
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ anno?: string; pw?: string }> }) {
   const { anno, pw } = await searchParams;
   const now = new Date();
@@ -140,50 +140,141 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const eye = year > cy ? L('anno futuro', 'année future') : year < cy ? L('anno chiuso', 'année close') : L(`fino a ${ML[now.getMonth()].toLowerCase()}`, `jusqu'à ${ML[now.getMonth()].toLowerCase()}`);
   const outW = bOut ? Math.min(100, (aOut / bOut) * 100) : 0, inW = bIn ? Math.min(100, (aIn / bIn) * 100) : 0;
 
+  const loc = lang === 'fr' ? 'fr-FR' : 'it-IT';
+  const n1 = (v: number) => v.toLocaleString(loc, { maximumFractionDigits: 1 });
+  const MS = MESI[lang];
+  const monthTip = (title: string, f: (m: { inc: number; out: number }) => number) => `${title}\n${months.map((m, k) => `${MS[k]}: ${e0(f(m))}`).join('\n')}`;
+  const monthHref = (m: number) => `/movimenti?dal=${year}-${String(m).padStart(2, '0')}-01&al=${year}-${String(m).padStart(2, '0')}-${String(new Date(year, m, 0).getDate()).padStart(2, '0')}`;
+  const itEur = Math.max(0, eurIT), mgEur = Math.max(0, rate ? mgaMG / rate : 0);
+  const overPace = bOut > 0 && aOut / bOut > elapsed + 0.1;
+  const fxChg = fx && fxPrev ? ((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100 : null;
+
   return (
     <div className="stack">
       {pw === 'ok' && <div className="note ok" role="status">{t('pw_done')}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
-      <div className="home v3">
-        {/* 4 cifre dell'anno, tutte uguali (scelta 2C): colore solo sul filo in alto e sulla pastiglia */}
-        <div className="kpi4">
-          <div className="k4 k-in"><span className="k4-t"><CIcon name="trend" size={15} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(inc)}</b>
-            <small>{eye}</small>{bIn ? <span className="cdp ok">{pct(inc, bIn)} {L('del previsto', 'du prévu')}</span> : null}</div>
-          <div className="k4 k-out"><span className="k4-t"><CIcon name="chart" size={15} />{L('Uscite', 'Dépenses')}</span><b className="num">{e0(out)}</b>
-            <small>{curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : '\u00a0'}</small>{bOut ? <span className={`cdp ${aOut / bOut > elapsed + 0.1 ? 'late' : 'mid'}`}>{pct(aOut, bOut)} {L('del preventivo', 'du budget')}</span> : null}</div>
-          <div className="k4 k-net"><span className="k4-t"><CIcon name="calc" size={15} />{net >= 0 ? L('Avanzo', 'Excédent') : L('Disavanzo', 'Déficit')}</span>
-            <b className={`num ${net < 0 ? 'neg' : 'pos'}`}>{net < 0 ? '−' : ''}{e0(Math.abs(net))}</b><small>{L('entrate meno uscite', 'recettes moins dépenses')}</small></div>
-          {staff ? <div className="k4 k-liq"><span className="k4-t"><CIcon name="bank" size={15} />{L('Liquidità oggi', 'Liquidités aujourd\'hui')}</span><b className={`num ${liq < 0 ? 'neg' : ''}`}>{e0(liq)}</b>
-            <small>{L('tutti i conti, Italia e Madagascar', 'tous les comptes, Italie et Madagascar')}</small>{runway != null ? <span className={`cdp ${runway < 3 ? 'late' : 'ok'}`}>{runway.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })} {L('mesi di spesa', 'mois de dépenses')}</span> : null}</div>
-            : <Link className="k4 k-liq" href={verHref}><span className="k4-t"><CIcon name="check" size={15} />{L('Da verificare', 'À vérifier')}</span><b className="num">{toVerify ?? 0}</b><small>{L('movimenti', 'mouvements')}</small></Link>}
+      {/* 4 cifre dell'anno nel disegno dei riquadri di Cairn: etichetta, cifra, mini grafico, una riga di contesto. Nessun filo colorato:
+          il colore sta solo nel grafico (blu notte = entrate, giallo = uscite, verde = avanzo) */}
+      <div className="kpis dk">
+        <div className="kpi">
+          <div className="l">{L('Entrate', 'Recettes')} {year}</div>
+          <div className="v num">{e0(inc)}</div>
+          <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < curM ? 'var(--vz-real)' : 'var(--band)'))} tip={monthTip(`${L('Entrate', 'Recettes')} ${year}`, (m) => m.inc)} />
+          <div className="s">{bIn ? `${pct(inc, bIn)} ${L('del previsto', 'du prévu')} · ${eye}` : eye}</div>
         </div>
+        <div className="kpi">
+          <div className="l">{L('Uscite', 'Dépenses')} {year}</div>
+          <div className="v num">{e0(out)}</div>
+          <Viz.Cols vals={months.map((m) => m.out)} colors={months.map((_, k) => (k < curM ? 'var(--vz-sp)' : 'var(--band)'))} tip={monthTip(`${L('Uscite', 'Dépenses')} ${year}`, (m) => m.out)} />
+          <div className="s">{bOut ? <><span className={overPace ? 'neg' : undefined}>{pct(aOut, bOut)} {L('del preventivo', 'du budget')}</span>{curM ? ` · ${e0(out / curM)} ${L('al mese', 'par mois')}` : ''}</> : curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : ' '}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{net >= 0 ? L('Avanzo', 'Excédent') : L('Disavanzo', 'Déficit')} {year}</div>
+          <div className={`v num ${net < 0 ? 'neg' : 'pos'}`}>{net < 0 ? '−' : ''}{e0(Math.abs(net))}</div>
+          {inc > 0 || out > 0 ? (net >= 0
+            ? <><Viz.Stack segs={[{ v: out, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }]} max={Math.max(1, inc)} tip={`${L('Entrate', 'Recettes')}: ${e0(inc)}\n${L('Uscite', 'Dépenses')}: ${e0(out)}\n${L('Avanzo', 'Excédent')}: ${e0(net)}`} />
+              <div className="vzl"><span>{L('uscite', 'dépenses')}</span><span>{L('avanzo', 'excédent')}</span></div></>
+            : <><Viz.Stack segs={[{ v: inc, c: 'var(--vz-real)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, out)} tip={`${L('Entrate', 'Recettes')}: ${e0(inc)}\n${L('Uscite', 'Dépenses')}: ${e0(out)}\n${L('Disavanzo', 'Déficit')}: ${e0(-net)}`} />
+              <div className="vzl"><span>{L('entrate', 'recettes')}</span><span>{L('disavanzo', 'déficit')}</span></div></>) : null}
+          <div className="s">{inc > 0 ? (net >= 0 ? L(`resta il ${pct(net, inc)} delle entrate`, `il reste ${pct(net, inc)} des recettes`) : L(`uscite oltre le entrate del ${pct(-net, inc)}`, `dépenses supérieures aux recettes de ${pct(-net, inc)}`)) : L('entrate meno uscite', 'recettes moins dépenses')}</div>
+        </div>
+        {staff ? (
+          <Link className="kpi" href="/conti">
+            <div className="l">{L('Liquidità oggi', 'Liquidités aujourd\'hui')}</div>
+            <div className={`v num ${liq < 0 ? 'neg' : ''}`}>{e0(liq)}</div>
+            <Viz.Stack segs={[{ v: itEur, c: 'var(--vz-real)' }, { v: mgEur, c: 'var(--vz-plan)' }]} max={Math.max(1, itEur + mgEur)}
+              tip={`${L('Italia', 'Italie')}: ${e0(eurIT)}\nMadagascar: ${rate ? `${e0(mgaMG / rate)} (${money(mgaMG, 'MGA', lang)})` : money(mgaMG, 'MGA', lang)}`} />
+            <div className="vzl"><span>{L('Italia', 'Italie')}</span><span>Madagascar</span></div>
+            <div className="s">{L('tutti i conti, in euro', 'tous les comptes, en euros')}</div>
+          </Link>
+        ) : (
+          <Link className="kpi" href={verHref}>
+            <div className="l">{L('Da verificare', 'À vérifier')}</div>
+            <div className="v num">{toVerify ?? 0}</div>
+            <div className="s">{L('movimenti registrati', 'mouvements enregistrés')}</div>
+          </Link>
+        )}
+      </div>
 
-        {/* pannelli sempre a coppie, della stessa altezza */}
-        <div className="pairs">
-          <section className="panel h-card h-hero">
-            <div className="panel-h"><H2 text={L(`Il ${year} mese per mese`, `${year} mois par mois`)} /><span className="eyebrow" style={{ marginLeft: 4 }}>{L('registrati e verificati, in euro', 'enregistrés et vérifiés, en euros')}</span><div className="spacer" />
-              {over.size > 0 && <Link className="cdp late nolink" href={`/preventivo?anno=${year}&vista=confronto`}>{over.size === 1 ? L('1 codice oltre il preventivo', '1 code au-delà du budget') : L(`${over.size} codici oltre il preventivo`, `${over.size} codes au-delà du budget`)}</Link>}</div>
+      {/* come la Dashboard di Cairn: a sinistra le schede a coppie, a destra le cose da fare e le note */}
+      <div className="home v2 yc">
+        <div className="h-left">
+          <section className="panel h-card h-flow" data-card="flow">
+            <div className="panel-h"><H2 icon={null} text={L('Entrate e uscite', 'Recettes et dépenses')} /><div className="spacer" /><span className="eyebrow">{eye}</span></div>
             <div className="panel-b">
-              <div className="hero-chart">
-              <MonthBars data={months} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }}
-                hrefFor={(m) => `/movimenti?dal=${year}-${String(m).padStart(2, '0')}-01&al=${year}-${String(m).padStart(2, '0')}-${String(new Date(year, m, 0).getDate()).padStart(2, '0')}`} />
-            </div>
-            {staff && bOut > 0 && (
-              <div className="hero-soglia">
-                <div className="hs-top"><span>{L('Uscite rispetto al preventivo', 'Dépenses par rapport au budget')} <b className="num">{e0(aOut)}</b> {L('su\u00a0', 'sur\u00a0')}<b className="num">{e0(bOut)}</b></span>
-                  <span className={aOut / bOut > elapsed + 0.1 ? 'neg' : ''}><b className="num">{pct(aOut, bOut)}</b> {L('usato', 'utilisé')} · {L('anno trascorso', 'année écoulée')} {Math.round(elapsed * 100)}{' '}%</span></div>
-                <div className="meter" role="img" aria-label={`${pct(aOut, bOut)}`}><i style={{ width: `${outW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>
-                <div className="meter-legend"><span>{L('speso', 'dépensé')}</span><span>{L('tacca = tempo trascorso dell\'anno', 'repère = temps écoulé de l\'année')}</span></div>
-                {bIn > 0 && <>
-                  <div className="hs-top" style={{ marginTop: 12 }}><span>{L('Entrate rispetto al previsto', 'Recettes par rapport au prévu')} <b className="num">{e0(aIn)}</b> {L('su\u00a0', 'sur\u00a0')}<b className="num">{e0(bIn)}</b></span><span><b className="num">{pct(aIn, bIn)}</b></span></div>
-                  <div className="meter m-in" role="img" aria-label={`${pct(aIn, bIn)}`}><i style={{ width: `${inW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>
-                </>}
-              </div>
-            )}
+              <FlowMini data={months} curM={curM} lang={lang} names={[L('Entrate', 'Recettes'), L('Uscite', 'Dépenses'), L('Saldo del mese', 'Solde du mois')]} hrefFor={monthHref} />
+              <div className="legend"><span><i style={{ background: 'var(--vz-real)' }} />{L('Entrate', 'Recettes')}</span><span><i style={{ background: 'var(--vz-sp)' }} />{L('Uscite', 'Dépenses')}</span>
+                <span><i className="dotk" style={{ background: 'var(--green-soft)' }} />{L('Saldo del mese', 'Solde du mois')}</span></div>
             </div>
           </section>
-          <section className="panel h-todo">
-            <div className="panel-h"><H2 text={L('Da fare', 'À faire')} /><span className="eyebrow tday" style={{ marginLeft: 4 }}>{L('oggi', 'aujourd\'hui')} {date(td)}</span></div>
+          <section className="panel h-card" data-card="spese">
+            <div className="panel-h"><H2 icon={null} text={L('Dove vanno le spese', 'Où vont les dépenses')} /><div className="spacer" /><span className="eyebrow">{L('per gruppo di spesa', 'par groupe de dépense')}</span></div>
+            <div className="panel-b">
+              {out <= 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <>
+                <div className="hstack" role="img" aria-label={L('Uscite per voce', 'Dépenses par poste')}>
+                  {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: `var(--dn${i + 1})` }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
+                <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: `var(--dn${i + 1})` }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
+                {noDoc ? <div className="hcat-f"><span><b className="num">{num(noDoc, lang)}</b> {noDoc === 1 ? L('uscita senza giustificativo', 'dépense sans justificatif') : L('uscite senza giustificativo', 'dépenses sans justificatif')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
+              </>}
+            </div>
+          </section>
+          {staff && (
+            <section className="panel h-card" data-card="prev">
+              <div className="panel-h"><H2 icon={null} text={L('Preventivo', 'Budget')} /><div className="spacer" /><span className="eyebrow">{L('anno trascorso', 'année écoulée')} {Math.round(elapsed * 100)}{' '}%</span></div>
+              <div className="panel-b">
+                {bOut > 0 ? <>
+                  <div className="big-row"><div><span>{L('Uscite sul preventivo', 'Dépenses sur le budget')}</span><b className={`num ${overPace ? 'neg' : ''}`}>{pct(aOut, bOut)}</b><small>{e0(aOut)} {L('su', 'sur')} {e0(bOut)}</small></div>
+                    {over.size > 0 ? <Link className="cdp late nolink" href={`/preventivo?anno=${year}&vista=confronto`}>{over.size === 1 ? L('1 codice oltre', '1 code dépassé') : L(`${over.size} codici oltre`, `${over.size} codes dépassés`)}</Link>
+                      : <span className={`cdp ${overPace ? 'late' : 'ok'}`}>{overPace ? L('oltre il ritmo', 'au-delà du rythme') : L('in linea', 'dans le rythme')}</span>}</div>
+                  <div className="cov">
+                    <div className="meter m-out" role="img" aria-label={`${L('Uscite', 'Dépenses')} ${pct(aOut, bOut)}`}><i style={{ width: `${outW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div></div>
+                  {bIn > 0 && <div className="cov"><div className="cov-l"><span>{L('Entrate', 'Recettes')}</span><span><b className="num">{e0(aIn)}</b> {L('su', 'sur')} {e0(bIn)} · {pct(aIn, bIn)}</span></div>
+                    <div className="meter m-in" role="img" aria-label={`${L('Entrate', 'Recettes')} ${pct(aIn, bIn)}`}><i style={{ width: `${inW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div></div>}
+                  <div className="hcat-f"><span>{L('tacca = anno trascorso', 'repère = année écoulée')}</span><Link href={`/preventivo?anno=${year}&vista=confronto`}>{L('Confronto', 'Comparaison')} →</Link></div>
+                </> : <>
+                  <p className="muted" style={{ margin: 0 }}>{L(`Nessun preventivo approvato per il ${year}: qui vedrai quanto è stato speso e incassato rispetto al previsto.`, `Aucun budget approuvé pour ${year} : vous verrez ici les dépenses et recettes par rapport au prévu.`)}</p>
+                  <div className="hcat-f"><span /><Link href={`/preventivo?anno=${year}`}>{L('Apri il preventivo', 'Ouvrir le budget')} →</Link></div>
+                </>}
+              </div>
+            </section>
+          )}
+          {staff && (
+            <section className="panel h-card" data-card="cassa">
+              <div className="panel-h"><H2 icon={null} text={L('Cassa e autonomia', 'Trésorerie et autonomie')} /><div className="spacer" /><span className="eyebrow">{L('oggi', 'aujourd\'hui')}</span></div>
+              <div className="panel-b">
+                <div className="big-row"><div><span>{L('Autonomia di cassa', 'Autonomie de trésorerie')}</span><b className={`num ${runway != null && runway < 3 ? 'neg' : ''}`}>{runway == null ? '–' : `${n1(runway)} ${L('mesi', 'mois')}`}</b></div>
+                  {runway != null && <span className={`cdp ${runway < 3 ? 'late' : 'ok'}`}>{runway < 3 ? L('sotto 3 mesi', 'moins de 3 mois') : L('oltre 3 mesi', 'plus de 3 mois')}</span>}</div>
+                <div className="cov"><div className="mbar"><i style={{ width: `${Math.max(0, Math.min(100, ((runway ?? 0) / 6) * 100)).toFixed(1)}%`, background: runway != null && runway >= 3 ? 'var(--green-soft)' : 'var(--amber-soft)' }} /></div>
+                  <div className="meter-legend"><span>0</span><span>3</span><span>6 {L('mesi', 'mois')}</span></div></div>
+                <div className="mini2">
+                  <Link href="/rimborsi"><span>{L('Da rimborsare', 'À rembourser')}</span><b className="num">{e0(due)}</b><small>{dueCount ?? 0} {(dueCount ?? 0) === 1 ? L('spesa', 'dépense') : L('spese', 'dépenses')}</small></Link>
+                  <Link href="/cambi"><span>{L('Tasso di cambio', 'Taux de change')}</span><b className="num">{fx ? money(rate, 'MGA', lang) : '–'}</b>
+                    <small>{fx ? <>1 € · {MS[fx.month - 1]!.toLowerCase()} {fx.year}{fxChg != null ? ` · ${fxChg >= 0 ? '+' : ''}${n1(fxChg)} %` : ''}</> : L('da inserire', 'à saisir')}</small></Link>
+                </div>
+                <p className="muted small h-foot">{L(`Mesi di spesa coperti dalla liquidità di oggi, al ritmo medio degli ultimi tre mesi (${e0(burn)} al mese)${due > 0 ? `, già tolti i rimborsi dovuti (${e0(due)})` : ''}.`,
+                  `Mois de dépenses couverts par la trésorerie actuelle, au rythme moyen des trois derniers mois (${e0(burn)} par mois)${due > 0 ? `, remboursements dus déjà déduits (${e0(due)})` : ''}.`)}</p>
+              </div>
+            </section>
+          )}
+          <section className="panel h-card" data-card="prj">
+            <div className="panel-h"><H2 icon={null} text={L('Uscite per progetto', 'Dépenses par projet')} /><div className="spacer" /><Link className="eyebrow" href={`/progetti?anno=${year}`}>{L('progetti', 'projets')} →</Link></div>
+            <div className="panel-b">{projects.length ? (
+              <ul className="hcat pbars">{projects.slice(0, 7).map((p) => (
+                <li key={p.href}><Link className="hc-n" href={p.href}>{p.label}</Link><b className="num">{e0(p.value)} <small>{pct(p.value, out)}</small></b>
+                  <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%` }} /></span></li>))}</ul>
+            ) : <p className="muted" style={{ margin: 0 }}>{t('none')}</p>}
+              {projects.length > 7 && <div className="hcat-f"><span>{L(`e altri ${projects.length - 7}`, `et ${projects.length - 7} autres`)}</span><Link href={`/progetti?anno=${year}`}>{L('Tutti', 'Tous')} →</Link></div>}</div>
+          </section>
+          <section className="panel h-card" data-card="conti">
+            <div className="panel-h"><H2 icon={null} text={L('Saldo dei conti', 'Solde des comptes')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
+            <ul className="acclist">{rows.filter((r) => r.kind !== 'advance').map((r) => (
+              <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
+                <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
+          </section>
+        </div>
+        <div className="h-side">
+          <section className="panel h-todo" data-card="todo">
+            <div className="panel-h"><H2 icon={null} text={L('Da fare', 'À faire')} /><span className="eyebrow tday" style={{ marginLeft: 4 }}>{L('oggi', 'aujourd\'hui')} {date(td)}</span></div>
             <ul className="tlist">{todo.slice(0, TODO_MAX).map((x, i) => (
               <li key={i} className={x.lvl}><span className={`dot ${x.lvl}`}><CIcon name={x.ic} size={13} /></span>
                 <div className="tm"><div className="tt"><Link href={x.href}>{x.title}</Link></div>{x.sub && <div className="ts">{x.sub}</div>}</div>
@@ -191,79 +282,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <div className="ta">{x.act && <Link className="btn small ghost" href={x.href}>{x.act}</Link>}</div></li>))}</ul>
             {todo.length > TODO_MAX && <div className="more"><Link className="btn small ghost" href="/scadenze">{L(`Altre ${todo.length - TODO_MAX}`, `${todo.length - TODO_MAX} autres`)}</Link></div>}
           </section>
-          <section className="panel h-card">
-            <div className="panel-h"><H2 text={L('Uscite per progetto', 'Dépenses par projet')} /><div className="spacer" /><span className="eyebrow">{year}</span></div>
-            <div className="panel-b">{projects.length ? (
-              <ul className="hcat pbars">{projects.slice(0, 7).map((p) => (
-                <li key={p.href}><Link className="hc-n" href={p.href}>{p.label}</Link><b className="num">{e0(p.value)} <small>{pct(p.value, out)}</small></b>
-                  <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%`, background: colorFor(p.label) }} /></span></li>))}</ul>
-            ) : <p className="muted" style={{ margin: 0 }}>{t('none')}</p>}
-              {projects.length > 7 && <p style={{ margin: '10px 0 0' }}><Link href={`/progetti?anno=${year}`}>{L(`${String(projects.length).startsWith('8') || projects.length === 11 ? 'Tutti gli' : 'Tutti i'} ${projects.length} progetti`, `Les ${projects.length} projets`)} →</Link></p>}</div>
-          </section>
-          <section className="panel h-card">
-            <div className="panel-h"><H2 text={L('Dove vanno le spese', 'Où vont les dépenses')} /></div>
-            <div className="panel-b">
-              {out <= 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <>
-                <div className="hstack" role="img" aria-label={L('Uscite per voce', 'Dépenses par poste')}>
-                  {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: `var(--dn${i + 1})` }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
-                <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: `var(--dn${i + 1})` }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
-                {noDoc ? <div className="hcat-f"><span><b className="num">{num(noDoc, lang)}</b> {noDoc === 1 ? L('uscita senza giustificativo fiscale', 'dépense sans justificatif fiscal') : L('uscite senza giustificativo fiscale', 'dépenses sans justificatif fiscal')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
-              </>}
-            </div>
-          </section>
-          {staff && (
-            <section className="panel h-card">
-              <div className="panel-h"><H2 text={L('Cassa e autonomia', 'Trésorerie et autonomie')} /><div className="spacer" /><span className="eyebrow">{L('oggi', 'aujourd\'hui')} {date(td)}</span></div>
-              <div className="panel-b">
-                <div className="h3n">
-                  <div><span>{L('Italia', 'Italie')}</span><b className={`num ${eurIT < 0 ? 'neg' : ''}`}>{e0(eurIT)}</b><small>{L('banca, cassa, PayPal, Satispay', 'banque, caisse, PayPal, Satispay')}</small></div>
-                  <div><span>Madagascar</span><b className={`num ${mgaMG < 0 ? 'neg' : ''}`}>{rate ? e0(mgaMG / rate) : money(mgaMG, 'MGA', lang)}</b><small>{rate ? money(mgaMG, 'MGA', lang) : L('manca il tasso', 'taux manquant')}</small></div>
-                  <div><span>{L('Autonomia di cassa', 'Autonomie de trésorerie')}</span><b className={`num ${runway != null && runway < 3 ? 'neg' : ''}`}>{runway == null ? '–' : `${runway.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}\u00a0${L('mesi', 'mois')}`}</b>
-                    <div className="mbar thin"><i style={{ width: `${Math.max(0, Math.min(100, ((runway ?? 0) / 6) * 100)).toFixed(1)}%`, background: runway != null && runway >= 3 ? 'var(--green-soft)' : 'var(--amber-soft)' }} /></div></div>
-                </div>
-                <p className="muted small" style={{ margin: '10px 0 0' }}>{L(`Per quanti mesi la liquidità di oggi copre le spese, al ritmo medio degli ultimi tre mesi (${e0(burn)} al mese)${due > 0 ? `, già tolti i rimborsi dovuti (${e0(due)})` : ''}.`,
-                  `Nombre de mois que la trésorerie actuelle couvre au rythme moyen des trois derniers mois (${e0(burn)} par mois)${due > 0 ? `, remboursements dus déjà déduits (${e0(due)})` : ''}.`)}</p>
-              </div>
-            </section>
-          )}
-          <section className="panel h-card">
-            <div className="panel-h"><H2 text={L('Saldo dei conti', 'Solde des comptes')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
-            <ul className="acclist">{rows.filter((r) => r.kind !== 'advance').map((r) => (
-              <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
-                <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
-          </section>
-        </div>
-
-          <div className="kpi4 k-small">
-            <Link className="htile" href="/cambi">
-              <span className="ht-l"><CIcon name="euro" size={14} />{L('Tasso di cambio', 'Taux de change')}</span>
-              {fx ? <><b className="num">{money(rate, 'MGA', lang)}</b>
-                <small>1{'\u00a0'}€ <span className="nw">· {L('in vigore dal', 'en vigueur depuis le')} 01/{String(fx.month).padStart(2, '0')}/{fx.year}</span>{fxPrev ? <span className={`cdp ${rate >= Number(fxPrev.rate) ? 'ok' : 'mid'}`}>{rate >= Number(fxPrev.rate) ? '+' : ''}{(((rate - Number(fxPrev.rate)) / Number(fxPrev.rate)) * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 1 })}{'\u00a0'}%</span> : null}</small></>
-                : <small>{L('Inserisci il tasso', 'Saisir le taux')}</small>}
-            </Link>
-            <Link className={`htile${toVerify ? ' t-do' : ''}`} href={verHref}>
-              <span className="ht-l"><CIcon name="check" size={14} />{L('Da verificare', 'À vérifier')}</span>
-              <b className="num">{toVerify ?? 0}</b><small>{L('movimenti', 'mouvements')}</small>
-            </Link>
-            <Link className={`htile${dueCount ? ' t-warn' : ''}`} href="/rimborsi">
-              <span className="ht-l"><CIcon name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span>
-              <b className="num">{due ? e0(due) : '0'}</b><small>{dueCount ?? 0} {(dueCount ?? 0) === 1 ? L('spesa', 'dépense') : L('spese', 'dépenses')}</small>
-            </Link>
-            {(() => { const u = upcoming.find((u) => days(u.date) >= 0); return (
-              <Link className="htile" href="/scadenze">
-                <span className="ht-l"><CIcon name="cal" size={14} />{L('Prossima scadenza', 'Prochaine échéance')}</span>
-                {u ? <><b className="num">{days(u.date) === 0 ? L('oggi', 'aujourd\'hui') : L(`tra ${days(u.date)} g`, `dans ${days(u.date)} j`)}</b><small className="ht-t">{u.title}</small></>
-                  : <><b>–</b><small>{L('nessuna nei prossimi 30 giorni', 'aucune dans les 30 prochains jours')}</small></>}
-              </Link>); })()}
-          </div>
-
-          <section className="panel h-card">
-            <div className="panel-h"><H2 icon="pen" text={L('Note', 'Notes')} /><div className="spacer" /><span className="eyebrow">{L('condivise', 'partagées')}</span></div>
+          <section className="panel h-note" data-card="note">
+            <div className="panel-h"><H2 icon={null} text={L('Note', 'Notes')} /><div className="spacer" /><span className="eyebrow">{L('condivise', 'partagées')}</span></div>
             <div className="panel-b">
               <DashNotes text={notes?.text ?? ''} lang={lang} canWrite={me!.role !== 'read_only'}
-                meta={notes?.at ? `${notes.by_name ?? ''} · ${new Date(notes.at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''} />
+                meta={notes?.at ? `${notes.by_name ?? ''} · ${new Date(notes.at).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'short' })}` : ''} />
             </div>
           </section>
+        </div>
       </div>
     </div>
   );

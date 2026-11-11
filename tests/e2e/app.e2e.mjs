@@ -920,7 +920,8 @@ try {
   await check('dashboard con grafici, rendiconto modello E', async () => {
     const p = rs.page;
     await p.goto(`${base}/`);
-    assert.ok(await p.locator('figure svg rect').count() >= 24, 'barre mensili');
+    assert.ok(await p.locator('figure.hflow svg rect.hov').count() === 12, 'un riquadro attivo per mese');
+    assert.ok(await p.locator('.kpis.dk .kpi svg.vz').count() >= 3, 'mini grafici nei riquadri');
     assert.match(await p.locator('main').innerText(), /Uscite per progetto/);
     // autonomia di cassa: spesa media degli ultimi 3 mesi chiusi uguale al database
     const panel = p.locator('section.panel', { hasText: 'Cassa e autonomia' });
