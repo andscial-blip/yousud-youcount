@@ -133,21 +133,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const { data: b } = vid ? await supabase.from('budgets').select('id, version, status, approval_ref').eq('id', vid).maybeSingle()
       : await supabase.from('budgets').select('id, version, status, approval_ref').eq('year', year).eq('status', 'approved').maybeSingle();
     const [{ data: items }, { data: cmp }, { data: stB }, { data: stA }] = await Promise.all([
-      b ? supabase.from('budget_items').select('description, qty, unit, unit_cost, currency, fx_rate, amount, amount_eur, notes, category:categories(code, name_it, name_fr, direction), project:projects(name)').eq('budget_id', b.id).order('sort')
+      b ? supabase.from('budget_items').select('line_no, description, qty, unit, unit_cost, currency, fx_rate, amount, amount_eur, notes, category:categories(code, name_it, name_fr, direction), project:projects(name), counterparty:counterparties(name)').eq('budget_id', b.id).order('line_no')
         : Promise.resolve({ data: [] }),
       supabase.rpc('budget_compare', { p_year: year, p_budget: b && b.status !== 'approved' ? b.id : null }),
       supabase.rpc('budget_statement', { p_year: year, p_budget: b && b.status !== 'approved' ? b.id : null }),
       supabase.rpc('report_cash_statement', { p_year: year }),
     ]);
-    type It = { description: string | null; qty: string; unit: string | null; unit_cost: string; currency: string; fx_rate: string | null; amount: string; amount_eur: string; notes: string | null;
+    type It = { line_no: number; counterparty: { name: string } | null; description: string | null; qty: string; unit: string | null; unit_cost: string; currency: string; fx_rate: string | null; amount: string; amount_eur: string; notes: string | null;
       category: { code: string; name_it: string; name_fr: string; direction: string } | null; project: { name: string } | null };
     const w1 = sheet(wb, fr ? 'Lignes' : 'Righe', [
-      { header: fr ? 'Type' : 'Tipo', key: 'd', width: 10 }, { header: 'Code', key: 'c', width: 8 }, { header: fr ? 'Poste' : 'Voce', key: 'n', width: 32 },
-      { header: fr ? 'Projet' : 'Progetto', key: 'p', width: 22 }, { header: 'Description', key: 'ds', width: 32 }, { header: fr ? 'Quantité' : 'Quantità', key: 'q', width: 10, fmt: '#,##0.##' },
+      { header: fr ? 'N°' : 'N.', key: 'no', width: 6 }, { header: fr ? 'Type' : 'Tipo', key: 'd', width: 10 }, { header: 'Code', key: 'c', width: 8 }, { header: fr ? 'Poste' : 'Voce', key: 'n', width: 32 },
+      { header: fr ? 'Projet' : 'Progetto', key: 'p', width: 22 }, { header: fr ? 'Description' : 'Descrizione', key: 'ds', width: 32 },
+      { header: fr ? 'Donateur / Fournisseur' : 'Donatore / Fornitore', key: 'cp', width: 24 }, { header: fr ? 'Quantité' : 'Quantità', key: 'q', width: 10, fmt: '#,##0.##' },
       { header: fr ? 'Unité' : 'Unità', key: 'u', width: 10 }, { header: fr ? 'Coût unitaire' : 'Costo unitario', key: 'uc', width: 14, fmt: '#,##0.00' },
       { header: fr ? 'Devise' : 'Valuta', key: 'cur', width: 8 }, { header: fr ? 'Taux' : 'Tasso', key: 'r', width: 10, fmt: '#,##0.####' },
-      { header: fr ? 'Montant' : 'Importo', key: 'a', width: 14, fmt: '#,##0.00' }, { header: 'EUR', key: 'e', width: 14, fmt: '#,##0.00' }]);
-    for (const i of (items ?? []) as unknown as It[]) w1.addRow({ d: i.category?.direction === 'in' ? (fr ? 'Recette' : 'Entrata') : (fr ? 'Dépense' : 'Uscita'),
+      { header: fr ? 'Montant' : 'Importo', key: 'a', width: 14, fmt: '#,##0.00' }, { header: 'EUR', key: 'e', width: 14, fmt: '#,##0.00' }, { header: fr ? 'Notes' : 'Note', key: 'nt', width: 32 }]);
+    for (const i of (items ?? []) as unknown as It[]) w1.addRow({ no: i.line_no, cp: i.counterparty?.name ?? '', nt: i.notes ?? '', d: i.category?.direction === 'in' ? (fr ? 'Recette' : 'Entrata') : (fr ? 'Dépense' : 'Uscita'),
       c: i.category?.code, n: fr && i.category?.name_fr ? i.category.name_fr : i.category?.name_it, p: i.project?.name ?? (fr ? 'Général' : 'Generale'), ds: i.description,
       q: Number(i.qty), u: i.unit, uc: Number(i.unit_cost), cur: i.currency, r: i.fx_rate ? Number(i.fx_rate) : null, a: Number(i.amount), e: Number(i.amount_eur) });
     type Cm = { direction: string; category_code: string; cat_it: string; cat_fr: string; project_name: string | null; budget_eur: string; actual_eur: string; committed_eur: string };

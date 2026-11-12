@@ -119,7 +119,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });
   if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi da giustificare da oltre 30 giorni: ${advLate}`, `Avances à justifier depuis plus de 30 jours : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
-  if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/preventivo?anno=${year}&vista=confronto`, act: L('Vedi', 'Voir') });
+  if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/analisi?anno=${year}&vista=budget`, act: L('Vedi', 'Voir') });
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });
   if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
   if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'warn', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
@@ -224,13 +224,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <div className="panel-b">
                 {bOut > 0 ? <>
                   <div className="big-row"><div><span>{L('Uscite sul preventivo', 'Dépenses sur le budget')}</span><b className={`num ${overPace ? 'neg' : ''}`}>{pct(aOut, bOut)}</b><small>{e0(aOut)} {L('su', 'sur')} {e0(bOut)}</small></div>
-                    {over.size > 0 ? <Link className="cdp late nolink" href={`/preventivo?anno=${year}&vista=confronto`}>{over.size === 1 ? L('1 codice oltre', '1 code dépassé') : L(`${over.size} codici oltre`, `${over.size} codes dépassés`)}</Link>
+                    {over.size > 0 ? <Link className="cdp late nolink" href={`/analisi?anno=${year}&vista=budget`}>{over.size === 1 ? L('1 codice oltre', '1 code dépassé') : L(`${over.size} codici oltre`, `${over.size} codes dépassés`)}</Link>
                       : <span className={`cdp ${overPace ? 'late' : 'ok'}`}>{overPace ? L('oltre il ritmo', 'au-delà du rythme') : L('in linea', 'dans le rythme')}</span>}</div>
                   <div className="cov">
                     <div className="meter m-out" role="img" aria-label={`${L('Uscite', 'Dépenses')} ${pct(aOut, bOut)}`}><i style={{ width: `${outW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div></div>
                   {bIn > 0 && <div className="cov"><div className="cov-l"><span>{L('Entrate', 'Recettes')}</span><span><b className="num">{e0(aIn)}</b> {L('su', 'sur')} {e0(bIn)} · {pct(aIn, bIn)}</span></div>
                     <div className="meter m-in" role="img" aria-label={`${L('Entrate', 'Recettes')} ${pct(aIn, bIn)}`}><i style={{ width: `${inW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div></div>}
-                  <div className="hcat-f"><span>{L('tacca = anno trascorso', 'repère = année écoulée')}</span><Link href={`/preventivo?anno=${year}&vista=confronto`}>{L('Confronto', 'Comparaison')} →</Link></div>
+                  <div className="hcat-f"><span>{L('tacca = anno trascorso', 'repère = année écoulée')}</span><Link href={`/analisi?anno=${year}&vista=budget`}>{L('Confronto', 'Comparaison')} →</Link></div>
                 </> : <>
                   <p className="muted" style={{ margin: 0 }}>{L(`Nessun preventivo approvato per il ${year}: qui vedrai quanto è stato speso e incassato rispetto al previsto.`, `Aucun budget approuvé pour ${year} : vous verrez ici les dépenses et recettes par rapport au prévu.`)}</p>
                   <div className="hcat-f"><span /><Link href={`/preventivo?anno=${year}`}>{L('Apri il preventivo', 'Ouvrir le budget')} →</Link></div>

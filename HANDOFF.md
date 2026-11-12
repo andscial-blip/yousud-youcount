@@ -25,6 +25,7 @@ Documento per riprendere il lavoro in una nuova chat. Lo stato vero è il codice
 - Grafica: palette pastello tenue, niente corsivo, niente marrone; **simmetria e allineamento ovunque** (telefono, desktop, IT e FR). Controllare sempre la versione telefono (375 px): niente pulsanti di larghezze diverse, niente parole spezzate a metà (Andrea lo considera inaccettabile).
 - Preventivo solo annuale.
 - Finire le richieste precedenti prima delle nuove; l'elenco attività deve riflettere lo stato reale.
+- **Guida sempre aggiornata (regola del 12/11):** dopo ogni modifica aggiornare «Come funziona questa scheda» e la Guida (`src/lib/help.ts`, `src/lib/guide-tasks.ts`), in italiano e in francese; testi dettagliati, professionali, comprensibili a tutti, verificati sull'app (niente inventato: le etichette citate devono essere quelle a schermo).
 
 ## Attività aperte
 
@@ -60,7 +61,16 @@ Andrea vuole rivedere l'app una pagina alla volta fino alla versione definitiva,
 | Conti › Anticipi | Fatta l'11/11: riquadri («Anticipi in corso», da autorizzare, da consegnare, giustificativi in ritardo); elenco «Anticipi aperti per persona» con icona di stato `.pst` verde/arancione/rossa e legenda |
 | Conti › Riconciliazione | Fatta l'11/11: schede senza filo colorato, barra spuntati/da spuntare, segno del paese nuovo |
 | Conti › Tassi di cambio | Fatta l'11/11: riquadri `.kpis.dk` con mini grafici a scala allargata; «inserito il gg/mm/aaaa» nel tasso corrente; tabella che non sborda su tablet |
-| Altre pagine | Da fare, nell'ordine che indica Andrea. Analisi, Progetti, Preventivo usano ancora verde = entrate e salmone = uscite (`--c-in`, `--c-out`) e i riquadri `.k4` con filo colorato: da allineare quando ci si arriva |
+| Preventivo › Preventivo analitico (`/preventivo`) | Fatta il 12/11: 4 riquadri `.kpis.dk.bqk` (entrate, uscite, saldo, destinato ai progetti); barra della versione senza filo colorato; «Composizione del preventivo» con selettore `?grafico=` (per progetto predefinita, per voce con due anelli, entrate e uscite, per controparte se c'è almeno una controparte); «Righe del preventivo» con numero di riga, codice, descrizione, progetto, donatore/fornitore, quantità, unità, costo unitario, totale (tabella `.bq-tab` a larghezze fisse; sotto 1400 px unità accanto alla quantità e controparte sotto il progetto; sul telefono schede). Aggiunta, modifica ed eliminazione in una scheda laterale (`?nuova=1`, `?riga=ID`, `?elimina=ID`, componente `BudgetRowForm` con totale calcolato mentre si scrive). Parti comuni in `preventivo/shared.tsx` |
+| Preventivo › Riepilogo (`/preventivo/riepilogo`) | Fatta il 12/11: stessi riquadri e barra; due tabelle gemelle `.bqs` (uscite per voce, entrate per voce) e «Per progetto» a tutta larghezza (schede sul telefono); schema Mod. D a richiesta (`?schema=1`) |
+| Confronto con il consuntivo | Tolto dal Preventivo il 12/11: sta in Analisi › «Preventivo e consuntivo» (`src/components/BudgetCompare.tsx`, schede sul telefono). I vecchi indirizzi `?vista=confronto` e `?vista=riepilogo|schema` reindirizzano |
+| Intestazione di tutte le pagine | 12/11: freccia «indietro» (`.pback`, torna alla pagina precedente; alla prima pagina va alla scheda principale della sezione); «Come funziona questa scheda» come riga visibile accanto alle sotto-schede (`.subrow`, `.helpline`; sul telefono «Come si fa») al posto dell'icona; le sotto-schede conservano l'anno (e nel Preventivo la versione). Niente tasto Home: logo e «Dashboard» portano già alla pagina iniziale |
+| Altre pagine | Da fare, nell'ordine che indica Andrea. Analisi (prossima: Andrea ha detto «ci lavoreremo dopo») e Progetti usano ancora verde = entrate e salmone = uscite (`--c-in`, `--c-out`) e i riquadri `.k4` con filo colorato: da allineare quando ci si arriva |
+
+## Preventivo: dati (12/11)
+
+- Migrazione `20261112000100_budget_lines.sql`: `budget_items.line_no` (numero progressivo nella versione, assegnato dal trigger, non cambia; la revisione copia i numeri) e `counterparty_id`; `budget_item_add(p, p_reason)` aggiunge una riga alla bozza o, con le regole delle modifiche puntuali (amministratore + motivo; DEMO: responsabile), alla versione in vigore, con traccia `op = 'insert'` in `budget_amendments`.
+- L'esportazione Excel del preventivo ha le colonne N., Donatore / Fornitore e Note.
 
 ## Fatto di recente (10–11/11)
 

@@ -5,6 +5,7 @@ import { money } from '@/lib/format';
 import { Denied, ErrorNote, PageHead, Panel } from '@/components/Page';
 import { BudgetBar, HBars, Lines, MonthBars } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
+import { BudgetCompare, type CmpRow } from '@/components/BudgetCompare';
 import { MESI } from '@/lib/viz';
 
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const lg = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const tabs: [typeof VIEWS[number], string][] = [['panoramica', lg('Panoramica', 'Vue d\'ensemble')], ['entrate', lg('Entrate', 'Recettes')], ['uscite', lg('Uscite', 'Dépenses')],
     ['progetti', lg('Progetti', 'Projets')], ['andamento', lg('Andamento', 'Évolution')], ['budget', lg('Preventivo e consuntivo', 'Budget et réalisé')]];
+  // etichette delle schede per il telefono (data-label) già scritte dal server: TableCards non tocca la tabella, niente differenze all'idratazione
   const groupTable = (
     <Panel title={t('an_by_group')}>
       <p className="panel-b muted" style={{ margin: 0 }}>{t('an_by_group_note').replace('{p}', `${Math.round(elapsed * 100)}%`)}</p>
@@ -106,11 +108,11 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
               const sp2 = spentG.get(g.id) ?? 0, b = budG.get(g.id) ?? 0, st = state(sp2, b);
               return (
                 <tr key={g.id}>
-                  <td><Link className="rowlink" href={mov({ tipo: 'expense' })}>{gName.get(g.id)}</Link>{st && <> <span className={`chip ${st === 'ok' ? 'ok' : 'warn'}`}>{t(`an_${st}` as 'an_ok')}</span></>}</td>
-                  <td className="r num nw">{b ? money(b, 'EUR', lang) : '–'}</td>
-                  <td className="r num nw">{money(sp2, 'EUR', lang)}</td>
-                  <td className="r num">{pct(sp2, b)}</td>
-                  <td><BudgetBar budget={b} spent={sp2} /></td>
+                  <td data-label={t('an_group')}><Link className="rowlink" href={mov({ tipo: 'expense' })}>{gName.get(g.id)}</Link>{st && <> <span className={`chip ${st === 'ok' ? 'ok' : 'warn'}`}>{t(`an_${st}` as 'an_ok')}</span></>}</td>
+                  <td className="r num nw" data-label={t('budget')}>{b ? money(b, 'EUR', lang) : '–'}</td>
+                  <td className="r num nw" data-label={t('prj_spent')}>{money(sp2, 'EUR', lang)}</td>
+                  <td className="r num" data-label="%">{pct(sp2, b)}</td>
+                  <td data-label=""><BudgetBar budget={b} spent={sp2} /></td>
                 </tr>
               );
             })}
@@ -223,7 +225,10 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
 
       {view === 'budget' && <>
         {groupTable}
-        <p className="muted" style={{ margin: 0 }}><Link href={`/preventivo?anno=${year}&vista=confronto`}>{lg('Confronto per singolo codice nel Preventivo', 'Comparaison par code dans le Budget')} →</Link></p>
+        <Panel title={lg('Preventivo in vigore e consuntivo, per codice', 'Budget en vigueur et réalisé, par code')} icon={null}
+          right={<Link className="btn small" href={`/preventivo?anno=${year}`}>{lg('Apri il preventivo', 'Ouvrir le budget')}</Link>}>
+          <BudgetCompare rows={(cmp ?? []) as CmpRow[]} groups={groups ?? []} lang={lang} year={year} prj={prj || undefined} />
+        </Panel>
       </>}
 
       <p className="muted" style={{ margin: 0 }}>{t('an_note')} <Link href={mov({})}>{t('an_open_moves')}</Link></p>

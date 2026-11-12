@@ -204,7 +204,7 @@ try {
     '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/cambi', '/admin/impostazioni', '/admin/dati', '/admin/registro', '/chiedi',
-    '/preventivo', '/preventivo?vista=righe', '/preventivo?vista=schema', '/nuovo?tipo=expense&data=2026-11-03&importo=1234&desc=Riga%20estratto', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,
+    '/preventivo', '/preventivo?grafico=voci', '/preventivo?grafico=flussi', '/preventivo?nuova=1', '/preventivo/riepilogo', '/preventivo/riepilogo?schema=1', '/analisi?vista=budget', '/nuovo?tipo=expense&data=2026-11-03&importo=1234&desc=Riga%20estratto', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,
     '/documenti-emessi/nuovo?tipo=NRS', '/documenti-emessi/nuovo', '/documenti-emessi/nuovo?tipo=DIC', '/documenti-emessi/nuovo?tipo=BDC', '/analisi?vista=andamento', '/analisi?vista=uscite', '/analisi?vista=entrate', '/report?tipo=mensile', '/report?tipo=categorie', '/report?tipo=fornitori', '/report?tipo=nodoc', '/report?tipo=cassa'];
   // ONLY_PATHS=/a,/b: controlla solo quelle pagine (anche con ?parametri; /a/* = tutte le pagine sotto /a/) — prova rapida
   const ONLY = (process.env.ONLY_PATHS ?? '').split(',').filter(Boolean);
@@ -259,6 +259,8 @@ try {
           p.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource.*(401|403|404)/i.test(m.text())) cerr.push(`console: ${m.text().slice(0, 3000)}`); });
           await p.setViewportSize({ width: w, height: 860 });
           await p.goto(base + path.replace('#doc', ''), { waitUntil: 'networkidle', timeout: 60000 });
+          // pagine lunghe in sviluppo: si misura il contenuto, non lo scheletro di caricamento
+          await p.waitForFunction(() => !document.querySelector('#app [aria-busy="true"]'), null, { timeout: 45000 }).catch(() => {});
           if (path === '/nuovo#doc') {
             // stato più affollato del modulo: file dal nome lunghissimo, lettura IA e campi proposti
             await p.locator('input[type=file]').nth(1).setInputFiles({ name: 'CANANGA GARDEN_Proforma_341-AMB-2010-ESS_ESSELUNGA_hotel_Ambanja_novembre.pdf',

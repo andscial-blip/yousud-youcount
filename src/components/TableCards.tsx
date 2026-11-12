@@ -10,7 +10,10 @@ const hydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith('__re
 function label(root: ParentNode) {
   let pending = false;
   root.querySelectorAll<HTMLTableElement>('table.t:not(.keep)').forEach((table) => {
-    if (!hydrated(table)) { pending = true; return; }
+    // l'idratazione procede dall'alto: quando l'ultima cella è idratata lo sono tutte (una tabella lunga può essere idratata a pezzi)
+    const lastRow = table.rows[table.rows.length - 1];
+    const lastCell = lastRow?.cells[lastRow.cells.length - 1];
+    if (!hydrated(table) || (lastCell && !hydrated(lastCell))) { pending = true; return; }
     const heads = table.tHead?.rows[0]?.cells;
     // tabelle già pensate per il telefono (colonne .hm nascoste e righe compatte): restano tabelle
     if (!heads || heads.length < 4 || table.querySelector('th.hm')) return;

@@ -21,7 +21,9 @@ export const SECTIONS: Section[] = [
   { id: 'cassa', key: 'nav_accounts', hint: 'hint_cassa', ic: 'bank', subs: [
     { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances' },
     { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }, { href: '/cambi', key: 'sub_fx' }] },
-  { id: 'bud', key: 'nav_budget', hint: 'hint_bud', ic: 'wallet', roles: STAFF, subs: [{ href: '/preventivo', key: 'nav_budget' }] },
+  // Preventivo in due schede (12/11): le righe con riquadri e grafici, e il riepilogo; il confronto con il consuntivo è in Analisi
+  { id: 'bud', key: 'nav_budget', hint: 'hint_bud', ic: 'wallet', roles: STAFF, subs: [
+    { href: '/preventivo', key: 'sub_budget_lines' }, { href: '/preventivo/riepilogo', key: 'sub_budget_sum' }] },
   { id: 'prj', key: 'nav_projects', hint: 'hint_prj', ic: 'brief', subs: [
     { href: '/progetti', key: 'nav_projects' }, { href: '/finanziamenti', key: 'nav_grants' }] },
   { id: 'anal', key: 'nav_analysis', hint: 'hint_anal', ic: 'chart', roles: STAFF, subs: [
@@ -62,7 +64,7 @@ export function locate(secs: Section[], path: string): { sec: Section | null; su
 }
 
 // Pagine in cui l'anno nell'intestazione cambia ciò che si vede (parametro ?anno=).
-export const YEAR_PATHS = ['/', '/chiedi', '/progetti', '/analisi', '/rendiconto', '/report', '/preventivo', '/documenti-emessi', '/cambi'];
+export const YEAR_PATHS = ['/', '/chiedi', '/progetti', '/analisi', '/rendiconto', '/report', '/preventivo', '/preventivo/riepilogo', '/documenti-emessi', '/cambi'];
 
 // Indirizzi che sono una sotto-scheda: lì il titolo è già nell'intestazione e la pagina non lo ripete.
 export const SUB_HREFS = SECTIONS.flatMap((s) => s.subs.map((x) => x.href));

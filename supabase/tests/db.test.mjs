@@ -825,6 +825,42 @@ test('preventivo nello schema del rendiconto: stesse voci del consuntivo, strutt
   assert.equal((await as(U.op, (q) => q('select * from budget_statement($1)', [Y]))).length, 0, 'solo staff');
 });
 
+test('preventivo: numero di riga stabile, controparte, riga aggiunta alla versione in vigore con motivo', async () => {
+  const Y = year + 6;
+  const [cp] = await as(U.op, (q) => q(`insert into counterparties(org_id, name, kind, created_by) values ($1, 'Fondazione di prova', 'donor', $2) returning id`, [ORG, U.op]));
+  const b = await rpc(U.resp, 'budget_draft', Y, null, 'Numerato');
+  const a1 = await rpc(U.resp, 'budget_item_add', { budget_id: b.id, category_id: R.out['201'], qty: 2, unit_cost: 100, currency: 'EUR' }, null);
+  const a2 = await rpc(U.resp, 'budget_item_add', { budget_id: b.id, category_id: R.in['E101'], qty: 1, unit_cost: 900, currency: 'EUR', counterparty_id: cp.id }, null);
+  const a3 = await rpc(U.resp, 'budget_item_save', { budget_id: b.id, category_id: R.out['401'], qty: 1, unit_cost: 30, currency: 'EUR' });
+  assert.deepEqual([a1.line_no, a2.line_no, a3.line_no], [1, 2, 3], 'numeri progressivi nella versione');
+  assert.equal(a2.counterparty_id, cp.id);
+  assert.equal((await sql('select count(*)::int n from budget_amendments where budget_id = $1', [b.id]))[0].n, 0, 'in bozza nessuno storico');
+  // il numero non si cambia e non si riusa: tolta la riga 2, la prossima è la 4
+  const up = await rpc(U.resp, 'budget_item_amend', { ...a1, budget_id: b.id, line_no: 99, unit_cost: 110 }, null);
+  assert.equal(up.line_no, 1);
+  await rpc(U.resp, 'budget_item_remove', a3.id, null);
+  const a4 = await rpc(U.resp, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], qty: 1, unit_cost: 40, currency: 'EUR' }, null);
+  assert.equal(a4.line_no, 3, 'dopo aver tolto l\'ultima, il numero libero in coda viene ripreso');
+  await assert.rejects(rpc(U.resp, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], unit_cost: 1, currency: 'EUR', counterparty_id: '00000000-0000-0000-0000-000000000001' }, null), /controparte/);
+  await assert.rejects(rpc(U.op, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], unit_cost: 1, currency: 'EUR' }, null), /forbidden/);
+  await rpc(U.admin, 'budget_approve', b.id, 'delibera di prova');
+  // versione in vigore: aggiunta solo da un amministratore, con motivo, e resta nello storico
+  await assert.rejects(rpc(U.resp, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], unit_cost: 5, currency: 'EUR' }, 'motivo valido'), /amministratore/);
+  await assert.rejects(rpc(U.admin, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], unit_cost: 5, currency: 'EUR' }, 'no'), /motivo/);
+  const a5 = await rpc(U.admin, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], qty: 3, unit_cost: 5, currency: 'EUR' }, 'spesa non prevista approvata dal Consiglio');
+  assert.deepEqual([a5.line_no, Number(a5.amount)], [4, 15]);
+  const h = await sql('select op, reason, old_row, (new_row->>\'line_no\')::int n from budget_amendments where budget_id = $1 order by id', [b.id]);
+  assert.deepEqual(h.map((r) => [r.op, r.reason, r.old_row, r.n]), [['insert', 'spesa non prevista approvata dal Consiglio', null, 4]]);
+  assert.equal((await sql('select status from budgets where id = $1', [b.id]))[0].status, 'approved');
+  // la revisione copia numeri e controparte; la versione superata non accetta righe
+  const d2 = await rpc(U.resp, 'budget_draft', Y, null, 'Revisione');
+  const copy = await sql('select line_no, counterparty_id from budget_items where budget_id = $1 order by line_no', [d2.id]);
+  assert.deepEqual(copy.map((r) => r.line_no), [1, 2, 3, 4]);
+  assert.equal(copy[1].counterparty_id, cp.id);
+  await rpc(U.admin, 'budget_approve', d2.id, 'delibera di prova 2');
+  await assert.rejects(rpc(U.admin, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], unit_cost: 5, currency: 'EUR' }, 'motivo valido'), /superata/);
+});
+
 test('scadenziario: scadenze a mano, adempimenti dell\'app, ricorrenza, visibilità', async () => {
   await assert.rejects(rpc(U.ro, 'deadline_save', { title: 'Prova', due_date: '2031-01-31' }), /forbidden/);
   const d = await rpc(U.op, 'deadline_save', { title: 'Pagare affitto ufficio', category: 'pay', due_date: '2031-01-31', amount: 450, repeat: 'monthly', priority: 'high' });

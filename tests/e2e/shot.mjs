@@ -15,10 +15,12 @@ await ctx.addInitScript(() => { try { sessionStorage.setItem('yc-splash', '1'); 
 for (const p of paths) for (const w of widths) {
   const page = await ctx.newPage();
   const errs = [];
-  page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 200)); });
+  page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, Number(process.env.ERRLEN ?? 200))); });
   page.on('pageerror', (e) => errs.push('pageerror ' + e.message.slice(0, 200)));
   await page.setViewportSize({ width: w, height: Number(process.env.H ?? 900) });
   await page.goto(base + p, { waitUntil: 'networkidle', timeout: 90000 });
+  if (process.env.WAITFOR) await page.waitForSelector(process.env.WAITFOR, { timeout: 60000 });   // pagine lente in sviluppo: aspetta il contenuto, non lo scheletro
+  await page.waitForFunction(() => !document.querySelector('#app [aria-busy="true"]'), null, { timeout: 45000 }).catch(() => {});
   await page.waitForTimeout(300);
   const f = `/tmp/yc-shots/${pre}_${w}_${p.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}.png`;
   await page.screenshot({ path: f, fullPage: !process.env.FOLD });

@@ -5,7 +5,7 @@ import { LangSwitch } from './LangSwitch';
 // sottotitolo, Cerca, anno e «Nuovo movimento»; sotto-schede. Tablet: colonna di icone. Telefono: barra in alto e in basso.
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CIcon } from './CIcon';
 import { YEAR_PATHS } from '@/lib/nav';
 
@@ -47,8 +47,22 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
   const path = usePathname();
   const sp = useSearchParams();
   const router = useRouter();
-  const { sec } = locateNav(secs, path);
+  const { sec, sub } = locateNav(secs, path);
   const [cmd, setCmd] = useState(false);
+  // «Indietro»: torna alla pagina precedente dentro l'app; alla prima pagina aperta porta alla scheda principale della sezione
+  const seen = useRef(0);
+  const qs = sp.toString();
+  useEffect(() => { seen.current += 1; }, [path, qs]);
+  const home = sec && sec.subs[0] && sec.subs[0].href !== path ? sec.subs[0].href : '/';
+  const goBack = () => { if (seen.current > 1 && window.history.length > 1) router.back(); else router.push(home); };
+  // tra le sotto-schede resta l'anno scelto (e, nel Preventivo, la versione che si sta guardando)
+  const subHref = (href: string) => {
+    const q = new URLSearchParams();
+    if (YEAR_PATHS.includes(href) && sp.get('anno')) q.set('anno', sp.get('anno')!);
+    if (sec?.id === 'bud' && sp.get('v')) q.set('v', sp.get('v')!);
+    const t = q.toString();
+    return t ? `${href}?${t}` : href;
+  };
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd(true); } };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
@@ -64,6 +78,8 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
     <header className="phead">
       <div className="phead-row">
         <Link href="/" className="pbrand only-phone" aria-label={labels.brand}>{phoneBrand}</Link>
+        {path !== '/' && <button type="button" className="pback" onClick={goBack} aria-label={labels.lang === 'fr' ? 'Retour à la page précédente' : 'Torna alla pagina precedente'}
+          title={labels.lang === 'fr' ? 'Retour' : 'Indietro'}><CIcon name="back" size={20} /></button>}
         {sec && <span className="picon not-phone" aria-hidden="true"><CIcon name={sec.ic} size={22} /></span>}
         <div className="ptitle"><h1>{sec?.label ?? labels.brand}</h1>{sec?.hint && <p>{sec.hint}</p>}</div>
         <div className="pctl">
@@ -74,7 +90,6 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
           <Link className="btn ghost askbtn" href="/chiedi" title={labels.lang === 'fr' ? 'Demander à l\'IA' : 'Chiedi all\'AI'} aria-label={labels.lang === 'fr' ? 'Demander à l\'IA' : 'Chiedi all\'AI'}>
             <CIcon name="spark" size={16} /><span className="not-phone">{labels.lang === 'fr' ? 'IA' : 'AI'}</span></Link>
           <LangSwitch lang={labels.lang ?? 'it'} />
-          <InfoButton path={path} lang={labels.lang ?? 'it'} />
           {showYear && (
             <label className="yearsel"><span className="vh">{labels.year}</span>
               <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label={labels.year}>
@@ -85,14 +100,17 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
           {canWrite && <Link className="btn primary not-phone" href="/nuovo"><CIcon name="plus" size={16} />{labels.newMov}</Link>}
         </div>
       </div>
-      {sec && sec.subs.length > 1 && (
-        <nav className="subnav" data-sec={sec.id} aria-label={`${labels.subnav}: ${sec.label}`}>
-          {sec.subs.map((x) => (
-            <Link key={x.href} href={x.href}
-                  aria-current={(x.href === '/' ? path === '/' : path === x.href || path.startsWith(x.href + '/')) ? 'page' : undefined}>{x.label}</Link>
-          ))}
-        </nav>
-      )}
+      {/* sotto-schede e, sulla stessa riga a destra, «Come funziona questa scheda» (scelta del 12/11: più visibile dell'icona) */}
+      <div className="subrow">
+        {sec && sec.subs.length > 1 && (
+          <nav className="subnav" data-sec={sec.id} aria-label={`${labels.subnav}: ${sec.label}`}>
+            {sec.subs.map((x) => (
+              <Link key={x.href} href={subHref(x.href)} aria-current={sub?.href === x.href ? 'page' : undefined}>{x.label}</Link>
+            ))}
+          </nav>
+        )}
+        <InfoButton path={path} lang={labels.lang ?? 'it'} line />
+      </div>
       {cmd && <CommandPalette secs={secs} onClose={() => setCmd(false)} labels={labels} />}
     </header>
   );

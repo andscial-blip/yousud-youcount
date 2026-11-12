@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 const anchor = (href: string) => href.replace(/\W+/g, '-').replace(/^-|-$/g, '') || 'home';
 const SEC_IC: Record<string, string> = { start: 'info', home: 'home', mov: 'list', cassa: 'bank', bud: 'wallet', prj: 'brief', anal: 'chart', docs: 'receipt', set: 'gear' };
 
-// Guida: i primi passi in quattro schede, poi gli argomenti per sezione (gli stessi testi del pulsante (i) di ogni pagina),
+// Guida: i primi passi in quattro schede, poi gli argomenti per sezione (gli stessi testi di «Come funziona questa scheda» di ogni pagina),
 // ognuno richiudibile, con ricerca. Stampabile in PDF (la stampa apre tutto).
 export default async function Guide() {
   const { lang, me } = await requireMe();
@@ -24,7 +24,7 @@ export default async function Guide() {
 
       <section className="g-hero2">
         <div className="g-h2row"><div><h2>{L('Come faccio a…', 'Comment faire pour…')}</h2>
-          <p className="muted">{L('Le domande più frequenti, ognuna in pochi passi. Sotto, ogni pagina spiegata una per una.', 'Les questions les plus fréquentes, chacune en quelques étapes. En dessous, chaque page expliquée une par une.')}</p></div>
+          <p className="muted">{L('Le domande più frequenti, ognuna in pochi passi. Sotto, ogni pagina spiegata una per una: la stessa spiegazione si apre da ogni pagina con «Come funziona questa scheda».', 'Les questions les plus fréquentes, chacune en quelques étapes. En dessous, chaque page expliquée une par une : la même explication s’ouvre depuis chaque page avec « Comment fonctionne cet onglet ».')}</p></div>
           <PrintButton label={L('Stampa o salva in PDF', 'Imprimer ou enregistrer en PDF')} /></div>
         <GuideSearch placeholder={L('Cerca: rimborso, ricevuta, cambio, anticipo…', 'Rechercher : remboursement, reçu, change, avance…')}
           none={L('Nessun argomento trovato.', 'Aucun sujet trouvé.')} />
