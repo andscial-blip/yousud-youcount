@@ -9,7 +9,7 @@ Documento per riprendere il lavoro in una nuova chat. Lo stato vero è il codice
 | App | YouCount, contabilità PWA di YouSud ODV (IT/FR, EUR + MGA) |
 | Repository | `andscial-blip/yousud-youcount`, branch `main` (ultimo commit funzionale `02e619d`) |
 | Produzione | https://youcount-gold.vercel.app — Vercel progetto `prj_FWRh77eoEqYHs9yAcvxJnrA7OxdQ`, team `team_ttKx7ir9hZ4R1rzHxfIezrw1`; il push su `main` pubblica da solo (se il deploy non parte: commit vuoto) |
-| Database | Supabase progetto `uxzeonwmakanumlojfax`; migrazioni in `supabase/migrations`, ultima `20261110000700_advance_superadmin` (tutte applicate in produzione) |
+| Database | Supabase progetto `uxzeonwmakanumlojfax`; migrazioni in `supabase/migrations`, ultima `20261112000100_budget_lines` (tutte applicate in produzione; questa il 12/11) |
 | Stack | Next.js 15 (server components + server actions), Supabase Postgres con RLS e RPC SECURITY DEFINER (`app.fail`, `app.has_role`, `app.me_org`), pdf-lib lato server |
 | Canvas proposte | artifact `9c2c9df2-c096-40fc-8894-1ad7a8d920d5` |
 
