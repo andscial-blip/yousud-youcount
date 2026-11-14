@@ -25,7 +25,10 @@ export function parseAmount(input: string): number | null {
 // Restituisce anche dove rimettere il cursore (stesso numero di cifre alla sua sinistra).
 export function formatTyping(text: string, caret = text.length): { text: string; caret: number } {
   let t = text.replace(/[^\d.,]/g, '');
-  if (!t.includes(',')) { const m = /\.(\d{0,2})$/.exec(t); if (m && (t.match(/\./g) ?? []).length === 1 && m[1].length < 3 && !/\.\d{3}$/.test(t)) t = t.replace(/\.(\d{0,2})$/, ',$1'); }
+  // il punto finale seguito da 0-2 cifre diventa la virgola dei decimali: va contato come tale anche per il cursore,
+  // altrimenti il cursore resta prima della virgola e le cifre seguenti finiscono nella parte intera ("12." → "1.250,")
+  let decDot = -1;
+  if (!t.includes(',')) { const m = /\.(\d{0,2})$/.exec(t); if (m && m[1].length < 3) { t = t.replace(/\.(\d{0,2})$/, ',$1'); decDot = text.lastIndexOf('.'); } }
   const ci = t.indexOf(',');
   let int = (ci >= 0 ? t.slice(0, ci) : t).replace(/\./g, '');
   const dec = ci >= 0 ? t.slice(ci + 1).replace(/[.,]/g, '').slice(0, 2) : null;
@@ -33,7 +36,7 @@ export function formatTyping(text: string, caret = text.length): { text: string;
   const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const out = dec === null ? grouped : `${grouped || '0'},${dec}`;
   // cursore: conta le cifre (e la virgola) prima del cursore nel testo originale
-  const before = text.slice(0, caret).replace(/[^\d,]/g, '').length;
+  const before = text.slice(0, caret).replace(/[^\d,]/g, '').length + (decDot >= 0 && decDot < caret ? 1 : 0);
   let n = 0, pos = 0;
   while (pos < out.length && n < before) { if (/[\d,]/.test(out[pos])) n++; pos++; }
   return { text: out, caret: pos };

@@ -275,9 +275,11 @@ export const HELP: HelpEntry[] = [
     fr: ['Projets (administration)', ['Chaque mouvement va sur un projet ou sur « Structure et frais généraux » (siège, administration, frais communs) : pas besoin de centres de coût séparés. Pour chacun : nom, code, type d\'activité (icône), dates et statut. Un projet inactif n\'est plus proposé mais reste dans les rapports.']] },
   { href: '/admin/periodi', sec: 'set',
     it: ['Chiusure mensili', ['Chiudere un mese blocca nuove registrazioni con data in quel mese. Si chiude dopo aver verificato tutti i movimenti del mese.',
-      'Si chiude un mese quando tutti i suoi movimenti sono verificati. Dopo la chiusura in quel mese non si registra né si modifica nulla; riaprire spetta al super amministratore.']],
+      'Per chiudere: premi «Chiudi il mese» sulla riga del mese, spunta la conferma e premi «Conferma la chiusura». Dopo la chiusura in quel mese non si registra, non si modifica e non si elimina nulla.',
+      'Riaprire spetta al solo super amministratore: «Riapri», scrivi il motivo (per esempio una fattura arrivata in ritardo), spunta la conferma e premi «Conferma la riapertura». Il motivo resta scritto sotto il mese e nel Registro attività.']],
     fr: ['Clôtures mensuelles', ['Clôturer un mois bloque les nouveaux enregistrements datés de ce mois. On clôture après avoir vérifié tous les mouvements du mois.',
-      'On clôture un mois quand tous ses mouvements sont vérifiés. Ensuite, rien ne s’enregistre ni ne se modifie dans ce mois ; la réouverture revient au super administrateur.']] },
+      'Pour clôturer : appuyez sur « Clôturer le mois » sur la ligne du mois, cochez la confirmation puis « Confirmer la clôture ». Ensuite, rien ne se comptabilise, ne se modifie ni ne se supprime dans ce mois.',
+      'La réouverture revient au seul super administrateur : « Rouvrir », indiquez le motif (par exemple une facture arrivée en retard), cochez la confirmation puis « Confirmer la réouverture ». Le motif reste inscrit sous le mois et dans le Journal d’activité.']] },
   { href: '/admin/impostazioni', sec: 'set',
     it: ['Ente e documenti', [
       'Dati dell\'associazione usati nei documenti (denominazione legale, sede, codice fiscale, IBAN, iscrizione RUNTS, contatti), firmatario e logo.',
@@ -292,10 +294,12 @@ export const HELP: HelpEntry[] = [
   { href: '/admin/dati', sec: 'set',
     it: ['Dati e sicurezza', [
       'Backup completo in Excel da salvare nel Drive condiviso di YouSud; chiavi per collegare altre app. I dati dimostrativi si caricano e si svuotano da qui, con conferma del numero.',
+      'In fondo alla pagina, sotto «Zona di pericolo», stanno le azioni che eliminano dati. «Svuota l\'elenco: elimina tutti i … movimenti» (solo super amministratore) si trova qui e non più nel Registro: chiede motivo, password, un backup delle ultime 24 ore e nessun mese chiuso.',
       'Solo il super amministratore, prima dell\'avvio: «Azzera movimenti e preventivi» elimina tutti i movimenti e i preventivi di collaudo. Serve un backup scaricato nelle ultime 24 ore e la parola AZZERA; la numerazione MOV riparte da 001.',
       'Tutti i dati dell’app (movimenti, conti, categorie, progetti, controparti, registro delle modifiche) in un file Excel, un foglio per tabella. Conservalo nel Drive condiviso di YouSud. I file dei giustificativi restano nell’archivio dell’app: il foglio documents ne elenca percorso e impronta.']],
     fr: ['Données et sécurité', [
       'Sauvegarde complète en Excel à enregistrer dans le Drive partagé de YouSud ; clés pour relier d\'autres applications. Les données de démonstration se chargent et se vident ici, avec confirmation du nombre.',
+      'En bas de la page, sous « Zone de danger », se trouvent les actions qui suppriment des données. « Vider la liste : supprimer les … mouvements » (super administrateur uniquement) se trouve ici et non plus dans le Registre : elle demande un motif, le mot de passe, une sauvegarde des dernières 24 heures et aucun mois clôturé.',
       'Seulement le super administrateur, avant le lancement : « Remettre à zéro » supprime tous les mouvements et budgets de test. Il faut une sauvegarde de moins de 24 heures et le mot AZZERA ; la numérotation MOV repart de 001.',
       'Toutes les données de l’app (mouvements, comptes, catégories, projets, tiers, journal des modifications) dans un fichier Excel, une feuille par table. Conservez-le dans le Drive partagé de YouSud. Les fichiers des pièces restent dans l’archive de l’app : la feuille documents indique leur chemin et leur empreinte.']] },
   { href: '/admin/registro', sec: 'set',

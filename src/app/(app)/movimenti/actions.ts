@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 import { requireMe } from '@/lib/session';
 import { withFreshPassword } from '@/lib/reauth';
 
-// Svuota l'elenco: elimina definitivamente tutti i movimenti (amministratore). Conferma, numero dei movimenti,
+// Svuota l'elenco: elimina definitivamente tutti i movimenti (solo super amministratore, da Impostazioni › Dati e sicurezza). Conferma, numero dei movimenti,
 // motivo, password reinserita e backup delle ultime 24 ore: i controlli veri sono nel database (movement_purge_all).
 export async function purgeAllAction(form: FormData) {
-  const fail = (m: string) => redirect(`/movimenti?err=${encodeURIComponent(m)}#svuota`);
+  const fail = (m: string) => redirect(`/admin/dati?err=${encodeURIComponent(m)}#svuota`);
   if (form.get('confirm') !== 'on') fail('Spunta la conferma per eliminare tutti i movimenti.');
   const { user } = await requireMe();
   const r = await withFreshPassword(user.email, String(form.get('password') ?? ''), async (sb): Promise<string> => {
@@ -17,5 +17,5 @@ export async function purgeAllAction(form: FormData) {
   const msg = r.ok ? r.value : r.error;
   if (msg) fail(msg);
   revalidatePath('/', 'layout');
-  redirect('/movimenti?ok=purged_all');
+  redirect('/admin/dati?ok=purged_all');
 }

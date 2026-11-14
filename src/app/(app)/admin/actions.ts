@@ -130,8 +130,11 @@ export async function saveCounterpartyPrivate(form: FormData) {
 export async function closeMonth(form: FormData) {
   const { supabase } = await me();
   const [y, mo] = String(form.get('ym')).split('-').map(Number);
-  const fn = form.get('reopen') === '1' ? 'reopen_period' : 'close_period';
-  const { error } = await supabase.rpc(fn, { p_year: y, p_month: mo });
+  const reopen = form.get('reopen') === '1';
+  if (!form.get('confirm')) { done('/admin/periodi', { message: 'confirm' }); return; }
+  const { error } = reopen
+    ? await supabase.rpc('reopen_period', { p_year: y, p_month: mo, p_reason: String(form.get('reason') ?? '') })
+    : await supabase.rpc('close_period', { p_year: y, p_month: mo });
   done('/admin/periodi', error);
 }
 

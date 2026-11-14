@@ -77,10 +77,13 @@ export default async function MovementDetail({ params, searchParams }: {
   // il super amministratore verifica anche i propri movimenti; per gli altri vale «quattro occhi»
   const canVerify = resp && m.status === 'recorded' && !rev && !(strict && me!.role !== 'super_admin' && (m.created_by === me!.id || m.recorded_by === me!.id));
   const canReverse = resp && m.status !== 'draft' && !m.reverses_id && !rev;
-  const canEdit = !rev && (m.status === 'draft' ? (m.created_by === me!.id || resp) : m.status === 'recorded' && resp);
+  // uno storno nasce bloccato: non si modifica (prima della verifica si elimina e si rifà)
+  const canEdit = !rev && !m.reverses_id && (m.status === 'draft' ? (m.created_by === me!.id || resp) : m.status === 'recorded' && resp);
   const admin = Boolean(me && ADMIN.includes(me.role));
   // verificato: per correggerlo un amministratore ne riapre la verifica (con motivo); poi si modifica e si riverifica
-  const canReopen = admin && m.status === 'verified' && !rev && !m.reverses_id;
+  // regola unica: dopo la verifica si corregge con lo storno; riaprire o eliminare resta al solo super amministratore
+  const superAdmin = me?.role === 'super_admin';
+  const canReopen = superAdmin && m.status === 'verified' && !rev && !m.reverses_id;
   const FR = lang === 'fr';
   const { data: tr } = await supabase.from('movement_translations').select('source, it, fr').eq('movement_id', m.id).maybeSingle();
   // autocertificazione: per una spesa senza giustificativo (o con l'AUT già emessa), non verificata, non da chi legge soltanto
@@ -160,7 +163,7 @@ export default async function MovementDetail({ params, searchParams }: {
               </form>
             </details>
           )}
-          {admin && !m.demo && m.status !== 'draft' && (
+          {superAdmin && !m.demo && m.status !== 'draft' && (
             <details className="danger-zone" id="elimina">
               <summary className="btn ghost">{FR ? 'Supprimer définitivement…' : 'Elimina definitivamente…'}</summary>
               <form action={purgeAction} className="stack" style={{ gap: 8, marginTop: 10 }}>

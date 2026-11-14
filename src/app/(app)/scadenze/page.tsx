@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
+import AmountField from '@/components/AmountField';
 import { date, money } from '@/lib/format';
 import { DL_CAT, THRESHOLDS, ruleItems, type DlCat } from '@/lib/deadline-rules';
 import { ErrorNote, Panel } from '@/components/Page';
@@ -225,7 +226,7 @@ export default async function Deadlines({ searchParams }: {
               <select className="input" id="dl-c" name="category" defaultValue={edit?.category ?? 'pay'}>
                 {(Object.keys(DL_CAT) as DlCat[]).map((k) => <option key={k} value={k}>{L(...DL_CAT[k])}</option>)}</select></div>
             <div className="field"><label htmlFor="dl-a">{L('Importo (facoltativo)', 'Montant (facultatif)')}</label>
-              <input className="input num" id="dl-a" name="amount" inputMode="decimal" defaultValue={edit?.amount ? String(Number(edit.amount)).replace('.', ',') : ''} /></div>
+              <AmountField id="dl-a" name="amount" lang={lang} defaultValue={edit?.amount ? String(Number(edit.amount)).replace('.', ',') : ''} /></div>
             <div className="field"><label htmlFor="dl-cur">{L('Valuta', 'Devise')}</label>
               <select className="input" id="dl-cur" name="currency" defaultValue={edit?.currency ?? 'EUR'}><option>EUR</option><option>MGA</option></select></div>
             <div className="field"><label htmlFor="dl-p">{L('Progetto', 'Projet')}</label>

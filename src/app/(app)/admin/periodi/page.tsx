@@ -17,7 +17,7 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
   const from = new Date(now.getFullYear(), now.getMonth() - 17, 1);
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   const [{ data: periods }, { data: users }, { data: pending }, { data: revs }] = await Promise.all([
-    supabase.from('periods').select('year, month, closed_at, closed_by'),
+    supabase.from('periods').select('year, month, closed_at, closed_by, reopen_reason'),
     supabase.rpc('user_directory'),
     supabase.from('movements').select('op_date, id').eq('status', 'recorded').gte('op_date', iso(from)),
     supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null),
@@ -38,7 +38,8 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
     .find((key) => !(periods ?? []).some((x) => `${x.year}-${String(x.month).padStart(2, '0')}` === key && x.closed_at)
       && !toVerify.get(key) && key !== `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const fmt = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { month: 'long', year: 'numeric' });
-  const errText = err?.startsWith('unverified_movements') ? t('closed_err') : err;
+  const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
+  const errText = err?.startsWith('unverified_movements') ? t('closed_err') : err === 'confirm' ? L('Spunta la conferma per procedere.', 'Cochez la confirmation pour continuer.') : err;
   return (
     <div className="stack">
       <PageHead title={t('nav_periods')} />
@@ -68,13 +69,26 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
                       <td className="num hm">{closed ? `${dateTime(p!.closed_at, lang)} · ${name.get(p!.closed_by) ?? '–'}` : '–'}</td>
                       <td className="r">
                         {!closed && !current && open === 0 && (
-                          <form action={closeMonth}><input type="hidden" name="ym" value={key} />
-                            <button className={`btn ${key === next ? 'primary' : 'ghost'}`} type="submit"><Ico name="verified" />{t('close_month')}</button></form>
+                          <details className="pd-act">
+                            <summary className={`btn ${key === next ? 'primary' : 'ghost'}`}><Ico name="verified" />{t('close_month')}</summary>
+                            <form action={closeMonth} className="pd-form"><input type="hidden" name="ym" value={key} />
+                              <p className="muted">{L('Dopo la chiusura nessuno può registrare, modificare o eliminare movimenti di questo mese. Solo il super amministratore può riaprirlo, indicando il motivo.',
+                                'Après la clôture, personne ne peut comptabiliser, modifier ou supprimer des mouvements de ce mois. Seul le super administrateur peut le rouvrir, en indiquant le motif.')}</p>
+                              <label className="check"><input type="checkbox" name="confirm" required /> {L(`Chiudo ${fmt.format(new Date(y, m - 1, 1))}`, `Je clôture ${fmt.format(new Date(y, m - 1, 1))}`)}</label>
+                              <button className="btn primary" type="submit">{L('Conferma la chiusura', 'Confirmer la clôture')}</button></form>
+                          </details>
                         )}
                         {closed && me!.role === 'super_admin' && (
-                          <form action={closeMonth}><input type="hidden" name="ym" value={key} /><input type="hidden" name="reopen" value="1" />
-                            <button className="btn ghost" type="submit">{t('reopen_month')}</button></form>
+                          <details className="pd-act">
+                            <summary className="btn ghost">{t('reopen_month')}</summary>
+                            <form action={closeMonth} className="pd-form"><input type="hidden" name="ym" value={key} /><input type="hidden" name="reopen" value="1" />
+                              <label className="field"><span>{L('Motivo della riapertura', 'Motif de la réouverture')}</span>
+                                <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={L('Es. fattura di ottobre arrivata in ritardo', 'Ex. facture d’octobre arrivée en retard')} /></label>
+                              <label className="check"><input type="checkbox" name="confirm" required /> {L(`Riapro ${fmt.format(new Date(y, m - 1, 1))}`, `Je rouvre ${fmt.format(new Date(y, m - 1, 1))}`)}</label>
+                              <button className="btn" type="submit">{L('Conferma la riapertura', 'Confirmer la réouverture')}</button></form>
+                          </details>
                         )}
+                        {!closed && p?.reopen_reason && <div className="muted pd-why">{L('Riaperto', 'Rouvert')}: {p.reopen_reason}</div>}
                       </td>
                     </tr>
                   );

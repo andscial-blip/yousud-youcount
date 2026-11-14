@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
-import { purgeAllAction } from './actions';
 import { AutoTranslate } from '@/components/AutoTranslate';
 import { date, money, nm, num } from '@/lib/format';
 import { ErrorNote, Panel } from '@/components/Page';
@@ -284,27 +283,6 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           </nav>
         )}
       </Panel>
-      {admin && (allCount ?? 0) > 0 && (
-        <details className="danger-zone panel" id="svuota">
-          <summary className="btn ghost">{L(`Svuota l'elenco: elimina tutti i ${allCount} movimenti…`, `Vider la liste : supprimer les ${allCount} mouvements…`)}</summary>
-          <form action={purgeAllAction} className="stack panel-b" style={{ gap: 10 }}>
-            <input type="hidden" name="expected" value={allCount ?? 0} />
-            <p className="muted" style={{ margin: 0 }}>{L(
-              'Elimina definitivamente tutti i movimenti (reali e DEMO) con i loro abbinamenti; preventivi, conti e categorie restano, la numerazione MOV riparte da 001. Serve un backup scaricato nelle ultime 24 ore.',
-              'Supprime définitivement tous les mouvements (réels et DEMO) avec leurs rapprochements ; budgets, comptes et catégories restent, la numérotation MOV repart de 001. Il faut une sauvegarde téléchargée dans les dernières 24 heures.')}</p>
-            <p style={{ margin: 0 }}>{bkFresh
-              ? <span className="chip ok">{L('Backup recente', 'Sauvegarde récente')}: {new Date(bkAt!).toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT')}</span>
-              : <><span className="chip warn">{L('Nessun backup nelle ultime 24 ore', 'Aucune sauvegarde dans les dernières 24 heures')}</span>{' '}
-                <a className="btn small" href="/api/v1/backup"><Ico name="download" />{L('Scarica il backup', 'Télécharger la sauvegarde')}</a></>}</p>
-            <label className="field"><span>{L('Motivo', 'Motif')}</span>
-              <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={L('Es. pulizia dei movimenti di prova prima dell\'avvio', 'Ex. nettoyage des mouvements de test avant le démarrage')} /></label>
-            <label className="field"><span>{L('La tua password', 'Votre mot de passe')}</span>
-              <input className="input" name="password" type="password" required autoComplete="current-password" /></label>
-            <label className="check"><input type="checkbox" name="confirm" required /> {L(`Elimino definitivamente tutti i ${allCount} movimenti`, `Je supprime définitivement les ${allCount} mouvements`)}</label>
-            <div><button className="btn danger" type="submit" disabled={!bkFresh}>{L('Elimina tutti i movimenti', 'Supprimer tous les mouvements')}</button></div>
-          </form>
-        </details>
-      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import AmountField from '@/components/AmountField';
 import Link from 'next/link';
 
 export type Mv = { grant_id: string | null; kind: string; amount_eur: string | null; sign: number; op_date: string; status: string; no_doc_reason: string | null; docs: { count: number }[] };
@@ -40,7 +41,7 @@ export function GrantFields({ L, g, donors, projects }: { L: (it: string, fr: st
         {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
     <div className="field"><label htmlFor="g-code">{L('Codice o riferimento', 'Code ou référence')}</label><input className="input" id="g-code" name="code" maxLength={60} defaultValue={g?.code ?? ''} /></div>
     <div className="field"><label htmlFor="g-amount">{L('Importo concesso', 'Montant accordé')}</label>
-      <input className="input num" id="g-amount" name="amount" inputMode="decimal" defaultValue={g?.amount ? String(Number(g.amount)).replace('.', ',') : ''} /></div>
+      <AmountField id="g-amount" name="amount" lang={L('it', 'fr') as 'it' | 'fr'} defaultValue={g?.amount ? String(Number(g.amount)).replace('.', ',') : ''} /></div>
     <div className="field"><label htmlFor="g-cur">{L('Valuta', 'Devise')}</label>
       <select className="input" id="g-cur" name="currency" defaultValue={g?.currency ?? 'EUR'}><option value="EUR">Euro (EUR)</option><option value="MGA">Ariary (MGA)</option></select></div>
     <div className="field"><label htmlFor="g-start">{L('Inizio', 'Début')}</label><input className="input" type="date" id="g-start" name="start_date" defaultValue={g?.start_date ?? ''} /></div>

@@ -1,3 +1,4 @@
+import AmountField from '@/components/AmountField';
 import { PersonPicker } from '@/components/PersonPicker';
 import { AdvanceDoc } from '@/components/AdvanceDoc';
 import { CIcon } from '@/components/CIcon';
@@ -308,7 +309,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                   <label className="seg-opt"><input type="radio" name="op" value="return" /> {t('adv_return')}</label></div></div>
               <div className="field"><label htmlFor="advcash">{t('adv_cash_acc')}</label>
                 <select className="input" id="advcash" name="cash" required>{(cash ?? []).map((a) => <option key={a.id} value={a.id}>{L(a)} · {a.currency}</option>)}</select></div>
-              <div className="field"><label htmlFor="advamt">{t('amount')}</label><input className="input num" id="advamt" name="amount" inputMode="decimal" required placeholder="0" /></div>
+              <div className="field"><label htmlFor="advamt">{t('amount')}</label><AmountField id="advamt" name="amount" lang={lang} required /></div>
               <div className="field"><label htmlFor="advdate">{t('f_op_date')}</label><input className="input" id="advdate" name="date" type="date" defaultValue={today} required /></div>
               <div className="field"><label htmlFor="advnotes">{t('f_notes')}</label><input className="input" id="advnotes" name="notes" maxLength={300} /></div>
               <div className="span2"><button className="btn" type="submit">{t('adv_save')}</button></div>
@@ -405,7 +406,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             <div className="sheet-b">
               <form action={requestAdvance} className="fgrid" id="nuova-richiesta">
                 <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={pickReq} users={pickUsers} def={perDef} defCur={perAcc?.currency} />
-                <div className="field"><label htmlFor="rq-amt">{t('amount')}</label><input className="input num" id="rq-amt" name="amount" inputMode="decimal" required placeholder="0" /></div>
+                <div className="field"><label htmlFor="rq-amt">{t('amount')}</label><AmountField id="rq-amt" name="amount" lang={lang} currency={perAcc?.currency} required /></div>
                 <div className="field span2"><label htmlFor="rq-p">{LL('Cosa devi comprare o pagare', 'Que dois-tu acheter ou payer')}</label>
                   <input className="input" id="rq-p" name="purpose" required minLength={3} maxLength={500} placeholder={LL('Es. tessuti, filo e aghi per il laboratorio di cucito', 'Ex. tissus, fil et aiguilles pour l’atelier de couture')} /></div>
                 <div className="field"><label htmlFor="rq-prj">{t('project')}</label>

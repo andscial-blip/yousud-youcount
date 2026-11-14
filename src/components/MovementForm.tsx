@@ -434,7 +434,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
-          {amount && currency === 'MGA' && rate ? <span className="hint">{t.f_eur_equiv}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</span> : null}
+          {amount ? <span className="hint amt-echo">{t.f_amount_read}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
+            {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
+            {currency === 'MGA' && amount % 1 ? <> · {t.f_mga_round}</> : null}</span> : null}
         </div>
         <div className={aiCls('opDate')}>
           <label htmlFor="opdate">{t.f_op_date}</label>

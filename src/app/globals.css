@@ -2109,3 +2109,14 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
 @media (max-width: 760px) { .an-bar .segs > a { font-size: 13px; } }
 .an > p.muted a, .prj > p.muted a { color: inherit; }
 @media (max-width: 359px) { .h1row h1, .h1row h2 { font-size: 17px; } }
+
+/* Chiusure mensili: chiusura e riapertura con conferma (revisione 14/11) */
+.pd-act { display: inline-block; text-align: left; }
+.pd-act > summary { list-style: none; cursor: pointer; }
+.pd-act > summary::-webkit-details-marker { display: none; }
+.pd-act[open] > summary { margin-bottom: 8px; }
+.pd-form { display: grid; gap: 8px; max-width: 360px; margin-left: auto; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.pd-form p { margin: 0; font-size: 13px; }
+.pd-why { font-size: 12.5px; margin-top: 4px; }
+.amt-echo b { font-weight: 600; color: var(--ink); }
+.dz-h { font-size: 15px; margin: 12px 0 0; color: var(--muted); font-weight: 600; }

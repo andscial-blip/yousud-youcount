@@ -393,8 +393,10 @@ test('chiusura del mese: blocca nuove registrazioni nel periodo', async () => {
   await assert.rejects(rpc(U.resp, 'save_movement', mov({ status: 'recorded', op_date: d, no_doc_reason: 'dopo chiusura' })), /period_closed/);
   const draft = await rpc(U.op, 'save_movement', mov({ op_date: d }));
   assert.equal(draft.status, 'draft', 'le bozze restano possibili');
-  await assert.rejects(rpc(U.admin, 'reopen_period', 2025, 1), /forbidden/);
-  await rpc(U.sa, 'reopen_period', 2025, 1);
+  await assert.rejects(rpc(U.admin, 'reopen_period', 2025, 1, 'fattura arrivata in ritardo'), /forbidden/);
+  await assert.rejects(rpc(U.sa, 'reopen_period', 2025, 1, 'no'), /motivo/, 'la riapertura chiede il motivo');
+  await rpc(U.sa, 'reopen_period', 2025, 1, 'fattura arrivata in ritardo');
+  assert.equal((await sql('select reopen_reason from periods where org_id = $1 and year = 2025 and month = 1', [ORG]))[0].reopen_reason, 'fattura arrivata in ritardo');
   const ok = await rpc(U.op, 'save_movement', { id: draft.id, expected_version: draft.version, status: 'recorded', no_doc_reason: 'dopo riapertura' });
   assert.equal(ok.status, 'recorded');
 });
@@ -1052,12 +1054,13 @@ test('eliminazione definitiva di movimenti: amministratore, password appena rein
   const a = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova eliminazione A' }));
   const b = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova eliminazione B' }));
   const s = await rpc(U.resp, 'reverse_movement', b.id, 'importo errato', randomUUID(), null);
-  await assert.rejects(rpcPw(U.resp, 10, 'movement_purge', [a.id], 'prova di errore'), /amministratore/);
-  await assert.rejects(rpc(U.admin, 'movement_purge', [a.id], 'prova di errore'), /password/);
-  await assert.rejects(rpcPw(U.admin, 900, 'movement_purge', [a.id], 'prova di errore'), /password/, 'password vecchia');
-  await assert.rejects(rpcPw(U.admin, 10, 'movement_purge', [a.id], 'no'), /motivo/);
+  await assert.rejects(rpcPw(U.resp, 10, 'movement_purge', [a.id], 'prova di errore'), /super amministratore/);
+  await assert.rejects(rpcPw(U.admin, 10, 'movement_purge', [a.id], 'prova di errore'), /super amministratore/, 'non basta l\'amministratore');
+  await assert.rejects(rpc(U.sa, 'movement_purge', [a.id], 'prova di errore'), /password/);
+  await assert.rejects(rpcPw(U.sa, 900, 'movement_purge', [a.id], 'prova di errore'), /password/, 'password vecchia');
+  await assert.rejects(rpcPw(U.sa, 10, 'movement_purge', [a.id], 'no'), /motivo/);
   const before = (await sql(`select count(*)::int n from audit_log where table_name = 'movements' and action = 'delete'`))[0].n;
-  const r = await rpcPw(U.admin, 10, 'movement_purge', [a.id, b.id], 'movimenti inseriti per prova');
+  const r = await rpcPw(U.sa, 10, 'movement_purge', [a.id, b.id], 'movimenti inseriti per prova');
   assert.equal(r.deleted, 3, 'con lo storno del movimento B');
   assert.ok(s, 'storno creato');
   assert.equal((await sql('select count(*)::int n from movements where id = any($1) or reverses_id = $2', [[a.id, b.id], b.id]))[0].n, 0);
@@ -1065,7 +1068,7 @@ test('eliminazione definitiva di movimenti: amministratore, password appena rein
   // mese chiuso: non si elimina
   const c = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'prova mese chiuso', op_date: `${year - 1}-03-10` }));
   await sql(`insert into periods(org_id, year, month, closed_at, closed_by) values ($1, $2, 3, now(), $3)`, [ORG, year - 1, U.admin]);
-  await assert.rejects(rpcPw(U.admin, 10, 'movement_purge', [c.id], 'mese già chiuso'), /mese chiuso/);
+  await assert.rejects(rpcPw(U.sa, 10, 'movement_purge', [c.id], 'mese già chiuso'), /mese chiuso/);
   await assert.rejects(rpcPw(U.sa, 10, 'movement_purge_all', 999, 'ripulisco tutto'), /backup|mesi chiusi|ricarica/);
   await sql(`delete from periods where org_id = $1 and year = $2 and month = 3`, [ORG, year - 1]);
   await sql(`insert into settings(org_id, key, value) values ($1, 'last_backup', jsonb_build_object('at', now())) on conflict (org_id, key) do update set value = excluded.value`, [ORG]);
@@ -1083,13 +1086,14 @@ test('riapertura della verifica: solo amministratore con motivo; torna registrat
   const [row] = await sql('select version from movements where id = $1', [r.id]);
   await rpc(U.resp, 'verify_movement', r.id, row.version);
   await assert.rejects(sql('update movements set description = $2 where id = $1', [r.id, 'x']), /verificato/);
-  await assert.rejects(rpc(U.resp, 'movement_unverify', r.id, 'errore di codice'), /amministratore/);
-  await assert.rejects(rpc(U.admin, 'movement_unverify', r.id, 'no'), /motivo/);
-  await rpc(U.admin, 'movement_unverify', r.id, 'codice contabile sbagliato');
+  await assert.rejects(rpc(U.resp, 'movement_unverify', r.id, 'errore di codice'), /super amministratore/);
+  await assert.rejects(rpc(U.admin, 'movement_unverify', r.id, 'errore di codice'), /super amministratore/, 'l\'amministratore corregge con lo storno');
+  await assert.rejects(rpc(U.sa, 'movement_unverify', r.id, 'no'), /motivo/);
+  await rpc(U.sa, 'movement_unverify', r.id, 'codice contabile sbagliato');
   const [m] = await sql('select status, verified_by, notes from movements where id = $1', [r.id]);
   assert.equal(m.status, 'recorded'); assert.equal(m.verified_by, null);
   assert.match(m.notes, /Verifica riaperta.*codice contabile sbagliato/);
-  await assert.rejects(rpc(U.admin, 'movement_unverify', r.id, 'di nuovo'), /non è verificato/);
+  await assert.rejects(rpc(U.sa, 'movement_unverify', r.id, 'di nuovo'), /non è verificato/);
 });
 
 test('eliminazione di un utente: solo super amministratore con password; senza dati sparisce, con dati resta il nome ma non l\'accesso', async () => {
@@ -1109,4 +1113,19 @@ test('eliminazione di un utente: solo super amministratore con password; senza d
   const [a] = await sql('select email, banned_until from auth.users where id = $1', [busy]);
   assert.equal(a.email, null); assert.ok(a.banned_until);
   await assert.rejects(rpcPw(U.sa, 10, 'user_delete', busy, 'di nuovo'), /già eliminato/);
+});
+
+test('uno storno nasce bloccato: i suoi dati contabili non si modificano (revisione 14/11)', async () => {
+  const o = await rpc(U.op, 'save_movement', mov({ status: 'recorded', no_doc_reason: 'da stornare e provare a ritoccare' }));
+  const s = await rpc(U.resp, 'reverse_movement', o.id, 'importo errato', randomUUID(), null);
+  const sid = s.id ?? s.reversal_id ?? (await sql('select id from movements where reverses_id = $1', [o.id]))[0].id;
+  const [before] = await sql('select amount, description, status from movements where id = $1', [sid]);
+  await assert.rejects(sql('update public.movements set amount = amount - 1 where id = $1', [sid]), /storno/);
+  await assert.rejects(sql(`update public.movements set description = 'ritoccato' where id = $1`, [sid]), /storno/);
+  await assert.rejects(sql(`update public.movements set op_date = op_date - 1 where id = $1`, [sid]), /storno/);
+  // la strada dell'app (modulo di modifica → save_movement) è chiusa allo stesso modo
+  const [full] = await sql('select version, client_uuid from movements where id = $1', [sid]);
+  await rpc(U.resp, 'save_movement', mov({ id: sid, client_uuid: full.client_uuid, version: full.version, status: 'recorded', amount: 1, no_doc_reason: 'ritocco' })).catch(() => null);
+  const [after] = await sql('select amount, description, status from movements where id = $1', [sid]);
+  assert.deepEqual(after, before, 'lo storno è rimasto com\'era');
 });
