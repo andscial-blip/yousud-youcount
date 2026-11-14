@@ -2197,3 +2197,53 @@ object.doc-prev.pdf { width: 100%; height: 360px; }
   .stack { gap: 10px !important; }
 }
 @media print { .panel-h .hic { display: none !important; } .panel-h { break-after: avoid; padding-left: 0 !important; } .panel-h + table, .panel-h + * { break-before: avoid; } }
+
+/* ---- Riconciliazione di un conto (revisione 14/11): titolo col conto, righe compatte, barra fissa ---- */
+.rec-title { margin: 0; padding: 16px 18px 0; font-size: 17px; }
+.rec-sum { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .rec-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rec-sum > div { border-top: 1px solid var(--line-2); } .rec-sum > div:nth-child(-n+2) { border-top: 0; } .rec-sum > div:nth-child(odd) { border-left: 0; } .rec-sum > div:nth-child(even) { border-left: 1px solid var(--line-2); } }
+.rec-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rec-file { align-self: start; cursor: pointer; }
+ul.rec-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-2); }
+ul.rec-list li { display: grid; grid-template-columns: minmax(0, 1fr) 40px; border-bottom: 1px solid var(--line-2); }
+ul.rec-list label { display: grid; grid-template-columns: 24px 46px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 48px; padding: 6px 4px 6px 18px; cursor: pointer; }
+ul.rec-list label:hover { background: var(--surface-2); }
+ul.rec-list label.on { background: color-mix(in srgb, var(--green-soft) 14%, var(--surface)); }
+ul.rec-list input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--slate); margin: 0; }
+ul.rec-list .rl-d { color: var(--muted); font-size: 13.5px; }
+ul.rec-list .rl-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ul.rec-list .rl-t small { color: var(--muted); font-size: 12.5px; margin-left: 8px; }
+ul.rec-list .rl-a { font-weight: 600; white-space: nowrap; }
+ul.rec-list .rl-o { display: grid; place-items: center; color: var(--muted); text-decoration: none; font-size: 20px; }
+ul.rec-list .rl-o:hover { color: var(--fg); background: var(--surface-2); }
+.rec-more { display: flex; justify-content: center; }
+.rec-bar { position: sticky; bottom: 0; z-index: 5; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 14px; align-items: center;
+  padding: 10px 18px; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(16, 24, 40, .06); border-radius: 0 0 var(--r) var(--r); }
+.rec-bar > div { display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+.rec-bar > div span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.rec-bar > div b { font-size: 18px; }
+.rec-bar .rec-ok b { color: var(--green); } .rec-bar .rec-bad b { color: var(--red); }
+@media (max-width: 760px) {
+  ul.rec-list label { grid-template-columns: 24px minmax(0, 1fr) auto; padding-left: 14px; row-gap: 0; }
+  ul.rec-list .rl-d { display: none; }
+  ul.rec-list .rl-t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; }
+  .rec-bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); grid-template-columns: minmax(0, 1fr) auto; padding: 8px 14px; }
+  .rec-bar > .muted { display: none; }
+  .rec-title { padding: 14px 14px 0; font-size: 16px; }
+}
+.panel:has(> .rec-form) { overflow: visible; }
+.rec-file { justify-self: start; }
+.rec-sum > div { flex-direction: column; }
+.rec-sum span { overflow-wrap: normal; word-break: normal; hyphens: none; }
+@media (max-width: 760px) {
+  .rec-tools { display: grid; grid-template-columns: 1fr 1fr; }
+  .rec-tools .btn { width: 100%; justify-content: center; white-space: normal; text-align: center; min-height: 44px; }
+  .rec-tools .muted { grid-column: 1 / -1; }
+  .rec-sum b { font-size: 18px; }
+  .rec-file { justify-self: stretch; justify-content: center; }
+}
+ul.rec-list .rl-t small { white-space: nowrap; }
+@media (max-width: 1100px) {
+  ul.rec-list .rl-t { display: block; white-space: normal; overflow: visible; }
+  ul.rec-list .rl-t small { display: block; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
+}

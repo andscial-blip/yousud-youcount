@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { parseAmount } from '@/lib/amount';
 import { money } from '@/lib/format';
@@ -21,13 +22,20 @@ const key = (l: Leg) => `${l.movement_id}|${l.side}`;
 
 // Spunta dell'estratto: data e saldo dell'estratto, movimenti spuntati, differenza in tempo reale.
 // Si conferma solo a differenza zero; il database ricontrolla tutto.
-export function ReconcileForm({ accountId, currency, legs, previous, lastDate, labels: t, lang }: {
-  accountId: string; currency: string; legs: Leg[]; previous: number; lastDate: string | null; labels: L; lang: string;
+// pulsante di conferma: mostra che il salvataggio è in corso (con rete lenta non si capiva se era partito)
+function Confirm({ label, busy, disabled }: { label: string; busy: string; disabled: boolean }) {
+  const { pending } = useFormStatus();
+  return <button className="btn primary" type="submit" disabled={disabled || pending}>{pending ? busy : label}</button>;
+}
+
+export function ReconcileForm({ accountId, accountName, currency, legs, previous, lastDate, labels: t, lang }: {
+  accountId: string; accountName: string; currency: string; legs: Leg[]; previous: number; lastDate: string | null; labels: L; lang: string;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [balTxt, setBalTxt] = useState('');
-  const [sel, setSel] = useState<Set<string>>(() => new Set(legs.filter((l) => l.op_date <= today).map(key)));
+  // prima riconciliazione di un conto: si parte senza spunte, perché spuntare è il controllo; dalle successive si parte da tutto spuntato
+  const [sel, setSel] = useState<Set<string>>(() => new Set(lastDate ? legs.filter((l) => l.op_date <= today).map(key) : []));
   const [client] = useState(() => crypto.randomUUID());
   const fmt = (n: number) => money(n, currency, lang as Lang);
 
@@ -75,10 +83,14 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
   const addHref = (u: StmtLine) => '/nuovo?' + new URLSearchParams({
     tipo: u.amount > 0 ? 'income' : 'expense', data: u.date, importo: String(Math.abs(u.amount)), conto: accountId,
     desc: u.text.slice(0, 300) }).toString();
+  const FR = lang === 'fr';
+  const inPeriod = legs.filter(usable), later = legs.filter((l) => !usable(l));
+  const [shown, setShown] = useState(100);
   const toggle = (k: string) => setSel((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   return (
-    <form action={reconcile} className="stack">
+    <form action={reconcile} className="stack rec-form">
+      <h2 className="rec-title">{FR ? 'Rapprochement' : 'Riconciliazione'} · {accountName} · {currency}</h2>
       <input type="hidden" name="account_id" value={accountId} />
       <input type="hidden" name="client_uuid" value={client} />
       <input type="hidden" name="statement_balance" value={balance ?? ''} />
@@ -93,9 +105,9 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
           <span className="hint">{t.neg}</span></label>
       </div>
       <div className="panel-b rec-import">
-        <label className="field"><span className="flabel">{t.imp}</span>
-          <input className="input" type="file" accept=".csv,.txt,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={(e) => onFile(e.target.files?.[0])} />
-          <span className="hint">{t.imp_hint}</span></label>
+        <div className="field"><span className="flabel">{t.imp}</span>
+          <label className="btn rec-file"><input className="vh-file" type="file" accept=".csv,.txt,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={(e) => onFile(e.target.files?.[0])} />{FR ? 'Charger le relevé' : 'Carica l’estratto'}</label>
+          <span className="hint">{t.imp_hint}</span></div>
         {impErr && <div className="note err">{impErr}</div>}
         {imp && (
           <div className="note info" role="status">
@@ -120,34 +132,34 @@ export function ReconcileForm({ accountId, currency, legs, previous, lastDate, l
       {legs.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t.none}</p> : (
         <>
           <div className="panel-b rec-tools">
-            <button type="button" className="btn ghost" onClick={() => setSel(new Set(legs.filter(usable).map(key)))}>{t.tick_all}</button>
-            <button type="button" className="btn ghost" onClick={() => setSel(new Set())}>{t.tick_none}</button>
+            <button type="button" className="btn small" onClick={() => setSel(new Set(legs.filter(usable).map(key)))}>{t.tick_all}</button>
+            <button type="button" className="btn small" onClick={() => setSel(new Set())}>{t.tick_none}</button>
+            <span className="muted small">{FR ? `${inPeriod.length} mouvements jusqu’à la date du relevé` : `${inPeriod.length} movimenti fino alla data dell’estratto`}</span>
           </div>
-          <table className="t">
-            <thead><tr><th style={{ width: 36 }} /><th>{t.date}</th><th>{t.desc}</th><th className="r">{t.amount}</th></tr></thead>
-            <tbody>
-              {legs.map((l) => {
-                const k = key(l); const off = !usable(l);
-                return (
-                  <tr key={k} className={off ? 'muted' : undefined}>
-                    <td><input type="checkbox" checked={sel.has(k) && !off} disabled={off} onChange={() => toggle(k)}
-                      aria-label={`${l.ref ?? ''} ${l.description}`} /></td>
-                    <td className="num">{day(l.op_date)}</td>
-                    <td><Link className="rowlink" href={`/movimenti/${l.movement_id}`}>{l.description || '–'}</Link>
-                      <div className="muted" style={{ fontSize: 13 }}>{l.ref}{off && <> · {t.after}</>}</div></td>
-                    <td className="r num nw">{l.amount >= 0 ? '+' : ''}{fmt(l.amount)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* riga compatta, tutta toccabile: casella, data, descrizione, importo */}
+          <ul className="rec-list">
+            {inPeriod.slice(0, shown).map((l) => { const k = key(l); return (
+              <li key={k}><label className={sel.has(k) ? 'on' : undefined}>
+                <input type="checkbox" checked={sel.has(k)} onChange={() => toggle(k)} />
+                <span className="rl-d num">{day(l.op_date).slice(0, 5)}</span>
+                <span className="rl-t">{l.description || '–'}<small>{l.ref}</small></span>
+                <b className="rl-a num">{l.amount >= 0 ? '+' : ''}{fmt(l.amount)}</b>
+              </label><Link className="rl-o" href={`/movimenti/${l.movement_id}`} aria-label={`${FR ? 'Ouvrir' : 'Apri'} ${l.ref ?? ''}`}>›</Link></li>); })}
+          </ul>
+          {inPeriod.length > shown && <div className="panel-b rec-more"><button type="button" className="btn" onClick={() => setShown((n) => n + 100)}>{FR ? `Afficher 100 autres (${inPeriod.length - shown} restants)` : `Mostra altri 100 (${inPeriod.length - shown} rimasti)`}</button></div>}
+          {later.length > 0 && <p className="panel-b muted small" style={{ margin: 0 }}>{FR ? `${later.length} mouvements après la date du relevé : ils restent pour le prochain rapprochement.` : `${later.length} movimenti dopo la data dell’estratto: restano per la prossima riconciliazione.`}</p>}
         </>
       )}
       <div className="panel-b rec-foot">
         <label className="field"><span className="flabel">{t.notes}</span>
           <input className="input" name="notes" maxLength={1000} /></label>
-        <button className="btn primary" type="submit" disabled={!canSave}>{t.confirm}</button>
         {!canSave && <span className="hint">{balance === null ? t.fill : ''}</span>}
+      </div>
+      {/* barra fissa: la differenza resta in vista mentre si spunta, con la conferma accanto */}
+      <div className="rec-bar" aria-live="polite">
+        <div className={diff === 0 ? 'rec-ok' : diff === null ? '' : 'rec-bad'}><span>{t.diff}</span><b className="num">{diff === null ? '–' : diff === 0 ? t.ok : fmt(diff)}</b></div>
+        <span className="muted small">{ticked.length} {FR ? 'cochés' : 'spuntati'}</span>
+        <Confirm label={t.confirm} busy={FR ? 'Enregistrement…' : 'Salvataggio…'} disabled={!canSave} />
       </div>
     </form>
   );

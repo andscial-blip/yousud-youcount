@@ -114,7 +114,7 @@ export default async function Reconciliation({ searchParams }: {
       {errNote}
       {can(me, RESP) ? (
         <Panel>
-          <ReconcileForm key={`${legs.length}-${s.last}`} accountId={acc.id} currency={acc.currency} legs={open} previous={s.balance}
+          <ReconcileForm key={`${legs.length}-${s.last}`} accountId={acc.id} accountName={`${acc.location === 'MG' ? 'Madagascar' : 'Italia'} · ${L(acc)}`} currency={acc.currency} legs={open} previous={s.balance}
             lastDate={s.last} lang={lang}
             labels={{ stmt_date: t('rec_stmt_date'), stmt_bal: t('rec_stmt_bal'), prev: t('rec_prev'), ticked: t('rec_ticked'),
               calc: t('rec_calc'), diff: t('rec_diff'), ok: t('rec_ok'), confirm: t('rec_confirm'), notes: t('rec_notes'),
