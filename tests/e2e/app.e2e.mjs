@@ -176,8 +176,8 @@ try {
     await p.getByRole('button', { name: 'Usa la foto originale' }).click();
     await p.getByText('caricato', { exact: true }).waitFor();
     await p.getByRole('button', { name: 'Registra' }).click();
-    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
-    newId = p.url().split('/').pop();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}(\?.*)?$/, { timeout: 30000 });
+    newId = p.url().split('/').pop().split('?')[0];
     // la pagina arriva dopo lo scheletro di caricamento
     await p.locator('main [aria-busy=true]').waitFor({ state: 'detached' });
     await p.locator('main h1').waitFor();
@@ -223,8 +223,8 @@ try {
     await p.selectOption('#project', { label: 'École Bonne Semence' });
     await p.screenshot({ path: `${SHOTS}/op_ia.png`, fullPage: true });
     await p.getByRole('button', { name: 'Registra' }).click();
-    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
-    const id = p.url().split('/').pop();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}(\?.*)?$/, { timeout: 30000 });
+    const id = p.url().split('/').pop().split('?')[0];
     const [m] = (await pool.query(`select m.ai_extracted, m.amount, d.enhanced_path is not null as enh, d.pdf_path is not null as pdf,
         d.extraction->>'model' as model from movements m join movement_documents md on md.movement_id = m.id
         join documents d on d.id = md.document_id where m.id = $1`, [id])).rows;
@@ -249,7 +249,7 @@ try {
     await p.goto(`${base}/movimenti/${id}/modifica`);
     await p.fill('#amount', '40');
     await p.getByRole('button', { name: 'Salva bozza' }).click();
-    await p.waitForURL(new RegExp(`/movimenti/${id}$`));
+    await p.waitForURL(new RegExp(`/movimenti/${id}(\\?.*)?$`));
     const txt = await p.locator('main').innerText();
     assert.match(txt, /-40,00\s?€/);
     assert.match(txt, /modifica · Importo/);
@@ -289,7 +289,7 @@ try {
     await p.goto(`${base}/nuovo`);
     await p.fill('#amount', '18.000');
     assert.equal(await p.inputValue('#paidby'), 'Operatore di prova', 'pagato da: chi è collegato, modificabile');
-    await p.getByRole('radio', { name: 'Di tasca propria, da rimborsare' }).click();
+    await p.getByRole('radio', { name: 'Di tasca propria' }).click();
     assert.equal(await p.locator('#account').count(), 0, 'nessun conto da scegliere');
     await p.getByRole('radio', { name: 'MGA' }).click();
     assert.ok(await p.inputValue('#rate'), 'tasso proposto');
@@ -300,7 +300,7 @@ try {
     await p.fill('#nodoc', 'il tassista non rilascia ricevute');
     assert.equal(await p.getByRole('button', { name: 'Salva bozza' }).count(), 0);
     await p.getByRole('button', { name: 'Salva da rimborsare' }).click();
-    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}$/, { timeout: 30000 });
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}(\?.*)?$/, { timeout: 30000 });
     await p.locator('main [aria-busy=true]').waitFor({ state: 'detached' });
     assert.match(await p.locator('main').innerText(), /Da rimborsare[\s\S]*Operatore di prova/);
     const [m] = (await pool.query(`select status, reimb_status, account_id, paid_by, currency, amount::int from movements where description = 'PROVA taxi da rimborsare'`)).rows;
@@ -321,7 +321,7 @@ try {
     // riquadri in alto: quanto dobbiamo (nella valuta della spesa, con il controvalore), giustificativi, rimborsato nell'anno
     const tiles = (await p.locator('.kpis.dk.rbk').innerText()).replace(/[\u00a0\u202f]/g, ' ');
     assert.match(tiles, /Da rimborsare\s+18\.000 MGA[\s\S]*1 persona[\s\S]*≈ [\d,]+ €/);
-    assert.match(tiles, /In attesa da[\s\S]*Senza giustificativo\s+0[\s\S]*Rimborsato nel \d{4}\s+0,00 €/);
+    assert.match(tiles, /In attesa da[\s\S]*Da documentare\s+0[\s\S]*Rimborsato nel \d{4}\s+0,00 €/);
     assert.equal(await p.locator('.kpis.dk.rbk .kpi').count(), 4);
     // una riga per persona; aprendola: spese, cassa già proposta, un solo tasto «Rimborsa …»
     await p.locator('.aw-list > li', { hasText: 'Operatore di prova' }).getByRole('link').click();
@@ -356,7 +356,7 @@ try {
     await p.getByLabel(/Saldo dell’estratto/).fill(it(Number(bal) + 1));
     assert.equal(await confirm.isDisabled(), true, 'non quadra: conferma disattivata');
     await p.getByLabel(/Saldo dell’estratto/).fill(Number(bal) === 0 ? '0' : it(Number(bal)));
-    await p.getByText('Quadra').waitFor();
+    await p.getByText("Quadra").first().waitFor();
     await confirm.click();
     await p.waitForURL(/ok=1/);
     await p.getByText('Riconciliazione registrata.').waitFor();
@@ -421,7 +421,7 @@ try {
     await p.selectOption('#g-prj', { label: 'École Antanetibe' });
     await p.fill('#g-amount', '12.000');
     await p.getByRole('button', { name: 'Salva', exact: true }).click();
-    await p.waitForURL(/\/finanziamenti\/[0-9a-f-]{36}$/);
+    await p.waitForURL(/\/finanziamenti\/[0-9a-f-]{36}(\?.*)?$/);
     assert.match((await p.locator('.kpis.prk').innerText()).replace(/[  ]/g, ' '), /Concesso\s+12\.000 €/);
     assert.equal(await p.locator('.g-head .dmark.none').count(), 1, 'senza finanziatore: segno neutro');
     await p.getByRole('link', { name: 'Modifica', exact: true }).click();
@@ -455,10 +455,10 @@ try {
     assert.equal(await p.locator('.bal-t tbody tr', { hasText: /Anticipi/ }).count(), 0);
     // il nome del conto apre il suo dettaglio, con il collegamento a tutti i suoi movimenti
     await p.locator('.bal-t a.bal-a', { hasText: 'Cassa Madagascar' }).click();
-    await p.waitForURL(/\/conti\?conto=[0-9a-f-]{36}$/);
+    await p.waitForURL(/\/conti\?conto=[0-9a-f-]{36}(\?.*)?$/);
     const sh = p.locator('.acc-sheet');
     await sh.getByText('Saldo di oggi').waitFor();
-    assert.match(await sh.getByRole('link', { name: 'Tutti i movimenti' }).getAttribute('href'), /^\/movimenti\?conto=[0-9a-f-]{36}$/);
+    assert.match(await sh.getByRole('link', { name: 'Tutti i movimenti' }).getAttribute('href'), /^\/movimenti\?conto=[0-9a-f-]{36}(\?.*)?$/);
     await sh.getByRole('link', { name: 'Chiudi' }).click();
     await p.waitForURL(/\/conti$/);
     await p.selectOption('#cc-account', { label: 'Cassa Madagascar (contanti) · MGA' });
@@ -653,8 +653,8 @@ try {
     const o = op.page;
     await o.goto(`${base}/nuovo`);
     await o.locator('#account').waitFor();
-    if (!(await o.getByRole('radio', { name: 'Con l’anticipo' }).count())) await o.reload();
-    await o.getByRole('radio', { name: 'Con l’anticipo' }).click();
+    if (!(await o.getByRole('radio', { name: 'Anticipo', exact: true }).count())) await o.reload();
+    await o.getByRole('radio', { name: 'Anticipo', exact: true }).click();
     await o.locator('#account').selectOption({ label: 'Hery · MGA' });
     assert.equal(await o.locator('#paidby').inputValue(), 'Hery');
     assert.match(await o.locator('main').innerText(), /non riduce la cassa/);
@@ -815,6 +815,10 @@ try {
     assert.equal(await p.locator('.bq-sheet').count(), 0, 'dopo «Salva» la scheda si chiude');
     const rows = (await pool.query(`select i.line_no, i.amount_eur::text eur, c.name cp from budget_items i left join counterparties c on c.id = i.counterparty_id order by i.line_no`)).rows;
     assert.deepEqual(rows.map((r) => [r.line_no, r.eur, r.cp]), [[1, '200.00', null], [2, '3000.00', 'Fondazione PROVA']]);
+    // i gruppi di voci sono richiudibili: resta aperto quello della riga appena salvata; «Apri tutti i gruppi» li mostra tutti
+    assert.equal(await p.locator('tr.bq-r', { hasText: 'Quaderni e penne' }).count(), 0, 'gli altri gruppi restano chiusi');
+    await p.getByRole('link', { name: 'Apri tutti i gruppi' }).click();
+    await p.waitForURL(/apri=tutti/);
     // tabella: numero, codice, descrizione, progetto, controparte, quantità con unità, costo unitario e totale
     const r1 = sp(await p.locator('tr.bq-r', { hasText: 'Quaderni e penne' }).innerText());
     assert.match(r1, /^\s*1\s+401[\s\S]*Quaderni e penne[\s\S]*École Piccolino[\s\S]*10\s+kit[\s\S]*100\.000 MGA[\s\S]*200,00 €/);
@@ -876,7 +880,7 @@ try {
     await p.goto(`${base}/preventivo?anno=${year}`);
     assert.equal(await p.getByRole('link', { name: /^Modifica la riga/ }).count(), 0);
     await p.getByRole('button', { name: 'Aggiungi riga (apre una revisione)' }).waitFor();
-    await a.goto(`${base}/preventivo?anno=${year}`);
+    await a.goto(`${base}/preventivo?anno=${year}&apri=tutti`);
     await a.getByRole('link', { name: 'Modifica la riga 1' }).click();
     await a.waitForURL(/riga=/);
     const fa = a.locator('form.bq-form');
@@ -1030,14 +1034,14 @@ try {
     await p.locator('a.rec-card', { hasText: 'Banca Italia' }).click();
     await p.waitForURL(/\/riconciliazione\?conto=/);
     await p.locator('.rec-import').waitFor();
-    const legs = await p.locator('tbody input[type=checkbox]').count();
+    const legs = await p.locator('.rec-list input[type=checkbox]').count();
     assert.ok(legs > 0);
     const [{ amt, d }] = (await pool.query(`select amount::text amt, to_char(op_date, 'DD/MM/YYYY') d from movements where description = 'PROVA donazione'`)).rows;
     const csv = `Data;Descrizione;Importo;Saldo\n${d};Donazione;${amt.replace('.', ',')};\n${d};Riga sconosciuta;-1.234,00;\n`;
     await p.locator('.rec-import input[type=file]').setInputFiles({ name: 'estratto.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
     await p.getByText(/Righe dell'estratto: 2; movimenti abbinati e spuntati: 1/).waitFor();
     await p.getByText(/Righe senza movimento in YouCount: 1/).waitFor();
-    assert.equal(await p.locator('tbody input[type=checkbox]:checked').count(), 1);
+    assert.equal(await p.locator('.rec-list input[type=checkbox]:checked').count(), 1);
     // la riga non trovata apre il nuovo movimento precompilato
     const add = p.locator('.rec-import a', { hasText: 'Registra' });
     const href = await add.getAttribute('href');

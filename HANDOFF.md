@@ -91,6 +91,16 @@ Andrea vuole rivedere l'app una pagina alla volta fino alla versione definitiva,
 - Logo su telefono: YOU sopra COUNT, allineati a sinistra.
 - Dettaglio movimento: «Genera un documento» a pulsanti di larghezza uguale, storico modifiche come elenco.
 
+## Revisione degli esperti (14/11) e correzioni
+
+Il rapporto completo è nell'artefatto «YouCount — International Expert Review» (voto 7/10, nessun restyling; 2 P0, 23 P1, 29 P2, 14 P3). Decisioni prese: storno per tutti, riapertura ed eliminazione solo al super amministratore e mai nei mesi chiusi; anticipo in ritardo dopo 15 giorni (`src/lib/advance-late.ts`); euro in grande e valuta originale in piccolo a ogni larghezza; la prima riconciliazione parte senza spunte; il tema scuro resta.
+
+Fatto: P0 (righe di storno bloccate, chiusura e riapertura dei mesi con conferma e motivo, «Zona di pericolo» in Dati e sicurezza); P1-1…P1-23 salvo quanto elencato sotto; P2-1 (avviso cassa sotto zero), P2-2 (conferme dopo Registra, modifica e storno), P2-3 (colonna «Valuta» negli Excel dei report), P2-6 in parte (pagina «non trovato» IT/FR, «Riprova» nella pagina senza connessione), P2-7 in parte (titolo della scheda del browser per pagina, `lang` su accesso e offline), P2-8 (bordo dei campi), P2-29.
+
+Da fare: P1-20 è fatto solo per «tiers», «extourne», «Nota di rimborso» e le etichette di pagamento (manca la passata completa su Comptabiliser/Enregistrer, pointer, codice/gruppo/voce, «Struttura e spese generali»); di P1-21 restano lente sopra il titolo e sfumatura delle schede di Impostazioni a 768 px; P2-4, P2-5, P2-9…P2-28 e tutti i P3. Decisioni ancora aperte: cosa vede l'operatore (P2-28) e Analisi › Progetti come collegamento.
+
+La prova di layout ora segnala anche le parole spezzate a metà e il contenuto che esce da una cella (`tests/e2e/layout.e2e.mjs`, controlli 5 e 6). Un testo su due righe voluto si marca con `data-two`.
+
 ## Prove (ambiente locale)
 
 ```bash

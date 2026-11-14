@@ -61,6 +61,7 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
     DIC: tpl === 'vol' ? L('Volontario/a', 'Bénévole') : tpl === 'don' ? L('Donatore', 'Donateur') : L('Destinatario (facoltativo)', 'Destinataire (facultatif)'),
     BDC: L('Fornitore', 'Fournisseur') }[t];
   const lines = (x.lines as (NotLine & NrsLine)[] | undefined) ?? [];
+  const [nrsShown, setNrsShown] = useState(Math.max(2, lines.length));
   const num = (v: number | string | null | undefined) => (v == null || v === '' ? '' : String(Number(v)).replace('.', ','));
   const withAmount = t !== 'NOT' && t !== 'NRS' && t !== 'BDC' && (t !== 'DIC' || tpl === 'don');
   const qtyLines = t === 'NOT' || t === 'BDC';
@@ -176,14 +177,18 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
             'Le demandeur est bénévole (art. 17 CTS : seulement des frais réels ; sans justificatif, au maximum 10 € par jour et 150 € par mois)')} />
           <div className="field span2"><span className="flabel">{L('Spese', 'Frais')}</span>
             <div className="dlines">
-              <div className="ln nrs lh"><span>{L('Data', 'Date')}</span><span>{L('Descrizione', 'Description')}</span><span>{L('Importo', 'Montant')}</span><span>{L('Giustificativo', 'Justificatif')}</span></div>
-              {Array.from({ length: LINES.NRS }, (_, i) => (
+              <div className="ln nrs lh"><span /><span>{L('Data', 'Date')}</span><span>{L('Descrizione', 'Description')}</span><span>{L('Importo', 'Montant')}</span><span>{L('Giustificativo', 'Justificatif')}</span></div>
+              {/* ogni spesa è un riquadro numerato con l'etichetta su ogni campo (su telefono le etichette si vedono);
+                  si parte da due righe e se ne aggiungono con «Aggiungi spesa», fino al massimo del modello */}
+              {Array.from({ length: nrsShown }, (_, i) => (
                 <div className="ln nrs" key={i}>
-                  <input className="input" type="date" name={`l${i}_date`} aria-label={`${L('Data riga', 'Date ligne')} ${i + 1}`} defaultValue={lines[i]?.date ?? ''} />
-                  <input className="input" name={`l${i}_d`} aria-label={`${L('Descrizione riga', 'Description ligne')} ${i + 1}`} defaultValue={lines[i]?.d ?? ''} />
-                  <input className="input num" name={`l${i}_a`} inputMode="decimal" aria-label={`${L('Importo riga', 'Montant ligne')} ${i + 1}`} defaultValue={num(lines[i]?.amt)} />
-                  <label className="check"><input type="checkbox" name={`l${i}_doc`} defaultChecked={lines[i] ? lines[i].doc : true} /> {L('sì', 'oui')}</label>
+                  <b className="ln-n">{L('Spesa', 'Frais')} {i + 1}</b>
+                  <label className="ln-f"><span>{L('Data', 'Date')}</span><input className="input" type="date" name={`l${i}_date`} defaultValue={lines[i]?.date ?? ''} /></label>
+                  <label className="ln-f"><span>{L('Descrizione', 'Description')}</span><input className="input" name={`l${i}_d`} defaultValue={lines[i]?.d ?? ''} /></label>
+                  <label className="ln-f"><span>{L('Importo', 'Montant')}</span><input className="input num" name={`l${i}_a`} inputMode="decimal" defaultValue={num(lines[i]?.amt)} /></label>
+                  <label className="check"><input type="checkbox" name={`l${i}_doc`} defaultChecked={lines[i] ? lines[i].doc : true} /> <span className="ln-yes">{L('sì', 'oui')}</span><span className="ln-full">{L('Ho il giustificativo', 'J’ai le justificatif')}</span></label>
                 </div>))}
+              {nrsShown < LINES.NRS && <div><button type="button" className="btn small" onClick={() => setNrsShown((n) => Math.min(LINES.NRS, n + 1))}>+ {L('Aggiungi spesa', 'Ajouter un frais')}</button></div>}
             </div></div>
         </>}
         <div className="span2 row-actions">

@@ -45,6 +45,8 @@ export default async function MovementDetail({ params, searchParams }: {
       category:categories(code, name_it, name_fr), project:projects(name), grant:grants(id, title), counterparty:counterparties(name),
       method:payment_methods(name_it, name_fr)`).eq('id', id).maybeSingle<M>();
   if (!m) notFound();
+  const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
+  const origRef = m.reverses_id ? (await supabase.from('movements').select('ref').eq('id', m.reverses_id).maybeSingle<{ ref: string }>()).data?.ref ?? null : null;
   const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }] = await Promise.all([
     supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
@@ -104,7 +106,11 @@ export default async function MovementDetail({ params, searchParams }: {
         <StatusChip s={m.status} label={t(`st_${m.status}`)} />
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
-      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done') : ok === 'reversed' ? t('d_reverses') : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
+      {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done')
+        : ok === 'new' ? `${m.status === 'draft' ? L('Bozza salvata', 'Brouillon enregistré') : L('Movimento registrato', 'Mouvement comptabilisé')}: ${m.ref ?? ''}.`
+        : ok === 'saved' ? L('Modifiche salvate.', 'Modifications enregistrées.')
+        : ok === 'reversed' ? L(`Storno registrato: ${m.ref} annulla ${origRef ?? 'il movimento originale'}. Va verificato da un'altra persona.`, `Extourne comptabilisée : ${m.ref} annule ${origRef ?? 'le mouvement d’origine'}. Elle doit être vérifiée par une autre personne.`) : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
+      {ok === 'new' && <div className="row-btns eq after-new"><Link className="btn" href={m.kind === 'transfer' ? '/nuovo' : `/nuovo?tipo=${m.kind}`}>{L('Registrane un altro', 'En saisir un autre')}</Link><Link className="btn" href="/movimenti">{L('Torna al registro', 'Retour au registre')}</Link></div>}
       {errText && <div className="note err">{errText}</div>}
 
       <div className="detail">
@@ -170,7 +176,7 @@ export default async function MovementDetail({ params, searchParams }: {
               <form action={purgeAction} className="stack" style={{ gap: 8, marginTop: 10 }}>
                 <input type="hidden" name="id" value={m.id} />
                 <p className="muted" style={{ margin: 0 }}>{FR
-                  ? 'En comptabilité, on corrige normalement par une contre-passation. La suppression définitive retire le mouvement (et son éventuelle contre-passation) des soldes et des rapports ; ses données restent dans le journal des modifications.'
+                  ? 'En comptabilité, on corrige normalement par une extourne. La suppression définitive retire le mouvement (et son éventuelle extourne) des soldes et des rapports ; ses données restent dans le journal des modifications.'
                   : 'In contabilità di norma si corregge con lo storno. L\'eliminazione definitiva toglie il movimento (e il suo eventuale storno) da saldi e report; i suoi dati restano nel registro modifiche.'}</p>
                 <label className="field"><span>{FR ? 'Motif' : 'Motivo'}</span>
                   <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={FR ? 'Ex. saisi deux fois' : 'Es. inserito due volte'} /></label>

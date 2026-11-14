@@ -72,7 +72,7 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
       </nav>
       <Panel>
         <FilterBar action="/documenti-emessi" lang={lang} hidden={{ anno: String(year), sez: sez?.k }}
-          search={{ value: sp.q ?? '', placeholder: L('Cerca numero o controparte', 'Numéro ou contrepartie') }}
+          search={{ value: sp.q ?? '', placeholder: L('Cerca numero o controparte', 'Numéro ou tiers') }}
           active={(stato ? 1 : 0) + (arch ? 1 : 0)} reset={sp.q || stato || arch ? href({ q: undefined, stato: undefined, arch: undefined }) : null}>
           <label className="field"><span className="flabel">{L('Stato', 'Statut')}</span>
             <select className="input" name="stato" defaultValue={stato}>
@@ -87,14 +87,14 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
           </div>
         ) : (
           <table className="t" data-cards="">
-            <thead><tr><th>{L('Numero', 'Numéro')}</th><th>{L('Tipo', 'Type')}</th><th>{L('Data', 'Date')}</th><th>{L('Controparte', 'Contrepartie')}</th>
+            <thead><tr><th>{L('Numero', 'Numéro')}</th><th>{L('Tipo', 'Type')}</th><th>{L('Data', 'Date')}</th><th>{L('Controparte', 'Tiers')}</th>
               <th className="r">{L('Importo', 'Montant')}</th><th>{L('Collegato a', 'Lié à')}</th><th>{L('Stato', 'Statut')}</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={`${r.type}-${r.id}`} className={r.status === 'cancelled' ? 'muted' : ''}>
                   <td className="nw" data-label={L('Numero', 'Numéro')}><Link className="rowlink" href={r.href}>{r.number ?? L('Bozza', 'Brouillon')}</Link></td>
                   <td data-label={L('Tipo', 'Type')}>{name(r.type)}</td><td className="num nw" data-label={L('Data', 'Date')}>{date(r.date)}</td>
-                  <td data-label={L('Controparte', 'Contrepartie')}>{r.party ?? '–'}</td>
+                  <td data-label={L('Controparte', 'Tiers')}>{r.party ?? '–'}</td>
                   <td className="r num" data-label={L('Importo', 'Montant')}>{amt(r)}</td>
                   <td className="muted" data-label={L('Collegato a', 'Lié à')}>{[r.movement, r.project].filter(Boolean).join(' · ') || '–'}</td>
                   <td data-label={L('Stato', 'Statut')}>{chip(r.status)}</td>

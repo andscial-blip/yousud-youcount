@@ -11,7 +11,7 @@
   --aqua: var(--green-soft); --aqua-fg: var(--green); --aqua-bg: var(--ok-bg);
   --lilac-fg: var(--lilac-ink); --sky-bg: color-mix(in srgb, var(--sky) 18%, var(--surface));
   --c-in: var(--green-soft); --c-out: var(--tax); --c-budget: var(--band); --c-over: var(--tax); --c-net: var(--navy);
-  --ok-fg: var(--green); --line-input: var(--line); --focus: var(--cyan);
+  --ok-fg: var(--green); --line-input: #8691A1; --focus: var(--cyan);
 }
 :root { color-scheme: light; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; } }
@@ -208,7 +208,7 @@ table.cmp tr.grp th { text-align: left; font-weight: 600; }
 /* ---------- Moduli: .field/.input con l'aspetto di .f di Cairn ---------- */
 .field { display: grid; gap: 5px; grid-template-columns: minmax(0, 1fr); align-content: start; min-width: 0; }
 .field label, .field .flabel { font-family: var(--f-body); font-weight: 500; font-size: 13px; color: var(--muted); }
-.input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--fg);
+.input { width: 100%; min-height: 40px; border: 1px solid var(--line-input); border-radius: var(--r-sm); background: var(--surface); color: var(--fg);
   padding: 8px 12px; font: inherit; font-size: 14px; }
 textarea.input { padding: 10px 12px; }
 select.input { appearance: none; -webkit-appearance: none; padding-right: 32px; cursor: pointer;
@@ -2259,3 +2259,44 @@ table.bq-tab tr.bq-grp a { display: flex; align-items: baseline; gap: 8px; color
 table.bq-tab tr.bq-grp a:hover { text-decoration: underline; }
 table.bq-tab tr.bq-grp small { font-weight: 400; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
 table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
+
+/* Nota di rimborso: ogni spesa in una riga con etichette (revisione 14/11) */
+.dlines .ln.nrs { grid-template-columns: 64px 150px minmax(0, 3fr) minmax(0, 1.2fr) auto; align-items: center; }
+.dlines .ln.nrs.lh { grid-template-columns: 64px 150px minmax(0, 3fr) minmax(0, 1.2fr) auto; }
+.dlines .ln.nrs .ln-n { font-size: 12.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.dlines .ln.nrs .ln-f { display: block; min-width: 0; }
+.dlines .ln.nrs .ln-f > span, .dlines .ln.nrs .ln-full { display: none; }
+@media (max-width: 900px) {
+  .dlines .ln.nrs.lh { display: none; }
+  .dlines .ln.nrs { grid-template-columns: 1.3fr 1fr; gap: 8px 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+  .dlines .ln.nrs > :nth-child(2) { grid-column: auto; }
+  .dlines .ln.nrs .ln-n { grid-column: 1 / -1; font-size: 13.5px; color: var(--ink); }
+  .dlines .ln.nrs .ln-f > span { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 3px; }
+  .dlines .ln.nrs .ln-f:nth-of-type(2) { grid-column: 1 / -1; grid-row: 3; }
+  .dlines .ln.nrs .check { grid-column: 1 / -1; }
+  .dlines .ln.nrs .ln-yes { display: none; } .dlines .ln.nrs .ln-full { display: inline; }
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --line-input: #66758A; } }
+:root[data-theme="dark"] { --line-input: #66758A; }
+/* due pulsanti affiancati della stessa larghezza (pagine di errore) */
+.row-btns.eq { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.row-btns.eq > .btn { justify-content: center; text-align: center; white-space: normal; }
+.after-new { margin: 8px 0 14px; max-width: 520px; }
+.hint.warn-txt { color: var(--amber-ink, #8A5A00); font-weight: 600; }
+/* gruppi del preventivo su telefono e tablet: riga unica con nome a sinistra e subtotale a destra (la prova di layout del 14/11
+   ha trovato la riga più larga dello schermo) */
+@media (max-width: 900px) {
+  table.bq-tab, table.bq-tab tbody { display: block; width: 100%; }
+  table.bq-tab tr.bq-grp { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 14px; background: var(--surface-2); border-top: 1px solid var(--line-2); }
+  table.bq-tab tr.bq-grp > * { background: transparent !important; padding: 0 !important; border: 0 !important; }
+  table.bq-tab tr.bq-grp > th { flex: 1; min-width: 0; }
+  table.bq-tab tr.bq-grp > td.bq-a, table.bq-tab tr.bq-grp > td:empty { display: none; }
+  table.bq-tab tr.bq-grp a { min-height: 44px; align-items: center; flex-wrap: wrap; row-gap: 0; }
+  table.bq-tab tr.bq-grp td.bq-tt { white-space: nowrap; }
+}
+@media (max-width: 900px) { table.bq-tab tr.bq-grp > th, table.bq-tab tr.bq-grp a { white-space: normal; overflow-wrap: normal; } table.bq-tab tr.bq-grp a { column-gap: 8px; } }
+@media (max-width: 480px) { .rec-tools { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  table.bq-tab tr.bq-grp a { display: grid; grid-template-columns: 14px minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 8px 0; min-height: 44px; align-content: center; }
+  table.bq-tab tr.bq-grp a small { grid-column: 2; }
+}

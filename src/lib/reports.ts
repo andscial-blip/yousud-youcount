@@ -111,8 +111,8 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
     const tot = list.reduce((a, [, r]) => ({ o: a.o + r.o, i: a.i + r.i, n: a.n + r.n }), { o: 0, i: 0, n: 0 });
     return [{
       title: `${L('Fornitori e donatori', 'Fournisseurs et donateurs')} ${year}`,
-      head: [{ h: L('Controparte', 'Contrepartie') }, { h: L('Uscite', 'Dépenses'), num: true }, { h: L('Entrate', 'Recettes'), num: true }, { h: L('Movimenti', 'Mouvements'), num: true }],
-      rows: list.map(([k, r]) => [txt(k ? cpn.get(k) ?? '–' : L('(senza controparte)', '(sans contrepartie)')), eur(r.o), eur(r.i), int(r.n)]),
+      head: [{ h: L('Controparte', 'Tiers') }, { h: L('Uscite', 'Dépenses'), num: true }, { h: L('Entrate', 'Recettes'), num: true }, { h: L('Movimenti', 'Mouvements'), num: true }],
+      rows: list.map(([k, r]) => [txt(k ? cpn.get(k) ?? '–' : L('(senza controparte)', '(sans tiers)')), eur(r.o), eur(r.i), int(r.n)]),
       foot: [txt(L('Totale', 'Total')), eur(tot.o), eur(tot.i), int(tot.n)],
       chart: bars('out', list.map(([k, r]) => ({ label: k ? (cpn.get(k) ?? '–') : L('(senza controparte)', '(sans tiers)'), value: r.o })), L('Altre voci', 'Autres postes')),
     }];

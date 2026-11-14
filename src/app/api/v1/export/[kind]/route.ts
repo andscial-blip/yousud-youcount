@@ -118,10 +118,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       return NextResponse.json({ error: e instanceof Error ? e.message : 'errore' }, { status: 400 });
     }
     tables.forEach((tb, i) => {
+      // importi in valuta originale: accanto c'è la colonna «Valuta», così chi somma la colonna non somma euro e ariary
+      // (revisione 14/11); i numeri sono arrotondati al centesimo
+      const hasCur = tb.rows.some((r) => r.some((c) => c.t === 'cur'));
       const ws = sheet(wb, tb.title.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || `Report ${i + 1}`,
-        tb.head.map((h, j) => ({ header: h.h, key: `c${j}`, width: h.num ? 16 : j === 0 ? 22 : 30, fmt: h.num ? '#,##0.00' : undefined })));
-      const put = (cells: typeof tb.rows[number]) => ws.addRow(Object.fromEntries(cells.map((c, j) => [`c${j}`,
-        c.t === 'date' && c.v ? new Date(String(c.v)) : c.v])));
+        [...tb.head.map((h, j) => ({ header: h.h, key: `c${j}`, width: h.num ? 16 : j === 0 ? 22 : 30, fmt: h.num ? '#,##0.00' : undefined })),
+          ...(hasCur ? [{ header: fr ? 'Devise' : 'Valuta', key: 'valuta', width: 9 }] : [])]);
+      const put = (cells: typeof tb.rows[number]) => ws.addRow({ ...Object.fromEntries(cells.map((c, j) => [`c${j}`,
+        c.t === 'date' && c.v ? new Date(String(c.v)) : typeof c.v === 'number' && c.t !== 'int' ? Math.round(c.v * 100) / 100 : c.v])),
+        ...(hasCur ? { valuta: cells.find((c) => c.t === 'cur')?.cur ?? '' } : {}) });
       tb.rows.forEach((r) => put(r));
       if (tb.foot) put(tb.foot).font = { bold: true };
       if (tb.note) ws.addRow([]).getCell(1).value = tb.note;

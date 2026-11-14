@@ -167,7 +167,7 @@ function audit() {
     if (el.getBoundingClientRect().width < 3) continue;   // nascosto per l'accessibilità
     const txt = (el.innerText || '').trim().replace(/\s+/g, ' ');
     if (!txt || txt.length > 34 || el.closest('.cmdk, .vh, .skip')) continue;
-    if (el.querySelector('.two') || el.closest('.two')) continue;   // valore su due righe voluto (importo e dettaglio)
+    if (el.querySelector('.two') || el.closest('.two, [data-two]')) continue;   // valore su due righe voluto (importo e dettaglio)
     if (lines(el) > 1) bad.push(`va a capo: ${name(el)}`);
   }
   // 4) ultima riga di un paragrafo con una parola sola di 1-3 lettere (orfana)
@@ -194,6 +194,14 @@ function audit() {
     if (!el || !n.textContent.trim() || inScroller(el) || el.closest('.sr-only, .vh, pre, code, .mono, .docprev')) continue;
     const ps = getComputedStyle(el);
     if (ps.display === 'none' || ps.visibility === 'hidden' || el.getBoundingClientRect().width < 3) continue;
+    // dentro un menu chiuso (antenato che ritaglia ed è alto o largo quasi zero) il testo non si vede: non è una parola spezzata
+    const dt = el.closest('details:not([open])');
+    let clipped = !!dt && !el.closest('summary');   // contenuto di un riquadro richiuso
+    for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+      const as = getComputedStyle(a); const ar = a.getBoundingClientRect();
+      if (as.opacity === '0' || ((as.overflowX !== 'visible' || as.overflowY !== 'visible') && (ar.height < 4 || ar.width < 24))) { clipped = true; break; }
+    }
+    if (clipped) continue;
     const re = /[\p{L}]{4,}/gu; let m;
     while ((m = re.exec(n.textContent))) {
       if (m[0].length > 24) continue;
@@ -205,8 +213,9 @@ function audit() {
   // 6) celle di tabella il cui contenuto esce dalla cella e finisce sopra la vicina
   for (const td of document.querySelectorAll('table td, table th')) {
     const ps = getComputedStyle(td);
-    if (ps.display === 'none' || inScroller(td) && false) continue;
+    if (ps.display === 'none') continue;
     const r = td.getBoundingClientRect(); if (r.width < 3) continue;
+    if (td.querySelector('details:not([open])')) continue;   // il contenuto di un riquadro richiuso non si vede ma viene misurato
     const rg = document.createRange(); rg.selectNodeContents(td);
     const q = rg.getBoundingClientRect();
     if (q.width > 0 && (q.right > r.right + 3 || q.left < r.left - 3) && td.innerText.trim() && !td.querySelector('.sr-only')) bad.push(`contenuto fuori dalla cella di ${Math.round(Math.max(q.right - r.right, r.left - q.left))}px: ${name(td)}`);

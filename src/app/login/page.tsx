@@ -15,6 +15,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   const t = translator(lang);
   return (
     <main className="auth">
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(t("lang_code"))}` }} />
       <section className="auth-card" aria-labelledby="t">
         <div className="auth-brand"><Logo size={72} /><h1 id="t" className="yc-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></h1><p>{t('app_tagline')}</p></div>
         {supabaseConfigured ? (

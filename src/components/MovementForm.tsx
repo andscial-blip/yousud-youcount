@@ -335,7 +335,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       const { data, error } = await supabase.rpc('save_movement', { p });
       if (error) throw error;
       if (data.outcome === 'conflict') { setError(t.f_conflict); setBusy(false); return; }
-      router.push(`/movimenti/${data.id}`);
+      router.push(`/movimenti/${data.id}?ok=${initial ? 'saved' : 'new'}`);
       router.refresh();
     } catch (e) {
       // la rete è caduta durante l'invio: il movimento nuovo va nella coda invece di andare perso
@@ -455,6 +455,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           {amount ? <span className="hint amt-echo">{t.f_amount_read}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
             {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
             {currency === 'MGA' && amount % 1 ? <> · {t.f_mga_round}</> : null}</span> : null}
+          {/* cassa in contanti sotto zero: avviso, non blocco (di solito è la spesa sul conto sbagliato o un prelievo non registrato) */}
+          {!initial && kind === 'expense' && account?.kind === 'cash' && account.balance != null && amount != null && amount > 0 && amount > account.balance + 0.005
+            ? <span className="hint warn-txt" role="status">{t.f_cash_neg.replace('{c}', account.name).replace('{s}', money(account.balance, account.currency, t.lang_code as Lang))}</span> : null}
         </div>
         <div className={aiCls('opDate')}>
           <label htmlFor="opdate">{t.f_op_date}</label>

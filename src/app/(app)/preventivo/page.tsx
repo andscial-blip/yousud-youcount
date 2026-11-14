@@ -24,7 +24,7 @@ const UNITS = { it: ['mesi', 'giorni', 'ore', 'persone', 'pezzi', 'kit', 'viaggi
 // Il confronto con il consuntivo sta in Analisi › Preventivo. Il preventivo è solo annuale.
 export default async function BudgetPage({ searchParams }: {
   searchParams: Promise<{ anno?: string; v?: string; vista?: string; grafico?: string; progetto?: string; tipo?: string; cp?: string; q?: string;
-    nuova?: string; riga?: string; edit?: string; elimina?: string; schema?: string; ok?: string; err?: string; n?: string; lc?: string; lp?: string; apri?: string }>;
+    nuova?: string; riga?: string; edit?: string; elimina?: string; schema?: string; ok?: string; err?: string; n?: string; lc?: string; lp?: string; apri?: string; gc?: string }>;
 }) {
   const sp = await searchParams;
   // vecchi indirizzi: riepilogo e schema hanno la loro scheda, il confronto è in Analisi
@@ -66,7 +66,7 @@ export default async function BudgetPage({ searchParams }: {
   // ── gruppi richiudibili ──
   const openSet = new Set((sp.apri ?? '').split(',').filter(Boolean));
   const allOpen = openSet.has('tutti') || Boolean(term || prj || cp);
-  const isOpen = (g: string) => allOpen || openSet.has(g) || (sp.riga ?? sp.elimina ?? '') !== '' && fil.some((i) => (i.id === sp.riga || i.id === sp.elimina) && (catBy.get(i.category_id)?.group_id ?? 'none') === g);
+  const isOpen = (g: string) => allOpen || openSet.has(g) || (!!sp.gc && (catBy.get(sp.gc)?.group_id ?? 'none') === g) || (sp.riga ?? sp.elimina ?? '') !== '' && fil.some((i) => (i.id === sp.riga || i.id === sp.elimina) && (catBy.get(i.category_id)?.group_id ?? 'none') === g);
   const toggleOpen = (g: string) => { const n = new Set(openSet); n.delete('tutti'); if (n.has(g)) n.delete(g); else n.add(g); return [...n].join(',') || undefined; };
   const groupsOf = (d: 'in' | 'out') => { const mp = new Map<string, Item[]>();
     for (const i of rowsOf(d)) { const g = catBy.get(i.category_id)?.group_id ?? 'none'; mp.set(g, [...(mp.get(g) ?? []), i]); }
@@ -121,7 +121,7 @@ export default async function BudgetPage({ searchParams }: {
       </div>);
   };
   const tabs: [string, string][] = [['voci', L('Per voce', 'Par poste')], ['progetti', L('Per progetto', 'Par projet')], ['flussi', L('Entrate e uscite', 'Recettes et dépenses')],
-    ...(anyCp ? [['controparti', L('Per controparte', 'Par contrepartie')] as [string, string]] : [])];
+    ...(anyCp ? [['controparti', L('Per controparte', 'Par tiers')] as [string, string]] : [])];
   const maxFlow = Math.max(1, totIn, totOut);
 
   // ── elenchi chiusi per la scheda della riga ──
@@ -281,7 +281,7 @@ export default async function BudgetPage({ searchParams }: {
               <BudgetRowForm key={edit?.id ?? `new-${sp.n ?? ''}`} action={saveItem} lang={lang} year={year} budgetId={shown.id} ret={ret} cancelHref={close} item={edit}
                 {...formProps} rate={c.rate} needReason={reason} defCat={lastCat} defPrj={lastPrj} />
               <p className="muted small bq-sh">{L('Manca un donatore o un fornitore nell\'elenco? Si aggiunge in ', 'Un donateur ou un fournisseur manque dans la liste ? Il s\'ajoute dans ')}
-                <Link href="/controparti">{L('Movimenti › Controparti', 'Mouvements › Contreparties')}</Link>.</p>
+                <Link href="/controparti">{L('Movimenti › Controparti', 'Mouvements › Tiers')}</Link>.</p>
             </div>
           </aside>
         </div>

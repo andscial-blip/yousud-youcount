@@ -35,7 +35,7 @@ export function GrantFields({ L, g, donors, projects }: { L: (it: string, fr: st
     <div className="field span2"><label htmlFor="g-donor">{L('Finanziatore', 'Bailleur')}</label>
       <select className="input" id="g-donor" name="donor_id" defaultValue={g?.donor?.id ?? ''}><option value="">{L('Da indicare', 'À préciser')}</option>
         {donors.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
-      <small className="muted">{L('Manca dall\'elenco? Si aggiunge in ', 'Absent de la liste ? Il s\'ajoute dans ')}<Link href="/controparti">{L('Movimenti › Controparti', 'Mouvements › Contreparties')}</Link>.</small></div>
+      <small className="muted">{L('Manca dall\'elenco? Si aggiunge in ', 'Absent de la liste ? Il s\'ajoute dans ')}<Link href="/controparti">{L('Movimenti › Controparti', 'Mouvements › Tiers')}</Link>.</small></div>
     <div className="field"><label htmlFor="g-prj">{L('Progetto', 'Projet')}</label>
       <select className="input" id="g-prj" name="project_id" defaultValue={g?.project?.id ?? ''}><option value="">{L('Nessun progetto', 'Aucun projet')}</option>
         {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>

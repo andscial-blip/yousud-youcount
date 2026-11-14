@@ -142,7 +142,7 @@ export function ReconcileForm({ accountId, accountName, currency, legs, previous
               <li key={k}><label className={sel.has(k) ? 'on' : undefined}>
                 <input type="checkbox" checked={sel.has(k)} onChange={() => toggle(k)} />
                 <span className="rl-d num">{day(l.op_date).slice(0, 5)}</span>
-                <span className="rl-t">{l.description || '–'}<small>{l.ref}</small></span>
+                <span className="rl-t" data-two="">{l.description || '–'}<small>{l.ref}</small></span>
                 <b className="rl-a num">{l.amount >= 0 ? '+' : ''}{fmt(l.amount)}</b>
               </label><Link className="rl-o" href={`/movimenti/${l.movement_id}`} aria-label={`${FR ? 'Ouvrir' : 'Apri'} ${l.ref ?? ''}`}>›</Link></li>); })}
           </ul>

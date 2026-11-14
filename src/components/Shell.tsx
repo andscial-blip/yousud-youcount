@@ -67,6 +67,9 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
     const k = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd(true); } };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
   }, []);
+  // titolo della scheda del browser: nome della pagina e della sezione, nella lingua dell'utente (revisione 14/11)
+  const pageTitle = sec ? (sub && sub.label !== sec.label ? `${sub.label} · ${sec.label}` : sec.label) : '';
+  useEffect(() => { if (pageTitle) document.title = `${pageTitle} · YouCount`; }, [pageTitle, path]);
   const year = Number(sp.get('anno')) || new Date().getFullYear();
   const setYear = (y: number) => {
     const q = new URLSearchParams(sp.toString()); q.set('anno', String(y));

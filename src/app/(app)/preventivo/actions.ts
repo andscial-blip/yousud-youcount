@@ -51,7 +51,8 @@ export async function saveItem(form: FormData) {
   // «Salva e continua»: la scheda resta aperta e ripropone codice e progetto (si inseriscono di seguito le righe dello stesso codice)
   const again = !p.id && form.get('again')
     ? `&nuova=1&lc=${encodeURIComponent(p.category_id)}${p.project_id ? `&lp=${encodeURIComponent(p.project_id)}` : ''}` : '';
-  done(year, `ok=row&n=${n}${r ? `&${r}` : ''}${v}${again}`);
+  // il gruppo della riga appena salvata resta aperto: chi inserisce vuole vederla
+  done(year, `ok=row&n=${n}${r ? `&${r}` : ''}${v}${again}&gc=${encodeURIComponent(p.category_id)}`);
 }
 
 export async function deleteItem(form: FormData) {

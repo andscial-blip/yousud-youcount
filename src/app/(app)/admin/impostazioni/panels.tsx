@@ -7,7 +7,7 @@ export function DemoPanel({ lang, counts }: { lang: 'it' | 'fr'; counts: Record<
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const total = Object.values(counts).reduce((a, b) => a + Number(b), 0);
   const rows: [string, string, string][] = [['movements', 'Movimenti', 'Mouvements'], ['budgets', 'Preventivi', 'Budgets'], ['budget_items', 'Voci di preventivo', 'Lignes de budget'],
-    ['fx_rates', 'Tassi di cambio', 'Taux de change'], ['projects', 'Progetti', 'Projets'], ['counterparties', 'Controparti', 'Contreparties'],
+    ['fx_rates', 'Tassi di cambio', 'Taux de change'], ['projects', 'Progetti', 'Projets'], ['counterparties', 'Controparti', 'Tiers'],
     ['deadlines', 'Scadenze', 'Échéances'], ['issued_docs', 'Documenti emessi', 'Documents émis'], ['grants', 'Finanziamenti', 'Financements']];
   return (
     <Panel title={L('Dati dimostrativi', 'Données de démonstration')} pad>
@@ -50,7 +50,7 @@ export function ResetPanel({ lang, c }: { lang: 'it' | 'fr'; c: Record<string, n
         <li><b className="num">{n('reconciliations')}</b> {L('riconciliazioni bancarie', 'rapprochements bancaires')}, <b className="num">{n('cash_counts')}</b> {L('conte di cassa', 'comptages de caisse')}, <b className="num">{n('self_certs')}</b> {L('autocertificazioni', 'attestations')}</li>
       </ul>
       <p className="muted">{L('Restano: conti, categorie, progetti, controparti, utenti, tassi di cambio, impostazioni; giustificativi e documenti emessi restano in archivio, scollegati. La numerazione MOV riparte da 001. Ogni riga eliminata resta nel registro modifiche e nel backup.',
-        'Restent : comptes, catégories, projets, contreparties, utilisateurs, taux de change, paramètres ; justificatifs et documents émis restent archivés, sans lien. La numérotation MOV repart de 001. Chaque ligne supprimée reste dans l\'historique et dans la sauvegarde.')}</p>
+        'Restent : comptes, catégories, projets, tiers, utilisateurs, taux de change, paramètres ; justificatifs et documents émis restent archivés, sans lien. La numérotation MOV repart de 001. Chaque ligne supprimée reste dans l\'historique et dans la sauvegarde.')}</p>
       <p className={fresh ? 'note ok' : 'note err'}>{fresh ? L(`Backup scaricato il ${bk!.toLocaleString('it-IT', { timeZone: 'Indian/Antananarivo' })}.`, `Sauvegarde téléchargée le ${bk!.toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' })}.`)
         : L('Prima scarica il backup completo (serve un backup delle ultime 24 ore).', 'Téléchargez d\'abord la sauvegarde complète (moins de 24 heures).')} <a href="/api/v1/backup">{L('Scarica il backup', 'Télécharger la sauvegarde')}</a></p>
       <form action={resetAccounting} className="stack" style={{ gap: 10 }}>

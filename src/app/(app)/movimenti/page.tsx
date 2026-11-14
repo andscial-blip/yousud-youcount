@@ -129,7 +129,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   // l'esportazione riguarda sempre l'anno intero (scelta del 14/11): il nome del pulsante lo dice
   const expYear = (f.from || f.to || String(y)).slice(0, 4);
   const expLabel = L(`Esporta tutto il ${expYear}`, `Exporter tout ${expYear}`);
-  const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Contre-passations')]];
+  const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Extournes')]];
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
   // descrizione nella lingua di chi legge (traduzione AI); le mancanti si chiedono in sottofondo

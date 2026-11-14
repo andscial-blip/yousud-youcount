@@ -10,6 +10,11 @@ export default async function Offline() {
         <div className="auth-brand"><Logo size={72} /><h1 className="yc-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></h1><p>{t('app_tagline')}</p></div>
         <h2 style={{ fontSize: 20, margin: '0 0 10px', textAlign: 'center' }}>{t('offline_title')}</h2>
         <div className="note">{t('offline_text')}</div>
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(t('lang_code'))}` }} />
+        <div className="row-btns eq" style={{ marginTop: 14 }}>
+          <a className="btn primary" href="">{t('offline_retry')}</a>
+          <a className="btn" href="/nuovo">{t('offline_new')}</a>
+        </div>
       </section>
     </main>
   );
