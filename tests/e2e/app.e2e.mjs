@@ -269,7 +269,7 @@ try {
   });
   await check('sola lettura: rendiconto con entrate A4 e uscite A1 in EUR (200 + 50 dal modulo + 25 letto dall’IA)', async () => {
     await ro.page.goto(`${base}/rendiconto`);
-    await ro.page.getByText('Totale uscite').waitFor();
+    await ro.page.getByText('Totale uscite').first().waitFor();
     const txt = await ro.page.locator('main').innerText();
     assert.match(txt, /4\) Erogazioni liberali\s+2\.500,00\s?€/);
     assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+275,00\s?€/);
@@ -920,11 +920,16 @@ try {
     await p.goto(`${base}/cambi`);
     await p.locator('nav.side-nav').getByRole('link', { name: 'Conti' }).click();
     await p.waitForURL((u) => u.pathname === '/conti');
-    // indietro: torna alla pagina da cui si è arrivati
+    // sulle schede di primo livello la freccia non c'è; nel dettaglio riporta all'elenco con il filtro di prima
     await p.locator('nav.subnav').getByRole('link', { name: 'Anticipi' }).click();
     await p.waitForURL((u) => u.pathname === '/anticipi');
+    assert.equal(await p.getByRole('button', { name: 'Torna alla pagina precedente' }).count(), 0, 'niente freccia sulle schede');
+    await p.goto(`${base}/movimenti?tipo=expense`);
+    await p.locator('main a[href^="/movimenti/"]').first().click();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}/);
     await p.getByRole('button', { name: 'Torna alla pagina precedente' }).click();
-    await p.waitForURL((u) => u.pathname === '/conti');
+    await p.waitForURL((u) => u.pathname === '/movimenti' && u.search.includes('tipo=expense'));
+    await p.goto(`${base}/conti`);
     // la spiegazione della scheda si apre dalla riga accanto alle sotto-schede
     await p.getByRole('button', { name: 'Come funziona questa scheda' }).click();
     await p.getByRole('dialog').getByText('Apri la guida completa').waitFor();
@@ -1261,14 +1266,15 @@ try {
       ['/admin/conti', 'BNI Madagascar'], ['/admin/progetti', 'Spese generali'], ['/progetti', 'École Piccolino'],
       ['/conti', 'Saldo iniziale'], ['/controparti', 'Cartoleria di prova'], ['/cambi', 'prova e2e'], ['/sincronizzazione', 'Ultimi invii ricevuti dal server'], ['/guida', 'Come faccio a…']]) {
       await sa.page.goto(base + path);
-      assert.match(await sa.page.locator('main').innerText(), new RegExp(text, 'i'), path);
+      // il contenuto arriva in streaming dopo il caricamento: si aspetta il testo invece di leggerlo una volta sola
+      await sa.page.waitForFunction((re) => new RegExp(re, 'i').test(document.querySelector('main')?.innerText ?? ''), text, { timeout: 15000 }).catch(async () => assert.fail(path + ' :: ' + (await sa.page.locator('main').innerText()).slice(0, 200)));
     }
     await sa.page.goto(`${base}/altro`);
     await sa.page.screenshot({ path: `${SHOTS}/sa_altro.png`, fullPage: true });
     await sa.page.goto(`${base}/account`);
     await sa.page.getByRole('button', { name: 'Français' }).click();
     await sa.page.waitForURL(/\/account/);
-    await sa.page.getByText('Mon compte').first().waitFor();
+    await sa.page.getByText('Mon compte').locator('visible=true').first().waitFor();
     await sa.page.goto(`${base}/`);
     const header = await sa.page.locator('header').innerText();
     assert.match(header, /Tableau de bord/);

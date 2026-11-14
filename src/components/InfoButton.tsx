@@ -27,9 +27,9 @@ export function InfoButton({ path, lang, line }: { path: string; lang: 'it' | 'f
   return (
     <>
       {line
-        ? <button type="button" className="helpline" onClick={() => setOpen(true)} aria-label={L('Come funziona questa scheda', 'Comment fonctionne cet onglet')}><CIcon name="info" size={16} />
+        ? <button type="button" className="helpline" onClick={() => setOpen(true)}><CIcon name="info" size={16} />
             <span className="hl-long">{L('Come funziona questa scheda', 'Comment fonctionne cet onglet')}</span><span className="hl-short">{L('Come si fa', 'Mode d’emploi')}</span></button>
-        : <button type="button" className="btn ghost infobtn" onClick={() => setOpen(true)} aria-label={L('Come funziona questa scheda', 'Comment fonctionne cet onglet')}
+        : <button type="button" className="btn ghost infobtn" onClick={() => setOpen(true)}
               title={L('Come si fa', 'Mode d’emploi')}><CIcon name="info" size={17} /><span className="ib-l">{L('Come si fa', 'Mode d’emploi')}</span></button>}
       {open && typeof document !== 'undefined' && createPortal(
         <div className="sheet-bg" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>

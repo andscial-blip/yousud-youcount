@@ -245,7 +245,7 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 32px; 
   font-size: 14px; cursor: pointer; white-space: nowrap; text-decoration: none; }
 .seg button:hover, .seg a:hover, .seg label:hover, .segs a:hover { color: var(--fg); }
 .seg [aria-pressed="true"], .seg [aria-current="true"], .seg [aria-checked="true"], .seg label:has(input:checked),
-.segs a[aria-selected="true"], .segs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--sh-1); }
+.segs a[aria-selected="true"], .segs a[aria-current="page"], .segs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--sh-1); }
 .seg label input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--cyan); outline-offset: -2px; }
 .seg.kinds { display: inline-grid; grid-template-columns: repeat(3, auto); }
@@ -2300,3 +2300,11 @@ table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
   table.bq-tab tr.bq-grp a { display: grid; grid-template-columns: 14px minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 8px 0; min-height: 44px; align-content: center; }
   table.bq-tab tr.bq-grp a small { grid-column: 2; }
 }
+/* in testa al menu: chi sei e con quale ruolo (P2-4) */
+.me-card .panel-b { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+/* Rendiconto: tre indicatori in testa, stesso riquadro della Dashboard */
+.kpis.rep-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .kpis.rep-kpis { grid-template-columns: 1fr; } }
+/* inserimento lasciato a metà: avviso con due pulsanti uguali */
+.draft-note { display: grid; gap: 10px; }
+.draft-note .row-btns.eq { max-width: 360px; }

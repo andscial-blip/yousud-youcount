@@ -68,8 +68,11 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
   }, []);
   // titolo della scheda del browser: nome della pagina e della sezione, nella lingua dell'utente (revisione 14/11)
-  const pageTitle = sec ? (sub && sub.label !== sec.label ? `${sub.label} · ${sec.label}` : sec.label) : '';
+  const pageTitle = path === '/altro' ? 'Menu' : sec ? (sub && sub.label !== sec.label ? `${sub.label} · ${sec.label}` : sec.label) : '';
   useEffect(() => { if (pageTitle) document.title = `${pageTitle} · YouCount`; }, [pageTitle, path]);
+  const isMenu = path === '/altro';
+  const isTab = isMenu || secs.some((x) => x.subs.some((y) => y.href === path));
+  const phoneSub = sec?.id === 'set' && !!sub && !isMenu;
   const year = Number(sp.get('anno')) || new Date().getFullYear();
   const setYear = (y: number) => {
     const q = new URLSearchParams(sp.toString()); q.set('anno', String(y));
@@ -81,10 +84,14 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
     <header className="phead">
       <div className="phead-row">
         <Link href="/" className="pbrand only-phone" aria-label={labels.brand}>{phoneBrand}</Link>
-        {path !== '/' && <button type="button" className="pback" onClick={goBack} aria-label={labels.lang === 'fr' ? 'Retour à la page précédente' : 'Torna alla pagina precedente'}
+        {/* la freccia c'è solo nelle pagine di dettaglio: sulle schede di primo livello non c'è un «prima» a cui tornare (P2-5) */}
+        {/* le schede di Impostazioni su telefono non hanno la riga delle schede: la freccia riporta al menu */}
+        {phoneSub && <Link className="pback only-phone" href="/altro" aria-label={labels.lang === 'fr' ? 'Retour au menu' : 'Torna al menu'}><CIcon name="back" size={20} /></Link>}
+        {path !== '/' && !isTab && <button type="button" className="pback" onClick={goBack} aria-label={labels.lang === 'fr' ? 'Retour à la page précédente' : 'Torna alla pagina precedente'}
           title={labels.lang === 'fr' ? 'Retour' : 'Indietro'}><CIcon name="back" size={20} /></button>}
         {sec && <span className="picon not-phone" aria-hidden="true"><CIcon name={sec.ic} size={22} /></span>}
-        <div className="ptitle"><h1>{sec?.label ?? labels.brand}</h1>{sec?.hint && <p>{sec.hint}</p>}</div>
+        {/* «Altro» su telefono è il menu; in Impostazioni su telefono il titolo è la scheda aperta (P2-4) */}
+        <div className="ptitle"><h1>{isMenu ? 'Menu' : phoneSub ? <><span className="not-phone">{sec?.label}</span><span className="only-phone">{sub!.label}</span></> : sec?.label ?? labels.brand}</h1>{sec?.hint && !isMenu && <p>{sec.hint}</p>}</div>
         <div className="pctl">
           <span className="only-phone">{phoneSync}</span>
           <button type="button" className="btn ghost searchbtn" onClick={() => setCmd(true)} aria-label={`${labels.search} (⌘K)`} title={`${labels.search} (⌘K)`}>
@@ -105,7 +112,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
       </div>
       {/* sotto-schede e, sulla stessa riga a destra, «Come funziona questa scheda» (scelta del 12/11: più visibile dell'icona) */}
       <div className="subrow">
-        {sec && sec.subs.length > 1 && (
+        {sec && sec.subs.length > 1 && !isMenu && (
           <nav className="subnav" data-sec={sec.id} aria-label={`${labels.subnav}: ${sec.label}`}>
             {sec.subs.map((x) => (
               <Link key={x.href} href={subHref(x.href)} aria-current={sub?.href === x.href ? 'page' : undefined}>{x.label}</Link>

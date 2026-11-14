@@ -10,9 +10,13 @@ export const dynamic = 'force-dynamic';
 // Tutte le sezioni e le loro schede (telefono e collegamenti diretti), come l'elenco «Altre sezioni» di Cairn.
 export default async function More() {
   const { me, t } = await requireMe();
-  const secs = navFor(me?.role);
+  // prima le sezioni che non stanno nella barra in basso del telefono, poi le altre (P2-4)
+  const BAR = ['home', 'mov', 'cassa'];
+  const all = navFor(me?.role);
+  const secs = [...all.filter((s) => !BAR.includes(s.id)), ...all.filter((s) => BAR.includes(s.id))];
   return (
     <div className="stack">
+      <section className="panel me-card"><div className="panel-b"><b>{me?.full_name ?? ''}</b><span className="muted">{t(`r_${me?.role ?? "read_only"}` as Parameters<typeof t>[0])}</span></div></section>
       <SearchBox action="/movimenti" value="" placeholder={t('search_mov')} clearLabel={t('search_clear')} />
       {secs.map((s) => (
         <section className="panel" key={s.id}>

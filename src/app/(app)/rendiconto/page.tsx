@@ -71,19 +71,20 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
         <a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}><Ico name="download" />{t('rep_xlsx')}</a>
         <PrintButton label={t('rep_print')} />
       </div>
-      <section className="panel noprint">
-        <div className="panel-h"><H2 icon="stamp" text={lang === 'fr' ? 'Versions approuvées et signées' : 'Versioni approvate e firmate'} />
-          <div className="spacer" />{can(me, ADMIN) && <ArchiveStatement orgId={me!.org_id} year={year - (new Date().getMonth() < 6 ? 1 : 0)} lang={lang} />}</div>
-        {arc.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{lang === 'fr'
-          ? 'Aucune version archivée. Après l’approbation par l’assemblée, archivez ici le PDF signé : il reste avec ses références.'
-          : 'Nessuna versione archiviata. Dopo l’approvazione in assemblea, archivia qui il PDF firmato: resta con i suoi estremi.'}</p> : (
-          <ul className="arch-list">{arc.map((a) => (
-            <li key={a.id}><span className="ar-y num">{a.year}</span>
-              <div className="ar-b"><b>{LL(KIND[a.kind] ?? KIND.other!)}</b><span className="muted small">{lang === 'fr' ? 'approuvé le' : 'approvato il'} {a.approved_on.split('-').reverse().join('/')} · {a.approval_ref}{a.notes ? ` · ${a.notes}` : ''}</span></div>
-              <div className="ar-a">{a.view && <a className="btn small ghost" href={a.view} target="_blank" rel="noopener">{lang === 'fr' ? 'Aperçu' : 'Anteprima'}</a>}
-                {a.url && <a className="btn small" href={a.url}><Ico name="download" />{lang === 'fr' ? 'Télécharger' : 'Scarica'}</a>}</div></li>))}</ul>
-        )}
-      </section>
+      {/* il risultato si legge per primo (P2-11): tre indicatori col confronto con l'anno precedente */}
+      {(() => {
+        const tin = tot('in'), tout = tot('out'), pin = tot('in', true), pout = tot('out', true);
+        const has = tin !== 0 || tout !== 0, hasPrev = pin !== 0 || pout !== 0;
+        const v = (n: number) => (has ? money(n, 'EUR', lang) : '–');
+        const pv = (n: number) => `${year - 1}: ${hasPrev ? money(n, 'EUR', lang) : '–'}`;
+        const net = tin - tout;
+        return (
+          <div className="kpis rep-kpis noprint">
+            <div className="kpi"><div className="l">{lang === 'fr' ? 'Total des recettes' : 'Totale entrate'}</div><div className="v num">{v(tin)}</div><div className="s">{pv(pin)}</div></div>
+            <div className="kpi"><div className="l">{lang === 'fr' ? 'Total des dépenses' : 'Totale uscite'}</div><div className="v num">{v(tout)}</div><div className="s">{pv(pout)}</div></div>
+            <div className="kpi"><div className="l">{net >= 0 ? (lang === 'fr' ? 'Excédent' : 'Avanzo') : (lang === 'fr' ? 'Déficit' : 'Disavanzo')}</div><div className="v num">{v(net)}</div><div className="s">{pv(pin - pout)}</div></div>
+          </div>);
+      })()}
       <div className="note noprint">{t('rep_draft')}</div>
       <ErrorNote prefix={t('error_load')} error={error} />
       {missing > 0 && <div className="note err">{missing} {t('rep_missing_rate')}</div>}
@@ -133,6 +134,19 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           </table>
         </Panel>
       )}
+      <section className="panel noprint">
+        <div className="panel-h"><H2 icon="stamp" text={lang === 'fr' ? 'Versions approuvées et signées' : 'Versioni approvate e firmate'} />
+          <div className="spacer" />{can(me, ADMIN) && <ArchiveStatement orgId={me!.org_id} year={year - (new Date().getMonth() < 6 ? 1 : 0)} lang={lang} />}</div>
+        {arc.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{lang === 'fr'
+          ? 'Aucune version archivée. Après l’approbation par l’assemblée, archivez ici le PDF signé : il reste avec ses références.'
+          : 'Nessuna versione archiviata. Dopo l’approvazione in assemblea, archivia qui il PDF firmato: resta con i suoi estremi.'}</p> : (
+          <ul className="arch-list">{arc.map((a) => (
+            <li key={a.id}><span className="ar-y num">{a.year}</span>
+              <div className="ar-b"><b>{LL(KIND[a.kind] ?? KIND.other!)}</b><span className="muted small">{lang === 'fr' ? 'approuvé le' : 'approvato il'} {a.approved_on.split('-').reverse().join('/')} · {a.approval_ref}{a.notes ? ` · ${a.notes}` : ''}</span></div>
+              <div className="ar-a">{a.view && <a className="btn small ghost" href={a.view} target="_blank" rel="noopener">{lang === 'fr' ? 'Aperçu' : 'Anteprima'}</a>}
+                {a.url && <a className="btn small" href={a.url}><Ico name="download" />{lang === 'fr' ? 'Télécharger' : 'Scarica'}</a>}</div></li>))}</ul>
+        )}
+      </section>
     </div>
   );
 }

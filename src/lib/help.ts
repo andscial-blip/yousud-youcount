@@ -21,13 +21,15 @@ export const HELP: HelpEntry[] = [
       'Scegli il conto da cui escono o in cui entrano i soldi, il codice contabile e il progetto (per le spese fuori progetto: «Spese generali»). Per gli importi in ariary il tasso del mese viene proposto da solo e resta salvato sul movimento.',
       '«Salva bozza» non conta nei saldi; «Registra» assegna il numero MOV e il movimento entra in contabilità. Se il giustificativo non c\'è, va scritto il motivo; se hai pagato di tasca tua scegli «Di tasca propria».',
       'Senza rete il movimento resta sul telefono e parte da solo appena torna la connessione (indicatore in alto).',
-      'Sotto l\'importo, «Importo letto» ripete la cifra come l\'app l\'ha capita. Se manca un campo obbligatorio la pagina si ferma sul primo e li elenca. Se una spesa manda sotto zero una cassa in contanti compare un avviso (non blocca): di solito il conto è sbagliato o manca il prelievo. Dopo «Registra» una banda conferma il numero MOV e propone «Registrane un altro» o «Torna al registro».']],
+      'Sotto l\'importo, «Importo letto» ripete la cifra come l\'app l\'ha capita. Se manca un campo obbligatorio la pagina si ferma sul primo e li elenca. Se una spesa manda sotto zero una cassa in contanti compare un avviso (non blocca): di solito il conto è sbagliato o manca il prelievo. Dopo «Registra» una banda conferma il numero MOV e propone «Registrane un altro» o «Torna al registro».',
+      'Se esci dal modulo senza registrare, alla riapertura l\'app propone «Riprendi» o «Scarta»: i campi scritti restano su questo dispositivo, gli allegati vanno ricaricati.']],
     fr: ['Enregistrer une dépense ou une recette', [
       'Appuyez sur « + Nouveau mouvement » (sur téléphone le « + » au centre en bas). D\'abord : photographiez ou chargez la pièce ; l\'application lit le document et propose date, montant, fournisseur et code. Contrôlez les champs signalés comme incertains.',
       'Choisissez le compte, le code comptable et le projet (hors projet : « Spese generali »). Pour les montants en ariary, le taux du mois est proposé automatiquement et reste enregistré sur le mouvement.',
       '« Brouillon » ne compte pas dans les soldes ; « Comptabiliser » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche ».',
       'Sans réseau, le mouvement reste sur le téléphone et part tout seul au retour de la connexion (indicateur en haut).',
-      'Sous le montant, « Montant lu » répète le chiffre tel que l’app l’a compris. S’il manque un champ obligatoire, la page s’arrête sur le premier et les énumère. Si une dépense fait passer une caisse en espèces sous zéro, un avertissement apparaît (sans bloquer) : en général le compte est erroné ou le retrait manque. Après « Comptabiliser », un bandeau confirme le numéro MOV et propose « En saisir un autre » ou « Retour au registre ».']] },
+      'Sous le montant, « Montant lu » répète le chiffre tel que l’app l’a compris. S’il manque un champ obligatoire, la page s’arrête sur le premier et les énumère. Si une dépense fait passer une caisse en espèces sous zéro, un avertissement apparaît (sans bloquer) : en général le compte est erroné ou le retrait manque. Après « Comptabiliser », un bandeau confirme le numéro MOV et propose « En saisir un autre » ou « Retour au registre ».',
+      'Si vous quittez le formulaire sans comptabiliser, à la réouverture l’app propose « Reprendre » ou « Abandonner » : les champs saisis restent sur cet appareil, les pièces jointes sont à recharger.']] },
   { href: '/guida', sec: 'start',
     it: ['Muoversi nell\'app', [
       'Il menu a sinistra (sul telefono la barra in basso e «Altro») apre sempre la scheda principale di ogni sezione; le altre schede della sezione sono sotto il titolo.',
@@ -248,10 +250,12 @@ export const HELP: HelpEntry[] = [
   { href: '/rendiconto', sec: 'docs',
     it: ['Rendiconti', [
       'Bozza del rendiconto per cassa (Mod. D, enti del Terzo settore) calcolata dai movimenti, con le voci collegate alle categorie. La conformità la verifica il commercialista.',
-      'In alto, «Versioni approvate e firmate»: dopo l\'approvazione in assemblea l\'amministratore archivia il PDF firmato con anno, data ed estremi del verbale («Archivia versione approvata»). Ogni versione si apre in anteprima e si scarica; non finisce fra i giustificativi.']],
+      'In alto, «Versioni approvate e firmate»: dopo l\'approvazione in assemblea l\'amministratore archivia il PDF firmato con anno, data ed estremi del verbale («Archivia versione approvata»). Ogni versione si apre in anteprima e si scarica; non finisce fra i giustificativi.',
+      'In testa ci sono tre indicatori: «Totale entrate», «Totale uscite» e «Avanzo» (o «Disavanzo»), ciascuno con il valore dell\'anno precedente. Le «Versioni approvate e firmate» sono in fondo alla pagina.']],
     fr: ['Comptes rendus', [
       'Brouillon du compte rendu de caisse (modèle D, organismes du Tiers secteur italien) calculé à partir des mouvements. La conformité est vérifiée par l\'expert-comptable.',
-      'En haut, « Versions approuvées et signées » : après l\'approbation par l\'assemblée, l\'administrateur archive le PDF signé avec l\'année, la date et les références du procès-verbal (« Archiver la version approuvée »). Chaque version s\'ouvre en aperçu et se télécharge ; elle ne figure pas parmi les justificatifs.']] },
+      'En haut, « Versions approuvées et signées » : après l\'approbation par l\'assemblée, l\'administrateur archive le PDF signé avec l\'année, la date et les références du procès-verbal (« Archiver la version approuvée »). Chaque version s\'ouvre en aperçu et se télécharge ; elle ne figure pas parmi les justificatifs.',
+      'En tête figurent trois indicateurs : « Total des recettes », « Total des dépenses » et « Excédent » (ou « Déficit »), chacun avec la valeur de l’année précédente. Les « Versions approuvées et signées » sont en bas de page.']] },
   { href: '/report', sec: 'anal',
     it: ['Report', [
       'Report contabili dell\'anno con grafico e tabella, stampabili in PDF dal browser ed esportabili in Excel con gli stessi numeri.',

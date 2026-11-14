@@ -99,7 +99,6 @@ export default async function MovementDetail({ params, searchParams }: {
   const row = (label: string, value: React.ReactNode) => (<><dt>{label}</dt><dd>{value ?? '–'}</dd></>);
   return (
     <div className="stack">
-      <Link href="/movimenti" className="muted" style={{ textDecoration: 'none' }}>{t('d_back')}</Link>
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
         <h1>{m.ref ?? t('st_draft')} · {t(`k_${m.kind}`)}</h1>

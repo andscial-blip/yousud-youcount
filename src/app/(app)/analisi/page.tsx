@@ -207,7 +207,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       </div>
 
       <section className="panel fin-bar an-bar">
-        <nav className="segs" aria-label={lg('Viste', 'Vues')}>{tabs.map(([k, l]) => <Link key={k} href={q({ vista: k })} aria-selected={view === k} scroll={false}>{l}</Link>)}</nav>
+        <nav className="segs" aria-label={lg('Viste', 'Vues')}>{tabs.map(([k, l]) => <Link key={k} href={q({ vista: k })} aria-current={(view === k) ? "page" : undefined} scroll={false}>{l}</Link>)}</nav>
         <FilterBar className="bare" action="/analisi" lang={lang} hidden={{ anno: String(year), vista: view }}
           inline={<select className="input" name="progetto" defaultValue={prj} aria-label={t('project')}>
             <option value="">{t('an_all_projects')}</option>

@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/Tooltip';
 import { CIcon } from '@/components/CIcon';
 import { SignOut } from '@/components/SignOut';
 import { BottomNav, PageHeader, SideNav, type NavSec } from '@/components/Shell';
+import { DialogKeys } from '@/components/DialogKeys';
 import { supabaseConfigured } from '@/lib/supabase/env';
 import { guestLang, requireMe } from '@/lib/session';
 import { translator, type T } from '@/lib/i18n';
@@ -54,6 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               labels={{ lang, search: t('cmd_search'), year: t('year_label'), newMov: t('nav_new_long').replace('+ ', ''), subnav: t('nav_sections'), brand: 'YouCount', cmdPh: t('cmd_ph'), searchMov: t('cmd_mov'), goTo: t('cmd_go'), none: t('cmd_none') }}
               phoneBrand={<><Logo size={32} /><b className="yc-wm pb-wm pb-stack" aria-label="YouCount"><span className="wm-you" aria-hidden="true">You</span><span className="wm-count" aria-hidden="true">Count</span></b></>} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
           </Suspense>
+          <DialogKeys />
           <main className="main" id="main" tabIndex={-1}><div id="app" className="view">{children}</div></main>
         </div>
         <BottomNav secs={secs} canWrite={canWrite}

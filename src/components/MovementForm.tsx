@@ -314,6 +314,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         cpNew: cpId === '__new' && cpNew.trim() ? { name: cpNew.trim(), kind: kind === 'income' ? 'donor' : 'supplier' } : null,
         docIds: docs.filter((d) => d.id).map((d) => d.id!), files, state: 'pending', attempts: 0,
       });
+      savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ }
       onQueued();
     };
     if (!initial && (!navigator.onLine || docs.some((d) => d.state === 'local'))) {
@@ -335,6 +336,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       const { data, error } = await supabase.rpc('save_movement', { p });
       if (error) throw error;
       if (data.outcome === 'conflict') { setError(t.f_conflict); setBusy(false); return; }
+      if (!initial) { savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ } }
       router.push(`/movimenti/${data.id}?ok=${initial ? 'saved' : 'new'}`);
       router.refresh();
     } catch (e) {
@@ -370,9 +372,48 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     </optgroup>
   ));
   const recordedLocked = initial && initial.status !== 'draft';
+  // ── inserimento lasciato a metà (P2-14): i campi restano sul dispositivo e vengono riproposti alla riapertura ──
+  // vale solo per un movimento nuovo aperto senza dati precompilati; gli allegati non si conservano e vanno ricaricati
+  const draftKey = `yc-draft-${R.userId}`;
+  const draftOn = !initial && !P;
+  type LocalDraft = { at: number; kind: Kind; opDate: string; amountTxt: string; accountId: string; categoryId: string; projectId: string; grantId: string; cpId: string; methodId: string; description: string; notes: string };
+  const [pending, setPending] = useState<LocalDraft | null>(null);
+  const savedOk = useRef(false);   // dopo il salvataggio la bozza locale non va riscritta
+  useEffect(() => {
+    if (!draftOn) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      const d = raw ? JSON.parse(raw) as LocalDraft : null;
+      if (d && Date.now() - d.at < 7 * 86400000 && (d.amountTxt || d.description)) setPending(d); else if (raw) localStorage.removeItem(draftKey);
+    } catch { /* memoria del dispositivo non disponibile: si lavora senza */ }
+  }, [draftOn, draftKey]);
+  useEffect(() => {
+    if (!draftOn || pending) return;
+    if (!amountTxt && !description.trim()) return;
+    const h = setTimeout(() => {
+      if (savedOk.current) return;
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ at: Date.now(), kind, opDate, amountTxt, accountId, categoryId, projectId, grantId: grantId ?? '', cpId: cpId === '__new' ? '' : cpId, methodId, description, notes } satisfies LocalDraft));
+      } catch { /* idem */ }
+    }, 600);
+    return () => clearTimeout(h);
+  }, [draftOn, pending, draftKey, kind, opDate, amountTxt, accountId, categoryId, projectId, grantId, cpId, methodId, description, notes]);
+  const dropDraft = () => { try { localStorage.removeItem(draftKey); } catch { /* idem */ } setPending(null); };
+  const resumeDraft = () => {
+    const d = pending; if (!d) return;
+    setKind(d.kind); setOpDate(d.opDate); setAmountTxt(d.amountTxt); setAccountId(d.accountId); setCategoryId(d.categoryId);
+    setProjectId(d.projectId); setGrantId(d.grantId); setCpId(d.cpId); setMethodId(d.methodId); setDescription(d.description); setNotes(d.notes);
+    setPending(null);
+  };
 
   return (
     <form className="stack mform" onSubmit={(e) => { e.preventDefault(); save('recorded'); }} noValidate>
+      {pending && (
+        <div className="note draft-note" role="status">
+          <span><b>{t.f_draft_found}</b> {pending.description || pending.amountTxt}{pending.description && pending.amountTxt ? ` · ${pending.amountTxt}` : ''} · {new Date(pending.at).toLocaleString(t.lang_code === 'fr' ? 'fr-FR' : 'it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. {t.f_draft_files}</span>
+          <span className="row-btns eq"><button type="button" className="btn primary" onClick={resumeDraft}>{t.f_draft_resume}</button><button type="button" className="btn" onClick={dropDraft}>{t.f_draft_drop}</button></span>
+        </div>
+      )}
       {scanQueue[0] && (
         <ScanEditor key={scanQueue[0].name + scanQueue.length} file={scanQueue[0]} t={t}
                     onDone={(r) => { setScanQueue((q) => q.slice(1)); upload(r); }}
