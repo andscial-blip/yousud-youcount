@@ -19,7 +19,7 @@ type Row = {
   counterparty: { name: string } | null; method: { name_it: string; name_fr: string | null } | null;
 };
 
-const PAGE = 100;
+const PAGE = 40;   // pagine corte: su telefono 100 schede erano 15.000 px (revisione 14/11)
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isId = (v: string) => /^[0-9a-f-]{36}$/.test(v);
 const KEYS = ['stato', 'q', 'progetto', 'conto', 'dal', 'al', 'codice', 'tipo', 'cp', 'metodo', 'valuta', 'doc', 'demo', 'p'] as const;

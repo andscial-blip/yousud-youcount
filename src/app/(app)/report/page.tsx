@@ -13,7 +13,7 @@ import { Ico } from '@/components/Ui';
 export const dynamic = 'force-dynamic';
 
 // Report contabili dell'anno, stampabili (PDF dal browser) ed esportabili in Excel con gli stessi numeri.
-export default async function Reports({ searchParams }: { searchParams: Promise<{ tipo?: string; anno?: string }> }) {
+export default async function Reports({ searchParams }: { searchParams: Promise<{ tipo?: string; anno?: string; righe?: string }> }) {
   const sp = await searchParams;
   const year = Number(sp.anno) || new Date().getFullYear();
   const kind = (REPORTS.find((r) => r.k === sp.tipo)?.k ?? 'mensile') as ReportKind;
@@ -26,6 +26,8 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
     : c.t === 'int' ? num(Number(c.v), lang) : c.t === 'date' ? date(String(c.v)) : String(c.v);
   const cls = (c: Cell, num?: boolean) => [num ? 'r num' : '', typeof c.v === 'number' && c.v < 0 && (c.t === 'eur' || c.t === 'cur') ? 'neg' : ''].join(' ').trim();
   const q = (k: string, y: number) => `/report?tipo=${k}&anno=${y}`;
+  // tabelle lunghe: a schermo le prime 60 righe, con «Mostra tutte» (il totale in fondo e l'Excel le comprendono sempre tutte)
+  const ALL = sp.righe === 'tutte', CAP = 60;
   return (
     <div className="stack prj">
       <PageHead title={`${L('Report', 'Rapports')} ${year}`}>
@@ -56,11 +58,13 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
             <div className="tscroll">
               <table className="t">
                 <thead><tr>{tb.head.map((h, j) => <th key={j} className={h.num ? 'r' : ''}>{h.h}</th>)}</tr></thead>
-                <tbody>{tb.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} className={cls(c, tb.head[k]?.num)}>{c.href ? <Link href={c.href}>{fmt(c)}</Link> : fmt(c)}</td>)}</tr>)}</tbody>
+                <tbody>{(ALL ? tb.rows : tb.rows.slice(0, CAP)).map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} className={cls(c, tb.head[k]?.num)}>{c.href ? <Link href={c.href}>{fmt(c)}</Link> : fmt(c)}</td>)}</tr>)}</tbody>
                 {tb.foot && <tfoot><tr>{tb.foot.map((c, k) => <td key={k} className={cls(c, tb.head[k]?.num)}><b>{fmt(c)}</b></td>)}</tr></tfoot>}
               </table>
             </div>
           )}
+          {!ALL && tb.rows.length > CAP && <p className="panel-b rep-capn noprint"><span className="muted">{L(`Mostrate le prime ${CAP} righe su ${num(tb.rows.length, lang)}.`, `${CAP} premières lignes affichées sur ${num(tb.rows.length, lang)}.`)}</span>{' '}
+            <Link className="btn small" href={`${q(kind, year)}&righe=tutte`}>{L('Mostra tutte', 'Tout afficher')}</Link></p>}
           {tb.note && <p className="hint panel-b" style={{ margin: 0 }}>{tb.note}</p>}
         </section>
       ))}

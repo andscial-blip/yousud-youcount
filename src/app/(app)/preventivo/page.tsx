@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { FilterBar } from '@/components/FilterBar';
@@ -23,7 +24,7 @@ const UNITS = { it: ['mesi', 'giorni', 'ore', 'persone', 'pezzi', 'kit', 'viaggi
 // Il confronto con il consuntivo sta in Analisi › Preventivo. Il preventivo è solo annuale.
 export default async function BudgetPage({ searchParams }: {
   searchParams: Promise<{ anno?: string; v?: string; vista?: string; grafico?: string; progetto?: string; tipo?: string; cp?: string; q?: string;
-    nuova?: string; riga?: string; edit?: string; elimina?: string; schema?: string; ok?: string; err?: string; n?: string; lc?: string; lp?: string }>;
+    nuova?: string; riga?: string; edit?: string; elimina?: string; schema?: string; ok?: string; err?: string; n?: string; lc?: string; lp?: string; apri?: string }>;
 }) {
   const sp = await searchParams;
   // vecchi indirizzi: riepilogo e schema hanno la loro scheda, il confronto è in Analisi
@@ -44,7 +45,7 @@ export default async function BudgetPage({ searchParams }: {
   const anyCp = its.some((i) => i.counterparty_id);
   // vista predefinita: «Per voce» (scelta di Andrea del 14/11)
   const graf = sp.grafico === 'progetti' || sp.grafico === 'flussi' || (sp.grafico === 'controparti' && anyCp) ? sp.grafico : 'voci';
-  const filters = { progetto: prj, tipo, cp, q: term, grafico: graf === 'voci' ? '' : graf };
+  const filters = { progetto: prj, tipo, cp, q: term, grafico: graf === 'voci' ? '' : graf, apri: sp.apri ?? '' };
   const ret = Object.entries(filters).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   const href = (q: Record<string, string | number | undefined | null> = {}, hash = '') => {
     const u = new URLSearchParams({ anno: String(year), v: shown.id });
@@ -61,6 +62,16 @@ export default async function BudgetPage({ searchParams }: {
   const nActive = (prj ? 1 : 0) + (tipo ? 1 : 0) + (cp ? 1 : 0);
   const rowsOf = (d: 'in' | 'out') => fil.filter((i) => dirOf(i) === d)
     .sort((a, b) => (catBy.get(a.category_id)?.code ?? '').localeCompare(catBy.get(b.category_id)?.code ?? '', 'it', { numeric: true }) || a.line_no - b.line_no);
+
+  // ── gruppi richiudibili ──
+  const openSet = new Set((sp.apri ?? '').split(',').filter(Boolean));
+  const allOpen = openSet.has('tutti') || Boolean(term || prj || cp);
+  const isOpen = (g: string) => allOpen || openSet.has(g) || (sp.riga ?? sp.elimina ?? '') !== '' && fil.some((i) => (i.id === sp.riga || i.id === sp.elimina) && (catBy.get(i.category_id)?.group_id ?? 'none') === g);
+  const toggleOpen = (g: string) => { const n = new Set(openSet); n.delete('tutti'); if (n.has(g)) n.delete(g); else n.add(g); return [...n].join(',') || undefined; };
+  const groupsOf = (d: 'in' | 'out') => { const mp = new Map<string, Item[]>();
+    for (const i of rowsOf(d)) { const g = catBy.get(i.category_id)?.group_id ?? 'none'; mp.set(g, [...(mp.get(g) ?? []), i]); }
+    return [...mp.entries()].map(([id, rows]) => ({ id, rows, label: id === 'none' ? L('Senza gruppo', 'Sans groupe') : grpLabel(id), tot: eur(rows) }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'it', { numeric: true })); };
 
   // ── chi può fare cosa ──
   const rowActions = Boolean(editing || amending);
@@ -227,6 +238,8 @@ export default async function BudgetPage({ searchParams }: {
         {its.length === 0 ? <Empty text={L('Nessuna riga: il preventivo si costruisce con «Aggiungi riga».', 'Aucune ligne : le budget se construit avec « Ajouter une ligne ».')} />
         : fil.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessuna riga corrisponde ai filtri.', 'Aucune ligne ne correspond aux filtres.')}</p> : (
           <div className="tscroll">
+            {!(term || prj || cp) && <p className="bq-openall"><Link className="btn small" href={href({ apri: openSet.has('tutti') ? undefined : 'tutti' })} scroll={false}>{openSet.has('tutti') ? L('Chiudi tutti i gruppi', 'Fermer tous les groupes') : L('Apri tutti i gruppi', 'Ouvrir tous les groupes')}</Link>
+              <span className="muted small">{L('Tocca un gruppo per vedere le sue righe.', 'Touchez un groupe pour voir ses lignes.')}</span></p>}
             <table className="t keep bq-tab">
               <thead><tr>
                 <th className="bq-n">{L('N.', 'N°')}</th><th className="bq-c">{L('Codice', 'Code')}</th><th className="bq-d">{L('Descrizione', 'Description')}</th><th className="bq-p">{L('Progetto', 'Projet')}</th>
@@ -237,7 +250,15 @@ export default async function BudgetPage({ searchParams }: {
                 <tbody key={d}>
                   <tr className="bq-sec"><th colSpan={3} scope="rowgroup">{d === 'out' ? L('Uscite', 'Dépenses') : L('Entrate', 'Recettes')} · {rowsOf(d).length}</th>{gap}
                     <td className="bq-tt r num"><b>{m(d === 'out' ? fOut : fIn)}</b></td>{rowActions && <td className="bq-a" />}</tr>
-                  {rowsOf(d).map((i) => <Row key={i.id} i={i} />)}
+                  {/* righe raccolte per gruppo di voci, con subtotale: chiuse all'apertura (344 righe erano 61.000 px su telefono);
+                      ricerca e filtri aprono i gruppi che contengono risultati */}
+                  {groupsOf(d).map((g) => (<Fragment key={g.id}>
+                    <tr className={`bq-grp${isOpen(g.id) ? ' open' : ''}`}><th colSpan={3} scope="rowgroup">
+                      <Link href={href({ apri: toggleOpen(g.id) }, `#g-${g.id}`)} scroll={false} id={`g-${g.id}`} aria-expanded={isOpen(g.id)}>
+                        <span className="bq-car" aria-hidden="true">{isOpen(g.id) ? '▾' : '▸'}</span>{g.label}<small>{g.rows.length} {g.rows.length === 1 ? L('riga', 'ligne') : L('righe', 'lignes')}</small></Link></th>{gap}
+                      <td className="bq-tt r num">{m(g.tot)}</td>{rowActions && <td className="bq-a" />}</tr>
+                    {isOpen(g.id) && g.rows.map((i) => <Row key={i.id} i={i} />)}
+                  </Fragment>))}
                 </tbody>
               ))}
               {!tipo && <tfoot><tr className="bq-tot"><th colSpan={3}>{L('Saldo previsto (entrate − uscite)', 'Solde prévu (recettes − dépenses)')}</th>{gap}

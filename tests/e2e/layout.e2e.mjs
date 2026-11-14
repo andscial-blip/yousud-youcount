@@ -186,6 +186,31 @@ function audit() {
     const lastWord = t.split(/\s+/).pop();
     if (w < 26 && lastWord.length <= 3) bad.push(`parola orfana «${lastWord}» in fondo a: ${name(n.parentElement)}`);
   }
+  // 5) parola spezzata a metà riga (revisione 14/11: la prova non la vedeva). Una parola senza spazi né trattini che occupa
+  //    più righe è stata spezzata dal contenitore troppo stretto. Si saltano indirizzi, codici lunghi e testi in scorrimento.
+  const tw2 = document.createTreeWalker(document.querySelector('main') ?? document.body, NodeFilter.SHOW_TEXT);
+  for (let n = tw2.nextNode(); n; n = tw2.nextNode()) {
+    const el = n.parentElement;
+    if (!el || !n.textContent.trim() || inScroller(el) || el.closest('.sr-only, .vh, pre, code, .mono, .docprev')) continue;
+    const ps = getComputedStyle(el);
+    if (ps.display === 'none' || ps.visibility === 'hidden' || el.getBoundingClientRect().width < 3) continue;
+    const re = /[\p{L}]{4,}/gu; let m;
+    while ((m = re.exec(n.textContent))) {
+      if (m[0].length > 24) continue;
+      const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+      const tops = [...new Set([...rg.getClientRects()].filter((q) => q.width > 0.5).map((q) => Math.round(q.top)))];
+      if (tops.length > 1) { bad.push(`parola spezzata «${m[0]}» in: ${name(el)}`); break; }
+    }
+  }
+  // 6) celle di tabella il cui contenuto esce dalla cella e finisce sopra la vicina
+  for (const td of document.querySelectorAll('table td, table th')) {
+    const ps = getComputedStyle(td);
+    if (ps.display === 'none' || inScroller(td) && false) continue;
+    const r = td.getBoundingClientRect(); if (r.width < 3) continue;
+    const rg = document.createRange(); rg.selectNodeContents(td);
+    const q = rg.getBoundingClientRect();
+    if (q.width > 0 && (q.right > r.right + 3 || q.left < r.left - 3) && td.innerText.trim() && !td.querySelector('.sr-only')) bad.push(`contenuto fuori dalla cella di ${Math.round(Math.max(q.right - r.right, r.left - q.left))}px: ${name(td)}`);
+  }
   if (document.documentElement.scrollWidth > vw + 1) bad.push(`la pagina scorre in orizzontale di ${document.documentElement.scrollWidth - vw}px`);
   return { bad: [...new Set(bad)], scrollers };
 }

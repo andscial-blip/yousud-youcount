@@ -185,7 +185,7 @@ a.rowlink:hover { color: var(--slate-2); text-decoration: underline; }
   table.t td, table.t th { padding: 9px 8px; }
 }
 /* telefono: le tabelle con molte colonne diventano schede (etichette messe da TableCards) */
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   table[data-cards] thead { display: none; }
   table[data-cards], table[data-cards] tbody, table[data-cards] tfoot, table[data-cards] tr { display: block; width: 100%; }
   table[data-cards] tr { padding: 10px 14px; border-bottom: 1px solid var(--line-2); }
@@ -410,7 +410,7 @@ ul.dl.compact li { grid-template-columns: 130px minmax(0, 1fr); }
 .dl-t a:hover { text-decoration: underline; }
 .dl-s { font-size: 13px; color: var(--muted); }
 .dl-act { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
-@media (max-width: 760px) { ul.dl li, ul.dl.compact li { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
+@media (max-width: 900px) { ul.dl li, ul.dl.compact li { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
   .dl-date { flex-direction: row; align-items: center; grid-column: 1 / -1; } .dl-amt { text-align: right; } .dl-act { grid-column: 1 / -1; justify-content: flex-start; } }
 .cal-h { display: flex; align-items: center; justify-content: space-between; }
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
@@ -770,7 +770,7 @@ table.recent td { vertical-align: top; }
 table.recent .rc-d { display: block; margin-top: 2px; font-size: 12px; }
 /* saldi dei conti: schede su telefono, tabella da tablet in su */
 .bal-cards { display: none; list-style: none; margin: 0; padding: 0; }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .bal-t { display: none; }
   .bal-cards { display: block; }
   .bal-cards li { padding: 12px 16px; border-bottom: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
@@ -1213,7 +1213,7 @@ ul.dl.dl2 li.i-p::before { background: var(--imp-p); } ul.dl.dl2 li.i-f::before 
 .dl-day b { font-size: 22px; font-weight: 600; color: var(--navy); }
 .dl-day span { font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
 .dl-tag { justify-self: end; }
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   ul.dl.dl2 li { grid-template-columns: 44px minmax(0, 1fr) auto; padding: 12px 14px 12px 18px; }
   ul.dl.dl2 .dl-amt { grid-column: 3; grid-row: 1; }
   ul.dl.dl2 .dl-tag { grid-column: 2; grid-row: 2; justify-self: start; }
@@ -1918,7 +1918,7 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
 .bqs-bar { display: block; height: 6px; border-radius: 3px; background: var(--band); overflow: hidden; }
 .bqs-bar i { display: block; height: 100%; border-radius: 3px; }
 @media (max-width: 1099px) { .bqs-pair { grid-template-columns: minmax(0, 1fr); } .bq-two { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .bq-comp > .panel-h .spacer { display: none; }
   .bq-comp .segs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .bq-comp .segs:has(> a:nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1992,7 +1992,7 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
 }
 
 /* Confronto preventivo/consuntivo (Analisi) su telefono: una scheda per codice, tre cifre con etichetta e la barra sotto */
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   table.cbudget, table.cbudget tbody { display: block; width: 100%; min-width: 0; }
   table.cbudget thead { display: none; }
   table.cbudget tr { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px 10px; padding: 10px 14px; border-top: 1px solid var(--line-2); align-items: baseline; }
@@ -2247,3 +2247,15 @@ ul.rec-list .rl-t small { white-space: nowrap; }
   ul.rec-list .rl-t { display: block; white-space: normal; overflow: visible; }
   ul.rec-list .rl-t small { display: block; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
 }
+.au-d > summary { cursor: pointer; }
+.au-d ul { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; display: grid; gap: 2px; }
+.rep-capn { margin: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* Preventivo: gruppi di voci richiudibili con subtotale (revisione 14/11) */
+.bq-openall { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0; padding: 10px 16px; }
+table.bq-tab tr.bq-grp th { text-align: left; font-weight: 600; padding-top: 10px; padding-bottom: 10px; background: var(--surface-2); }
+table.bq-tab tr.bq-grp td { background: var(--surface-2); font-weight: 600; }
+table.bq-tab tr.bq-grp a { display: flex; align-items: baseline; gap: 8px; color: inherit; text-decoration: none; min-height: 28px; }
+table.bq-tab tr.bq-grp a:hover { text-decoration: underline; }
+table.bq-tab tr.bq-grp small { font-weight: 400; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
