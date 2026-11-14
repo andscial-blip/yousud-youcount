@@ -1,4 +1,5 @@
 import AmountField from '@/components/AmountField';
+import { advanceLate } from '@/lib/advance-late';
 import { PersonPicker } from '@/components/PersonPicker';
 import { AdvanceDoc } from '@/components/AdvanceDoc';
 import { CIcon } from '@/components/CIcon';
@@ -44,7 +45,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
     supabase.from('settings').select('value').eq('key', 'adv_limits').maybeSingle(),
     persona && staff ? supabase.from('movements').select('id, ref, op_date, kind, amount, to_amount, account_id, to_account_id, description, status, movement_documents(document_id)')
       .or(`account_id.eq.${persona},to_account_id.eq.${persona}`).order('op_date', { ascending: false }).limit(200).returns<Mov[]>() : Promise.resolve({ data: [] as Mov[] }),
-    supabase.from('fx_rates').select('rate').order('year', { ascending: false }).order('month', { ascending: false }).limit(1),
+    supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const fxNow = Number(fxl?.[0]?.rate ?? 0);
   const toEur = (v: number, c: string) => (c === 'EUR' ? v : fxNow > 0 ? v / fxNow : 0);
@@ -96,7 +97,8 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const toAuth = reqs.filter((r) => r.status === 'requested');
   const toGive = reqs.filter((r) => r.status === 'authorized');
   const amt = (r: Req) => Number(r.authorized_amount ?? r.amount);
-  const lateReq = (acc: string) => reqs.find((r) => r.account_id === acc && (r.status === 'delivered' || r.status === 'reported') && r.report_by < today);
+  // regola unica del ritardo (lib/advance-late): data delle ricevute passata, oppure anticipo senza richiesta aperto da oltre 15 giorni
+  const lateReq = (acc: string) => { const w = rows.find((r) => r.account_id === acc); const l = w ? advanceLate(w, reqs, today) : null; return l ? { report_by: l.since } : undefined; };
   const nextDue = (acc: string) => reqs.filter((r) => r.account_id === acc && r.status === 'delivered').map((r) => r.report_by).sort()[0];
   const inHand = new Map<string, number>();
   for (const r of rows) if (Number(r.balance) > 0) inHand.set(r.currency, (inHand.get(r.currency) ?? 0) + Number(r.balance));

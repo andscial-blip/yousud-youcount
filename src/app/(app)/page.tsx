@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { advanceLate } from '@/lib/advance-late';
 import { ruleItems } from '@/lib/deadline-rules';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money, num } from '@/lib/format';
@@ -31,7 +32,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const cfFrom = new Date(cy, now.getMonth() - 3, 1), cfTo = new Date(cy, now.getMonth(), 0);
 
   const [{ data: bal, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }, { data: advs },
-    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }] = await Promise.all([
+    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }, { data: advReqs }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id).is('reimb_status', null),
@@ -49,6 +50,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     staff ? supabase.from('movements').select('amount, currency, amount_eur').eq('reimb_status', 'due').limit(5000) : Promise.resolve({ data: null }),
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('movements').select('id', { count: 'exact', head: true }).neq('status', 'draft').not('no_doc_reason', 'is', null).eq('kind', 'expense').gte('op_date', `${year}-01-01`).lte('op_date', `${year}-12-31`),
+    supabase.from('advance_requests').select('account_id, status, report_by').in('status', ['requested', 'authorized', 'delivered', 'reported']),
   ]);
 
   // ---- anno in sintesi
@@ -94,8 +96,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const elapsed = year < cy ? 1 : year > cy ? 0 : (now.getTime() - new Date(cy, 0, 1).getTime()) / (new Date(cy + 1, 0, 1).getTime() - new Date(cy, 0, 1).getTime());
 
   // ---- da fare
-  const advRows = (advs ?? []) as { balance: string; open_since: string | null; aut_to_sign: number }[];
-  const advLate = advRows.filter((r) => Number(r.balance) > 0 && r.open_since && Date.now() - Date.parse(r.open_since) > 30 * 864e5).length;
+  const advRows = (advs ?? []) as { account_id: string; balance: string; open_since: string | null; aut_to_sign: number }[];
+  const advReqRows = (advReqs ?? []) as { account_id: string; status: string; report_by: string }[];
+  // stessa regola di Conti › Anticipi e di Scadenze (lib/advance-late)
+  const advLate = advRows.filter((r) => advanceLate(r, advReqRows, td)).length;
+  const advToAuth = advReqRows.filter((r) => r.status === 'requested').length;
   const autToSign = advRows.reduce((n, r) => n + r.aut_to_sign, 0);
   const backupAt = (lastBackup?.value as { at?: string } | null)?.at;
   const backupDays = backupAt ? Math.floor((Date.now() - new Date(backupAt).getTime()) / 86400000) : null;
@@ -117,7 +122,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     href: verHref, act: L('Verifica', 'Vérifier') });
   if (dueCount) todo.push({ lvl: 'warn', ic: 'wallet', title: L(`${dueCount} ${dueCount === 1 ? 'spesa da rimborsare' : 'spese da rimborsare'}`, `${dueCount} dépense${dueCount === 1 ? '' : 's'} à rembourser`),
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });
-  if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi da giustificare da oltre 30 giorni: ${advLate}`, `Avances à justifier depuis plus de 30 jours : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
+  if (advToAuth && me && ['super_admin', 'admin', 'responsabile'].includes(me.role)) todo.push({ lvl: 'warn', ic: 'user', title: L(`Richieste di anticipo da autorizzare: ${advToAuth}`, `Demandes d’avance à autoriser : ${advToAuth}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
+  if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi con ricevute in ritardo: ${advLate}`, `Avances avec reçus en retard : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/analisi?anno=${year}&vista=budget`, act: L('Vedi', 'Voir') });
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });

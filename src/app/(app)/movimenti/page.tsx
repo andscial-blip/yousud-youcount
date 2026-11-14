@@ -126,6 +126,9 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const bTip = (title: string, vals: number[], fmt: (v: number) => string) => keys.length > 31 ? title : `${title}\n${keys.map((k, i) => (vals[i] ? `${kLabel(k)}: ${fmt(vals[i]!)}` : '')).filter(Boolean).join('\n')}`;
   const axis = keys.length > 1 ? <div className="vzl"><span>{kLabel(keys[0]!)}</span><span>{kLabel(keys[keys.length - 1]!)}</span></div> : null;
   const expHref = `/api/v1/export/movimenti?anno=${(f.from || f.to || String(y)).slice(0, 4)}${stato && stato !== 'storni' ? `&stato=${stato}` : ''}`;
+  // l'esportazione riguarda sempre l'anno intero (scelta del 14/11): il nome del pulsante lo dice
+  const expYear = (f.from || f.to || String(y)).slice(0, 4);
+  const expLabel = L(`Esporta tutto il ${expYear}`, `Exporter tout ${expYear}`);
   const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Contre-passations')]];
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
@@ -181,13 +184,13 @@ export default async function Movements({ searchParams }: { searchParams: Promis
 
       <Panel>
         <FilterBar action="/movimenti" lang={lang} search={{ value: term, placeholder: t('search_mov') }}
-          after={<a className="btn fb-exp" href={expHref} aria-label={t('exp_xlsx')}><Ico name="download" /><span>{t('exp_xlsx')}</span></a>}
+          after={<a className="btn fb-exp" href={expHref} aria-label={expLabel} title={L('Scarica tutti i movimenti dell’anno: non segue i filtri', 'Télécharge tous les mouvements de l’année : ne suit pas les filtres')}><Ico name="download" /><span>{expLabel}</span></a>}
           active={active + (stato ? 1 : 0)} reset={term || stato || active > 0 ? '/movimenti' : null}
           result={L(`Mostra ${num(total, lang)} movimenti`, `Afficher ${num(total, lang)} mouvements`)}
           quick={<>
             {periods.map(([l, a, b]) => <Link key={l} href={href({ dal: a, al: b })} scroll={false} aria-current={f.from === a && f.to === b ? 'true' : undefined}>{l}</Link>)}
             <Link href={href({ stato: 'recorded' })} scroll={false} aria-current={stato === 'recorded' ? 'true' : undefined}>{L('Da verificare', 'À vérifier')}</Link>
-            <Link href={href({ doc: 'no' })} scroll={false} aria-current={f.doc === 'no' ? 'true' : undefined}>{L('Senza giustificativo', 'Sans justificatif')}</Link>
+            <Link href={href({ doc: 'no' })} scroll={false} aria-current={f.doc === 'no' ? 'true' : undefined}>{L('Motivo dichiarato', 'Motif déclaré')}</Link>
           </>}>
               <label className="field"><span className="flabel">{L('Stato', 'Statut')}</span>
                 <select className="input" name="stato" defaultValue={stato}>{stati.map(([v, l]) => <option key={v} value={v}>{v ? l : t('all')}</option>)}</select></label>
@@ -266,7 +269,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
                     <span className="mc-c"><StatusChip s={m.status} label={t(`st_${m.status}`)} />{m.demo && <span className="chip warn tiny">DEMO</span>}
-                      {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('senza giustificativo', 'sans justificatif')}</span>}</span></div>
+                      {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('motivo dichiarato', 'motif déclaré')}</span>}</span></div>
                   <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                     <b>{eur != null ? `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}` : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>
                     {eur != null && <small>{money(m.kind === 'transfer' ? Number(m.amount) : signed, m.currency, lang)}</small>}</span>

@@ -2120,3 +2120,50 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
 .pd-why { font-size: 12.5px; margin-top: 4px; }
 .amt-echo b { font-weight: 600; color: var(--ink); }
 .dz-h { font-size: 15px; margin: 12px 0 0; color: var(--muted); font-weight: 600; }
+
+/* Selettore «Come è stata pagata»: scelte sempre tutte visibili, a tutta riga (revisione 14/11) */
+@media (min-width: 641px) {
+  .seg.stackable { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; overflow: visible; }
+  .seg.stackable button { min-width: 0; white-space: normal; text-align: center; line-height: 1.2; padding: 6px 8px; min-height: 40px; }
+}
+
+/* Rendiconto: avviso dei movimenti esclusi, con importo ed elenco (revisione 14/11) */
+.rep-unc > summary { cursor: pointer; list-style: none; }
+.rep-unc > summary::-webkit-details-marker { display: none; }
+.rep-unc .rep-unc-open { text-decoration: underline; white-space: nowrap; }
+.rep-unc ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 2px; }
+
+/* Tema scuro: il tono dei collegamenti di riga e delle pillole neutre era a 2,4–2,7:1 sul fondo scuro.
+   Schiarito a circa 7:1 (revisione 14/11); in chiaro resta invariato. */
+:root[data-theme="dark"] { --slate-2: #9FB0C6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --slate-2: #9FB0C6; } }
+
+/* Campo file nascosto alla vista ma raggiungibile da tastiera: il focus si vede sull'etichetta-pulsante (revisione 14/11) */
+.vh-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+label:has(> .vh-file) { position: relative; }
+label:has(> .vh-file:focus-visible) { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* Coda di verifica (revisione 14/11): filtri, stato del giustificativo, azioni allineate su una riga */
+.vf-filter { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)) auto auto; gap: 10px; align-items: end; }
+.vf-filter .btn { min-height: 40px; }
+.vf-doc.doc { background: var(--ok-bg); color: var(--green); }
+.vf-doc.todo { background: var(--pink); color: var(--pink-fg); }
+.vf-cards .vf-c .vf-act { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
+.vf-cards .vf-c .vf-act .btn { width: 100%; justify-content: center; }
+.vf-cards .vf-c .vf-act form { display: contents; }
+.vf-cards .vf-c .vf-act .chip { justify-self: center; }
+.vf-cards .mc-c { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.vf-cards .mc-a.two { display: grid; justify-items: end; }
+.vf-cards .mc-a.two small { font-size: 12.5px; color: var(--muted); font-weight: 400; }
+@media (max-width: 640px) { .vf-filter { grid-template-columns: 1fr 1fr; } .vf-filter .btn { width: 100%; justify-content: center; } }
+.vf-count { margin: 0; }
+.vf-count:empty { display: none; }
+/* anteprima del giustificativo nella scheda del movimento */
+ul.docs li { flex-wrap: wrap; }
+.doc-prev { flex: 1 1 100%; display: block; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.doc-prev img { display: block; width: 100%; max-height: 420px; object-fit: contain; }
+object.doc-prev.pdf { width: 100%; height: 360px; }
+@media print { .doc-prev { display: none; } }
+.docs li > span.num { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vf-cards .vf-c .vf-act .btn { display: flex; align-items: center; min-height: 40px; }
+.vf-cards .vf-c .mc-s { grid-column: 1 / -1; }

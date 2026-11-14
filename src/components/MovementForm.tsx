@@ -363,10 +363,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       <section className="panel doc-first"><div className="panel-h"><h2>{t.f_doc}</h2>{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
-          <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+          <input type="file" accept="image/*" capture="environment" className="vh-file" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
         </label>
         <label className="btn big-touch"><Ico name="upload" />{t.f_doc_file}
-          <input type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+          <input type="file" accept="image/*,application/pdf" multiple className="vh-file" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
         </label>
       </div>
       {R.aiEnabled && docs.some((d) => d.state === 'local') && <div className="note">{t.q_no_ai}</div>}

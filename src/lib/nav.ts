@@ -4,6 +4,7 @@ import type { Role } from './session';
 // stessi insiemi di session.ts (qui ripetuti: questo file si usa anche nel browser)
 const ADMIN: Role[] = ['super_admin', 'admin'];
 const STAFF: Role[] = ['super_admin', 'admin', 'responsabile', 'read_only'];
+const RESP: Role[] = ['super_admin', 'admin', 'responsabile'];
 
 // Architettura come Cairn: sette sezioni nel menu laterale, ognuna con le sue sotto-schede sotto il titolo.
 // Gli indirizzi restano quelli di prima (segnalibri, link nei documenti e nelle email continuano a funzionare).
@@ -15,9 +16,9 @@ export type Section = { id: string; key: Key; hint: Key; ic: string; roles?: Rol
 export const SECTIONS: Section[] = [
   { id: 'home', key: 'nav_dashboard', hint: 'hint_home', ic: 'home', subs: [
     { href: '/', key: 'sub_overview' }, { href: '/scadenze', key: 'nav_deadlines' }] },
-  // «Da verificare» non è una scheda: è un filtro del registro e un indicatore della Dashboard (la pagina /verifica resta per la verifica in blocco)
-  { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo', '/verifica'], subs: [
-    { href: '/movimenti', key: 'sub_register' }, { href: '/rimborsi', key: 'nav_reimb' }, { href: '/controparti', key: 'sub_parties' }] },
+  // «Da verificare» è una scheda di Movimenti per chi verifica (revisione 14/11): la pagina di lavoro ha un posto nel menu
+  { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo'], subs: [
+    { href: '/movimenti', key: 'sub_register' }, { href: '/verifica', key: 'nav_verify', roles: RESP }, { href: '/rimborsi', key: 'nav_reimb' }, { href: '/controparti', key: 'sub_parties' }] },
   { id: 'cassa', key: 'nav_accounts', hint: 'hint_cassa', ic: 'bank', subs: [
     { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances' },
     { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }, { href: '/cambi', key: 'sub_fx' }] },

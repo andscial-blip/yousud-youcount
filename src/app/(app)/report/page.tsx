@@ -45,7 +45,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
               {tb.chart.kind === 'months'
                 ? <MonthBars data={tb.chart.data} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }} />
                 : <>
-                    <HBars rows={tb.chart.rows} lang={lang} many />
+                    <HBars rows={tb.chart.rows} lang={lang} total={tb.chart.total} many />
                     {tb.chart.more > 0 && <p className="hint" style={{ margin: '6px 0 0' }}>{L(`Le ${TOPN} voci più alte; altre ${tb.chart.more} nella tabella.`, `Les ${TOPN} postes les plus élevés ; ${tb.chart.more} autres dans le tableau.`)}</p>}
                   </>}
             </div>

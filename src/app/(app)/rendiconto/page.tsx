@@ -83,7 +83,21 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       <div className="note">{t('rep_draft')}</div>
       <ErrorNote prefix={t('error_load')} error={error} />
       {missing > 0 && <div className="note err">{missing} {t('rep_missing_rate')}</div>}
-      {(unclassified ?? []).length > 0 && <div className="note err">{unclassified!.length} {t('rep_unclassified')}</div>}
+      {(unclassified ?? []).length > 0 && (() => {
+        // l'avviso dice quanto pesa: senza l'importo, l'avanzo di questa pagina e quello della Dashboard non si spiegano
+        const rows = unclassified as { id: string; ref: string | null; category_code: string | null; amount_eur: string | number }[];
+        const tot = rows.reduce((x, r) => x + Math.abs(Number(r.amount_eur) || 0), 0);
+        const codes = [...new Set(rows.map((r) => r.category_code).filter(Boolean))];
+        return (
+          <details className="note err rep-unc">
+            <summary><b>{rows.length} {t('rep_unclassified')}</b> {lang === 'fr'
+              ? `Ils valent ${money(tot, 'EUR', lang)} et ne figurent pas dans ce compte rendu : les totaux et le résultat ci-dessous sont incomplets tant qu’ils ne sont pas reclassés.`
+              : `Valgono ${money(tot, 'EUR', lang)} e non entrano in questo rendiconto: i totali e l’avanzo qui sotto sono incompleti finché non li riclassifichi.`}
+              {codes.length > 0 && <> {lang === 'fr' ? 'Codes' : 'Codici'}: {codes.join(', ')}.</>} <span className="rep-unc-open">{lang === 'fr' ? 'Voir les mouvements' : 'Vedi i movimenti'}</span></summary>
+            <ul>{rows.slice(0, 50).map((r) => <li key={r.id}><Link href={`/movimenti/${r.id}`}>{r.ref ?? '–'}</Link> · {r.category_code ?? '–'} · <span className="num">{money(Number(r.amount_eur), 'EUR', lang)}</span></li>)}
+              {rows.length > 50 && <li>…</li>}</ul>
+          </details>);
+      })()}
       {(['out', 'in'] as const).map((dir) => (
         <section className="panel" key={dir} style={{ overflowX: 'auto' }}>
           <div className="panel-h"><H2 text={dir === 'out' ? t('out') : t('in')} /></div>

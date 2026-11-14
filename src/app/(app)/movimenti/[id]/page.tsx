@@ -204,7 +204,12 @@ export default async function MovementDetail({ params, searchParams }: {
               {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}: ${m.no_doc_reason}` : t('none')}</p> : (
                 <ul className="docs">
                   {docs.map((d, i) => (
-                    <li key={d.id}><span className="num">{d.name}</span>
+                    <li key={d.id}>
+                      {/* anteprima dentro l'app: chi verifica guarda la ricevuta senza uscire (revisione 14/11) */}
+                      {signed[i]?.open && (/^image\//.test(d.mime) && !d.pdf_path
+                        ? <a className="doc-prev" href={signed[i].open} target="_blank" rel="noreferrer"><img src={signed[i].open} alt={`${t('f_doc')}: ${d.name}`} loading="lazy" /></a>
+                        : <object className="doc-prev pdf" data={`${signed[i].open}#toolbar=0&view=FitH`} type="application/pdf" aria-label={`${t('f_doc')}: ${d.name}`}><span className="muted small">{lang === 'fr' ? 'Aperçu non disponible : utilisez « Ouvrir ».' : 'Anteprima non disponibile: usa «Apri».'}</span></object>)}
+                      <span className="num">{d.name}</span>
                       {signed[i]?.open ? <a className="btn" href={signed[i].open} target="_blank" rel="noreferrer">{t('d_open')}</a> : null}
                       {signed[i]?.save ? <a className="btn ghost" href={signed[i].save} title={d.name}><Ico name="download" />{t('d_download')}</a> : null}</li>
                   ))}

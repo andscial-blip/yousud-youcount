@@ -12,12 +12,12 @@ export const eurOf = (m: { amount_eur: string | null; sign: number }) => Number(
 export const missingDoc = (m: Mv) => m.kind === 'expense' && m.sign > 0 && !(m.docs?.[0]?.count) && !m.no_doc_reason;
 
 export function totals(ms: Mv[]) {
-  let rec = 0, sp = 0, miss = 0, unver = 0, nExp = 0;
+  let rec = 0, sp = 0, miss = 0, unver = 0, nExp = 0, declared = 0;
   for (const m of ms) {
     if (m.kind === 'income') rec += eurOf(m);
-    else if (m.kind === 'expense') { sp += eurOf(m); if (m.sign > 0) { nExp += 1; if (missingDoc(m)) miss += 1; if (m.status !== 'verified') unver += 1; } }
+    else if (m.kind === 'expense') { sp += eurOf(m); if (m.sign > 0) { nExp += 1; if (missingDoc(m)) miss += 1; else if (!(m.docs?.[0]?.count)) declared += 1; if (m.status !== 'verified') unver += 1; } }
   }
-  return { rec, sp, miss, unver, nExp };
+  return { rec, sp, miss, unver, nExp, declared };
 }
 // parte del periodo già trascorsa (0–1) e giorni alla fine; null se mancano le date
 export function timeOf(g: { start_date: string | null; end_date: string | null }, today: string) {

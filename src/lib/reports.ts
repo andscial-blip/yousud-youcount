@@ -7,12 +7,15 @@ type Sb = Awaited<ReturnType<typeof createClient>>;
 export type Cell = { v: number | string | null; t?: 'eur' | 'int' | 'date' | 'text' | 'cur'; cur?: string; href?: string };
 // Grafico facoltativo accanto alla tabella (stessi numeri): mesi affiancati o barre orizzontali delle voci principali.
 export type Chart = { kind: 'months'; data: { inc: number; out: number }[]; hrefs?: string[] }
-  | { kind: 'bars'; dir: 'in' | 'out'; rows: { label: string; value: number; href?: string }[]; more: number };
+  | { kind: 'bars'; dir: 'in' | 'out'; rows: { label: string; value: number; href?: string }[]; more: number; total: number };
 export type Table = { title: string; head: { h: string; num?: boolean }[]; rows: Cell[][]; foot?: Cell[]; note?: string; chart?: Chart };
 const TOP = 8;
-const bars = (dir: 'in' | 'out', rows: { label: string; value: number; href?: string }[]): Chart | undefined => {
+const bars = (dir: 'in' | 'out', rows: { label: string; value: number; href?: string }[], other: string): Chart | undefined => {
   const r = rows.filter((x) => x.value > 0).sort((a, b) => b.value - a.value);
-  return r.length ? { kind: 'bars', dir, rows: r.slice(0, TOP), more: Math.max(0, r.length - TOP) } : undefined;
+  // le percentuali si calcolano sul totale di TUTTE le voci (non solo le otto mostrate): le voci restanti stanno in una riga a parte
+  const total = r.reduce((x, y) => x + y.value, 0), rest = r.slice(TOP);
+  const shown = rest.length ? [...r.slice(0, TOP), { label: `${other} (${rest.length})`, value: rest.reduce((x, y) => x + y.value, 0) }] : r;
+  return r.length ? { kind: 'bars', dir, rows: shown, more: 0, total } : undefined;
 };
 export type ReportKind = 'mensile' | 'categorie' | 'fornitori' | 'utenti' | 'nodoc' | 'cassa' | 'scadenze';
 export const REPORTS: { k: ReportKind; it: string; fr: string }[] = [
@@ -88,7 +91,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
         head: [{ h: L('Codice', 'Code') }, { h: L('Voce', 'Poste') }, { h: 'Italia', num: true }, { h: 'Madagascar', num: true }, { h: L('Totale', 'Total'), num: true }, { h: L('Movimenti', 'Mouvements'), num: true }],
         rows: cs.map((c) => { const r = by.get(c.id)!; return [txt(c.code, `/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}`), txt(nm(c)), eur(r.IT), eur(r.MG), eur(r.IT + r.MG), int(r.n)]; }),
         foot: [txt(L('Totale', 'Total')), txt(''), eur(tot.IT), eur(tot.MG), eur(tot.IT + tot.MG), int(tot.n)],
-        chart: bars(d, cs.map((c) => { const r = by.get(c.id)!; return { label: `${c.code} · ${nm(c)}`, value: r.IT + r.MG, href: `/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}` }; })),
+        chart: bars(d, cs.map((c) => { const r = by.get(c.id)!; return { label: `${c.code} · ${nm(c)}`, value: r.IT + r.MG, href: `/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${c.id}` }; }), L('Altre voci', 'Autres postes')),
       });
     }
     return tables;
@@ -111,7 +114,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
       head: [{ h: L('Controparte', 'Contrepartie') }, { h: L('Uscite', 'Dépenses'), num: true }, { h: L('Entrate', 'Recettes'), num: true }, { h: L('Movimenti', 'Mouvements'), num: true }],
       rows: list.map(([k, r]) => [txt(k ? cpn.get(k) ?? '–' : L('(senza controparte)', '(sans contrepartie)')), eur(r.o), eur(r.i), int(r.n)]),
       foot: [txt(L('Totale', 'Total')), eur(tot.o), eur(tot.i), int(tot.n)],
-      chart: bars('out', list.filter(([k]) => k).map(([k, r]) => ({ label: cpn.get(k) ?? '–', value: r.o }))),
+      chart: bars('out', list.map(([k, r]) => ({ label: k ? (cpn.get(k) ?? '–') : L('(senza controparte)', '(sans tiers)'), value: r.o })), L('Altre voci', 'Autres postes')),
     }];
   }
 

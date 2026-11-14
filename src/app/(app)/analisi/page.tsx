@@ -71,7 +71,10 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const inGroups = sumBy(inc, (r) => (r.category_id ? groupOf.get(r.category_id) ?? null : null));
   const gName = new Map((groups ?? []).map((g) => [g.id, `${g.code} · ${L(g)}`]));
   const cpName = new Map((cps ?? []).map((c) => [c.id, c.name]));
-  const byCp = [...sumBy(out, (r) => r.counterparty_id)].filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const byCpAll = [...sumBy(out, (r) => r.counterparty_id)];
+  const byCp = byCpAll.filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]).slice(0, 10);
+  // quanto resta senza controparte indicata: va detto, perché le percentuali sono sul totale
+  const byCpNone = byCpAll.find(([k]) => k === '-')?.[1] ?? 0;
   const loc = new Map((accs ?? []).map((a) => [a.id, a.location as string]));
   const byLoc = sumBy(out, (r) => (r.account_id ? loc.get(r.account_id) ?? null : null));
   const byPrj = [...sumBy(out, (r) => r.project_id)].filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]);
@@ -91,7 +94,10 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const prevOut = pm.reduce((s, m) => s + m.out, 0), prevIn = pm.reduce((s, m) => s + m.inc, 0);
   const same = (a: { inc: number; out: number }[], k: 'inc' | 'out') => a.slice(0, lastM).reduce((s, m) => s + m[k], 0);
   const delta = (a: number, b: number) => (b ? `${a >= b ? '+' : ''}${Math.round(((a - b) / b) * 100)} %` : '–');
-  const byDonor = [...sumBy(inc, (r) => r.counterparty_id)].filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const byDonorAll = [...sumBy(inc, (r) => r.counterparty_id)];
+  const byDonor = byDonorAll.filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]).slice(0, 10);
+  // quanto resta senza controparte indicata: va detto, perché le percentuali sono sul totale
+  const byDonorNone = byDonorAll.find(([k]) => k === '-')?.[1] ?? 0;
   const lg = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const tabs: [typeof VIEWS[number], string][] = [['panoramica', lg('Panoramica', 'Vue d\'ensemble')], ['entrate', lg('Entrate', 'Recettes')], ['uscite', lg('Uscite', 'Dépenses')],
     ['progetti', lg('Progetti', 'Projets')], ['andamento', lg('Andamento', 'Évolution')], ['budget', lg('Preventivo e consuntivo', 'Budget et réalisé')]];
@@ -222,7 +228,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           <DonutCard title={t('an_in_by_group')} eyebrow={String(year)} rows={inRows} center={t('legend_in')} tot={totIn} empty={t('none')} />
           <BarsCard title={lg('Principali donatori e finanziatori', 'Principaux donateurs et bailleurs')} eyebrow={lg('primi 10', '10 premiers')}>
             {byDonor.length === 0 ? <p className="muted bq-none">{lg('Nessuna entrata con il donatore indicato.', 'Aucune recette avec le donateur indiqué.')}</p>
-              : <HBars lang={lang} color="var(--navy)" total={totIn} rows={byDonor.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'income' }) }))} />}
+              : <HBars lang={lang} color="var(--navy)" total={totIn} rows={[...byDonor.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'income' }) })), ...(byDonorNone > 0 ? [{ label: lg('(senza donatore indicato)', '(sans donateur indiqué)'), value: byDonorNone, color: 'var(--line-2)' }] : [])]} />}
           </BarsCard>
         </div>
         <Panel title={lg(`Entrate per mese · ${year}`, `Recettes par mois · ${year}`)} icon={null} pad>
@@ -235,7 +241,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           <DonutCard title={lg('Uscite per voce', 'Dépenses par poste')} eyebrow={String(year)} rows={outRows} center={t('legend_out')} tot={totOut} empty={t('none')} />
           <BarsCard title={t('an_top_cp')}>
             {byCp.length === 0 ? <p className="muted bq-none">{t('an_no_cp')}</p>
-              : <HBars lang={lang} color="var(--vz-sp)" total={totOut} rows={byCp.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'expense' }) }))} />}
+              : <HBars lang={lang} color="var(--vz-sp)" total={totOut} rows={[...byCp.map(([k, v]) => ({ label: cpName.get(k) ?? '–', value: v, href: mov({ cp: k, tipo: 'expense' }) })), ...(byCpNone > 0 ? [{ label: lg('(senza controparte)', '(sans tiers)'), value: byCpNone, color: 'var(--line-2)' }] : [])]} />}
           </BarsCard>
         </div>
         <BarsCard title={t('an_by_country')} eyebrow={lg('conto da cui si è pagato', 'compte de paiement')}>

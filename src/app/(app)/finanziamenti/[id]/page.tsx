@@ -67,7 +67,7 @@ export default async function GrantDetail({ params, searchParams }: {
   const tranches = moves.filter((m) => m.kind === 'income' && m.sign > 0).sort((a, b) => a.op_date.localeCompare(b.op_date));
   const bRows = ((budget ?? []) as BudgetRow[]).map((r) => ({ k: r.group_id, label: `${r.group_code} · ${lang === 'fr' && r.group_name_fr ? r.group_name_fr : r.group_name_it}`, b: Number(r.budget_eur ?? 0), s: Number(r.spent_eur ?? 0) })).filter((r) => r.b || r.s);
   const bMax = Math.max(1, ...bRows.flatMap((r) => [r.b, r.s]));
-  const withDoc = x.nExp - x.miss;
+  const withDoc = x.nExp - x.miss - x.declared;
   const logoUrl = (logo as { image?: string } | null)?.image ?? null;
   const back = `/finanziamenti/${id}`;
 
@@ -150,14 +150,16 @@ export default async function GrantDetail({ params, searchParams }: {
           <div className="panel-h"><H2 text={L('Qualità della rendicontazione', 'Qualité du rapport')} icon={null} /></div>
           <div className="panel-b">
             <dl className="g-q">
-              <div><dt>{L('Spese con giustificativo', 'Dépenses avec pièce')}</dt><dd className="num">{x.nExp ? `${withDoc} ${L('su', 'sur')} ${x.nExp}` : '–'}</dd>
+              <div><dt>{L('Spese con documento', 'Dépenses avec pièce')}</dt><dd className="num">{x.nExp ? `${withDoc} ${L('su', 'sur')} ${x.nExp}` : '–'}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (withDoc / x.nExp) * 100 : 0}%`, background: 'var(--green-soft)' }} /></span></div>
-              <div><dt>{L('Giustificativi mancanti', 'Pièces manquantes')}</dt><dd className={`num ${x.miss ? 'neg' : ''}`}>{x.miss}</dd>
+              <div><dt>{L('Senza documento, motivo dichiarato', 'Sans pièce, motif déclaré')}</dt><dd className="num">{x.declared}</dd>
+                <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.declared / x.nExp) * 100 : 0}%`, background: 'var(--vz-plan)' }} /></span></div>
+              <div><dt>{L('Da documentare', 'À documenter')}</dt><dd className={`num ${x.miss ? 'neg' : ''}`}>{x.miss}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.miss / x.nExp) * 100 : 0}%`, background: 'var(--tax)' }} /></span></div>
               <div><dt>{L('Spese ancora da verificare', 'Dépenses encore à vérifier')}</dt><dd className="num">{x.unver}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.unver / x.nExp) * 100 : 0}%`, background: 'var(--vz-sp)' }} /></span></div>
             </dl>
-            <p className="muted small fin-note">{L('Si contano le spese registrate o verificate. «Con giustificativo»: almeno un documento allegato, oppure il motivo per cui manca.', 'On compte les dépenses enregistrées ou vérifiées. « Avec pièce » : au moins un document joint, ou le motif de son absence.')}</p>
+            <p className="muted small fin-note">{L('Si contano le spese registrate o verificate. «Con documento»: almeno un file allegato. «Senza documento, motivo dichiarato»: nessun file, ma il motivo è scritto. «Da documentare»: né file né motivo.', 'On compte les dépenses enregistrées ou vérifiées. « Avec pièce » : au moins un fichier joint. « Sans pièce, motif déclaré » : aucun fichier, mais le motif est écrit. « À documenter » : ni fichier ni motif.')}</p>
           </div>
         </section>
         <section className="panel">
@@ -197,7 +199,7 @@ export default async function GrantDetail({ params, searchParams }: {
               return (
                 <tr key={m.id}>
                   <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind as 'income'}`)}</Link>
-                    <small className="muted rc-d"><span className="num">{date(m.op_date)}</span>{m.category?.code ? ` · ${m.category.code}` : ''}{missingDoc(m) ? ` · ${L('senza giustificativo', 'sans pièce')}` : ''}</small></td>
+                    <small className="muted rc-d"><span className="num">{date(m.op_date)}</span>{m.category?.code ? ` · ${m.category.code}` : ''}{missingDoc(m) ? ` · ${L('da documentare', 'à documenter')}` : !(m.docs?.[0]?.count) && m.no_doc_reason && m.kind === 'expense' ? ` · ${L('motivo dichiarato', 'motif déclaré')}` : ''}</small></td>
                   <td className="r num nw"><span className="two"><b>{eur != null ? money(eur, 'EUR', lang) : money(Number(m.amount) * sg, m.currency, lang)}</b>
                     {eur != null && <small>{money(Number(m.amount) * sg, m.currency, lang)}</small>}</span></td>
                 </tr>);

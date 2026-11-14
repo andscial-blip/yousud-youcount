@@ -27,7 +27,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
     supabase.from('cash_counts').select('id, count_date, counted, system_balance, difference, notes, counted_by, account:accounts(name_it, name_fr, currency)')
       .order('count_date', { ascending: false }).order('created_at', { ascending: false }).limit(20).returns<CC[]>(),
     supabase.rpc('user_directory'),
-    supabase.from('fx_rates').select('rate').order('year', { ascending: false }).order('month', { ascending: false }).limit(1),
+    supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const all = (data ?? []) as Balance[];
   const rows = all.filter((r) => r.kind !== 'advance');

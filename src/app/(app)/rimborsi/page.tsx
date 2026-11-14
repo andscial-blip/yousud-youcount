@@ -35,7 +35,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
       .eq('reimb_status', 'paid').order('reimbursed_at', { ascending: false }).limit(60).returns<Paid[]>(),
     supabase.from('movements').select('amount, currency, amount_eur, fx_rate, op_date, reimb_batch').eq('reimb_status', 'paid')
       .gte('op_date', `${Y}-01-01`).lte('op_date', `${Y}-12-31`).limit(5000),
-    supabase.from('fx_rates').select('rate').order('year', { ascending: false }).order('month', { ascending: false }).limit(1),
+    supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const fxNow = Number(fxl?.[0]?.rate ?? 0);
   // controvalore in euro (serve solo ai riquadri e ai confronti: il rimborso si fa sempre nella valuta della spesa)
@@ -79,6 +79,8 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
   for (const r of due) { const d = daysAgo(since(r)); ageBuckets[d <= AGE[0]! ? 0 : d <= AGE[1]! ? 1 : d <= AGE[2]! ? 2 : 3]! += eurOf(r); }
   const AGE_C = ['var(--green-soft)', 'var(--vz-sp)', 'var(--amber-soft)', 'var(--tax)'];
   const AGE_L = [LL('fino a 7 giorni', 'jusqu’à 7 jours'), LL('da 8 a 30 giorni', 'de 8 à 30 jours'), LL('da 31 a 60 giorni', 'de 31 à 60 jours'), LL('oltre 60 giorni', 'plus de 60 jours')];
+  // tre stati con lo stesso nome ovunque: con documento · senza documento, motivo dichiarato · da documentare
+  const withFile = due.filter((r) => (r.docs?.[0]?.count ?? 0) > 0).length, declared = due.filter((r) => !(r.docs?.[0]?.count) && r.no_doc_reason).length;
   const missing = due.filter((r) => !hasDoc(r)).length, ready = due.length - missing;
   const py = (paidY ?? []) as { amount: string; currency: string; amount_eur: string | null; fx_rate: string | null; op_date: string; reimb_batch: string | null }[];
   const paidM = Array.from({ length: 12 }, () => 0);
@@ -121,12 +123,12 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="s">{oldest ? LL(`la più vecchia: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`, `la plus ancienne : ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`) : LL('nessuna spesa in attesa', 'aucune dépense en attente')}</div>
         </div>
         <div className="kpi">
-          {due.length > 0 && <Viz.Ring p={ready / due.length} color={missing ? 'var(--gold-d)' : 'var(--green-soft)'} tip={LL(`Con giustificativo: ${ready} su ${due.length}`, `Avec pièce : ${ready} sur ${due.length}`)} />}
-          <div className="l">{LL('Senza giustificativo', 'Sans pièce')}</div>
+          {due.length > 0 && <Viz.Ring p={ready / due.length} color={missing ? 'var(--gold-d)' : 'var(--green-soft)'} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec pièce : ${withFile}\nSans pièce, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />}
+          <div className="l">{LL('Da documentare', 'À documenter')}</div>
           <div className={`v num${missing ? ' amb' : ''}`}>{missing}</div>
-          {due.length > 0 && <><Viz.Stack segs={[{ v: ready, c: 'var(--green-soft)' }, { v: missing, c: 'var(--amber-soft)' }]} max={due.length} tip={LL(`Con giustificativo: ${ready}\nDa completare: ${missing}`, `Avec pièce : ${ready}\nÀ compléter : ${missing}`)} />
-            <div className="vzl"><span>{LL(`con ${ready}`, `avec ${ready}`)}</span><span>{LL(`senza ${missing}`, `sans ${missing}`)}</span></div></>}
-          <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? LL('tutte le spese sono documentate', 'toutes les dépenses sont documentées') : LL('niente da completare', 'rien à compléter')}</div>
+          {due.length > 0 && <><Viz.Stack segs={[{ v: ready, c: 'var(--green-soft)' }, { v: missing, c: 'var(--amber-soft)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec pièce : ${withFile}\nSans pièce, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />
+            <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec pièce ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></>}
+          <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile} con documento, ${declared} con motivo dichiarato`, `${withFile} avec pièce, ${declared} avec motif déclaré`) : LL('tutte con documento', 'toutes avec pièce')) : LL('niente da completare', 'rien à compléter')}</div>
         </div>
         <div className="kpi">
           <div className="l">{LL(`Rimborsato nel ${Y}`, `Remboursé en ${Y}`)}</div>
@@ -152,7 +154,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
                 <li key={`${g.person}|${g.currency}`}><Link href={open(g)} scroll={false} className={sel === g ? 'sel' : ''}>
                   <span className="rb-av" aria-hidden="true">{ini(g.person)}</span>
                   <span className="aw-n"><b>{g.person}</b><small className="muted">{g.rows.length === 1 ? LL(`1 spesa del ${dm(since(first))}`, `1 dépense du ${dm(since(first))}`) : LL(`${g.rows.length} spese, la più vecchia del ${dm(since(first))}`, `${g.rows.length} dépenses, la plus ancienne du ${dm(since(first))}`)}</small></span>
-                  {nd > 0 && <span className="cdp soon rb-nd">{nd === 1 ? LL('1 senza giustificativo', '1 sans pièce') : LL(`${nd} senza giustificativo`, `${nd} sans pièce`)}</span>}
+                  {nd > 0 && <span className="cdp soon rb-nd">{LL(`${nd} da documentare`, `${nd} à documenter`)}</span>}
                   <span className="aw-b num">{money(tot, g.currency, lang)}{g.currency !== 'EUR' && <small>≈ {e2(g.rows.reduce((s, r) => s + eurOf(r), 0))}</small>}</span>
                   <span className="btn small rb-go">{resp ? LL('Rimborsa', 'Rembourser') : LL('Apri', 'Ouvrir')}</span>
                 </Link></li>);
