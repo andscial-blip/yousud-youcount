@@ -861,6 +861,18 @@ test('preventivo: numero di riga stabile, controparte, riga aggiunta alla versio
   await assert.rejects(rpc(U.admin, 'budget_item_add', { budget_id: b.id, category_id: R.out['401'], unit_cost: 5, currency: 'EUR' }, 'motivo valido'), /superata/);
 });
 
+test('logo del finanziatore: lo imposta un responsabile, lo leggono tutti nell\'organizzazione, niente scritture dirette né formati non ammessi', async () => {
+  const [cp] = await as(U.op, (q) => q(`insert into counterparties(org_id, name, kind, created_by) values ($1, 'Fondazione con logo', 'donor', $2) returning id`, [ORG, U.op]));
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  await assert.rejects(rpc(U.op, 'counterparty_logo_set', cp.id, png), /forbidden/);
+  await assert.rejects(rpc(U.resp, 'counterparty_logo_set', cp.id, 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='), /immagine non valida/);
+  await rpc(U.resp, 'counterparty_logo_set', cp.id, png);
+  assert.equal((await as(U.op, (q) => q('select image from counterparty_logos where counterparty_id = $1', [cp.id])))[0].image, png, 'lo vede anche un operatore');
+  await assert.rejects(as(U.resp, (q) => q('update counterparty_logos set image = $2 where counterparty_id = $1', [cp.id, png])), /permission denied/);
+  await rpc(U.resp, 'counterparty_logo_set', cp.id, null);
+  assert.equal((await sql('select count(*)::int n from counterparty_logos where counterparty_id = $1', [cp.id]))[0].n, 0);
+});
+
 test('scadenziario: scadenze a mano, adempimenti dell\'app, ricorrenza, visibilità', async () => {
   await assert.rejects(rpc(U.ro, 'deadline_save', { title: 'Prova', due_date: '2031-01-31' }), /forbidden/);
   const d = await rpc(U.op, 'deadline_save', { title: 'Pagare affitto ufficio', category: 'pay', due_date: '2031-01-31', amount: 450, repeat: 'monthly', priority: 'high' });

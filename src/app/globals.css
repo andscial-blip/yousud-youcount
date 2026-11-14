@@ -2040,3 +2040,54 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
   .prj-act .btn { width: 100%; justify-content: center; padding-left: 6px; padding-right: 6px; font-size: 13px; white-space: nowrap; }
 }
 @media (max-width: 359px) { .prj-act { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Finanziamenti nel disegno di Cairn (14/11): logo o iniziali del finanziatore, schede, tempo trascorso ---------- */
+.dmark { flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid var(--line-2); background: #fff; overflow: hidden;
+  font-family: var(--f-ui); font-weight: 700; color: var(--navy); letter-spacing: .01em; }
+.dmark.has img { width: 100%; height: 100%; object-fit: contain; padding: 12%; display: block; }
+.dmark.none { background: var(--surface-2); color: var(--muted); }
+.fin-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; padding: 12px 18px; }
+.fin-bar .segs { margin: 0; }
+.fin-pb { position: relative; }
+.fin-pb em { position: absolute; top: -1px; bottom: -1px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--vz-plan); }
+.fin-note { margin: 12px 0 0; }
+.gcard .pr-n b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; }
+.gcard .pr-h { align-items: start; min-height: 58px; }
+.gcard .pr-n small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fin .prj-pairs li { grid-template-columns: minmax(0, 250px) minmax(0, 1fr) 92px; }
+@media (max-width: 760px) { .fin .prj-pairs li { grid-template-columns: minmax(0, 1fr) 92px; } }
+.g-time { display: grid; gap: 6px; }
+.g-tb { display: block; height: 6px; border-radius: 3px; background: var(--band); overflow: hidden; }
+.g-tb i { display: block; height: 100%; border-radius: 3px; background: var(--vz-plan); }
+.g-tl { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--muted); }
+.g-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px 16px; align-items: center; padding: 16px 18px; }
+.g-ht h1 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; color: var(--navy); }
+.g-ht p { margin: 4px 0 0; font-size: 13.5px; color: var(--muted); }
+.g-ht p a { color: inherit; }
+.g-act { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.g-act .btn { width: 100%; justify-content: center; }
+.g-q { margin: 0; display: grid; gap: 16px; }
+.g-q > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: baseline; }
+.g-q dt { font-size: 13.5px; } .g-q dd { margin: 0; font-weight: 600; color: var(--navy); } .g-q dd.neg { color: var(--red); }
+.g-q .bqs-bar { grid-column: 1 / -1; }
+.g-kv { margin: 0; }
+.g-dl { margin-top: 12px; }
+.g-lt { margin: 6px 0 0; font-size: 14px; font-weight: 600; }
+.dlogo { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; align-items: start; }
+.dlogo-b { display: grid; gap: 8px; }
+.dlogo-a { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dlogo-a .btn { width: 100%; justify-content: center; white-space: nowrap; }
+.dlogo-b p { margin: 0; }
+.fin .gr-form { align-items: end; }
+@media (max-width: 760px) {
+  .fin-bar { padding: 12px 14px; }
+  .fin-bar .segs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fin-bar .segs > a { min-width: 0; padding-left: 4px; padding-right: 4px; text-align: center; font-size: 13px; }
+  .fin-bar > .btn { width: 100%; justify-content: center; }
+  .g-head { grid-template-columns: auto minmax(0, 1fr); padding: 14px; }
+  .g-head > .chip { grid-column: 2; justify-self: start; }
+  .g-act { grid-column: 1 / -1; }
+  .dlogo-a { grid-template-columns: minmax(0, 1fr); }
+}
+.g-kv a, .g-ht p a { color: inherit; text-underline-offset: 2px; }
+@media (max-width: 760px) { .gcard .pr-h { min-height: 0; } }

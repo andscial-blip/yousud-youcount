@@ -201,7 +201,7 @@ let total = 0;
 try {
   await waitFor(`${base}/login`);
   const PAGES = ['/login', '/offline', '/', '/movimenti', `/movimenti/${S.movId}`, `/movimenti/${S.movId}/modifica`, '/nuovo', '/nuovo#doc',
-    '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', `/finanziamenti/${S.grant}`, '/conti', '/rendiconto',
+    '/verifica', '/analisi', '/documenti', '/progetti', `/progetti/${S.prj}`, '/finanziamenti', '/finanziamenti?nuovo=1', `/finanziamenti/${S.grant}`, `/finanziamenti/${S.grant}?modifica=1`, '/conti', '/rendiconto',
     '/controparti', '/rimborsi', '/anticipi', `/movimenti/${S.advMov}`, '/riconciliazione', `/riconciliazione?conto=${S.bi}`, '/altro', '/guida', '/account', '/account/password', '/sincronizzazione',
     '/admin/utenti', '/admin/conti', '/admin/progetti', '/admin/piano-conti', '/admin/periodi', '/cambi', '/admin/impostazioni', '/admin/dati', '/admin/registro', '/chiedi',
     '/preventivo', '/preventivo?grafico=progetti', '/preventivo?grafico=flussi', '/preventivo?nuova=1', '/preventivo/riepilogo', '/preventivo/riepilogo?schema=1', '/analisi?vista=budget', '/nuovo?tipo=expense&data=2026-11-03&importo=1234&desc=Riga%20estratto', '/scadenze', '/scadenze?vista=calendario', '/documenti-emessi', `/documenti-emessi/${S.doc0}`,

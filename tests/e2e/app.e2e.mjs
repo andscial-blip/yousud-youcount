@@ -401,7 +401,7 @@ try {
     const p = rs.page;
     const [{ id: prj }] = (await pool.query(`select id from projects where name = 'École Antanetibe'`)).rows;
     // elenco dei progetti nel disegno di Cairn: quattro riquadri, anello delle uscite per progetto e barre previsto/speso
-    await p.goto(`${base}/progetti?anno=${year}`);
+    await p.goto(`${base}/progetti?anno=${year}&tutti=1`);
     assert.match((await p.locator('.kpis.prk').innerText()).replace(/\s+/g, ' '), /Previsto .*Speso .*Residuo .*Entrate /);
     assert.equal(await p.locator('.prj-two .panel').count(), 2);
     await p.locator('a.pring', { hasText: 'École Antanetibe' }).click();
@@ -411,14 +411,40 @@ try {
     const link = p.getByRole('link', { name: 'modifica nel Preventivo →' });
     assert.match(await link.getAttribute('href'), new RegExp(`/preventivo\\?anno=${year}&progetto=${prj}#righe`));
     assert.equal(await p.getByText('Imposta il budget').count(), 0);
+    // finanziamenti nel disegno di Cairn: riquadri, scheda laterale per il nuovo, modifica, logo del finanziatore, chiusura
+    await pool.query(`insert into counterparties(org_id, name, kind) select id, 'Fondazione E2E', 'donor' from organizations limit 1`);
     await p.goto(`${base}/finanziamenti`);
-    await p.getByText('Nuovo finanziamento').click();
-    await p.fill('#title', 'Bando scuole di prova');
-    await p.selectOption('#project_id', { label: 'École Antanetibe' });
-    await p.fill('#amount', '12.000');
+    assert.match((await p.locator('.kpis.prk').innerText()).replace(/\s+/g, ' '), /Concesso .*Ricevuto .*Speso .*Disponibile in cassa /);
+    await p.getByRole('link', { name: 'Nuovo finanziamento' }).click();
+    await p.waitForURL(/nuovo=1/);
+    await p.fill('#g-title', 'Bando scuole di prova');
+    await p.selectOption('#g-prj', { label: 'École Antanetibe' });
+    await p.fill('#g-amount', '12.000');
     await p.getByRole('button', { name: 'Salva', exact: true }).click();
     await p.waitForURL(/\/finanziamenti\/[0-9a-f-]{36}$/);
-    assert.match(await p.locator('main').innerText(), /12\.000,00\s?€/);
+    assert.match((await p.locator('.kpis.prk').innerText()).replace(/[  ]/g, ' '), /Concesso\s+12\.000 €/);
+    assert.equal(await p.locator('.g-head .dmark.none').count(), 1, 'senza finanziatore: segno neutro');
+    await p.getByRole('link', { name: 'Modifica', exact: true }).click();
+    await p.waitForURL(/modifica=1/);
+    await p.selectOption('#g-donor', { label: 'Fondazione E2E' });
+    await p.locator('.bq-sheet').getByRole('button', { name: 'Salva', exact: true }).click();
+    await p.waitForURL(/ok=1/);
+    assert.equal((await p.locator('.g-head .dmark.mono').innerText()).trim(), 'FE', 'senza logo: iniziali del finanziatore');
+    await p.getByRole('link', { name: 'Modifica', exact: true }).click();
+    await p.waitForURL(/modifica=1/);
+    await p.locator('.dlogo input[type=file]').setInputFiles({ name: 'logo.png', mimeType: 'image/png',
+      buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64') });
+    await p.getByRole('button', { name: 'Salva il logo' }).click();
+    await p.waitForURL(/ok=logo/);
+    assert.equal(await p.locator('.g-head .dmark.has img').count(), 1);
+    assert.equal((await pool.query(`select count(*)::int n from counterparty_logos`)).rows[0].n, 1);
+    await p.getByRole('button', { name: 'Chiudi', exact: true }).click();
+    await p.waitForURL(/ok=1/);
+    assert.match(await p.locator('.g-head').innerText(), /chiuso/);
+    await p.getByRole('button', { name: 'Riapri' }).click();
+    await p.waitForURL(/ok=1/);
+    await p.goto(`${base}/finanziamenti`);
+    assert.equal(await p.locator('a.gcard', { hasText: 'Bando scuole di prova' }).locator('.dmark.has').count(), 1);
   });
   await check('operatore: conta di cassa con differenza rispetto al saldo', async () => {
     const p = op.page;
