@@ -31,7 +31,7 @@ export default async function GrantDetail({ params, searchParams }: {
     .eq('id', id).maybeSingle<GrantRow>();
   if (!g) notFound();
   const staff = can(me, STAFF), resp = can(me, RESP);
-  const [{ data: budget }, { data: ms }, { data: logo }, { data: dls }, { data: rate }, { data: donors }, { data: projects }] = await Promise.all([
+  const [{ data: budget }, { data: ms }, { data: logo }, { data: dls }, { data: rate }, { data: donors }, { data: projects }, { data: loose }] = await Promise.all([
     staff ? supabase.rpc('budget_vs_actual', { p_project: null, p_year: null, p_grant: id }) : Promise.resolve({ data: [] }),
     supabase.from('movements').select('id, grant_id, kind, description, amount, currency, amount_eur, sign, op_date, status, no_doc_reason, docs:movement_documents(count), category:categories(code)')
       .eq('grant_id', id).in('status', COUNTED).order('op_date', { ascending: false }).limit(5000).returns<Row[]>(),
@@ -40,7 +40,12 @@ export default async function GrantDetail({ params, searchParams }: {
     g.currency === 'MGA' ? supabase.rpc('fx_rate_for', { p_date: today }) : Promise.resolve({ data: null }),
     resp && sp.modifica === '1' ? supabase.from('counterparties').select('id, name').in('kind', ['donor', 'other']).order('name') : Promise.resolve({ data: [] }),
     resp && sp.modifica === '1' ? supabase.from('projects').select('id, name').order('name') : Promise.resolve({ data: [] }),
+    // spese del progetto non collegate ad alcun finanziamento nel periodo: se ci sono, il rendiconto al finanziatore può essere sottostimato
+    g.project ? (() => { let q = supabase.from('movements').select('amount_eur, sign').eq('project_id', g.project!.id).is('grant_id', null).eq('kind', 'expense').in('status', COUNTED);
+      if (g.start_date) q = q.gte('op_date', g.start_date); if (g.end_date) q = q.lte('op_date', g.end_date); return q.limit(5000); })() : Promise.resolve({ data: [] }),
   ]);
+  const looseRows = (loose ?? []) as { amount_eur: string | null; sign: number }[];
+  const looseN = looseRows.filter((r) => r.sign > 0).length, looseEur = looseRows.reduce((a, r) => a + Number(r.amount_eur ?? 0) * r.sign, 0);
   const moves = ms ?? [];
   const x = totals(moves);
   const fx = rate == null ? null : Number(rate);
@@ -159,6 +164,7 @@ export default async function GrantDetail({ params, searchParams }: {
               <div><dt>{L('Spese ancora da verificare', 'Dépenses encore à vérifier')}</dt><dd className="num">{x.unver}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.unver / x.nExp) * 100 : 0}%`, background: 'var(--vz-sp)' }} /></span></div>
             </dl>
+            {looseN > 0 && g.project && <p className="note warn g-loose"><Link href={`/movimenti?progetto=${g.project.id}${g.start_date ? `&dal=${g.start_date}` : ''}${g.end_date ? `&al=${g.end_date}` : ''}&tipo=expense`}>{L(`Spese del progetto non attribuite ad alcun finanziamento: ${looseN} · ${e0(looseEur)}`, `Dépenses du projet non rattachées à un financement : ${looseN} · ${e0(looseEur)}`)}</Link>{' '}{L('Se appartengono a questo finanziamento, collegale dal modulo del movimento.', 'Si elles relèvent de ce financement, rattachez-les depuis le formulaire du mouvement.')}</p>}
             <p className="muted small fin-note">{L('Si contano le spese registrate o verificate. «Con documento»: almeno un file allegato. «Senza documento, motivo dichiarato»: nessun file, ma il motivo è scritto. «Da documentare»: né file né motivo.', 'On compte les dépenses enregistrées ou vérifiées. « Avec pièce » : au moins un fichier joint. « Sans pièce, motif déclaré » : aucun fichier, mais le motif est écrit. « À documenter » : ni fichier ni motif.')}</p>
           </div>
         </section>

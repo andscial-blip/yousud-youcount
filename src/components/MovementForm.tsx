@@ -37,7 +37,7 @@ type Dup = { id: string; ref: string | null; op_date: string; amount: string; cu
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Precompilazione di un movimento nuovo (es. da una riga dell'estratto conto senza corrispondenza)
-export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string; own?: boolean };
+export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string; own?: boolean; project_id?: string };
 type Props = { refData: RefData; t: Dict; initial?: Initial; prefill?: Prefill };
 
 // Dopo un salvataggio senza rete il modulo riparte vuoto (nuova chiave) per il movimento successivo.
@@ -82,7 +82,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const choosePay = (m: 'org' | 'own' | 'adv') => {
     setPayMode(m);
     const isAdv = R.accounts.find((a) => a.id === accountId)?.kind === 'advance';
-    if ((m === 'adv') !== isAdv) setAccountId('');
+    if ((m === 'adv') !== isAdv) {
+      // passando ad «Anticipo» si propone l'anticipo di chi compila, non quello di un altro
+      const mine = m === 'adv' ? advances.filter((a) => (a.holder ?? '').toLowerCase() === R.userName.toLowerCase()) : [];
+      setAccountId(mine.length === 1 ? mine[0]!.id : '');
+    }
   };
   const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial?.currency === 'MGA' ? 'MGA' : 'EUR');
   const [toAccountId, setToAccountId] = useState(initial?.to_account_id ?? '');
@@ -90,8 +94,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? fmt(Number(initial.fx_rate)) : '');
   const [rateTouched, setRateTouched] = useState(Boolean(initial?.fx_rate));
   const [categoryId, setCategoryId] = useState(initial?.category_id ?? '');
-  const [projectId, setProjectId] = useState(initial?.project_id ?? '');
-  const [grantId, setGrantId] = useState(initial?.grant_id ?? '');
+  const [projectId, setProjectId] = useState(initial?.project_id ?? P?.project_id ?? '');
+  const [grantId, setGrantId] = useState(initial?.grant_id ?? (() => { const pid = initial?.project_id ?? P?.project_id ?? ''; const own = pid ? R.grants.filter((g) => g.project_id === pid) : []; return !initial && own.length === 1 ? own[0]!.id : ''; })());
   const [cpId, setCpId] = useState(initial?.counterparty_id ?? '');
   const [cpNew, setCpNew] = useState('');
   const [methodId, setMethodId] = useState(initial?.payment_method_id ?? '');
@@ -252,6 +256,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     rate: currency === 'MGA' && !rate, noDocReason: kind !== 'transfer' && noDoc && noDocReason.trim().length < 5,
   };
 
+  // riepilogo accanto ai pulsanti: quali campi mancano per registrare
+  const missingNames = ([['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
+    ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['noDocReason', t.f_doc]] as const)
+    .filter(([k]) => missing[k]).map(([, l]) => l.toLowerCase());
+
   function errorText(msg: string) {
     const code = msg.split(':')[0].trim();
     if (msg.includes('movements_expense_project')) return t.err_expense_project;
@@ -267,7 +276,16 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
     // spesa di tasca propria: resta "da rimborsare" (bozza senza conto) finché un responsabile non la rimborsa
     if (due) status = 'draft';
-    if (needed) return;
+    if (needed) {
+      // su telefono gli errori restano fuori schermo: porto in vista il primo campo da correggere e gli do il fuoco
+      requestAnimationFrame(() => {
+        const first = document.querySelector('.mform .ferr');
+        const field = first?.closest('.field, .panel-b') as HTMLElement | null;
+        field?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        (field?.querySelector('input:not([type=hidden]):not(.vh-file), select, textarea') as HTMLElement | null)?.focus({ preventScroll: true });
+      });
+      return;
+    }
     if (docs.some((d) => d.state === 'uploading')) return;
     if (initial && !navigator.onLine) { setError(t.q_edit_offline); return; }
     setBusy(true);
@@ -528,7 +546,12 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           </div>
           <div className="field">
             <label htmlFor="project">{t.f_project}</label>
-            <select className="input" id="project" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <select className="input" id="project" value={projectId} onChange={(e) => {
+              const pid = e.target.value; setProjectId(pid);
+              // se il progetto ha un solo finanziamento, lo propongo già scelto (si può togliere): partire da «Nessuno» sottostima il rendiconto
+              const own = R.grants.filter((g) => g.project_id === pid);
+              setGrantId(own.length === 1 ? own[0]!.id : R.grants.some((g) => g.id === grantId && (!g.project_id || g.project_id === pid)) ? grantId : '');
+            }}>
               <option value="">{kind === 'income' ? t.f_cp_none : t.f_choose}</option>
               {R.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -596,6 +619,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         )}
         <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : due ? t.f_save_due : t.f_record}</button>
         <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint}</span>
+        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{t.f_missing_list}: {missingNames.join(', ')}</span>}
       </div>
     </form>
   );

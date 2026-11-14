@@ -7,6 +7,7 @@ import { HBars, MonthBars } from '@/components/Charts';
 const TOPN = 8;
 import { Denied, PageHead, H2 } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
+import { PrintHead } from '@/components/PrintHead';
 import { Ico } from '@/components/Ui';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
         <a className="btn" href={`/api/v1/export/report?tipo=${kind}&anno=${year}`}><Ico name="download" />Excel</a>
         <PrintButton label={L('Stampa / PDF', 'Imprimer / PDF')} />
       </PageHead>
+      <PrintHead sb={supabase} lang={lang} title={`${L(REPORTS.find((r) => r.k === kind)!.it, REPORTS.find((r) => r.k === kind)!.fr)} ${year}`} sub={L('Importi in euro, salvo dove indicato', 'Montants en euros, sauf indication contraire')} />
       <nav className="segs noprint" aria-label={L('Tipo di report', 'Type de rapport')}>
         {REPORTS.map((r) => <Link key={r.k} href={q(r.k, year)} aria-selected={r.k === kind}>{L(r.it, r.fr)}</Link>)}
         <Link href={`/rendiconto?anno=${year}`}>{L('Rendiconto ETS', 'Compte ETS')}</Link>

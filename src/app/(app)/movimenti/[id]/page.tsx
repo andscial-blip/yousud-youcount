@@ -112,8 +112,9 @@ export default async function MovementDetail({ params, searchParams }: {
           <section className="panel mv-sum">
             <div className="mv-amt">
               <span className="l">{t('amount')}</span>
-              <span className={`v num ${signedAmount < 0 ? '' : m.kind === 'income' ? 'pos' : ''}`}>{money(signedAmount, m.currency, lang)}</span>
-              {m.currency === 'MGA' && m.amount_eur && <span className="s num">{money(m.amount_eur, 'EUR', lang)} · {t('f_rate')} {money(m.fx_rate, 'MGA', lang).replace(/\s?MGA$/, '')}</span>}
+              {/* euro in evidenza con il segno; sotto l'importo nella valuta del conto (quello scritto sulla ricevuta) e il tasso */}
+              <span className={`v num ${signedAmount < 0 ? '' : m.kind === 'income' ? 'pos' : ''}`}>{m.currency === 'MGA' && m.amount_eur ? money(Number(m.amount_eur) * Math.sign(signedAmount || 1), 'EUR', lang) : money(signedAmount, m.currency, lang)}</span>
+              {m.currency === 'MGA' && m.amount_eur && <span className="s num"><b>{money(signedAmount, m.currency, lang)}</b> · {t('f_rate')} {money(m.fx_rate, 'MGA', lang).replace(/\s?MGA$/, '')}</span>}
             </div>
             <div className="panel-b">
               <dl className="kv">

@@ -248,8 +248,10 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <td className="muted nw">{m.category?.code ?? '–'}</td>
                     <td>{m.project?.name ?? '–'}<div className="muted small">{nm(lang, m.account)}</div></td>
                     <td className={`r num nw ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
-                      <span className="two"><b>{m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>
-                        {m.currency !== 'EUR' && m.amount_eur && <small>{money(Number(m.amount_eur), 'EUR', lang)}</small>}</span></td>
+                      {/* regola unica a ogni larghezza: euro in evidenza con il segno, valuta originale sotto in piccolo */}
+                      {(() => { const eur = m.currency !== 'EUR' && m.amount_eur ? Number(m.amount_eur) * m.sign * (m.kind === 'income' ? 1 : -1) : null;
+                        const orig = m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`;
+                        return <span className="two"><b>{eur != null ? `${eur > 0 ? '+' : ''}${money(m.kind === 'transfer' ? Math.abs(eur) : eur, 'EUR', lang)}` : orig}</b>{eur != null && <small>{orig}</small>}</span>; })()}</td>
                     <td>{m.kind !== 'transfer' && <DocIndicator count={m.docs?.[0]?.count ?? 0} noDocReason={m.no_doc_reason}
                       labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
                     <td><StatusChip s={m.status} label={t(`st_${m.status}`)} /></td>

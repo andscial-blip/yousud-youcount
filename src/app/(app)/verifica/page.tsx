@@ -79,7 +79,7 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
                     <td><Link className="rowlink" href={`/movimenti/${r.id}`}>{r.description || t(`k_${r.kind}`)}</Link>{r.reverses_id && <> <span className="chip tiny">{t('reversal')}</span></>}
                       <div className="muted small">{[r.category?.code, name.get(r.created_by)].filter(Boolean).join(' · ')}</div></td>
                     <td>{r.project?.name ?? '–'}<div className="muted small">{nm(lang, r.account)}</div></td>
-                    <td className="r num nw">{money(signed(r), r.currency, lang)}{eq(r) && <div className="muted small">{eq(r)}</div>}</td>
+                    <td className="r num nw">{eq(r) ?? money(signed(r), r.currency, lang)}{eq(r) && <div className="muted small">{money(signed(r), r.currency, lang)}</div>}</td>
                     <td>{r.kind !== 'transfer' && <DocIndicator count={r.docs?.[0]?.count ?? 0} noDocReason={r.no_doc_reason}
                       labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
                     <td className="r">{action}</td>
@@ -96,7 +96,7 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
                   <span className="mc-s">{[date(r.op_date), r.ref, r.project?.name, name.get(r.created_by)].filter(Boolean).join(' · ')}</span>
                   <span className="mc-c">{ds && <span className={`chip tiny vf-doc ${ds}`}>{docLabel(ds, lang)}</span>}
                     {r.reverses_id && <span className="chip tiny">{t('reversal')}</span>}</span></div>
-                <span className={`mc-a two num ${r.kind === 'income' ? 'amt-in' : ''}`}><b>{money(signed(r), r.currency, lang)}</b>{eq(r) && <small>{eq(r)}</small>}</span>
+                <span className={`mc-a two num ${r.kind === 'income' ? 'amt-in' : ''}`}><b>{eq(r) ?? money(signed(r), r.currency, lang)}</b>{eq(r) && <small>{money(signed(r), r.currency, lang)}</small>}</span>
                 <div className="vf-act">
                   <Link className="btn small" href={`/movimenti/${r.id}`}>{ds === 'doc' ? L('Apri e controlla il documento', 'Ouvrir et contrôler la pièce') : L('Apri', 'Ouvrir')}</Link>
                   {mine(r) ? <span className="chip tiny">{t('verify_own')}</span> : (

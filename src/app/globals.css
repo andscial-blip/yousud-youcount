@@ -2167,3 +2167,33 @@ object.doc-prev.pdf { width: 100%; height: 360px; }
 .docs li > span.num { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vf-cards .vf-c .vf-act .btn { display: flex; align-items: center; min-height: 40px; }
 .vf-cards .vf-c .mc-s { grid-column: 1 / -1; }
+.mform-miss { flex: 1 1 100%; }
+.g-loose { margin: 10px 0 0; font-size: 13.5px; }
+/* importo nella valuta originale sotto l'euro: leggibile anche su telefono (era 11,5 px) */
+.mc-a.two small, td .two small { font-size: 12.5px; }
+.mv-amt .s b { font-weight: 600; color: var(--ink); }
+
+/* ---- Foglio di stampa di rendiconti e report (revisione 14/11): intestazione dell'ente, titolo, pagine numerate ---- */
+.print-head, .print-sign { display: none; }
+@page { size: A4; margin: 16mm 14mm 18mm; @bottom-right { content: counter(page) " / " counter(pages); font: 9pt sans-serif; color: #555; } }
+@media print {
+  .print-head { display: block; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid #999; }
+  .print-head .ph-org { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .print-head .ph-org img { height: 46px; width: auto; }
+  .print-head .ph-org div { display: grid; font-size: 10pt; line-height: 1.35; }
+  .print-head .ph-org b { font-size: 12pt; }
+  .print-head h1 { font-size: 15pt; margin: 0 0 2px; }
+  .print-head p { margin: 0; font-size: 9.5pt; color: #444; }
+  .print-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 36px; font-size: 10pt; break-inside: avoid; }
+  .print-sign i { display: block; height: 44px; border-bottom: 1px solid #000; margin-bottom: 4px; }
+  /* il foglio non è la pagina dell'app: niente pulsanti, schede, icone decorative, ombre */
+  .btn, .segs, .seg, .subrow, .pback, .helpline, .h1row .spacer, details.rep-unc ul, .rep-unc-open { display: none !important; }
+  .panel { border: 0 !important; background: none !important; box-shadow: none !important; padding: 0 !important; }
+  .panel.rep-sheet, .panel:has(> table) { break-inside: auto; }
+  .panel-h .ic, .panel-h svg { display: none !important; }
+  table.t { width: 100%; font-size: 9.5pt; }
+  table.t thead { display: table-header-group; }
+  table.t tr { break-inside: avoid; }
+  .stack { gap: 10px !important; }
+}
+@media print { .panel-h .hic { display: none !important; } .panel-h { break-after: avoid; padding-left: 0 !important; } .panel-h + table, .panel-h + * { break-before: avoid; } }

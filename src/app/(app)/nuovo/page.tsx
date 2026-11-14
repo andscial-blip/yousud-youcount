@@ -26,12 +26,15 @@ export default async function NewMovement({ searchParams }: { searchParams: SP }
     account_id: refData.accounts.some((a) => a.id === account) ? account : undefined,
     description: one(sp.desc).slice(0, 300) || undefined,
     own: one(sp.tasca) === '1' ? true : undefined,
+    // progetto già scelto (da «+ Ricevuta» di una richiesta di anticipo)
+    project_id: refData.projects.some((x) => x.id === one(sp.progetto)) ? one(sp.progetto) : undefined,
   };
   const has = Object.entries(prefill).some(([k, v]) => k !== 'own' && v !== undefined);
   return (
     <div className="stack">
       <PageHead title={t('f_new_title')} />
-      {has && <div className="note info">{t('f_prefill_stmt')}</div>}
+      {/* l'avviso «dati presi dall'estratto conto» solo quando è vero: importo o descrizione arrivano da una riga dell'estratto */}
+      {(prefill.amount !== undefined || prefill.description !== undefined) && <div className="note info">{t('f_prefill_stmt')}</div>}
       <MovementForm refData={refData} t={dictFor(lang)} prefill={has || prefill.own ? prefill : undefined} />
     </div>
   );

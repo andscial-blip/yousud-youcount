@@ -4,6 +4,7 @@ import { money } from '@/lib/format';
 import type { Lang, T } from '@/lib/i18n';
 import { Denied, ErrorNote, PageHead, Panel, H2 } from '@/components/Page';
 import { PrintButton } from '@/components/PrintButton';
+import { PrintHead, PrintSign } from '@/components/PrintHead';
 import { Ico } from '@/components/Ui';
 import { ArchiveStatement } from '@/components/ArchiveStatement';
 import { ADMIN } from '@/lib/session';
@@ -54,6 +55,9 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
     <div className="stack">
       <PageHead title={`${t('rep_title')} ${year}`}>
       </PageHead>
+      <PrintHead sb={supabase} lang={lang} draft={!arc.some((a) => a.year === year)}
+        title={lang === 'fr' ? `Compte rendu financier de caisse – ${modelE ? 'Mod. E' : 'Mod. D'} – exercice ${year}` : `Rendiconto per cassa – ${modelE ? 'Mod. E' : 'Mod. D'} – esercizio ${year}`}
+        sub={lang === 'fr' ? 'DM 5 mars 2020 · montants en euros' : 'DM 5 marzo 2020 · importi in euro'} />
       <div className="h1row noprint" style={{ gap: 8 }}>
         <div className="seg">
           <Link href={q(year, false)} aria-current={(!modelE) ? 'true' : undefined}>{t('rep_modelD')}</Link>
@@ -80,7 +84,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
                 {a.url && <a className="btn small" href={a.url}><Ico name="download" />{lang === 'fr' ? 'Télécharger' : 'Scarica'}</a>}</div></li>))}</ul>
         )}
       </section>
-      <div className="note">{t('rep_draft')}</div>
+      <div className="note noprint">{t('rep_draft')}</div>
       <ErrorNote prefix={t('error_load')} error={error} />
       {missing > 0 && <div className="note err">{missing} {t('rep_missing_rate')}</div>}
       {(unclassified ?? []).length > 0 && (() => {
@@ -99,7 +103,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           </details>);
       })()}
       {(['out', 'in'] as const).map((dir) => (
-        <section className="panel" key={dir} style={{ overflowX: 'auto' }}>
+        <section className="panel rep-sheet" key={dir} style={{ overflowX: 'auto' }}>
           <div className="panel-h"><H2 text={dir === 'out' ? t('out') : t('in')} /></div>
           <table className="t keep">
             <thead><tr><th>{t('rep_item')}</th><th className="r">{year}</th><th className="r">{year - 1}</th></tr></thead>
@@ -115,6 +119,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
         </section>
       ))}
       <Result t={t} lang={lang} year={year} value={tot('in') - tot('out')} />
+      <PrintSign lang={lang} />
       {(fees ?? []).length > 0 && (
         <Panel title={`${t('fees_title')} ${year}`}>
           <table className="t keep">

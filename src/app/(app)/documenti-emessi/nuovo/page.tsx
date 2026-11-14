@@ -36,7 +36,7 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
     currency: src.currency, data: { ...(src.data ?? {}), fx_rate: undefined } } : {
     type, lang: lang === 'fr' ? 'fr' : 'it', doc_date: new Date().toISOString().slice(0, 10), currency: m?.currency ?? 'EUR',
     movement_id: m?.id ?? null, project_id: m?.project_id ?? (/^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : null), counterparty_id: m?.counterparty_id ?? null,
-    party_name: m ? (type === 'NRS' || type === 'ASP' ? m.paid_by ?? m.counterparty?.name ?? '' : m.counterparty?.name ?? m.paid_by ?? '') : '',
+    party_name: m ? (type === 'NRS' || type === 'ASP' ? m.paid_by ?? m.counterparty?.name ?? '' : m.counterparty?.name ?? '') : '', // quietanza: chi riceve è il fornitore, mai chi ha pagato; se manca resta vuoto
     party_tax_id: priv?.tax_code ?? '', party_address: priv?.address ?? '', amount: m ? Number(m.amount) : '',
     data: m ? { method, desc: m.description ?? '', causale_txt: type === 'RIC' ? m.description ?? '' : undefined, received_on: m.op_date, paid_on: m.op_date,
       lines: type === 'NOT' ? [{ d: m.description ?? '', q: 1, p: Number(m.amount) }] : type === 'NRS' ? [{ date: m.op_date, d: m.description ?? '', amt: Number(m.amount), doc: true }] : undefined,
