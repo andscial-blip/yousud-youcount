@@ -5,16 +5,17 @@ import { can, requireMe, STAFF } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { Empty, PageHead, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
-import { MonthBars } from '@/components/Charts';
+import { MonthBars, Viz } from '@/components/Charts';
 import { DOC_TYPES } from '@/lib/doc-model';
 import { ProjectIcon } from '@/components/ProjectIcon';
 
 export const dynamic = 'force-dynamic';
 
+const MESI_S = { it: ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'], fr: ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'] } as const;
 type Led = { month: number; kind: string; amount_eur: string | null; category_id: string | null };
 
-// Cruscotto contabile del progetto: preventivo e consuntivo, saldo, residuo, andamento mensile, voci di spesa,
-// movimenti, documenti, scadenze e finanziamenti collegati.
+// Cruscotto contabile del progetto nel disegno di Cairn (14/11): quattro riquadri con mini grafico (giallo = uscite, blu notte = entrate),
+// andamento mensile, voci di spesa, preventivo e consuntivo, movimenti, documenti, scadenze e finanziamenti collegati.
 export default async function ProjectDetail({ params, searchParams }: {
   params: Promise<{ id: string }>; searchParams: Promise<{ anno?: string; ok?: string; err?: string }>;
 }) {
@@ -54,22 +55,52 @@ export default async function ProjectDetail({ params, searchParams }: {
   const used = bOut ? out / bOut : 0;
   const gparts = [...byG.entries()].sort((a, b) => b[1] - a[1]);
   const gtot = gparts.reduce((a, [, v]) => a + v, 0) || 1;
+  const curM = year < now.getFullYear() ? 12 : year > now.getFullYear() ? 0 : now.getMonth() + 1;
+  const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}\u00a0%` : '–');
+  const mTip = (title: string, f: (m: { inc: number; out: number }) => number) => `${title}\n${months.slice(0, Math.max(curM, 1)).map((m, k) => `${MESI_S[lang][k]}: ${e0(f(m))}`).join('\n')}`;
   return (
-    <div className="stack">
-      <PageHead title={`${p.name} · ${year}`} lead={<><Link className="btn ghost small" href={`/progetti?anno=${year}`}>← {t('nav_projects')}</Link><ProjectIcon p={p} size={34} /></>}>
-        <Link className="btn" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('Tutti i movimenti', 'Tous les mouvements')}</Link>
-        <Link className="btn" href={`/documenti-emessi/nuovo?progetto=${id}`}>{L('Emetti documento', 'Émettre un document')}</Link>
+    <div className="stack prj prj-d">
+      <PageHead title={`${p.name} · ${year}`} lead={<ProjectIcon p={p} size={34} />}>
+        <div className="prj-act">
+          <Link className="btn" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('Tutti i movimenti', 'Tous les mouvements')}</Link>
+          <Link className="btn" href={`/documenti-emessi/nuovo?progetto=${id}`}>{L('Emetti documento', 'Émettre un document')}</Link>
+        </div>
       </PageHead>
       {sp.ok === 'budget' && <div className="note ok" role="status">{t('b_saved')}</div>}
       {sp.err && <div className="note err">{sp.err}</div>}
-      <div className="kpis">
-        <div className="kpi"><div className="l">{L('Preventivo uscite', 'Budget dépenses')}</div><div className="v num">{bOut ? e0(bOut) : '–'}</div>
-          <div className="s">{bOut ? L(`usato ${Math.round(used * 100)} % · anno trascorso ${Math.round(elapsed * 100)} %`, `utilisé ${Math.round(used * 100)} % · année écoulée ${Math.round(elapsed * 100)} %`) : L('nessun preventivo approvato', 'aucun budget approuvé')}</div>
-          {bOut > 0 && <div className="meter" style={{ marginTop: 8 }}><i style={{ width: `${Math.min(100, used * 100).toFixed(1)}%`, background: out > bOut ? 'var(--tax)' : undefined }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div>}</div>
-        <div className="kpi"><div className="l">{L('Uscite', 'Dépenses')}</div><div className="v num">{e0(out)}</div><div className="s">{L(`${nMoves ?? 0} movimenti nell'anno`, `${nMoves ?? 0} mouvements dans l'année`)}</div></div>
-        <div className="kpi"><div className="l">{L('Entrate', 'Recettes')}</div><div className="v num">{e0(inc)}</div><div className="s">{L('Saldo', 'Solde')} <b className={inc - out < 0 ? 'neg' : 'pos'}>{e0(inc - out)}</b></div></div>
-        <div className="kpi"><div className="l">{L('Residuo', 'Reste')}</div><div className={`v num ${bOut && bOut - out < 0 ? 'neg' : ''}`}>{bOut ? e0(bOut - out) : '–'}</div>
-          <div className="s">{bOut ? (out > bOut ? L('oltre il preventivo', 'au-delà du budget') : L('ancora disponibile', 'encore disponible')) : ''}</div></div>
+      <div className="kpis dk prk">
+        <div className="kpi">
+          <div className="l">{L('Preventivo uscite', 'Budget dépenses')}</div>
+          <div className="v num">{bOut ? e0(bOut) : '–'}</div>
+          {bOut > 0 && <><Viz.Stack segs={[{ v: Math.min(out, bOut), c: 'var(--vz-sp)' }, { v: Math.max(0, bOut - out), c: 'var(--band)' }, { v: Math.max(0, out - bOut), c: 'var(--tax)' }]} max={Math.max(bOut, out)}
+            marks={year === now.getFullYear() ? [{ v: elapsed * bOut, c: 'var(--navy)', dash: true }] : undefined}
+            tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}\n${L('Anno trascorso', 'Année écoulée')}: ${Math.round(elapsed * 100)} %`} />
+            <div className="vzl"><span>{L('usato', 'utilisé')}</span><span>{pc(out, bOut)}</span></div></>}
+          <div className="s">{bOut ? L(`anno trascorso ${Math.round(elapsed * 100)} %`, `année écoulée ${Math.round(elapsed * 100)} %`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Uscite', 'Dépenses')}</div>
+          <div className="v num">{e0(out)}</div>
+          <Viz.Cols vals={months.map((m) => m.out)} colors={months.map((_, k) => (k < curM ? 'var(--vz-sp)' : 'var(--band)'))} tip={mTip(`${L('Uscite', 'Dépenses')} ${year}`, (m) => m.out)} />
+          <div className="vzl"><span>{L('media al mese', 'moyenne par mois')}</span><span>{e0(out / Math.max(curM, 1))}</span></div>
+          <div className="s">{(nMoves ?? 0) === 1 ? L('1 movimento nell\'anno', '1 mouvement dans l\'année') : L(`${nMoves ?? 0} movimenti nell'anno`, `${nMoves ?? 0} mouvements dans l'année`)}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Entrate', 'Recettes')}</div>
+          <div className="v num">{e0(inc)}</div>
+          <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < curM ? 'var(--navy)' : 'var(--band)'))} tip={mTip(`${L('Entrate', 'Recettes')} ${year}`, (m) => m.inc)} />
+          <div className="vzl"><span>{L('saldo', 'solde')}</span><span>{e0(inc - out)}</span></div>
+          <div className="s">{inc - out < -0.005 ? L('uscite superiori alle entrate', 'dépenses supérieures aux recettes') : L('entrate che coprono le uscite', 'recettes couvrant les dépenses')}</div>
+        </div>
+        <div className="kpi">
+          {bOut > 0 && <Viz.Ring p={Math.min(used, 1)} color={out > bOut ? 'var(--tax)' : 'var(--vz-sp)'} tip={`${L('Usato', 'Utilisé')}: ${pc(out, bOut)}`} />}
+          <div className="l">{L('Residuo', 'Reste')}</div>
+          <div className={`v num ${bOut ? (bOut - out < 0 ? 'neg' : 'pos') : ''}`}>{bOut ? e0(bOut - out) : '–'}</div>
+          {bOut > 0 && <><Viz.Stack segs={out > bOut ? [{ v: bOut, c: 'var(--band)' }, { v: out - bOut, c: 'var(--tax)' }] : [{ v: bOut - out, c: 'var(--green-soft)' }, { v: out, c: 'var(--band)' }]} max={Math.max(bOut, out)}
+            tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}`} />
+            <div className="vzl"><span>{out > bOut ? L('oltre il preventivo', 'au-delà du budget') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(bOut - out), bOut)}</span></div></>}
+          <div className="s">{bOut ? L('preventivo meno speso', 'budget moins dépensé') : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
+        </div>
       </div>
       <div className="grid">
         <Panel className="c8" title={L(`Andamento mensile ${year}`, `Évolution mensuelle ${year}`)}>

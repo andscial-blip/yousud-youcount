@@ -17,7 +17,7 @@ const UNITS = { it: ['mesi', 'giorni', 'ore', 'persone', 'pezzi', 'kit', 'viaggi
   fr: ['mois', 'jours', 'heures', 'personnes', 'pièces', 'kits', 'voyages', 'litres', 'kg', 'forfait'] };
 
 // Preventivo analitico (richiesta del 12/11): in alto quattro riquadri, poi la composizione del preventivo in un grafico
-// che si cambia con un selettore (per progetto, per voce, entrate e uscite, per controparte), poi la tabella di tutte le righe.
+// che si cambia con un selettore (per voce, la predefinita; per progetto; entrate e uscite; per controparte), poi la tabella di tutte le righe.
 // Ogni riga ha numero, codice, descrizione, progetto, donatore o fornitore, quantità, unità, costo unitario e totale;
 // si aggiunge, si modifica e si elimina da una scheda laterale dove tutto ciò che ha un elenco chiuso si sceglie da un menu.
 // Il confronto con il consuntivo sta in Analisi › Preventivo. Il preventivo è solo annuale.
@@ -42,8 +42,9 @@ export default async function BudgetPage({ searchParams }: {
   const cp = isId(sp.cp) ? sp.cp! : '';
   const term = (sp.q ?? '').trim().slice(0, 80);
   const anyCp = its.some((i) => i.counterparty_id);
-  const graf = sp.grafico === 'voci' || sp.grafico === 'flussi' || (sp.grafico === 'controparti' && anyCp) ? sp.grafico : 'progetti';
-  const filters = { progetto: prj, tipo, cp, q: term, grafico: graf === 'progetti' ? '' : graf };
+  // vista predefinita: «Per voce» (scelta di Andrea del 14/11)
+  const graf = sp.grafico === 'progetti' || sp.grafico === 'flussi' || (sp.grafico === 'controparti' && anyCp) ? sp.grafico : 'voci';
+  const filters = { progetto: prj, tipo, cp, q: term, grafico: graf === 'voci' ? '' : graf };
   const ret = Object.entries(filters).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   const href = (q: Record<string, string | number | undefined | null> = {}, hash = '') => {
     const u = new URLSearchParams({ anno: String(year), v: shown.id });
@@ -108,7 +109,7 @@ export default async function BudgetPage({ searchParams }: {
           </div>)}
       </div>);
   };
-  const tabs: [string, string][] = [['progetti', L('Per progetto', 'Par projet')], ['voci', L('Per voce', 'Par poste')], ['flussi', L('Entrate e uscite', 'Recettes et dépenses')],
+  const tabs: [string, string][] = [['voci', L('Per voce', 'Par poste')], ['progetti', L('Per progetto', 'Par projet')], ['flussi', L('Entrate e uscite', 'Recettes et dépenses')],
     ...(anyCp ? [['controparti', L('Per controparte', 'Par contrepartie')] as [string, string]] : [])];
   const maxFlow = Math.max(1, totIn, totOut);
 
@@ -157,7 +158,7 @@ export default async function BudgetPage({ searchParams }: {
       <section className="panel bq-comp">
         <div className="panel-h"><H2 text={L('Composizione del preventivo', 'Composition du budget')} icon="chart" /><div className="spacer" />
           <div className="segs" role="tablist" aria-label={L('Grafico', 'Graphique')}>
-            {tabs.map(([k, l]) => <Link key={k} role="tab" aria-selected={graf === k} href={href({ grafico: k === 'progetti' ? '' : k })} scroll={false}>{l}</Link>)}
+            {tabs.map(([k, l]) => <Link key={k} role="tab" aria-selected={graf === k} href={href({ grafico: k === 'voci' ? '' : k })} scroll={false}>{l}</Link>)}
           </div></div>
         <div className="panel-b">
           {its.length === 0 ? <Empty text={L('Il preventivo è vuoto: aggiungi la prima riga qui sotto.', 'Le budget est vide : ajoutez la première ligne ci-dessous.')} />

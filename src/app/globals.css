@@ -1415,17 +1415,7 @@ table.bal-fixed th.r { white-space: normal; line-height: 1.25; vertical-align: b
 
 /* ── Progetti: riquadri colorati in alto (blu ardesia e azzurro) e striscia «Dove vanno i fondi» ── */
 /* Progetti: le quattro cifre come nella Dashboard (fondo bianco, filetto colorato in alto) */
-.k4.k-plan { border-top-color: var(--vz-plan); } .k4.k-spent { border-top-color: #4A6A8F; } .k4.k-res { border-top-color: var(--pg1); } .ptiles .k4 > b.pos { color: var(--pg1); }
 .k4.k-res.warn { border-top-color: var(--red); }
-.pmix { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 16px; align-items: center; padding: 14px 18px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-1); }
-.pmix-l { font-size: 13px; font-weight: 600; color: var(--muted); }
-.pmix-b { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
-.pmix-b i { display: block; height: 100%; }
-.pmix-k { grid-column: 2; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--muted); }
-.pmix-k li { display: inline-flex; align-items: center; gap: 6px; } .pmix-k i { width: 9px; height: 9px; border-radius: 2px; } .pmix-k b { color: var(--fg); font-weight: 600; }
-@media (max-width: 760px) {
-  .pmix { grid-template-columns: minmax(0, 1fr); } .pmix-k { grid-column: 1; }
-}
 .g-hero2 .g-search, .g-hero2 .g-search .search, .g-hero2 .g-search .input { width: 100%; max-width: none; }
 .g-hero2 { gap: 16px; }
 
@@ -1484,13 +1474,6 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
   .legend.trio > span > b { grid-column: 1 / -1; margin-left: 0; }
 }
 
-/* «Dove vanno i fondi» su telefono: una voce per riga, nome intero e percentuale allineata a destra. */
-@media (max-width: 760px) {
-  .pmix-k { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
-  .pmix-k li { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 6px; }
-  .pmix-k li > span { min-width: 0; }
-  .pmix-k b { text-align: right; }
-}
 
 /* Marchio su telefono su due righe: «YOU» sopra, «COUNT» sotto, stessa spaziatura e allineati a sinistra;
    altezza del blocco pari al logo. */
@@ -2028,3 +2011,32 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
   table.cbudget tr > td:nth-child(n+3):nth-child(-n+5)[data-l]::before { content: attr(data-l); display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
   table.cbudget .cb-bc { width: auto; }
 }
+
+/* ---------- Progetti nel disegno di Cairn (14/11): giallo = uscite, blu notte = entrate, verde = disponibile ---------- */
+.prj { --c-in: var(--navy); --c-out: var(--vz-sp); --c-net: var(--green-soft); }
+.prj-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); align-items: stretch; }
+.prj-two > .panel { margin: 0; min-width: 0; }
+.prj-two > .panel > .panel-h { flex-wrap: nowrap; gap: 10px 14px; }
+.prj-leg { margin: 0; flex: none; }
+.prj .bq-donut { min-height: 168px; }
+.prj .bq-dl li a { color: inherit; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj .bq-dl li a:hover { text-decoration: underline; }
+.prj-pairs li { grid-template-columns: minmax(0, 170px) minmax(0, 1fr) 92px; }
+.prj .pring.over { border-color: var(--line-2); }
+.prj .pr-ring .rg-t { stroke: var(--band); }
+.prj .pr-ring .rg-a { stroke: var(--vz-sp); }
+.prj .pring.over .pr-ring .rg-a, .prj .pr-ring .rg-x { stroke: var(--tax); }
+.prj .pr-ring .rg-k { stroke: var(--navy); }
+.prj .pr-spark i { background: color-mix(in srgb, var(--vz-sp) 50%, var(--surface)); }
+.prj .pr-spark i.cur { background: var(--vz-sp); } .prj .pr-spark i.fut { background: var(--band); }
+.prj .pr-f b { color: var(--navy); }
+@media (max-width: 1099px) { .prj-two { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .prj-pairs li { grid-template-columns: minmax(0, 1fr) 92px; } }
+.prj-two > .panel { display: flex; flex-direction: column; }
+.prj-two > .panel > .panel-b { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+.prj-act { display: flex; gap: 8px; }
+@media (max-width: 760px) {
+  .prj-act { flex: 1 1 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .prj-act .btn { width: 100%; justify-content: center; padding-left: 6px; padding-right: 6px; font-size: 13px; white-space: nowrap; }
+}
+@media (max-width: 359px) { .prj-act { grid-template-columns: minmax(0, 1fr); } }

@@ -400,7 +400,13 @@ try {
   await check('responsabile: preventivo del progetto in sola lettura (si modifica nel Preventivo) e nuovo finanziamento', async () => {
     const p = rs.page;
     const [{ id: prj }] = (await pool.query(`select id from projects where name = 'École Antanetibe'`)).rows;
-    await p.goto(`${base}/progetti/${prj}?anno=${year}`);
+    // elenco dei progetti nel disegno di Cairn: quattro riquadri, anello delle uscite per progetto e barre previsto/speso
+    await p.goto(`${base}/progetti?anno=${year}`);
+    assert.match((await p.locator('.kpis.prk').innerText()).replace(/\s+/g, ' '), /Previsto .*Speso .*Residuo .*Entrate /);
+    assert.equal(await p.locator('.prj-two .panel').count(), 2);
+    await p.locator('a.pring', { hasText: 'École Antanetibe' }).click();
+    await p.waitForURL(new RegExp(`/progetti/${prj}`));
+    assert.equal(await p.locator('.kpis.prk .kpi').count(), 4);
     // il preventivo si modifica solo nella pagina Preventivo: qui si legge, con il collegamento
     const link = p.getByRole('link', { name: 'modifica nel Preventivo →' });
     assert.match(await link.getAttribute('href'), new RegExp(`/preventivo\\?anno=${year}&progetto=${prj}#righe`));
@@ -777,13 +783,15 @@ try {
     const r1 = sp(await p.locator('tr.bq-r', { hasText: 'Quaderni e penne' }).innerText());
     assert.match(r1, /^\s*1\s+401[\s\S]*Quaderni e penne[\s\S]*École Piccolino[\s\S]*10\s+kit[\s\S]*100\.000 MGA[\s\S]*200,00 €/);
     assert.match(sp(await p.locator('tr.bq-r', { hasText: 'Donazioni da privati' }).innerText()), /Fondazione PROVA/);
-    // riquadri e composizione: per progetto (predefinita), per voce, per controparte
+    // riquadri e composizione: per voce (predefinita), per progetto, per controparte
     const tiles = sp(await p.locator('.kpis.bqk').innerText());
     assert.match(tiles, /Entrate previste\s+3\.000 €[\s\S]*Uscite previste\s+200 €[\s\S]*Saldo previsto\s+2\.800 €/);
-    assert.match(await p.locator('.bq-pairs').innerText(), /École Piccolino/);
-    await p.getByRole('tab', { name: 'Per voce' }).click();
-    await p.waitForURL(/grafico=voci/);
+    // si apre «Per voce» (due anelli: uscite ed entrate); «Per progetto» è la seconda vista
+    assert.equal(await p.getByRole('tab', { name: 'Per voce' }).getAttribute('aria-selected'), 'true');
     assert.equal(await p.locator('.bq-donut svg.donut').count(), 2);
+    await p.getByRole('tab', { name: 'Per progetto' }).click();
+    await p.waitForURL(/grafico=progetti/);
+    assert.match(await p.locator('.bq-pairs').innerText(), /École Piccolino/);
     await p.getByRole('tab', { name: 'Per controparte' }).click();
     await p.waitForURL(/grafico=controparti/);
     assert.match(await p.locator('.bq-comp').innerText(), /Fondazione PROVA/);

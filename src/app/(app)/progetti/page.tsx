@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { CIcon } from '@/components/CIcon';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
-import { Empty, ErrorNote, PageHead } from '@/components/Page';
+import { Empty, ErrorNote, H2 } from '@/components/Page';
+import { Donut, Legend, PAL, Viz } from '@/components/Charts';
 import { ProjectIcon } from '@/components/ProjectIcon';
 import { THEMES, themeOf } from '@/lib/project-theme';
 
@@ -12,8 +12,9 @@ const MESI_S = { it: ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 's
 type Led = { project_id: string | null; kind: string; amount_eur: string | null; month: number; has_doc?: boolean };
 type BI = { project_id: string | null; amount_eur: string | null; category: { direction: string } | null };
 
-// Progetti come schede: preventivo dell'anno, uscite, entrate, saldo, residuo e quota usata, con un solo avviso
-// quando serve (oltre il preventivo, spesa in anticipo sul tempo, nessun preventivo). Il dettaglio è il cruscotto del progetto.
+// Progetti nel disegno di Cairn (14/11): quattro riquadri con mini grafico, «Dove vanno i fondi» (anello con elenco) accanto a
+// «Previsto e speso» (due barre per progetto), poi una scheda per progetto con quota usata, speso, previsto, residuo e andamento,
+// con un solo avviso quando serve (oltre il preventivo, spesa in anticipo sul tempo, nessun preventivo). Il dettaglio è il cruscotto del progetto.
 export default async function Projects({ searchParams }: { searchParams: Promise<{ anno?: string; tutti?: string }> }) {
   const sp = await searchParams;
   const now = new Date();
@@ -37,40 +38,92 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
   const tot = shown.reduce((s, p) => { const a = A(p.id); s.out += a.out; s.inc += a.inc; s.b += a.bOut; return s; }, { out: 0, inc: 0, b: 0 });
 
+  // riquadri e grafici nel disegno di Cairn (14/11): giallo = uscite, blu notte = entrate, azzurro = previsto, verde = disponibile
+  const curM = year < now.getFullYear() ? 12 : year > now.getFullYear() ? 0 : now.getMonth() + 1;
+  const mOut = Array(12).fill(0) as number[], mInc = Array(12).fill(0) as number[];
+  const ids = new Set(shown.map((p) => p.id));
+  for (const l of ledger ?? []) { if (!l.project_id || !ids.has(l.project_id)) continue; const k = (l.month || 1) - 1;
+    if (l.kind === 'expense') mOut[k] += Number(l.amount_eur ?? 0); else mInc[k] += Number(l.amount_eur ?? 0); }
+  const nMov = shown.reduce((n, p) => n + A(p.id).n, 0);
+  const over = shown.filter((p) => A(p.id).bOut && A(p.id).out > A(p.id).bOut).length;
+  const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
+  const mTip = (title: string, vals: number[]) => `${title}\n${vals.map((v, k) => `${MESI_S[lang][k]}: ${e0(v)}`).filter((_, k) => k < Math.max(curM, 1)).join('\n')}`;
+  const withB = shown.filter((p) => A(p.id).bOut > 0).sort((x, y) => A(y.id).bOut - A(x.id).bOut);
+  const top5 = <T extends { v: number }>(xs: T[], rest: (v: number, n: number) => T) => xs.length > 6 ? [...xs.slice(0, 5), rest(xs.slice(5).reduce((a, x) => a + x.v, 0), xs.length - 5)] : xs;
+  const mix = top5(shown.filter((p) => A(p.id).out > 0).sort((x, y) => A(y.id).out - A(x.id).out).map((p) => ({ k: p.id, label: p.name, v: A(p.id).out })),
+    (v, n) => ({ k: 'rest', label: L(`Altri progetti (${n})`, `Autres projets (${n})`), v })).map((x, n) => ({ ...x, color: PAL[n % PAL.length] }));
+  const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
+  const maxPair = Math.max(1, ...pairs.flatMap((p) => [A(p.id).bOut, A(p.id).out]));
+  const C_PLAN = 'var(--vz-plan)', C_SP = 'var(--vz-sp)', C_IN = 'var(--navy)';
+
   return (
-    <div className="stack">
-      <PageHead title={`${t('nav_projects')} ${year}`} />
+    <div className="stack prj">
       <ErrorNote prefix={t('error_load')} error={error} />
-      {(() => {
-        const over = shown.filter((p) => A(p.id).bOut && A(p.id).out > A(p.id).bOut).length;
-        const used = tot.b ? tot.out / tot.b : 0;
-        const tones = ['#00A060', '#5B7FA6', '#5FB8A3', '#8FAFD6', '#A9D9CB', '#C9D6EA'];
-        const mix = shown.filter((p) => A(p.id).out > 0).map((p, i) => ({ p, v: A(p.id).out, c: p.kind === 'structure' ? '#3E5470' : tones[i % tones.length] }));
-        return (<>
-          <div className="kpi4 ptiles">
-            <div className="k4 k-plan"><span className="k4-t"><CIcon name="wallet" size={15} />{L('Previsto', 'Prévu')}</span><b className="num">{e0(tot.b)}</b><small>{L(`uscite ${year}`, `dépenses ${year}`)}</small></div>
-            <div className="k4 k-spent"><span className="k4-t"><CIcon name="chart" size={15} />{L('Speso', 'Dépensé')}</span><b className="num">{e0(tot.out)}</b>
-              <small>{tot.b ? L(`${Math.round(used * 100)} % del previsto · anno ${Math.round(elapsed * 100)} %`, `${Math.round(used * 100)} % du prévu · année ${Math.round(elapsed * 100)} %`) : L('nessun preventivo', 'aucun budget')}</small></div>
-            <div className={`k4 k-res${tot.b && tot.out > tot.b ? ' warn' : ''}`}><span className="k4-t"><CIcon name="calc" size={15} />{L('Residuo', 'Reste')}</span><b className={`num ${tot.b && tot.out > tot.b ? 'neg' : 'pos'}`}>{tot.b ? e0(tot.b - tot.out) : '–'}</b>
-              <small className={over ? 'neg' : ''}>{over ? L(`${over} oltre il preventivo`, `${over} au-delà du budget`) : L('tutti nei limiti', 'tous dans les limites')}</small></div>
-            <div className="k4 k-in"><span className="k4-t"><CIcon name="trend" size={15} />{L('Entrate', 'Recettes')}</span><b className="num">{e0(tot.inc)}</b>
-              <small>{L(`${shown.length} progetti attivi`, `${shown.length} projets actifs`)}</small></div>
-          </div>
-          {mix.length > 1 && (
-            <div className="pmix" aria-label={L('Dove vanno i fondi', 'Où vont les fonds')}>
-              <span className="pmix-l">{L('Dove vanno i fondi', 'Où vont les fonds')}</span>
-              <div className="pmix-b">{mix.map(({ p, v, c }) => <i key={p.id} title={`${p.name}: ${e0(v)}`} style={{ width: `${(v / tot.out) * 100}%`, background: c }} />)}</div>
-              <ul className="pmix-k">{mix.map(({ p, v, c }) => <li key={p.id}><i style={{ background: c }} /><span>{p.name}</span><b className="num">{Math.round((v / tot.out) * 100)} %</b></li>)}</ul>
+      <div className="kpis dk prk">
+        <div className="kpi">
+          <div className="l">{L('Previsto', 'Prévu')}</div>
+          <div className="v num">{tot.b ? e0(tot.b) : '–'}</div>
+          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: `var(--dn${n + 1})` }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
+            <div className="vzl"><span>{withB[0]!.name}</span><span>{pc(A(withB[0]!.id).bOut, tot.b)}</span></div></>}
+          <div className="s">{tot.b ? L(`uscite ${year} · ${withB.length === 1 ? '1 progetto' : `${withB.length} progetti`}`, `dépenses ${year} · ${withB.length === 1 ? '1 projet' : `${withB.length} projets`}`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Speso', 'Dépensé')}</div>
+          <div className="v num">{e0(tot.out)}</div>
+          <Viz.Cols vals={mOut} colors={mOut.map((_, k) => (k < curM ? C_SP : 'var(--band)'))} tip={mTip(`${L('Uscite', 'Dépenses')} ${year}`, mOut)} />
+          <div className="vzl"><span>{tot.b ? L('del previsto', 'du prévu') : L('uscite dei progetti', 'dépenses des projets')}</span><span>{tot.b ? pc(tot.out, tot.b) : ''}</span></div>
+          <div className="s">{tot.b ? L(`anno trascorso ${Math.round(elapsed * 100)} %`, `année écoulée ${Math.round(elapsed * 100)} %`) : (nMov === 1 ? L('1 movimento', '1 mouvement') : L(`${nMov} movimenti`, `${nMov} mouvements`))}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Residuo', 'Reste')}</div>
+          <div className={`v num ${tot.b ? (tot.out > tot.b ? 'neg' : 'pos') : ''}`}>{tot.b ? e0(tot.b - tot.out) : '–'}</div>
+          {tot.b > 0 && <><Viz.Stack segs={[{ v: Math.min(tot.out, tot.b), c: C_SP }, { v: Math.max(0, tot.b - tot.out), c: 'var(--green-soft)' }, { v: Math.max(0, tot.out - tot.b), c: 'var(--tax)' }]} max={Math.max(tot.b, tot.out)}
+            tip={`${L('Previsto', 'Prévu')}: ${e0(tot.b)}\n${L('Speso', 'Dépensé')}: ${e0(tot.out)}`} />
+            <div className="vzl"><span>{tot.out > tot.b ? L('oltre il previsto', 'au-delà du prévu') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(tot.b - tot.out), tot.b)}</span></div></>}
+          <div className="s">{!tot.b ? L('nessun preventivo in vigore', 'aucun budget en vigueur') : over ? (over === 1 ? L('1 progetto oltre il preventivo', '1 projet au-delà du budget') : L(`${over} progetti oltre il preventivo`, `${over} projets au-delà du budget`)) : L('tutti i progetti nei limiti', 'tous les projets dans les limites')}</div>
+        </div>
+        <div className="kpi">
+          <div className="l">{L('Entrate', 'Recettes')}</div>
+          <div className="v num">{e0(tot.inc)}</div>
+          <Viz.Cols vals={mInc} colors={mInc.map((_, k) => (k < curM ? C_IN : 'var(--band)'))} tip={mTip(`${L('Entrate', 'Recettes')} ${year}`, mInc)} />
+          <div className="vzl"><span>{L('saldo', 'solde')}</span><span>{e0(tot.inc - tot.out)}</span></div>
+          <div className="s">{shown.length === 1 ? L('1 progetto', '1 projet') : L(`${shown.length} progetti`, `${shown.length} projets`)} · {nMov === 1 ? L('1 movimento', '1 mouvement') : L(`${nMov} movimenti`, `${nMov} mouvements`)}</div>
+        </div>
+      </div>
+
+      {pairs.length > 0 && (
+        <div className="prj-two">
+          <section className="panel">
+            <div className="panel-h"><H2 text={L('Dove vanno i fondi', 'Où vont les fonds')} icon={null} /><div className="spacer" /><span className="eyebrow">{L(`speso ${year}`, `dépensé ${year}`)}</span></div>
+            <div className="panel-b">{mix.length === 0 ? <p className="muted bq-none">{L('Nessuna uscita registrata sui progetti.', 'Aucune dépense enregistrée sur les projets.')}</p> : (
+              <div className="bq-donut">
+                <Donut items={mix.map((r) => ({ label: r.label, value: r.v, color: r.color, tip: `${r.label}: ${e0(r.v)} (${pc(r.v, tot.out)})` }))} center={{ label: L('Speso', 'Dépensé'), value: e0(tot.out) }} />
+                <ul className="bq-dl">{mix.map((r) => (
+                  <li key={r.k}><i style={{ background: r.color }} />{r.k === 'rest' ? <span>{r.label}</span> : <Link href={`/progetti/${r.k}?anno=${year}`}>{r.label}</Link>}<b className="num">{e0(r.v)}</b><small className="num">{pc(r.v, tot.out)}</small></li>))}</ul>
+              </div>)}</div>
+          </section>
+          <section className="panel">
+            <div className="panel-h"><H2 text={L('Previsto e speso', 'Prévu et dépensé')} icon={null} /><div className="spacer" />
+              <Legend items={[{ label: L('Previsto', 'Prévu'), color: C_PLAN }, { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
+            <div className="panel-b">
+              <ul className="bq-pairs prj-pairs">{pairs.map((p) => { const a = A(p.id); return (
+                <li key={p.id}>
+                  <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link>
+                  <span className="bq-pb"><i className={a.bOut > 0 ? '' : 'z'} style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%`, background: C_PLAN }} />
+                    <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((a.out / maxPair) * 100).toFixed(1)}%`, background: a.bOut > 0 && a.out > a.bOut ? 'var(--tax)' : C_SP }} /></span>
+                  <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b>{e0(a.out)}</b></span>
+                </li>); })}</ul>
             </div>
-          )}
-        </>);
-      })()}
+          </section>
+        </div>
+      )}
+
       {shown.length === 0 ? <Empty text={t('prj_none_year').replace('{y}', String(year))} /> : (
         <div className="pring-grid">
           {shown.map((p) => {
             const a = A(p.id), used = a.bOut ? a.out / a.bOut : 0, res = a.bOut - a.out, over = a.bOut > 0 && a.out > a.bOut;
             const R = 40, C = 2 * Math.PI * R, arc = Math.min(used, 1) * C, ex = over ? Math.min(used - 1, 1) * C : 0;
-            const tick = elapsed * 2 * Math.PI - Math.PI / 2, mMax = Math.max(...a.m, 1), curM = year === now.getFullYear() ? now.getMonth() : 11;
+            const tick = elapsed * 2 * Math.PI - Math.PI / 2, mMax = Math.max(...a.m, 1), nowM = year === now.getFullYear() ? now.getMonth() : year < now.getFullYear() ? 11 : -1;
             const note = over ? { c: 'late', t: L(`oltre di ${e0(a.out - a.bOut)}`, `dépassé de ${e0(a.out - a.bOut)}`) }
               : a.bOut && used > elapsed + 0.15 ? { c: 'mid', t: L('spesa veloce', 'dépense rapide') } : !a.bOut && a.out > 0 ? { c: 'mid', t: L('senza preventivo', 'sans budget') } : null;
             return (
@@ -93,9 +146,9 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                   </dl>
                 </div>
                 <div className="pr-spark" aria-label={L('Uscite per mese', 'Dépenses par mois')}>
-                  {a.m.map((v, i) => <i key={i} className={i === curM ? 'cur' : i > curM ? 'fut' : ''} style={{ height: `${Math.max(v > 0 ? 8 : 3, (v / mMax) * 100)}%` }} title={`${MESI_S[lang][i]}: ${e0(v)}`} />)}
+                  {a.m.map((v, i) => <i key={i} className={i === nowM ? 'cur' : i > nowM ? 'fut' : ''} style={{ height: `${Math.max(v > 0 ? 8 : 3, (v / mMax) * 100)}%` }} title={`${MESI_S[lang][i]}: ${e0(v)}`} />)}
                 </div>
-                <div className="pr-f"><span>{L('Entrate', 'Recettes')} <b className="num pos">{e0(a.inc)}</b></span><span>{L(`${a.n} movimenti`, `${a.n} mouvements`)}</span></div>
+                <div className="pr-f"><span>{L('Entrate', 'Recettes')} <b className="num">{e0(a.inc)}</b></span><span>{L(`${a.n} movimenti`, `${a.n} mouvements`)}</span></div>
               </Link>
             );
           })}
