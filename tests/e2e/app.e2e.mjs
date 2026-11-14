@@ -395,6 +395,13 @@ try {
     assert.match(await p.locator('main').innerText(), /Stornato da MOV-/);
     const [{ n }] = (await pool.query('select count(*)::int n from movements where reverses_id = $1', [newId])).rows;
     assert.equal(n, 1);
+    // dall'originale stornato: «Crea la copia corretta» riparte da dati e allegati dell'originale
+    const [{ d: origDesc, nd }] = (await pool.query('select description d, (select count(*)::int from movement_documents where movement_id = m.id) nd from movements m where id = $1', [newId])).rows;
+    await p.getByRole('link', { name: 'Crea la copia corretta' }).click();
+    await p.waitForURL(/\/nuovo\?copia=/);
+    await p.getByText(/Copia di MOV-/).waitFor();
+    assert.equal(await p.locator('#desc').inputValue(), origDesc);
+    if (nd > 0) await p.locator('main').getByText(/MOV-.*\.(pdf|jpe?g|png)/i).first().waitFor();
   });
 
   await check('responsabile: preventivo del progetto in sola lettura (si modifica nel Preventivo) e nuovo finanziamento', async () => {

@@ -101,7 +101,7 @@ export default async function MovementDetail({ params, searchParams }: {
     <div className="stack">
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
-        <h1>{m.ref ?? t('st_draft')} · {t(`k_${m.kind}`)}</h1>
+        <h1>{m.ref ?? t('st_draft')} · {m.reverses_id ? L(`Storno di ${t(`k_${m.kind}`).toLowerCase()}`, `Extourne de ${t(`k_${m.kind}`).toLowerCase()}`) : t(`k_${m.kind}`)}</h1>
         <StatusChip s={m.status} label={t(`st_${m.status}`)} />
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
@@ -109,6 +109,9 @@ export default async function MovementDetail({ params, searchParams }: {
         : ok === 'new' ? `${m.status === 'draft' ? L('Bozza salvata', 'Brouillon enregistré') : L('Movimento registrato', 'Mouvement comptabilisé')}: ${m.ref ?? ''}.`
         : ok === 'saved' ? L('Modifiche salvate.', 'Modifications enregistrées.')
         : ok === 'reversed' ? L(`Storno registrato: ${m.ref} annulla ${origRef ?? 'il movimento originale'}. Va verificato da un'altra persona.`, `Extourne comptabilisée : ${m.ref} annule ${origRef ?? 'le mouvement d’origine'}. Elle doit être vérifiée par une autre personne.`) : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
+      {/* dopo lo storno: la copia corretta riparte da dati e allegati dell'originale (P2-15) */}
+      {writer && m.kind !== 'transfer' && (rev || (m.reverses_id && ok === 'reversed')) && (
+        <div className="row-btns eq after-new"><Link className="btn" href={`/nuovo?copia=${rev ? m.id : m.reverses_id}`}>{L('Crea la copia corretta', 'Créer la copie corrigée')}</Link></div>)}
       {ok === 'new' && <div className="row-btns eq after-new"><Link className="btn" href={m.kind === 'transfer' ? '/nuovo' : `/nuovo?tipo=${m.kind}`}>{L('Registrane un altro', 'En saisir un autre')}</Link><Link className="btn" href="/movimenti">{L('Torna al registro', 'Retour au registre')}</Link></div>}
       {errText && <div className="note err">{errText}</div>}
 

@@ -50,7 +50,7 @@ const it = {
   // account
   f_nodoc_filter: 'Senza giustificativo', search_mov: 'Cerca per descrizione o numero MOV', search_clear: 'Annulla ricerca', empty_search: 'Nessun movimento corrisponde alla ricerca.',
   search_cp: 'Cerca per nome, P.IVA o paese', search_chart: 'Cerca per codice o voce', search_audit: 'Cerca nel registro', audit_system: 'Sistema', empty_search_generic: 'Nessun risultato per questa ricerca.',
-  api_title: 'Collegamento con altre app', api_text: 'Una chiave permette a un’altra app di YouSud (per esempio il futuro gestionale centrale) di leggere movimenti, documenti, conti, codici, progetti, finanziamenti e controparti. Sola lettura, niente bozze né dati personali. Istruzioni per chi sviluppa: docs/API.md.',
+  api_title: 'Collegamento con altre app', api_text: 'Una chiave permette a un’altra app di YouSud (per esempio il futuro gestionale centrale) di leggere movimenti, documenti, conti, codici, progetti, finanziamenti e controparti. Sola lettura, niente bozze né dati personali. Le istruzioni tecniche sono nel progetto del codice, per chi sviluppa.',
   api_name: 'Nome della chiave', api_create: 'Crea chiave', api_shown: 'Copia la chiave ora: non verrà più mostrata. Conservala come una password.', api_copy: 'Copia',
   api_revoke: 'Revoca', api_revoked: 'revocata', api_never: 'mai', api_last: 'Ultimo uso', api_created: 'Creata', api_none: 'Nessuna chiave.', api_prefix: 'Inizio',
   nav_analysis: 'Analisi', budget: 'Preventivo', an_all_projects: 'Tutti i progetti', an_budget_used: 'Preventivo usato', an_no_budget: 'nessun preventivo',
@@ -300,7 +300,7 @@ const fr: Record<Key, string> = {
   doc_name: 'Nom', doc_uploaded: 'Chargé le', doc_number: 'Numéro', doc_total: 'Total',
   f_nodoc_filter: 'Sans pièce', search_mov: 'Rechercher par description ou numéro MOV', search_clear: 'Effacer la recherche', empty_search: 'Aucun mouvement ne correspond à la recherche.',
   search_cp: 'Rechercher par nom, NIF ou pays', search_chart: 'Rechercher par code ou libellé', search_audit: 'Rechercher dans le journal', audit_system: 'Système', empty_search_generic: 'Aucun résultat pour cette recherche.',
-  api_title: 'Connexion avec d’autres apps', api_text: 'Une clé permet à une autre app de YouSud (par exemple le futur logiciel de gestion central) de lire mouvements, documents, comptes, codes, projets, financements et tiers. Lecture seule, sans brouillons ni données personnelles. Instructions pour les développeurs : docs/API.md.',
+  api_title: 'Connexion avec d’autres apps', api_text: 'Une clé permet à une autre app de YouSud (par exemple le futur logiciel de gestion central) de lire mouvements, documents, comptes, codes, projets, financements et tiers. Lecture seule, sans brouillons ni données personnelles. Les instructions techniques se trouvent dans le projet du code, pour les développeurs.',
   api_name: 'Nom de la clé', api_create: 'Créer une clé', api_shown: 'Copiez la clé maintenant : elle ne sera plus affichée. Conservez-la comme un mot de passe.', api_copy: 'Copier',
   api_revoke: 'Révoquer', api_revoked: 'révoquée', api_never: 'jamais', api_last: 'Dernière utilisation', api_created: 'Créée', api_none: 'Aucune clé.', api_prefix: 'Début',
   nav_analysis: 'Analyses', budget: 'Budget', an_all_projects: 'Tous les projets', an_budget_used: 'Budget utilisé', an_no_budget: 'pas de budget',

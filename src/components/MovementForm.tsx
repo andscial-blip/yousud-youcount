@@ -37,7 +37,9 @@ type Dup = { id: string; ref: string | null; op_date: string; amount: string; cu
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Precompilazione di un movimento nuovo (es. da una riga dell'estratto conto senza corrispondenza)
-export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string; own?: boolean; project_id?: string };
+export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string; own?: boolean; project_id?: string;
+  // copia corretta di un movimento stornato: stessi dati e stessi allegati dell'originale
+  category_id?: string; grant_id?: string; counterparty_id?: string; payment_method_id?: string; notes?: string; docs?: { id: string; label: string }[] };
 type Props = { refData: RefData; t: Dict; initial?: Initial; prefill?: Prefill };
 
 // Dopo un salvataggio senza rete il modulo riparte vuoto (nuova chiave) per il movimento successivo.
@@ -93,17 +95,17 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [toAmountTxt, setToAmountTxt] = useState(initial?.to_amount ? fmt(Number(initial.to_amount)) : '');
   const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? fmt(Number(initial.fx_rate)) : '');
   const [rateTouched, setRateTouched] = useState(Boolean(initial?.fx_rate));
-  const [categoryId, setCategoryId] = useState(initial?.category_id ?? '');
+  const [categoryId, setCategoryId] = useState(initial?.category_id ?? P?.category_id ?? '');
   const [projectId, setProjectId] = useState(initial?.project_id ?? P?.project_id ?? '');
-  const [grantId, setGrantId] = useState(initial?.grant_id ?? (() => { const pid = initial?.project_id ?? P?.project_id ?? ''; const own = pid ? R.grants.filter((g) => g.project_id === pid) : []; return !initial && own.length === 1 ? own[0]!.id : ''; })());
-  const [cpId, setCpId] = useState(initial?.counterparty_id ?? '');
+  const [grantId, setGrantId] = useState(initial?.grant_id ?? P?.grant_id ?? (() => { const pid = initial?.project_id ?? P?.project_id ?? ''; const own = pid ? R.grants.filter((g) => g.project_id === pid) : []; return !initial && own.length === 1 ? own[0]!.id : ''; })());
+  const [cpId, setCpId] = useState(initial?.counterparty_id ?? P?.counterparty_id ?? '');
   const [cpNew, setCpNew] = useState('');
-  const [methodId, setMethodId] = useState(initial?.payment_method_id ?? '');
+  const [methodId, setMethodId] = useState(initial?.payment_method_id ?? P?.payment_method_id ?? '');
   const [description, setDescription] = useState(initial?.description ?? P?.description ?? '');
-  const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [notes, setNotes] = useState(initial?.notes ?? P?.notes ?? '');
   const [noDoc, setNoDoc] = useState(Boolean(initial?.no_doc_reason));
   const [noDocReason, setNoDocReason] = useState(initial?.no_doc_reason ?? '');
-  const [docs, setDocs] = useState<Doc[]>((initial?.docs ?? []).map((d) => ({ key: d.id, label: d.label, state: 'ok', id: d.id })));
+  const [docs, setDocs] = useState<Doc[]>((initial?.docs ?? P?.docs ?? []).map((d) => ({ key: d.id, label: d.label, state: 'ok', id: d.id })));
   const [dups, setDups] = useState<Dup[]>([]);
   const [scanQueue, setScanQueue] = useState<File[]>([]);
   const [ai, setAi] = useState<Partial<Record<AiKey, AiMark>>>({});

@@ -43,7 +43,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         : ok === 'demo_purged' ? (lang === 'fr' ? 'Données de démonstration supprimées.' : 'Dati dimostrativi eliminati.')
         : ok === 'adv' ? L('Soglie degli anticipi salvate.', 'Seuils des avances enregistrés.') : ok === 'mg' ? L('Dati della sede in Madagascar salvati.', 'Données du siège à Madagascar enregistrées.') : ok === 'reset' ? (lang === 'fr' ? 'Comptabilité remise à zéro : mouvements et budgets supprimés. La numérotation repart de 001.' : 'Contabilità azzerata: movimenti e preventivi eliminati. La numerazione riparte da 001.') : '✓'}</div>}
       {err && <div className="note err">{err}</div>}
-      <Panel>
+      <Panel title={L('Regole di controllo', 'Règles de contrôle')}>
         <table className="t">
           <tbody>
             {ROWS.map((r) => {

@@ -131,6 +131,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'warn', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
     sub: L('Scaricalo e salvalo nel Drive condiviso di YouSud', 'Téléchargez-la et enregistrez-la dans le Drive partagé de YouSud'), href: '/admin/dati', act: L('Scarica', 'Télécharger') });
   for (const u of upcoming.slice(0, 5)) todo.push({ lvl: days(u.date) < 0 ? 'warn' : 'do', ic: 'cal', title: u.title, sub: date(u.date), chip: chipFor(u.date), href: '/scadenze' });
+  // prima ciò che è in ritardo o blocca qualcuno (warn), poi il resto; a parità resta l'ordine di inserimento (P2-24)
+  todo.sort((x, y) => (x.lvl === 'warn' ? 0 : 1) - (y.lvl === 'warn' ? 0 : 1));
   if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: L('Niente da verificare, rimborsare o firmare', 'Rien à vérifier, rembourser ou signer'), href: '/movimenti' });
   const TODO_MAX = 7;
   const notes = (notesRow?.value ?? null) as { text?: string; by_name?: string; at?: string } | null;
