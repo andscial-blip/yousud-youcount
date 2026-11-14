@@ -1988,6 +1988,7 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
   .phead-row .pback { order: 3; width: 34px; height: 34px; }
   .subrow { padding: 0 var(--s4); }
   .helpline .hl-long { display: none; } .helpline .hl-short { display: inline; }
+  .subrow > .helpline:first-child { margin: 0 0 8px auto; }
 }
 
 /* Confronto preventivo/consuntivo (Analisi) su telefono: una scheda per codice, tre cifre con etichetta e la barra sotto */
@@ -2091,3 +2092,20 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
 }
 .g-kv a, .g-ht p a { color: inherit; text-underline-offset: 2px; }
 @media (max-width: 760px) { .gcard .pr-h { min-height: 0; } }
+
+/* ---------- Analisi nel disegno di Cairn (14/11) ---------- */
+.prj { --c-budget: color-mix(in srgb, var(--vz-plan) 28%, var(--surface)); }
+.prj .bbar i.bs:nth-of-type(2) { background: var(--vz-sp) !important; }
+.an-bar .filters { flex-wrap: nowrap; margin: 0; padding: 0; border: 0; }
+.an-bar .filters select.input { min-width: 220px; }
+.an .bq-flow.an-loc { margin: 0; padding: 0; border-bottom: 0; }
+.an .hcat.pbars { margin: 0; }
+@media (max-width: 1099px) {
+  .an-bar .segs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .an-bar .segs > a { min-width: 0; padding-left: 4px; padding-right: 4px; text-align: center; white-space: normal; line-height: 1.2; }
+  .an-bar .filters, .an-bar .fbar { width: 100%; }
+  .an-bar .filters select.input { min-width: 0; flex: 1 1 100%; width: 100%; }
+}
+@media (max-width: 760px) { .an-bar .segs > a { font-size: 13px; } }
+.an > p.muted a, .prj > p.muted a { color: inherit; }
+@media (max-width: 359px) { .h1row h1, .h1row h2 { font-size: 17px; } }

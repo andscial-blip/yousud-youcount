@@ -26,7 +26,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
   const cls = (c: Cell, num?: boolean) => [num ? 'r num' : '', typeof c.v === 'number' && c.v < 0 && (c.t === 'eur' || c.t === 'cur') ? 'neg' : ''].join(' ').trim();
   const q = (k: string, y: number) => `/report?tipo=${k}&anno=${y}`;
   return (
-    <div className="stack">
+    <div className="stack prj">
       <PageHead title={`${L('Report', 'Rapports')} ${year}`}>
         <a className="btn" href={`/api/v1/export/report?tipo=${kind}&anno=${year}`}><Ico name="download" />Excel</a>
         <PrintButton label={L('Stampa / PDF', 'Imprimer / PDF')} />

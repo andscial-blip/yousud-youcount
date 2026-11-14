@@ -608,11 +608,21 @@ try {
     const p = rs.page;
     await p.goto(`${base}/analisi`);
     const [{ out }] = (await pool.query(`select coalesce(sum(amount_eur), 0)::float out from v_ledger where kind = 'expense' and year = $1`, [year])).rows;
-    const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
-    const figs = await p.locator('.kpi4').innerText();
-    assert.ok(figs.replace(/\s/g, '').includes(fmtEur.format(out).replace(/\s/g, '')), `uscite ${fmtEur.format(out)} in ${figs}`);
+    // riquadri nel disegno di Cairn: importi interi in euro, uguali al database
+    const fmtEur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, useGrouping: 'always' });
+    const figs = await p.locator('.kpis.prk').innerText();
+    assert.ok(figs.replace(/\s/g, '').includes(fmtEur.format(Math.round(out)).replace(/\s/g, '')), `uscite ${fmtEur.format(Math.round(out))} in ${figs}`);
+    assert.equal(await p.locator('.kpis.prk .kpi').count(), 4);
+    assert.equal(await p.locator('.an .bq-donut svg.donut').count(), 2, 'panoramica: uscite per progetto ed entrate per voce');
     await p.goto(`${base}/analisi?vista=uscite`);
     await p.getByText('Uscite per gruppo di spesa e preventivo').waitFor();
+    await p.locator('.an .bq-donut svg.donut').first().waitFor();
+    await p.locator('.an-bar').getByRole('link', { name: 'Progetti' }).click();
+    await p.waitForURL(/vista=progetti/);
+    await p.locator('.an .bq-pairs li').first().waitFor();
+    await p.locator('.an-bar').getByRole('link', { name: 'Andamento' }).click();
+    await p.waitForURL(/vista=andamento/);
+    assert.equal(await p.locator('.an .prj-two .chart-wrap').count(), 2, 'uscite ed entrate cumulate');
     const [{ id: prj }] = (await pool.query(`select project_id id from v_ledger where kind = 'expense' and year = $1 and project_id is not null limit 1`, [year])).rows;
     await p.goto(`${base}/analisi?anno=${year}&progetto=${prj}`);
     assert.equal(await p.locator('select[name=progetto]').inputValue(), prj);
