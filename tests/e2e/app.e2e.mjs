@@ -1129,10 +1129,24 @@ try {
     // chiusura e riapertura di un mese vecchio senza movimenti da verificare
     await p.goto(`${base}/admin/periodi`);
     const last = p.locator('tbody tr').last();
-    await submit(last.getByRole('button', { name: 'Chiudi il mese' }));
+    // chiusura: un clic non basta, serve la conferma
+    await last.locator('summary', { hasText: 'Chiudi il mese' }).click();
+    await last.locator('input[name=confirm]').check();
+    await submit(last.getByRole('button', { name: 'Conferma la chiusura' }));
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 1);
-    await submit(p.locator('tbody tr').last().getByRole('button', { name: 'Riapri' }));
+    // riapertura: conferma e motivo, che resta scritto
+    const last2 = p.locator('tbody tr').last();
+    await last2.locator('summary', { hasText: 'Riapri' }).click();
+    await last2.locator('input[name=reason]').fill('fattura arrivata in ritardo');
+    await last2.locator('input[name=confirm]').check();
+    await submit(last2.getByRole('button', { name: 'Conferma la riapertura' }));
     assert.equal((await pool.query(`select count(*)::int n from periods where closed_at is not null`)).rows[0].n, 0);
+    await p.locator('tbody tr').last().getByText('Riaperto: fattura arrivata in ritardo').waitFor();
+    // «Svuota l'elenco» non sta più nel Registro ma in Dati e sicurezza
+    await p.goto(`${base}/movimenti`);
+    assert.equal(await p.locator('#svuota').count(), 0, 'nessun «Svuota l\'elenco» nel Registro');
+    await p.goto(`${base}/admin/dati`);
+    await p.locator('#svuota').waitFor();
   });
   await check('collegamento con altre app: chiave creata in Impostazioni (mostrata una volta), API di sola lettura', async () => {
     const p = sa.page;
