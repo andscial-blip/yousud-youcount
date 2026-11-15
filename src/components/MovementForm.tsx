@@ -6,6 +6,7 @@ import type { Dict, Lang } from '@/lib/i18n';
 import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
 import { formatTyping, parseAmount } from '@/lib/amount';
+import { useCaret } from '@/lib/use-caret';
 import dynamic from 'next/dynamic';
 import type { ScanResult } from './ScanEditor';
 // l'editor della foto (con pdf-lib) si carica a parte: la pagina si apre prima; viene comunque scaricato
@@ -65,10 +66,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [opDate, setOpDate] = useState(initial?.op_date ?? P?.op_date ?? today());
   const [docDate, setDocDate] = useState(initial?.doc_date ?? '');
   // importi scritti con il punto delle migliaia mentre si digita (5000 → 5.000)
+  const setCaret = useCaret();
   const fmt = (n: number | string) => formatTyping(String(n).replace('.', ',')).text;
   const typed = (e: React.ChangeEvent<HTMLInputElement>, set: (v: string) => void) => {
     const el = e.target; const r = formatTyping(el.value, el.selectionStart ?? el.value.length);
-    set(r.text); requestAnimationFrame(() => { try { el.setSelectionRange(r.caret, r.caret); } catch { /* niente */ } });
+    setCaret(el, r.caret); set(r.text);
   };
   const [amountTxt, setAmountTxt] = useState(initial ? fmt(Number(initial.amount))
     : P?.amount ? fmt(P.amount) : '');
