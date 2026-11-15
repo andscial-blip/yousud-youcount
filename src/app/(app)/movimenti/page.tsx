@@ -42,6 +42,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     demo: ['si', 'no'].includes(sp.demo ?? '') ? sp.demo! : '',
   };
   const page = Math.max(1, Math.min(1000, Number(sp.p) || 1));
+  const revIds = f.doc === 'no' ? ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string) : [];
   // gli stessi filtri valgono per l'elenco e per i totali
   const apply = <Q,>(q0: Q): Q => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,7 +59,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     if (f.pm) q = q.eq('payment_method_id', f.pm);
     if (f.tipo) q = q.eq('kind', f.tipo);
     if (f.cur) q = q.eq('currency', f.cur);
-    if (f.doc === 'no') q = q.not('no_doc_reason', 'is', null);
+    // «senza giustificativo»: storni e movimenti stornati restano fuori (come nel conteggio del cruscotto), salvo che si chiedano proprio gli storni
+    if (f.doc === 'no') { q = q.not('no_doc_reason', 'is', null); if (stato !== 'storni') q = q.is('reverses_id', null).not('id', 'in', `(${revIds.join(',') || '00000000-0000-0000-0000-000000000000'})`); }
     if (f.doc === 'si') q = q.is('no_doc_reason', null).neq('kind', 'transfer');
     if (f.demo) q = q.eq('demo', f.demo === 'si');
     return q as Q;

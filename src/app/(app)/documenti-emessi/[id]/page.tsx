@@ -42,7 +42,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
     restored: L('Documento riportato tra i correnti.', 'Document remis parmi les courants.') }[sp.ok ?? ''];
   return (
     <div className="stack">
-      <PageHead title={`${L(T.it, T.fr)}${d.number ? ` · ${d.number}` : ''}`} lead={<Link className="btn ghost small" href="/documenti-emessi">← {L('Documenti emessi', 'Documents émis')}</Link>}>
+      <PageHead title={`${L(T.it, T.fr)}${d.number ? ` · ${d.number}` : ''}`}>
         {st}
       </PageHead>
       {okText && <div className="note ok" role="status">{okText}</div>}

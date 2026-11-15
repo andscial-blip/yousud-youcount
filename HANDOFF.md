@@ -159,3 +159,8 @@ Il Drive di YouSud è un Gmail normale (yousudodv@gmail.com), quindi niente Driv
 - NON ancora provato con Google vero: la copia è verificata solo nelle parti locali (nomi, cartelle, funzione SQL, permessi). Da provare al primo collegamento: `drive.file` con ID pre-generati, spostamento della cartella radice dentro la cartella esistente.
 - Non fatto: estratti conto, riconciliazioni, preventivo e rendiconto (cartelle 03 e 04), «Apri in Drive» sul singolo documento, registro CSV, controllo periodico degli hash.
 Account: l'accesso di Andrea è passato a andrea.scialabba@yousud.it (15/11, senza email di conferma).
+
+## 15/11 pomeriggio
+- Drive: collegamento sospeso su richiesta di Andrea. Google Cloud rifiuta yousudodv@gmail.com senza verifica in due passaggi (che Andrea non vuole attivare). Alternative lasciate aperte: progetto tecnico su andscial@gmail.com, oppure Google Apps Script dentro l'account YouSud. Il codice resta pubblicato, la scheda dice «Da configurare».
+- «Uscite senza giustificativo» (cruscotto e filtro dei Movimenti): esclusi storni e movimenti stornati.
+- Documento emesso: tolto il secondo «← Documenti emessi» (resta la freccia in alto).

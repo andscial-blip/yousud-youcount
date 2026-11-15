@@ -31,6 +31,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const td = ymd(now), in30 = ymd(new Date(cy, now.getMonth(), now.getDate() + 30)), ago45 = ymd(new Date(cy, now.getMonth(), now.getDate() - 45));
   const cfFrom = new Date(cy, now.getMonth() - 3, 1), cfTo = new Date(cy, now.getMonth(), 0);
 
+  // storni e movimenti stornati non contano fra le «uscite senza giustificativo»: si annullano a vicenda
+  const revIds = ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string);
   const [{ data: bal, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }, { data: advs },
     { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }, { data: advReqs }] = await Promise.all([
     supabase.rpc('account_balances'),
@@ -49,7 +51,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     staff ? supabase.from('v_ledger').select('amount_eur').eq('kind', 'expense').gte('op_date', ymd(cfFrom)).lte('op_date', ymd(cfTo)).limit(50000) : Promise.resolve({ data: null }),
     staff ? supabase.from('movements').select('amount, currency, amount_eur').eq('reimb_status', 'due').limit(5000) : Promise.resolve({ data: null }),
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
-    supabase.from('movements').select('id', { count: 'exact', head: true }).neq('status', 'draft').not('no_doc_reason', 'is', null).eq('kind', 'expense').gte('op_date', `${year}-01-01`).lte('op_date', `${year}-12-31`),
+    supabase.from('movements').select('id', { count: 'exact', head: true }).neq('status', 'draft').not('no_doc_reason', 'is', null).eq('kind', 'expense').is('reverses_id', null).not('id', 'in', `(${revIds.join(',') || '00000000-0000-0000-0000-000000000000'})`).gte('op_date', `${year}-01-01`).lte('op_date', `${year}-12-31`),
     supabase.from('advance_requests').select('account_id, status, report_by').in('status', ['requested', 'authorized', 'delivered', 'reported']),
   ]);
 
