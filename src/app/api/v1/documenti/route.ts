@@ -38,6 +38,7 @@ export async function GET(req: Request) {
     let name = p.name; const n = seen.get(name) ?? 0; seen.set(name, n + 1);
     if (n) { const dot = name.lastIndexOf('.'); name = dot > 0 ? `${name.slice(0, dot)}_${n + 1}${name.slice(dot)}` : `${name}_${n + 1}`; }
     return { name, url: signed?.[i]?.signedUrl ?? null };
-  }).filter((f) => f.url);
-  return NextResponse.json({ files });
+  });
+  // un file che non è più nell'archivio non blocca lo ZIP: si salta e si elenca (P2-16)
+  return NextResponse.json({ files: files.filter((f) => f.url), missing: files.filter((f) => !f.url).map((f) => f.name) });
 }

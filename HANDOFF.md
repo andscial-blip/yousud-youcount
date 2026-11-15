@@ -101,6 +101,8 @@ Terzo blocco (14/11 sera): P2-4 (pagina «Menu» con nome e ruolo, titolo della 
 
 Quarto blocco (14/11 notte): P2-15 in parte («Crea la copia corretta» con `/nuovo?copia=<id>`, titolo «Storno di …»; restano lo storno fuori dal conteggio «senza giustificativo» e l'evento nello storico dell'originale), P2-12 in parte (titolo «Regole di controllo», via il riferimento a docs/API.md), P2-24 in parte («Da fare» ordinato per urgenza), P2-25 in parte (quattro voci nuove nella guida: chiudere il mese, finanziamento e rendiconto, scontrino mancante, Chiedi all'AI).
 
+Quinto blocco (15/11): P2-21 in parte (conto, progetto e modalità proposti dall'ultima spesa della stessa persona, «Usati di recente» nel Codice contabile, quattro motivi pronti per «Perché manca»; restano valuta nel campo importo e ricerca nel codice), P2-16 in parte (ZIP che salta i file mancanti con FILE_MANCANTI.txt, «già allegato a MOV-… del gg/mm: è la stessa spesa?»; restano anteprima con precedente/successivo nell'archivio e «Aggiungi giustificativo» nella scheda).
+
 Da fare: P1-20 è fatto solo per «tiers», «extourne», «Nota di rimborso» e le etichette di pagamento (manca la passata completa su Comptabiliser/Enregistrer, pointer, codice/gruppo/voce, «Struttura e spese generali»); di P1-21 restano lente sopra il titolo e sfumatura delle schede di Impostazioni a 768 px; P2-9, P2-10, P2-12, P2-15…P2-25, P2-27, P2-28 e tutti i P3. Decisioni ancora aperte: cosa vede l'operatore (P2-28) e Analisi › Progetti come collegamento.
 
 La prova di layout ora segnala anche le parole spezzate a metà e il contenuto che esce da una cella (`tests/e2e/layout.e2e.mjs`, controlli 5 e 6). Un testo su due righe voluto si marca con `data-two`.

@@ -22,14 +22,16 @@ export const HELP: HelpEntry[] = [
       '«Salva bozza» non conta nei saldi; «Registra» assegna il numero MOV e il movimento entra in contabilità. Se il giustificativo non c\'è, va scritto il motivo; se hai pagato di tasca tua scegli «Di tasca propria».',
       'Senza rete il movimento resta sul telefono e parte da solo appena torna la connessione (indicatore in alto).',
       'Sotto l\'importo, «Importo letto» ripete la cifra come l\'app l\'ha capita. Se manca un campo obbligatorio la pagina si ferma sul primo e li elenca. Se una spesa manda sotto zero una cassa in contanti compare un avviso (non blocca): di solito il conto è sbagliato o manca il prelievo. Dopo «Registra» una banda conferma il numero MOV e propone «Registrane un altro» o «Torna al registro».',
-      'Se esci dal modulo senza registrare, alla riapertura l\'app propone «Riprendi» o «Scarta»: i campi scritti restano su questo dispositivo, gli allegati vanno ricaricati.']],
+      'Se esci dal modulo senza registrare, alla riapertura l\'app propone «Riprendi» o «Scarta»: i campi scritti restano su questo dispositivo, gli allegati vanno ricaricati.',
+      'In una spesa nuova conto, progetto e modalità partono da quelli della tua ultima spesa (sotto il conto lo dice: «Proposto dal tuo ultimo movimento»): controllali. Nel Codice contabile i primi sono gli «Usati di recente». Se spunti «Il giustificativo non c’è» trovi quattro motivi pronti da toccare. Se carichi un file già in archivio, l\'app dice a quale movimento è allegato.']],
     fr: ['Enregistrer une dépense ou une recette', [
       'Appuyez sur « + Nouveau mouvement » (sur téléphone le « + » au centre en bas). D\'abord : photographiez ou chargez la pièce ; l\'application lit le document et propose date, montant, fournisseur et code. Contrôlez les champs signalés comme incertains.',
       'Choisissez le compte, le code comptable et le projet (hors projet : « Spese generali »). Pour les montants en ariary, le taux du mois est proposé automatiquement et reste enregistré sur le mouvement.',
       '« Brouillon » ne compte pas dans les soldes ; « Comptabiliser » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche ».',
       'Sans réseau, le mouvement reste sur le téléphone et part tout seul au retour de la connexion (indicateur en haut).',
       'Sous le montant, « Montant lu » répète le chiffre tel que l’app l’a compris. S’il manque un champ obligatoire, la page s’arrête sur le premier et les énumère. Si une dépense fait passer une caisse en espèces sous zéro, un avertissement apparaît (sans bloquer) : en général le compte est erroné ou le retrait manque. Après « Comptabiliser », un bandeau confirme le numéro MOV et propose « En saisir un autre » ou « Retour au registre ».',
-      'Si vous quittez le formulaire sans comptabiliser, à la réouverture l’app propose « Reprendre » ou « Abandonner » : les champs saisis restent sur cet appareil, les pièces jointes sont à recharger.']] },
+      'Si vous quittez le formulaire sans comptabiliser, à la réouverture l’app propose « Reprendre » ou « Abandonner » : les champs saisis restent sur cet appareil, les pièces jointes sont à recharger.',
+      'Dans une nouvelle dépense, compte, projet et mode partent de ceux de votre dernière dépense (sous le compte : « Proposé d’après votre dernier mouvement ») : vérifiez-les. Dans le Code comptable, les premiers sont les « Utilisés récemment ». Si vous cochez « Il n’y a pas de pièce justificative », quatre motifs prêts sont à toucher. Si vous chargez un fichier déjà archivé, l’app indique à quel mouvement il est joint.']] },
   { href: '/guida', sec: 'start',
     it: ['Muoversi nell\'app', [
       'Il menu a sinistra (sul telefono la barra in basso e «Altro») apre sempre la scheda principale di ogni sezione; le altre schede della sezione sono sotto il titolo.',
@@ -93,11 +95,13 @@ export const HELP: HelpEntry[] = [
     it: ['Giustificativi', [
       'Archivio di scontrini, fatture e ricevute caricati con i movimenti. Ogni file prende il nome del movimento a cui è collegato; lo stesso file caricato due volte non crea un doppione (si riconosce dall\'impronta).',
       'Da qui si cercano i giustificativi e si vede a quale movimento appartengono. I documenti generati dall\'app (ricevute, notule…) sono in Documenti › Emessi; i rendiconti approvati in Documenti › Rendiconti.',
-      '«Scarica tutti (ZIP)» raccoglie in un solo file i giustificativi dell\'anno o del mese scelto, con i nomi data_MOV-… (per il commercialista). Un giustificativo rimasto senza movimento si scarica dal suo nome e si collega scrivendo il numero del movimento.']],
+      '«Scarica tutti (ZIP)» raccoglie in un solo file i giustificativi dell\'anno o del mese scelto, con i nomi data_MOV-… (per il commercialista). Un giustificativo rimasto senza movimento si scarica dal suo nome e si collega scrivendo il numero del movimento.',
+      '«Scarica tutti (ZIP)» salta i file che non sono più nell\'archivio e li elenca nel file FILE_MANCANTI.txt dentro lo ZIP.']],
     fr: ['Justificatifs', [
       'Archive des tickets, factures et reçus chargés avec les mouvements. Chaque fichier prend le nom du mouvement lié ; le même fichier chargé deux fois ne crée pas de doublon (reconnu par son empreinte).',
       'Ici on recherche les justificatifs et on voit à quel mouvement ils appartiennent. Les documents générés par l\'application (reçus, notes d\'honoraires…) sont dans Documents › Émis ; les comptes rendus approuvés dans Documents › Comptes rendus.',
-      '« Tout télécharger (ZIP) » rassemble dans un seul fichier les justificatifs de l\'année ou du mois choisi, nommés date_MOV-… (pour le comptable). Un justificatif sans mouvement se télécharge depuis son nom et se lie en saisissant le numéro du mouvement.']] },
+      '« Tout télécharger (ZIP) » rassemble dans un seul fichier les justificatifs de l\'année ou du mois choisi, nommés date_MOV-… (pour le comptable). Un justificatif sans mouvement se télécharge depuis son nom et se lie en saisissant le numéro du mouvement.',
+      '« Tout télécharger (ZIP) » ignore les fichiers qui ne sont plus dans l’archive et les énumère dans le fichier FICHIERS_MANQUANTS.txt du ZIP.']] },
   { href: '/controparti', sec: 'mov',
     it: ['Controparti', [
       'Fornitori, donatori, finanziatori e beneficiari. I dati personali (codice fiscale, indirizzo) sono visibili solo a responsabili e amministratori.',

@@ -14,12 +14,21 @@ export type RefData = {
   counterparties: { id: string; name: string }[];
   rates: { year: number; month: number; rate: number }[];
   lastRate: { rate: number; date: string } | null;   // ultimo tasso usato in un movimento in ariary
+  recentCats: { income: string[]; expense: string[] };   // codici contabili usati di recente da questa persona
+  lastMine: Record<'income' | 'expense', { account_id: string | null; project_id: string | null; payment_method_id: string | null } | null>;
   grants: { id: string; title: string; project_id: string | null }[];
   aiEnabled: boolean;
 };
 
 export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang): Promise<RefData> {
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
+  // gli ultimi movimenti inseriti da questa persona: servono a proporre conto, progetto e modalità e i codici «usati di recente»
+  const rec = await supabase.from('movements').select('kind, account_id, project_id, payment_method_id, category_id')
+    .eq('created_by', me.id).in('kind', ['income', 'expense']).is('reverses_id', null).order('created_at', { ascending: false }).limit(40);
+  type Rec = { kind: 'income' | 'expense'; account_id: string | null; project_id: string | null; payment_method_id: string | null; category_id: string | null };
+  const recRows = (rec.data ?? []) as Rec[];
+  const recentCats = (k: 'income' | 'expense') => [...new Set(recRows.filter((r) => r.kind === k && r.category_id).map((r) => r.category_id!))].slice(0, 5);
+  const lastOf = (k: 'income' | 'expense') => { const r = recRows.find((x) => x.kind === k); return r ? { account_id: r.account_id, project_id: r.project_id, payment_method_id: r.payment_method_id } : null; };
   // saldo dei conti: serve solo ad avvisare quando una spesa manda sotto zero una cassa in contanti
   const bal = await supabase.rpc('account_balances');
   const balOf = new Map(((bal.data ?? []) as { account_id: string; balance: string }[]).map((b) => [b.account_id, Number(b.balance)]));
@@ -57,6 +66,8 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     rates: (fx.data ?? []).map((r) => ({ year: r.year, month: r.month, rate: Number(r.rate) })),
     grants: gr.data ?? [],
     aiEnabled: ai.data?.value === true,
+    recentCats: { income: recentCats('income'), expense: recentCats('expense') },
+    lastMine: { income: lastOf('income'), expense: lastOf('expense') },
     lastRate: last.data?.fx_rate ? { rate: Number(last.data.fx_rate), date: last.data.op_date } : null,
   };
 }

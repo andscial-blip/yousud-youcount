@@ -194,6 +194,22 @@ try {
     assert.ok(await p.getByRole('link', { name: 'Scarica' }).count() >= 1, 'pulsante di download con il nome del movimento');
     await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
   });
+  await check('operatore: lo stesso file caricato in un nuovo movimento dice a quale movimento è già allegato; proposte dall\'ultimo movimento', async () => {
+    const p = op.page;
+    await p.goto(`${base}/nuovo`);
+    // conto, progetto e modalità partono da quelli dell'ultima uscita inserita dalla stessa persona
+    assert.equal(await p.locator('#account option:checked').innerText(), 'Cassa Madagascar (contanti) · MGA');
+    assert.equal(await p.locator('#project option:checked').innerText(), 'École Antanetibe');
+    await p.getByText('Proposto dal tuo ultimo movimento').waitFor();
+    assert.equal(await p.locator('#category optgroup').first().getAttribute('label'), 'Usati di recente');
+    await p.locator('input[type=file]').nth(1).setInputFiles({ name: 'scontrino.png', mimeType: 'image/png', buffer: PNG });
+    await p.getByRole('button', { name: 'Usa la foto originale' }).click();
+    await p.getByText(new RegExp(`già allegato a MOV-${year}-\\d{3} del \\d{2}/\\d{2}: è la stessa spesa\\?`)).waitFor();
+    // motivi pronti per il giustificativo mancante
+    await p.getByLabel('Il giustificativo non c’è').check();
+    await p.getByRole('button', { name: 'Ricevuta persa' }).click();
+    assert.equal(await p.inputValue('#nodoc'), 'Ricevuta persa');
+  });
   await check('operatore: foto ritagliata e migliorata, lettura IA automatica, registrare conferma tutto', async () => {
     const p = op.page;
     const before = stack.files.size;

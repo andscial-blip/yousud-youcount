@@ -15,24 +15,28 @@ export function DocsZip({ year, lang }: { year: number; lang: 'it' | 'fr' }) {
     setBusy(true); setMsg(FR ? 'Préparation…' : 'Preparo l\'elenco…');
     try {
       const r = await fetch(`/api/v1/documenti?anno=${y}${m ? `&mese=${m}` : ''}`);
-      const j = await r.json() as { files?: { name: string; url: string }[]; error?: string };
+      const j = await r.json() as { files?: { name: string; url: string }[]; missing?: string[]; error?: string };
       if (!r.ok || !j.files) throw new Error(j.error ?? String(r.status));
-      if (!j.files.length) { setMsg(FR ? 'Aucun justificatif pour cette période.' : 'Nessun giustificativo in questo periodo.'); return; }
+      const missing = [...(j.missing ?? [])];
+      if (!j.files.length && !missing.length) { setMsg(FR ? 'Aucun justificatif pour cette période.' : 'Nessun giustificativo in questo periodo.'); return; }
       const out: Zippable = {};
       let i = 0;
       for (const f of j.files) {
         i++; setMsg(FR ? `Téléchargement ${i} / ${j.files.length}…` : `Scarico ${i} di ${j.files.length}…`);
-        const b = await fetch(f.url);
-        if (!b.ok) throw new Error(`${f.name}: ${b.status}`);
+        const b = await fetch(f.url).catch(() => null);
+        if (!b || !b.ok) { missing.push(f.name); continue; }   // il file manca nell'archivio: si salta e si elenca
         out[f.name] = [new Uint8Array(await b.arrayBuffer()), { level: 0 }];   // PDF e foto sono già compressi
       }
+      const got = Object.keys(out).length;
+      if (!got) { setMsg(FR ? `Aucun fichier disponible : ${missing.length} introuvables dans l’archive.` : `Nessun file disponibile: ${missing.length} non trovati nell’archivio.`); return; }
+      if (missing.length) out[FR ? 'FICHIERS_MANQUANTS.txt' : 'FILE_MANCANTI.txt'] = [new TextEncoder().encode((FR ? 'Fichiers introuvables dans l’archive, non inclus dans ce ZIP :' : 'File non trovati nell’archivio, non inclusi in questo ZIP:') + '\r\n' + missing.join('\r\n') + '\r\n'), { level: 0 }];
       const zip = zipSync(out);
       const url = URL.createObjectURL(new Blob([zip], { type: 'application/zip' }));
       const a = document.createElement('a');
       a.href = url; a.download = `giustificativi_${y}${m ? `-${String(m).padStart(2, '0')}` : ''}.zip`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      setMsg(FR ? `${j.files.length} justificatifs dans le ZIP.` : `${j.files.length} giustificativi nello ZIP.`);
+      setMsg((FR ? `${got} justificatifs dans le ZIP.` : `${got} giustificativi nello ZIP.`) + (missing.length ? (FR ? ` ${missing.length} introuvables dans l’archive : la liste est dans le ZIP.` : ` ${missing.length} non trovati nell’archivio: l’elenco è nello ZIP.`) : ''));
     } catch (e) {
       setMsg((FR ? 'Téléchargement impossible : ' : 'Download non riuscito: ') + (e instanceof Error ? e.message : String(e)));
     } finally { setBusy(false); }

@@ -23,7 +23,7 @@ export type Initial = {
   no_doc_reason: string | null; docs: { id: string; label: string }[];
   paid_by?: string | null; reimb_status?: 'due' | 'paid' | null;
 };
-type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err' | 'local'; id?: string; preview?: string };
+type Doc = { key: string; label: string; state: 'uploading' | 'ok' | 'dup' | 'err' | 'local'; id?: string; preview?: string; dupOf?: string };
 type AiKey = 'amount' | 'opDate' | 'docDate' | 'description' | 'category' | 'cp' | 'method';
 type AiMark = { status: string; confidence: number; source: string | null; confirmed: boolean };
 type AiField = { value: string | number | null; source: string | null; confidence: number; status: string; note?: string | null };
@@ -72,7 +72,13 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   };
   const [amountTxt, setAmountTxt] = useState(initial ? fmt(Number(initial.amount))
     : P?.amount ? fmt(P.amount) : '');
-  const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? '');
+  // movimento nuovo senza dati precompilati: conto, progetto e modalità partono da quelli dell'ultimo movimento dello stesso
+  // tipo inserito da questa persona (P2-21). Il conto di un anticipo non si propone: lì la scelta passa da «Come è stata pagata».
+  const lastMine = !initial && !P ? R.lastMine.expense : null;
+  const lmAccount = lastMine?.account_id && R.accounts.some((a) => a.id === lastMine.account_id && a.kind !== 'advance') ? lastMine.account_id : '';
+  const lmProject = lastMine?.project_id && R.projects.some((x) => x.id === lastMine.project_id) ? lastMine.project_id : '';
+  const lmMethod = lastMine?.payment_method_id && R.methods.some((x) => x.id === lastMine.payment_method_id) ? lastMine.payment_method_id : '';
+  const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? lmAccount);
   // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
   // come è stata pagata una spesa: dall'ente (conto), di tasca propria (da rimborsare) o con l'anticipo di una persona
@@ -96,11 +102,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? fmt(Number(initial.fx_rate)) : '');
   const [rateTouched, setRateTouched] = useState(Boolean(initial?.fx_rate));
   const [categoryId, setCategoryId] = useState(initial?.category_id ?? P?.category_id ?? '');
-  const [projectId, setProjectId] = useState(initial?.project_id ?? P?.project_id ?? '');
+  const [projectId, setProjectId] = useState(initial?.project_id ?? P?.project_id ?? lmProject);
   const [grantId, setGrantId] = useState(initial?.grant_id ?? P?.grant_id ?? (() => { const pid = initial?.project_id ?? P?.project_id ?? ''; const own = pid ? R.grants.filter((g) => g.project_id === pid) : []; return !initial && own.length === 1 ? own[0]!.id : ''; })());
   const [cpId, setCpId] = useState(initial?.counterparty_id ?? P?.counterparty_id ?? '');
   const [cpNew, setCpNew] = useState('');
-  const [methodId, setMethodId] = useState(initial?.payment_method_id ?? P?.payment_method_id ?? '');
+  const [methodId, setMethodId] = useState(initial?.payment_method_id ?? P?.payment_method_id ?? lmMethod);
   const [description, setDescription] = useState(initial?.description ?? P?.description ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? P?.notes ?? '');
   const [noDoc, setNoDoc] = useState(Boolean(initial?.no_doc_reason));
@@ -128,6 +134,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const dir = kind === 'income' ? 'in' : 'out';
   const cats = R.categories.filter((c) => c.direction === dir);
   const groups = [...new Set(cats.map((c) => c.group))];
+  const recentCats = R.recentCats[dir === 'in' ? 'income' : 'expense'].map((id) => cats.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
   // tasso proposto in automatico: quello salvato per il mese della data; altrimenti il più recente tra
@@ -191,6 +198,14 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       const data = await uploadDocument(supabase, { orgId: R.orgId, year: opDate.slice(0, 4), key, file, name: file.name,
         type: file.type, size: file.size, enhanced: r.enhanced, pdf: r.pdf, docDate: docDate || null });
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, id: data.id, state: data.outcome === 'duplicate_file' ? 'dup' : 'ok' } : x)));
+      // file già in archivio: si dice a quale movimento è allegato, perché di solito è la stessa spesa inserita due volte (P2-16)
+      if (data.outcome === 'duplicate_file') {
+        const { data: lk } = await supabase.from('movement_documents').select('movement:movements(id, ref, op_date)').eq('document_id', data.id).limit(3);
+        const refs = ((lk ?? []) as unknown as { movement: { id: string; ref: string | null; op_date: string } | null }[])
+          .map((l) => l.movement).filter((m): m is NonNullable<typeof m> => Boolean(m) && m!.id !== initial?.id)
+          .map((m) => `${m.ref ?? t.st_draft} ${t.f_doc_dup_of} ${m.op_date.slice(8, 10)}/${m.op_date.slice(5, 7)}`);
+        if (refs.length) setDocs((d) => d.map((x) => (x.key === key ? { ...x, dupOf: refs.join(', ') } : x)));
+      }
       if (R.aiEnabled && !initial && !autoRead.current) { autoRead.current = true; readWithAi(data.id, true); }
     } catch (e) {
       if (!initial && isNetworkError(e)) keepLocal();
@@ -441,7 +456,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <li key={d.key}>
               <span>{d.label}</span>
               <span className={`chip ${d.state === 'ok' ? 'ok' : d.state === 'err' ? 'err' : 'warn'}`}>
-                {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? t.f_doc_dup : d.state === 'local' ? t.f_doc_local : t.f_doc_err}
+                {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? (d.dupOf ? t.f_doc_dup_mov.replace('{m}', d.dupOf) : t.f_doc_dup) : d.state === 'local' ? t.f_doc_local : t.f_doc_err}
               </span>
               {R.aiEnabled && d.id && (d.state === 'ok' || d.state === 'dup') && (
                 <button type="button" className="btn primary" disabled={aiBusy !== null} onClick={() => readWithAi(d.id!)}>
@@ -470,6 +485,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <div className="field">
           <label htmlFor="nodoc">{t.f_no_doc_reason}</label>
           <input className="input" id="nodoc" value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
+          <div className="chips-row" role="group" aria-label={t.f_no_doc_reason}>
+            {t.f_no_doc_presets.split('|').map((r) => <button type="button" key={r} className="chip-btn" aria-pressed={noDocReason === r} onClick={() => setNoDocReason(r)}>{r}</button>)}
+          </div>
           {req(missing.noDocReason)}
         </div>
       )}
@@ -548,6 +566,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
               <option value="">{t.f_choose}</option>
               {advMode ? advances.map((a) => <option key={a.id} value={a.id}>{a.holder ?? a.name} · {a.currency}</option>) : accOptions(undefined, kind !== 'transfer')}
             </select>
+            {lmAccount && accountId === lmAccount && !advMode && kind !== 'transfer' ? <span className="hint">{t.f_from_last}</span> : null}
             {req(missing.account)}
           </div>
         )}
@@ -581,6 +600,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <label htmlFor="category">{t.f_category}</label>
             <select className="input" id="category" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
               <option value="">{t.f_choose}</option>
+              {recentCats.length > 0 && (
+                <optgroup label={t.f_recent}>
+                  {recentCats.map((c) => <option key={`r-${c.id}`} value={c.id}>{c.code} · {c.name}</option>)}
+                </optgroup>)}
               {groups.map((g) => (
                 <optgroup key={g} label={g}>
                   {cats.filter((c) => c.group === g).map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}

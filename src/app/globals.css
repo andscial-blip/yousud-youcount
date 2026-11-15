@@ -2308,3 +2308,8 @@ table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
 /* inserimento lasciato a metà: avviso con due pulsanti uguali */
 .draft-note { display: grid; gap: 10px; }
 .draft-note .row-btns.eq { max-width: 360px; }
+/* motivi pronti sotto «Perché manca»: pulsanti della stessa altezza, due per riga su telefono */
+.chips-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.chip-btn { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line-input); border-radius: 8px; background: var(--surface); color: var(--ink); font: 500 13.5px/1.25 var(--f-ui); text-align: center; cursor: pointer; }
+.chip-btn[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+@media (max-width: 900px) { .chips-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
