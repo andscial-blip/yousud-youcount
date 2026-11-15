@@ -11,13 +11,14 @@ test('importi scritti in forme diverse', () => {
   for (const [s, exp] of cases) assert.equal(parseAmount(s), exp, s);
 });
 
-import { formatTyping } from '../../src/lib/amount.ts';
+import { formatTyping, settleAmount } from '../../src/lib/amount.ts';
 test('mentre si scrive: punto delle migliaia e virgola dei decimali', () => {
   assert.equal(formatTyping('5000').text, '5.000');
   assert.equal(formatTyping('1234567').text, '1.234.567');
   assert.equal(formatTyping('1234567,5').text, '1.234.567,5');
   assert.equal(formatTyping('5.0000').text, '50.000');
-  assert.equal(formatTyping('12.5').text, '12,5');
+  assert.equal(formatTyping('12.5').text, '12.5');
+  assert.equal(settleAmount('12.5'), '12,5');
   assert.equal(formatTyping('12,345').text, '12,34');
   assert.equal(formatTyping('').text, '');
   assert.equal(formatTyping('0005').text, '5');
@@ -33,11 +34,26 @@ function typeChars(seq: string) {
   return text;
 }
 test('digitando un carattere alla volta il punto dei decimali resta decimale', () => {
-  assert.equal(typeChars('12.50'), '12,50');
-  assert.equal(typeChars('7.5'), '7,5');
-  assert.equal(typeChars('1250.5'), '1.250,5');
+  assert.equal(settleAmount(typeChars('12.50')), '12,50');
+  assert.equal(settleAmount(typeChars('7.5')), '7,5');
+  assert.equal(settleAmount(typeChars('1250.5')), '1.250,5');
+  assert.equal(parseAmount(typeChars('1250.5')), 1250.5);
   assert.equal(typeChars('12,50'), '12,50');
   assert.equal(typeChars('5000'), '5.000');
   assert.equal(parseAmount(typeChars('12.50')), 12.5);
   assert.equal(parseAmount(typeChars('7.5')), 7.5);
+});
+
+// difetto trovato dalla revisione finale del 15/11: "1.250" digitato un carattere alla volta diventava 1,25
+test('digitando il punto delle migliaia a mano l\'importo resta in migliaia', () => {
+  assert.equal(typeChars('1.250'), '1.250');
+  assert.equal(parseAmount(typeChars('1.250')), 1250);
+  assert.equal(parseAmount(typeChars('25.000')), 25000);
+  assert.equal(typeChars('1.250.000'), '1.250.000');
+  assert.equal(parseAmount(typeChars('1.250.000')), 1250000);
+  assert.equal(parseAmount(typeChars('1.250,5')), 1250.5);
+  assert.equal(parseAmount('1.234.56'), 1234.56);
+  assert.equal(settleAmount('1.250'), '1.250');
+  assert.equal(settleAmount('12.'), '12');
+  assert.equal(settleAmount('12,'), '12');
 });

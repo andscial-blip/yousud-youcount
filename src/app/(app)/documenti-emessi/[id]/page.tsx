@@ -31,6 +31,9 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
   const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur },
     org);
   const pdf = d.file?.original_path ? (await supabase.storage.from('documents').createSignedUrl(d.file.original_path, 600, { download: d.file.file_name ?? `${d.number}.pdf` })).data?.signedUrl : null;
+  // documento annullato: si scarica con la dicitura di annullamento sopra (il file archiviato resta intatto)
+  const pdfHref = pdf && d.status === 'cancelled' ? `/api/v1/emesso/${id}` : pdf;
+  const pdfLabel = d.status === 'cancelled' ? L('Scarica il PDF annullato', 'Télécharger le PDF annulé') : L('Scarica il PDF', 'Télécharger le PDF');
   const writer = me?.role !== 'read_only';
   const editing = d.status === 'draft' && writer && sp.edit === '1';
   const T = DOC_TYPES[d.type as keyof typeof DOC_TYPES];
@@ -68,7 +71,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
                       'Après l\'émission, le numéro est définitif et le document ne se modifie plus : il peut seulement être annulé.')}</p></form>
                 )}
                 {d.status !== 'draft' && writer && <Link className="btn" href={`/documenti-emessi/nuovo?tipo=${d.type}&da=${id}`}>{L('Correggi (nuova bozza con questi dati)', 'Corriger (nouveau brouillon avec ces données)')}</Link>}
-              {pdf && <a className="btn primary" href={pdf}><Ico name="download" />{L('Scarica il PDF', 'Télécharger le PDF')}</a>}
+              {pdfHref && <a className={d.status === 'cancelled' ? 'btn' : 'btn primary'} href={pdfHref}><Ico name="download" />{pdfLabel}</a>}
                 {d.movement && <Link className="btn" href={`/movimenti/${d.movement.id}`}>{L('Movimento', 'Mouvement')} {d.movement.ref}</Link>}
                 {d.status === 'draft' && writer && (
                   <form action={cancelDoc}><input type="hidden" name="id" value={id} />
@@ -98,7 +101,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
           {d.status === 'draft' && writer && (
             <form action={issueDoc}><input type="hidden" name="id" value={id} />
               <PendingButton busy={L('Emissione…', 'Émission…')}>{L('Emetti', 'Émettre')}</PendingButton></form>)}
-          {d.status !== 'draft' && pdf && <a className="btn primary" href={pdf}><Ico name="download" />{L('Scarica il PDF', 'Télécharger le PDF')}</a>}
+          {d.status !== 'draft' && pdfHref && <a className={d.status === 'cancelled' ? 'btn' : 'btn primary'} href={pdfHref}><Ico name="download" />{pdfLabel}</a>}
         </div>)}
     </div>
   );

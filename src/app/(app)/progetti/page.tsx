@@ -65,7 +65,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{L('Previsto', 'Prévu')}</div>
           <div className="v num">{tot.b ? e0(tot.b) : '–'}</div>
-          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: `var(--dn${n + 1})` }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
+          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: fixedColors(withB.slice(0, 6).map((x) => x.name))[n]! }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
             <div className="vzl"><span>{withB[0]!.name}</span><span>{pc(A(withB[0]!.id).bOut, tot.b)}</span></div></>}
           <div className="s">{tot.b ? L(`uscite ${year} · ${withB.length === 1 ? '1 progetto' : `${withB.length} progetti`}`, `dépenses ${year} · ${withB.length === 1 ? '1 projet' : `${withB.length} projets`}`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>

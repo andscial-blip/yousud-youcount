@@ -3,7 +3,7 @@ import { can, requireMe, RESP } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
 import { CIcon } from '@/components/CIcon';
-import { Donut, Legend, PAL, Viz } from '@/components/Charts';
+import { Donut, Legend, Viz, fixedColors } from '@/components/Charts';
 import { DonorMark } from '@/components/DonorMark';
 import { createGrant } from './actions';
 import { COUNTED, GrantFields, eurOf, timeOf, totals, type GrantRow, type Mv } from './shared';
@@ -54,7 +54,9 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   const byDonor = new Map<string, { label: string; v: number }>();
   for (const g of shown) { const k = g.donor?.id ?? ''; const x = byDonor.get(k) ?? { label: g.donor?.name ?? L('Finanziatore da indicare', 'Bailleur à préciser'), v: 0 }; x.v += granted(g); byDonor.set(k, x); }
   const dn = [...byDonor.entries()].map(([k, x]) => ({ k: k || 'none', ...x })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
-  const dnTop = (dn.length > 6 ? [...dn.slice(0, 5), { k: 'rest', label: L(`Altri (${dn.length - 5})`, `Autres (${dn.length - 5})`), v: dn.slice(5).reduce((s, x) => s + x.v, 0) }] : dn).map((x, n) => ({ ...x, color: PAL[n % PAL.length] }));
+  const dnTop0 = (dn.length > 6 ? [...dn.slice(0, 5), { k: 'rest', label: L(`Altri (${dn.length - 5})`, `Autres (${dn.length - 5})`), v: dn.slice(5).reduce((s, x) => s + x.v, 0) }] : dn);
+  const dnCols = fixedColors(dnTop0.map((x) => (x.k === 'rest' ? '' : x.label)));
+  const dnTop = dnTop0.map((x, n) => ({ ...x, color: dnCols[n]! }));
   const maxPair = Math.max(1, ...shown.flatMap((g) => [granted(g), T(g).rec, T(g).sp]));
   const net = sum.rec - sum.sp;
   const tabs: [string, string, number][] = [['attivi', L('In corso', 'En cours'), nActive], ['chiusi', L('Chiusi', 'Clôturés'), all.length - nActive], ['tutti', L('Tutti', 'Tous'), all.length]];

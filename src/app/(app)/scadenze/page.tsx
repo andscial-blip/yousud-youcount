@@ -263,12 +263,12 @@ export default async function Deadlines({ searchParams }: {
             {writer && <Link className="btn primary" href={href({ nuovo: '1' })}><Ico name="plus" />{L('Nuova scadenza', 'Nouvelle échéance')}</Link>}
           </div>
         </div>
-        <div className="cal" role="grid">
+        <div className="cal">
           {wd.map((w) => <div key={w} className="cal-wd" role="columnheader">{w}</div>)}
           {daysGrid.map((d) => {
             const its = calItems.filter((i) => i.date === d);
             return (
-              <div key={d} className={`cal-d ${d.slice(0, 7) !== month ? 'out' : ''} ${d === td ? 'today' : ''} ${its.length ? 'has' : ''}`} role="gridcell">
+              <div key={d} className={`cal-d ${d.slice(0, 7) !== month ? 'out' : ''} ${d === td ? 'today' : ''} ${its.length ? 'has' : ''}`}>
                 <span className="cal-n">{Number(d.slice(8))}</span>
                 {its.length > 0 && <Link className="cal-hit" href={href({ apri: `day:${d}` })} scroll={false} aria-label={`${Number(d.slice(8))} ${monthName}: ${its.length}`} />}
                 {its.slice(0, 3).map((i) => <Link key={i.key} className={`cal-i i-${imp(i)}`} title={i.title} href={href({ apri: i.key })} scroll={false}>{i.title}</Link>)}

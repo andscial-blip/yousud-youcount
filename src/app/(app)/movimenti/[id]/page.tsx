@@ -283,7 +283,7 @@ export default async function MovementDetail({ params, searchParams }: {
 
           {canReverse && (
             <details className="panel">
-              <summary className="panel-h" style={{ cursor: 'pointer' }}><H2 text={t('d_reverse')} /></summary>
+              <summary className="panel-h rev-sum" style={{ cursor: 'pointer' }}><H2 text={t('d_reverse')} /><span className="spacer" /><span className="btn small">{FR ? 'Extourner ce mouvement…' : 'Storna questo movimento…'}</span></summary>
               <form action={reverseAction} className="panel-b stack" style={{ gap: 10 }}>
                 <input type="hidden" name="id" value={m.id} />
                 <input type="hidden" name="client_uuid" value={randomUUID()} />
@@ -306,7 +306,7 @@ export default async function MovementDetail({ params, searchParams }: {
                   <li key={i}>
                     <span className="h-who">{h.actor ? name.get(h.actor) ?? '–' : '–'}</span>
                     <span className="h-at">{dateTime(h.at, lang)}</span>
-                    <span className="h-what">{t(`a_${h.action}` as Key)}{changed.length > 0 && <span className="muted"> · {[...new Set(changed.map((k) => (FIELD[k] ? t(FIELD[k]) : k)))].join(', ')}</span>}</span>
+                    <span className="h-what">{t(`a_${h.action}` as Key)}{changed.some((k) => FIELD[k]) && <span className="muted"> · {[...new Set(changed.filter((k) => FIELD[k]).map((k) => t(FIELD[k]!)))].join(', ')}</span>}</span>
                   </li>
                 );
               })}

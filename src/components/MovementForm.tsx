@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Dict, Lang } from '@/lib/i18n';
 import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
-import { formatTyping, parseAmount } from '@/lib/amount';
+import { formatTyping, parseAmount, settleAmount } from '@/lib/amount';
 import { useCaret } from '@/lib/use-caret';
 import dynamic from 'next/dynamic';
 import type { ScanResult } from './ScanEditor';
@@ -519,7 +519,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <div className={aiCls('amount')}>
           <label htmlFor="amount">{t.f_amount}{account || due ? ` (${currency})` : ''}</label>
           <input className="input big num" id="amount" inputMode="decimal" autoComplete="off" value={amountTxt}
-                 onChange={(e) => { typed(e, setAmountTxt); confirm('amount'); }} placeholder="0,00" />
+                 onChange={(e) => { typed(e, setAmountTxt); confirm('amount'); }} onBlur={() => setAmountTxt((v) => settleAmount(v))} placeholder="0,00" />
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
@@ -584,7 +584,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           <div className="field">
             <label htmlFor="rate">{t.f_rate}</label>
             <input className="input num" id="rate" inputMode="decimal" value={rateTxt}
-                   onChange={(e) => { typed(e, setRateTxt); setRateTouched(true); }} />
+                   onChange={(e) => { typed(e, setRateTxt); setRateTouched(true); }} onBlur={() => setRateTxt((v) => settleAmount(v))} />
             <span className="hint">{suggested ? (!rateTouched || rate === suggested ? (rateSugg?.src === 'last' ? t.f_rate_last : t.f_rate_auto) : '') : t.f_rate_missing}</span>
             {req(missing.rate)}
           </div>
@@ -601,7 +601,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <label htmlFor="toamount">{t.f_to_amount}{toAccount ? ` (${toAccount.currency})` : ''}</label>
             <input className="input num" id="toamount" inputMode="decimal" value={toAmountTxt}
                    disabled={Boolean(account && toAccount && account.currency === toAccount.currency)}
-                   onChange={(e) => typed(e, setToAmountTxt)} />
+                   onChange={(e) => typed(e, setToAmountTxt)} onBlur={() => setToAmountTxt((v) => settleAmount(v))} />
             {req(missing.toAmount)}
           </div>
         </>)}

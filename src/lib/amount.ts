@@ -12,7 +12,8 @@ export function parseAmount(input: string): number | null {
     const intPart = v.slice(0, last).replace(/[.,]/g, '');
     const dec = v.slice(last + 1);
     if (new Set(seps).size > 1) n = Number(`${intPart}.${dec}`);
-    else if (seps.length > 1) n = Number(v.replace(/[.,]/g, ''));
+    // più separatori uguali: migliaia («1.010.000»); se l'ultimo gruppo ha 1-2 cifre è la parte decimale («1.234.56» = 1234,56)
+    else if (seps.length > 1) n = dec.length === 3 ? Number(v.replace(/[.,]/g, '')) : Number(`${intPart}.${dec}`);
     else if (dec.length === 3 && Number(intPart) > 0) n = Number(intPart + dec);
     else n = Number(`${intPart}.${dec}`);
   }
@@ -20,8 +21,10 @@ export function parseAmount(input: string): number | null {
 }
 
 // Mentre si scrive un importo: punto delle migliaia e virgola dei decimali, in automatico
-// ("5000" → "5.000", "1234567,5" → "1.234.567,5"). Un punto seguito da 1-2 cifre alla fine vale come
-// virgola dei decimali ("12.5" → "12,5"); gli altri punti sono separatori delle migliaia e si ricalcolano.
+// ("5000" → "5.000", "1234567,5" → "1.234.567,5"). Un punto digitato a mano è ambiguo finché non si vede cosa segue:
+// resta un punto mentre lo seguono 0-2 cifre ("12.5", letto 12,5) e diventa separatore delle migliaia alla terza
+// ("1.250" = 1250; revisione del 15/11: prima "1.250" digitato diventava 1,25). Uscendo dal campo settleAmount lo
+// trasforma in virgola ("12.5" → "12,5"). Gli altri punti sono separatori delle migliaia e si ricalcolano.
 // Restituisce anche dove rimettere il cursore (stesso numero di cifre alla sua sinistra).
 export function formatTyping(text: string, caret = text.length): { text: string; caret: number } {
   let t = text.replace(/[^\d.,]/g, '');
@@ -39,5 +42,12 @@ export function formatTyping(text: string, caret = text.length): { text: string;
   const before = text.slice(0, caret).replace(/[^\d,]/g, '').length + (decDot >= 0 && decDot < caret ? 1 : 0);
   let n = 0, pos = 0;
   while (pos < out.length && n < before) { if (/[\d,]/.test(out[pos])) n++; pos++; }
-  return { text: out, caret: pos };
+  // il punto digitato resta un punto finché è ambiguo (stessa lunghezza: il cursore non cambia)
+  return { text: decDot >= 0 ? out.replace(',', '.') : out, caret: pos };
+}
+
+// All'uscita dal campo: il punto rimasto in attesa (seguito da 1-2 cifre) è la virgola dei decimali; un separatore finale si toglie.
+export function settleAmount(text: string): string {
+  if (text.includes(',')) return text.replace(/,$/, '');
+  return text.replace(/\.(\d{1,2})$/, ',$1').replace(/\.$/, '');
 }

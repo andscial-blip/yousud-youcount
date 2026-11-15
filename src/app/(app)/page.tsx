@@ -194,7 +194,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <Link className="kpi" href="/conti">
             <div className="l">{L('Liquidità oggi', 'Liquidités aujourd\'hui')}</div>
             <div className={`v num ${liq < 0 ? 'neg' : ''}`}>{e0(liq)}</div>
-            <Viz.Stack segs={[{ v: itEur, c: 'var(--navy)' }, { v: mgEur, c: 'var(--green-soft)' }]} max={Math.max(1, itEur + mgEur)}
+            <Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, itEur + mgEur)}
               tip={`${L('Italia', 'Italie')}: ${e0(eurIT)}\nMadagascar: ${rate ? `${e0(mgaMG / rate)} (${money(mgaMG, 'MGA', lang)})` : money(mgaMG, 'MGA', lang)}`} />
             <div className="vzl"><span>{L('Italia', 'Italie')}</span><span>Madagascar</span></div>
             <div className="s">{L('tutti i conti, in euro', 'tous les comptes, en euros')}</div>

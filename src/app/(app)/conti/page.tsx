@@ -83,7 +83,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
           <div className={`v num${tot < 0 ? ' neg' : ''}`}>{e0(tot)}</div>
-          {tot > 0 && <><Viz.Stack segs={[{ v: itEur, c: 'var(--navy)' }, { v: mgEur, c: 'var(--green-soft)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
+          {tot > 0 && <><Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />
             <div className="vzl"><span>IT {pc(Math.max(0, itEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span><span>MG {pc(Math.max(0, mgEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span></div></>}
           <div className="s">{unver > 0 ? <Link href="/movimenti?stato=recorded">{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>

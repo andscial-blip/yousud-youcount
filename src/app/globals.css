@@ -1647,7 +1647,7 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
 .home.v2.yc .cov .meter.m-in > i { background: var(--vz-real); }
 .home.v2.yc .cov .meter .mk { top: -3px; bottom: -3px; background: var(--fg); box-shadow: 0 0 0 1.5px var(--surface); }
 .home.v2.yc .cov .meter-legend { color: var(--faint); margin-top: 5px; }
-.home.v2.yc .pbars .hc-b i { background: var(--c-ink); }
+.home.v2.yc .pbars .hc-b i { background: var(--c-out); }   /* uscite per progetto: giallo, come ogni uscita */
 .home.v2.yc .mini2 > a { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-decoration: none; color: inherit; }
 .home.v2.yc .mini2 > a:hover b { text-decoration: underline; text-decoration-color: var(--c-soft); text-underline-offset: 3px; }
 .home.v2.yc .mini2 b { white-space: nowrap; }
@@ -2398,3 +2398,17 @@ a.cal-hit { color: inherit; }
 
 /* Impostazioni: una sola freccia. Su telefono quella che torna al menu, da tablet in su quella «indietro» */
 @media (min-width: 761px) { .pback.only-phone { display: none; } }
+/* Conti su telefono: Iniziale / Entrate / Uscite su tre righe (etichetta a sinistra, importo a destra): in ariary
+   le tre cifre affiancate si toccavano e uscivano dal margine (revisione finale del 15/11) */
+@media (max-width: 760px) {
+  .bal-cards .bc-det { grid-template-columns: 1fr; gap: 2px; }
+  .bal-cards .bc-det > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .bal-cards .bc-det > div:nth-child(2), .bal-cards .bc-det > div:nth-child(3) { text-align: left; }
+  .bal-cards .bc-det dt, .bal-cards .bc-det dd { font-size: 12.5px; }
+}
+
+/* Selettore del tipo di report: va a capo invece di scorrere tagliato (revisione finale del 15/11) */
+nav.segs { flex-wrap: wrap; width: auto; max-width: 100%; overflow: visible; }
+/* «Storna»: l'intestazione mostra un pulsante, così si capisce che si apre */
+.rev-sum { display: flex; align-items: center; gap: 10px; list-style: none; } .rev-sum::-webkit-details-marker { display: none; }
+details[open] > .rev-sum .btn { display: none; }

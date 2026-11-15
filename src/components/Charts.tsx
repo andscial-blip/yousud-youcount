@@ -12,9 +12,9 @@ export const C_HYP = 'var(--vz-hyp)';
 export const C_NET = 'var(--green-soft)';
 export const C_OVER = 'var(--tax)';
 export const C_BUDGET = 'var(--band)';
-// Colori delle voci (gruppi di spesa, progetti): lilla, azzurro, corallo, oliva, rosa, ardesia. Blu notte, giallo e verde
+// Colori delle voci (gruppi di spesa, progetti): lilla, azzurro, corallo, oliva, rosa, grigio azzurro. Blu notte, giallo e verde
 // restano riservati a entrate, uscite e saldo: un colore, un significato.
-export const PAL = ['var(--pp2)', 'var(--pp4)', 'var(--pp5)', 'var(--pp6)', 'var(--pp7)', 'var(--pp8)'];
+export const PAL = ['var(--pp2)', 'var(--pp4)', 'var(--pp5)', 'var(--pp6)', 'var(--pp7)', 'var(--dn6)'];
 
 /** Colore fisso per voce: lo stesso gruppo di voci (o progetto) ha lo stesso colore in tutte le pagine, qualunque sia
  *  la sua posizione in classifica. Chiave = codice del gruppo («01 · Risorse umane» → 01) o, senza codice, il nome.
@@ -171,7 +171,7 @@ export function BudgetBar({ budget, spent }: { budget: number; spent: number }) 
   return (
     <span className="bbar" aria-hidden="true">
       <i className="bb" style={{ width: `${(budget / max) * 100}%`, background: C_BUDGET }} />
-      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: 'var(--c-ink)', borderRadius: 5 }} />
+      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: 'var(--c-out)', borderRadius: 5 }} />
       {over && <i className="bs" style={{ left: `${(budget / max) * 100}%`, width: `${((spent - budget) / max) * 100}%`, background: C_OVER }} />}
       {budget > 0 && <i className="bm" style={{ left: `calc(${(budget / max) * 100}% - 1px)` }} />}
     </span>

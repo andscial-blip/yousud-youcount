@@ -305,7 +305,10 @@ try {
     await ro.page.getByText('Totale uscite').first().waitFor();
     const txt = await ro.page.locator('main').innerText();
     assert.match(txt, /4\) Erogazioni liberali\s+2\.500,00\s?€/);
-    assert.match(txt, /1\) Materie prime, sussidiarie, di consumo e di merci\s+275,00\s?€/);
+    // 275 € dai tre movimenti in euro, più la spesa in ariary senza giustificativo della prova sull'autocertificazione (stessa voce)
+    const extra = Number((await pool.query(`select coalesce(sum(amount_eur), 0) n from movements where description = 'PROVA taxi senza ricevuta' and status <> 'draft'`)).rows[0].n);
+    const a1 = (275 + extra).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    assert.match(txt, new RegExp(`1\\) Materie prime, sussidiarie, di consumo e di merci\\s+${a1.replace('.', '\\.')}\\s?€`));
     await ro.page.screenshot({ path: `${SHOTS}/ro_rendiconto_mobile.png`, fullPage: true });
   });
   await check('operatore: niente "Da verificare" né amministrazione nel menu', async () => {
@@ -1061,6 +1064,17 @@ try {
     await p.fill('#cr', 'prova di annullamento');
     await p.getByRole('button', { name: 'Annulla il documento' }).click();
     await p.waitForURL(/ok=cancelled/);
+    // annullato: il PDF si scarica con la dicitura di annullamento (file diverso dall'originale, stesso numero di pagine)
+    const h2 = await p.getByRole('link', { name: 'Scarica il PDF annullato' }).first().getAttribute('href');
+    assert.match(h2, /\/api\/v1\/emesso\//);
+    const r2 = await p.request.get(`${base}${h2}`);
+    assert.equal(r2.status(), 200);
+    assert.match(r2.headers()['content-disposition'], /_ANNULLATO\.pdf/);
+    const b2 = await r2.body();
+    assert.equal(b2.subarray(0, 5).toString(), '%PDF-');
+    assert.notEqual(b2.length, pb.length, 'il PDF annullato non è il file originale');
+    const { PDFDocument } = await import('pdf-lib');
+    assert.equal((await PDFDocument.load(b2)).getPageCount(), (await PDFDocument.load(pb)).getPageCount());
     await p.goto(`${base}/documenti-emessi`);
     assert.match(await p.locator('main').innerText(), new RegExp(`${d.number}[\\s\\S]*Annullato`));
   });
@@ -1247,7 +1261,8 @@ try {
       tables++;
     }
     // ogni tabella del database è nel backup: una tabella nuova dimenticata fa fallire la prova
-    const { rows: all } = await pool.query(`select count(*)::int n from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'`);
+    // fuori dal backup, di proposito: le tabelle della copia su Google Drive (autorizzazione riservata al server e stato ricostruibile)
+    const { rows: all } = await pool.query(`select count(*)::int n from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' and table_name not like 'drive\\_%'`);
     assert.equal(tables, all[0].n);
     assert.equal((await op.page.request.get(`${base}/api/v1/backup`)).status(), 403);
     // dopo il backup il promemoria sparisce e Impostazioni mostra la data
