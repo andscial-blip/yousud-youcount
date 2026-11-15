@@ -1129,3 +1129,32 @@ test('uno storno nasce bloccato: i suoi dati contabili non si modificano (revisi
   const [after] = await sql('select amount, description, status from movements where id = $1', [sid]);
   assert.deepEqual(after, before, 'lo storno è rimasto com\'era');
 });
+
+test('archivio su Drive: cosa va copiato (registrati ed emessi, non le bozze), riservato al server', async () => {
+  const targets = async () => sql('select * from public.drive_targets($1)', [ORG]);
+  const dDraft = await doc(U.op), dRec = await doc(U.op), dRec2 = await doc(U.op);
+  await rpc(U.op, 'save_movement', mov({ status: 'draft', document_ids: [dDraft] }));
+  const m = await rpc(U.op, 'save_movement', mov({ status: 'recorded', op_date: today, document_ids: [dRec, dRec2] }));
+  let t = await targets();
+  assert.equal(t.some((r) => r.document_id === dDraft), false, 'il giustificativo di una bozza non va nel Drive');
+  const r1 = t.find((r) => r.document_id === dRec), r2 = t.find((r) => r.document_id === dRec2);
+  assert.ok(r1 && r2, 'i giustificativi del movimento registrato sono da copiare');
+  assert.equal(r1.kind, 'receipt'); assert.equal(r1.ref, m.ref); assert.equal(r1.code, 'RIC');
+  assert.deepEqual([r1.seq, r2.seq].sort(), [1, 2], 'progressivo dell\'allegato dentro il movimento');
+  // documento emesso: compare come «issued» una volta emesso e collegato al PDF; annullato resta, segnato
+  const inc = await rpc(U.op, 'save_movement', mov({ kind: 'income', category_id: R.in['E101'], status: 'recorded', no_doc_reason: 'donazione' }));
+  const dr = await rpc(U.op, 'issued_doc_save', { type: 'RIC', movement_id: inc.id, party_name: 'Anna Bianchi', amount: 80, currency: 'EUR', lang: 'it', data: { causale: 'don', method: 'Bonifico' } });
+  const pdf = await doc(U.op);
+  const iss = await rpc(U.op, 'issued_doc_issue', dr.id);
+  await rpc(U.op, 'issued_doc_attach', dr.id, pdf);
+  t = await targets();
+  const ri = t.filter((r) => r.document_id === pdf);
+  assert.equal(ri.length, 1, 'un solo file per documento, anche se è allegato al movimento');
+  assert.equal(ri[0].kind, 'issued'); assert.equal(ri[0].ref, iss.number); assert.equal(ri[0].party, 'Anna Bianchi'); assert.equal(ri[0].cancelled, false);
+  await rpc(U.resp, 'issued_doc_cancel', dr.id, 'prova di annullamento');
+  assert.equal((await targets()).find((r) => r.document_id === pdf).cancelled, true);
+  // solo il server: gli utenti non chiamano la funzione e non vedono le tabelle (lì c'è l'autorizzazione Google)
+  await assert.rejects(as(U.sa, (q) => q('select * from public.drive_targets($1)', [ORG])), /permission denied/);
+  await assert.rejects(as(U.sa, (q) => q('select * from public.drive_link')), /permission denied/);
+  await assert.rejects(as(U.sa, (q) => q('select * from public.drive_files')), /permission denied/);
+});

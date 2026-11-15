@@ -5,6 +5,7 @@ import { removeLogo, saveAdvLimits, saveLogo, saveDocDetails, saveMgSeat, toggle
 import { CountryMark } from '@/components/CountryMark';
 import { LogoUpload } from '@/components/LogoUpload';
 import { LOGO_MAX } from '@/lib/org';
+import { DriveCard } from '@/components/DriveCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +15,8 @@ const ROWS: { key: string; label: Key; def: boolean }[] = [
   { key: 'ai_reading', label: 'set_ai_reading', def: false },
 ];
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
-  const { ok, err } = await searchParams;
+export default async function Settings({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; drive?: string; dc?: string; du?: string; df?: string; dq?: string }> }) {
+  const sp = await searchParams; const { ok, err } = sp;
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
   const { data } = await supabase.from('settings').select('key, value');
@@ -64,6 +65,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           </tbody>
         </table>
       </Panel>
+      {me && <DriveCard org={me.org_id} lang={FR ? 'fr' : 'it'} flag={sp.drive} n={sp} />}
       <Panel title={t('doc_title')} pad>
         <form action={saveDocDetails} className="fgrid">
           <div className="field span2"><label htmlFor="d-ln">{lang === 'fr' ? 'Dénomination légale (comme au RUNTS)' : 'Denominazione legale (come nel RUNTS)'}</label>

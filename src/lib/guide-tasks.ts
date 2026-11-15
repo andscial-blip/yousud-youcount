@@ -77,6 +77,11 @@ export const GUIDE_TASKS: GuideTask[] = [
       'La risposta usa i dati dell’anno scelto. Controlla sempre i numeri importanti nelle pagine dell’app: l’AI può sbagliare.', 'Serve la connessione a internet.']],
     fr: ['Poser une question sur les comptes à l’IA', ['Touchez « IA » en haut (sur téléphone, l’icône avec l’étoile).', 'Écrivez la question dans « Posez une question sur les comptes… » ou choisissez un exemple, puis « Demander ».',
       'La réponse utilise les données de l’année choisie. Vérifiez toujours les chiffres importants dans les pages de l’app : l’IA peut se tromper.', 'Une connexion internet est nécessaire.']] },
+  { id: 'drive', ic: 'doc', href: '/admin/impostazioni', k: 'google drive archivio cartelle copia giustificativi documenti salvare',
+    it: ['Copiare giustificativi e documenti su Google Drive', ['Altro › Impostazioni › «Archivio su Google Drive» (solo amministratori).', '«Collega Google Drive» e autorizza con l’account Google dell’associazione.',
+      '«Sincronizza ora» copia subito ciò che manca; poi la copia parte da sola una volta al giorno.', '«Apri la cartella» mostra l’archivio: una cartella per anno, giustificativi per mese e documenti emessi per tipo.']],
+    fr: ['Copier justificatifs et documents sur Google Drive', ['Autre › Paramètres › « Archive sur Google Drive » (administrateurs seulement).', '« Connecter Google Drive » et autorisez avec le compte Google de l’association.',
+      '« Synchroniser maintenant » copie tout de suite ce qui manque ; ensuite la copie part seule une fois par jour.', '« Ouvrir le dossier » montre l’archive : un dossier par année, justificatifs par mois et documents émis par type.']] },
 ];
 
 // tipografia francese: spazio non divisibile prima di : ; ? ! » e dopo «

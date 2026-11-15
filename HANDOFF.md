@@ -149,3 +149,13 @@ Limite della prova: la digitazione sintetica attraverso «Duplica iPhone» alter
 
 ## Archivio su Google Drive (da fare, in attesa di decisioni del proprietario)
 Pareri raccolti il 15/11 (contabile ETS + archivi/Drive API). Scelte proposte: Drive condiviso YouSud (mai quello di Altromercato); account di servizio «Gestore dei contenuti»; copia dal server (Supabase Storage → Drive) con coda `drive_outbox`, ID Drive pre-generati; albero `AAAA/01_Giustificativi/AAAA-MM`, `AAAA/02_Documenti-emessi/<TIPO>`, `03_Banca-e-cassa`, `04_Bilancio`, riservati in un secondo Drive; anno = data del movimento (cassa) e serie di numerazione per gli emessi; niente bozze; mai eliminare. Serve: migrazione (approvazione), progetto Google Cloud, variabili su Vercel.
+
+## Archivio su Google Drive: realizzato il 15/11 (codice), da collegare
+Il Drive di YouSud è un Gmail normale (yousudodv@gmail.com), quindi niente Drive condiviso né account di servizio: OAuth dell'account con permesso `drive.file` (l'app vede solo ciò che crea).
+- Migrazione `20261115000100_drive_archive.sql`: `drive_link` (autorizzazione, solo server), `drive_folders`, `drive_files`, funzione `drive_targets(org)` (solo `service_role`).
+- `src/lib/drive-naming.ts` (regole di cartelle e nomi, test unitari), `src/lib/drive.ts` (OAuth, cartelle con ID pre-generati, caricamento, rinomina/spostamento, `syncDrive`).
+- Rotte `/api/v1/drive/connect`, `/callback`, `/sync` (GET con `CRON_SECRET` per Vercel Cron alle 01:17 UTC, POST «Sincronizza ora»). Scheda `DriveCard` in Impostazioni.
+- Variabili su Vercel: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CRON_SECRET` (oltre a `SUPABASE_SERVICE_ROLE_KEY`). URI di reindirizzamento: `https://youcount-gold.vercel.app/api/v1/drive/callback`. La schermata di consenso va messa «In produzione», altrimenti l'autorizzazione scade dopo 7 giorni.
+- NON ancora provato con Google vero: la copia è verificata solo nelle parti locali (nomi, cartelle, funzione SQL, permessi). Da provare al primo collegamento: `drive.file` con ID pre-generati, spostamento della cartella radice dentro la cartella esistente.
+- Non fatto: estratti conto, riconciliazioni, preventivo e rendiconto (cartelle 03 e 04), «Apri in Drive» sul singolo documento, registro CSV, controllo periodico degli hash.
+Account: l'accesso di Andrea è passato a andrea.scialabba@yousud.it (15/11, senza email di conferma).
