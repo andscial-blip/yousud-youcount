@@ -56,7 +56,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
           )}
           {tb.rows.length === 0 ? <div className="panel-b muted">{L('Nessun dato.', 'Aucune donnée.')}</div> : (
             <div className="tscroll">
-              <table className="t">
+              <table className={`t cmp${tb.rows.some((r) => r.some((c) => c.t === 'cur')) ? ' cmp2' : ''}`}>
                 <thead><tr>{tb.head.map((h, j) => <th key={j} className={h.num ? 'r' : ''}>{h.h}</th>)}</tr></thead>
                 <tbody>{(ALL ? tb.rows : tb.rows.slice(0, CAP)).map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} className={cls(c, tb.head[k]?.num)}>{c.href ? <Link href={c.href}>{fmt(c)}</Link> : fmt(c)}</td>)}</tr>)}</tbody>
                 {tb.foot && <tfoot><tr>{tb.foot.map((c, k) => <td key={k} className={cls(c, tb.head[k]?.num)}><b>{fmt(c)}</b></td>)}</tr></tfoot>}

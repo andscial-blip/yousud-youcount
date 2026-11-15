@@ -2332,3 +2332,22 @@ table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
 :where(main, .sheet) :where(p, .note, .muted, .hint, .s, small, .hcat-f, .empty) > :where(a:not([class])) { color: var(--slate-2); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
 /* (specificità zero e solo dentro il testo: righe e schede cliccabili restano come sono) */
 a.cal-hit { color: inherit; }
+/* Tabelle dei report su telefono: «riga compatta» (P2-19). Il titolo occupa la prima riga, i numeri stanno affiancati
+   a tre per riga, allineati a destra, ciascuno con la sua etichetta sopra. Le altre celle di testo restano a tutta riga. */
+@media (max-width: 900px) {
+  table.cmp[data-cards] tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; row-gap: 6px; align-items: end; }
+  table.cmp[data-cards] td { grid-column: 1 / -1 !important; grid-row: auto !important; }
+  table.cmp[data-cards] td:first-child { padding-left: 0 !important; font-weight: 700; color: var(--ink); }
+  table.cmp[data-cards] td:first-child::before { display: none; }
+  table.cmp[data-cards] td.num { grid-column: auto !important; display: block; padding: 0 !important; text-align: right !important; white-space: nowrap !important; font-size: 14.5px; }
+  table.cmp[data-cards] td.num::before { float: none; display: block; width: auto; margin: 0 0 1px; text-align: right; font-size: 11.5px; line-height: 1.25; white-space: normal; }
+  table.cmp[data-cards] tfoot tr { background: var(--surface-2); }
+}
+@media (max-width: 900px) { table.cmp.cmp2[data-cards] tr { grid-template-columns: repeat(2, minmax(0, 1fr)); } }   /* importi in ariary: più lunghi, due per riga */
+@media (min-width: 641px) and (max-width: 900px) { table.cmp[data-cards] tr { grid-template-columns: repeat(5, minmax(0, 1fr)); } table.cmp.cmp2[data-cards] tr { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 900px) {
+  table.cmp[data-cards] td:empty { display: none !important; }
+  table.cmp[data-cards] td:not(.num):not(:first-child) { padding: 0 !important; font-size: 13px; color: var(--muted); }
+  table.cmp[data-cards] td:not(.num):not(:first-child)::before { float: none; display: inline; width: auto; margin: 0; font-size: 13px; font-weight: 500; content: attr(data-label) ": "; }
+  table.cmp[data-cards] td:not(.num):not(:first-child)[data-label=""]::before { content: none; }
+}
