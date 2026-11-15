@@ -104,8 +104,8 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               <Lines lang={lang} zoom unit="MGA" label={L('Tasso del mese e tasso applicato ai movimenti', 'Taux du mois et taux appliqué aux mouvements')}
                 cats={M.map((m) => m.slice(0, 3))}
                 series={[
-                  { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--pp1)', w: 3, vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
-                  { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--pp2)', dash: '5 4', w: 2,
+                  { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--vz-real)', w: 3, vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
+                  { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--amber-soft)', dash: '5 4', w: 2,
                     vals: M.map((_, i) => { const a = ap.get(i + 1); return a && a.w ? Math.round(a.s / a.w) : null; }) as number[] },
                 ]} />
             )}

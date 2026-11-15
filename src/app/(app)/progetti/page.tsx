@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
-import { Donut, Legend, PAL, Viz } from '@/components/Charts';
+import { Donut, Legend, Viz, fixedColors } from '@/components/Charts';
 import { ProjectIcon } from '@/components/ProjectIcon';
 import { THEMES, themeOf } from '@/lib/project-theme';
 
@@ -50,8 +50,10 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const mTip = (title: string, vals: number[]) => `${title}\n${vals.map((v, k) => `${MESI_S[lang][k]}: ${e0(v)}`).filter((_, k) => k < Math.max(curM, 1)).join('\n')}`;
   const withB = shown.filter((p) => A(p.id).bOut > 0).sort((x, y) => A(y.id).bOut - A(x.id).bOut);
   const top5 = <T extends { v: number }>(xs: T[], rest: (v: number, n: number) => T) => xs.length > 6 ? [...xs.slice(0, 5), rest(xs.slice(5).reduce((a, x) => a + x.v, 0), xs.length - 5)] : xs;
-  const mix = top5(shown.filter((p) => A(p.id).out > 0).sort((x, y) => A(y.id).out - A(x.id).out).map((p) => ({ k: p.id, label: p.name, v: A(p.id).out })),
-    (v, n) => ({ k: 'rest', label: L(`Altri progetti (${n})`, `Autres projets (${n})`), v })).map((x, n) => ({ ...x, color: PAL[n % PAL.length] }));
+  const mix0 = top5(shown.filter((p) => A(p.id).out > 0).sort((x, y) => A(y.id).out - A(x.id).out).map((p) => ({ k: p.id, label: p.name, v: A(p.id).out })),
+    (v, n) => ({ k: 'rest', label: L(`Altri progetti (${n})`, `Autres projets (${n})`), v }));
+  const mixCols = fixedColors(mix0.map((x) => (x.k === 'rest' ? '' : x.label)));
+  const mix = mix0.map((x, n) => ({ ...x, color: mixCols[n]! }));
   const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
   const maxPair = Math.max(1, ...pairs.flatMap((p) => [A(p.id).bOut, A(p.id).out]));
   const C_PLAN = 'var(--vz-plan)', C_SP = 'var(--vz-sp)', C_IN = 'var(--navy)';

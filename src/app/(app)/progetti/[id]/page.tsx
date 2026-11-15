@@ -1,4 +1,4 @@
-import { nth } from '@/lib/palette';
+import { fixedColors } from '@/components/Charts';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, STAFF } from '@/lib/session';
@@ -45,7 +45,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   for (const l of ledger ?? []) {
     const v = Number(l.amount_eur ?? 0);
     if (l.kind === 'income') months[l.month - 1].inc += v;
-    else { months[l.month - 1].out += v; const g = l.category_id ? grp.get(l.category_id) : null; const k = g ? (lang === 'fr' && g.name_fr ? g.name_fr : g.name_it) : L('Senza codice', 'Sans code'); byG.set(k, (byG.get(k) ?? 0) + v); }
+    else { months[l.month - 1].out += v; const g = l.category_id ? grp.get(l.category_id) : null; const k = g ? `${g.code} · ${lang === 'fr' && g.name_fr ? g.name_fr : g.name_it}` : L('Senza codice', 'Sans code'); byG.set(k, (byG.get(k) ?? 0) + v); }
   }
   const inc = months.reduce((a, m) => a + m.inc, 0), out = months.reduce((a, m) => a + m.out, 0);
   // preventivo delle uscite del progetto: gruppi di codici di spesa (quelli di entrata iniziano per E)
@@ -55,6 +55,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const used = bOut ? out / bOut : 0;
   const gparts = [...byG.entries()].sort((a, b) => b[1] - a[1]);
   const gtot = gparts.reduce((a, [, v]) => a + v, 0) || 1;
+  const gcols = fixedColors(gparts.map(([n]) => n));
   const curM = year < now.getFullYear() ? 12 : year > now.getFullYear() ? 0 : now.getMonth() + 1;
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}\u00a0%` : '–');
   const mTip = (title: string, f: (m: { inc: number; out: number }) => number) => `${title}\n${months.slice(0, Math.max(curM, 1)).map((m, k) => `${MESI_S[lang][k]}: ${e0(f(m))}`).join('\n')}`;
@@ -111,7 +112,7 @@ export default async function ProjectDetail({ params, searchParams }: {
           <div className="panel-b">{gparts.length === 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : (
             <ul className="hcat pbars">{gparts.map(([n, v], gi) => (
               <li key={n}><span className="hc-n">{n}</span><b className="num">{e0(v)} <small>{Math.round((v / gtot) * 100)}{' '}%</small></b>
-                <span className="hc-b"><i style={{ width: `${((v / gparts[0]![1]) * 100).toFixed(1)}%`, background: nth(gi) }} /></span></li>))}</ul>)}</div>
+                <span className="hc-b"><i style={{ width: `${((v / gparts[0]![1]) * 100).toFixed(1)}%`, background: gcols[gi] }} /></span></li>))}</ul>)}</div>
         </Panel>
       </div>
       {staff && (

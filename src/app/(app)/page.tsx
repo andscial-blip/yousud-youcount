@@ -6,7 +6,7 @@ import { date, money, num } from '@/lib/format';
 import { MESI, MESI_L } from '@/lib/viz';
 import { ErrorNote, H2 } from '@/components/Page';
 import { type Balance } from '@/components/Balances';
-import { FlowMini, Viz } from '@/components/Charts';
+import { FlowMini, Viz, fixedColors } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
 import { DashNotes } from '@/components/DashNotes';
 
@@ -146,6 +146,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const top = catParts.slice(0, 5), rest = catParts.slice(5);
   const parts: [string, number][] = [...top.map(([k, v]) => [k.split('|')[1]!, v] as [string, number]), ...(rest.length ? [[L(`Altre ${rest.length} voci`, `${rest.length} autres postes`), rest.reduce((a, [, v]) => a + v, 0)] as [string, number]] : [])];
   const catTot = parts.reduce((a, [, v]) => a + v, 0) || 1;
+  // stesso colore per lo stesso gruppo di voci in tutte le pagine (chiave: codice del gruppo)
+  const catCols = fixedColors([...top.map(([k]) => (k.startsWith('?|') ? k.split('|')[1]! : `${k.split('|')[0]} · x`)), ...(rest.length ? [''] : [])]);
   const ML = MESI_L[lang];
   const eye = year > cy ? L('anno futuro', 'année future') : year < cy ? L('anno chiuso', 'année close') : L(`fino a ${ML[now.getMonth()].toLowerCase()}`, `jusqu'à ${ML[now.getMonth()].toLowerCase()}`);
   const outW = bOut ? Math.min(100, (aOut / bOut) * 100) : 0, inW = bIn ? Math.min(100, (aIn / bIn) * 100) : 0;
@@ -222,8 +224,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <div className="panel-b">
               {out <= 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <>
                 <div className="hstack" role="img" aria-label={L('Uscite per voce', 'Dépenses par poste')}>
-                  {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: `var(--dn${i + 1})` }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
-                <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: `var(--dn${i + 1})` }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
+                  {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: catCols[i] }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
+                <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: catCols[i] }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
                 {noDoc ? <div className="hcat-f"><span><b className="num">{num(noDoc, lang)}</b> {noDoc === 1 ? L('uscita senza giustificativo', 'dépense sans justificatif') : L('uscite senza giustificativo', 'dépenses sans justificatif')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
               </>}
             </div>

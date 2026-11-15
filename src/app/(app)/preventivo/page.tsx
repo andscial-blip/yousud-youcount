@@ -6,7 +6,7 @@ import { CIcon } from '@/components/CIcon';
 import { Ico } from '@/components/Ui';
 import { money, num } from '@/lib/format';
 import { Denied, Empty, H2 } from '@/components/Page';
-import { Donut, Legend, PAL } from '@/components/Charts';
+import { Donut, Legend, fixedColors } from '@/components/Charts';
 import { BudgetRowForm } from '@/components/BudgetRowForm';
 import { deleteItem, draftBudget, saveItem } from './actions';
 import { BudgetNotes, BudgetTiles, C_EXP, C_INC, NoBudget, VersionBar, loadBudget, type Item } from './shared';
@@ -101,14 +101,15 @@ export default async function BudgetPage({ searchParams }: {
   const cpLabel = (k: string) => (k ? cpBy.get(k)?.name ?? '–' : L('Non indicato', 'Non indiqué'));
   const BarList = ({ rows, color, tot }: { rows: { k: string; label: string; v: number }[]; color: string; tot: number }) => {
     // scala sulla voce più grande; «Altre voci» è una somma: barra grigia, al massimo piena
-    const max = Math.max(1, ...rows.filter((r) => r.k !== 'rest').map((r) => r.v));
     return rows.length === 0 ? <p className="muted bq-none">{L('Nessuna riga.', 'Aucune ligne.')}</p> : (
       <ul className="bq-bars">{rows.map((r) => (
         <li key={r.k}><span className="bq-bn">{r.label}</span><b className="num">{e0(r.v)}<small>{pc(r.v, tot)}</small></b>
-          <span className="bq-bb"><i style={{ width: `${(Math.min(r.v / max, 1) * 100).toFixed(1)}%`, background: r.k === 'rest' ? 'var(--line)' : color }} /></span></li>))}</ul>);
+          <span className="bq-bb"><i style={{ width: `${(Math.min(tot > 0 ? r.v / tot : 0, 1) * 100).toFixed(1)}%`, background: r.k === 'rest' ? 'var(--line)' : color }} /></span></li>))}</ul>);
   };
   const DonutBlock = ({ title, xs, tot }: { title: string; xs: Item[]; tot: number }) => {
-    const rows = top(sumBy(xs, (i) => catBy.get(i.category_id)?.group_id ?? ''), grpLabel, 5).map((r, n) => ({ ...r, color: PAL[n % PAL.length] }));
+    const rows0 = top(sumBy(xs, (i) => catBy.get(i.category_id)?.group_id ?? ''), grpLabel, 5);
+    const cols = fixedColors(rows0.map((r) => (r.k === 'rest' ? '' : r.label)));
+    const rows = rows0.map((r, n) => ({ ...r, color: cols[n]! }));
     return (
       <div className="bq-half">
         <h3>{title}</h3>

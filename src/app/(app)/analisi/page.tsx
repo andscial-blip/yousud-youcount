@@ -4,7 +4,7 @@ import { FilterBar } from '@/components/FilterBar';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
 import { Denied, ErrorNote, H2, Panel } from '@/components/Page';
-import { BudgetBar, Donut, HBars, Legend, Lines, MonthBars, PAL, Viz } from '@/components/Charts';
+import { BudgetBar, Donut, HBars, Legend, Lines, MonthBars, Viz, fixedColors } from '@/components/Charts';
 import { BudgetCompare, type CmpRow } from '@/components/BudgetCompare';
 import { MESI } from '@/lib/viz';
 
@@ -144,7 +144,8 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const top6 = (xs: { k: string; label: string; v: number; href?: string }[], rest: string) => {
     const all = xs.filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
     const r = all.length > 6 ? [...all.slice(0, 5), { k: 'rest', label: `${rest} (${all.length - 5})`, v: all.slice(5).reduce((a, x) => a + x.v, 0) }] : all;
-    return r.map((x, n) => ({ ...x, color: PAL[n % PAL.length] })) as { k: string; label: string; v: number; href?: string; color: string }[];
+    const cols = fixedColors(r.map((x) => (x.k === 'rest' ? '' : x.label)));
+    return r.map((x, n) => ({ ...x, color: cols[n] })) as { k: string; label: string; v: number; href?: string; color: string }[];
   };
   const DonutCard = ({ title, eyebrow, rows: rs, center, tot, empty }: { title: string; eyebrow: string; rows: ReturnType<typeof top6>; center: string; tot: number; empty: string }) => (
     <section className="panel">

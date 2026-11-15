@@ -5,14 +5,34 @@ import { donut, eur0, flowMini, MESI, monthChart, svgBars, svgLines, svgMirror, 
 // sul telefono quella stretta e alta (si sceglie con il CSS, nessun JavaScript).
 // Colori con lo stesso significato di Cairn: blu notte = reale, blu = previsto, lilla = ipotesi,
 // giallo = spese, verde acqua = netto, salmone = oltre il limite.
-export const C_IN = 'var(--c-in)';   // entrate: verde della palette
-export const C_OUT = 'var(--c-out)'; // uscite: rosso tenue della palette
+export const C_IN = 'var(--c-in)';   // entrate: blu notte
+export const C_OUT = 'var(--c-out)'; // uscite: giallo
 export const C_PLAN = 'var(--vz-plan)';
 export const C_HYP = 'var(--vz-hyp)';
 export const C_NET = 'var(--green-soft)';
 export const C_OVER = 'var(--tax)';
 export const C_BUDGET = 'var(--band)';
-export const PAL = ['var(--dn1)', 'var(--dn2)', 'var(--dn3)', 'var(--dn4)', 'var(--dn5)', 'var(--dn6)'];
+// Colori delle voci (gruppi di spesa, progetti): lilla, azzurro, corallo, oliva, rosa, ardesia. Blu notte, giallo e verde
+// restano riservati a entrate, uscite e saldo: un colore, un significato.
+export const PAL = ['var(--pp2)', 'var(--pp4)', 'var(--pp5)', 'var(--pp6)', 'var(--pp7)', 'var(--pp8)'];
+
+/** Colore fisso per voce: lo stesso gruppo di voci (o progetto) ha lo stesso colore in tutte le pagine, qualunque sia
+ *  la sua posizione in classifica. Chiave = codice del gruppo («01 · Risorse umane» → 01) o, senza codice, il nome.
+ *  Dentro uno stesso grafico due voci non hanno mai lo stesso colore finché la tavolozza basta; '' = «Altre voci» (grigio). */
+export function fixedColors(labels: string[]): string[] {
+  const used = new Set<number>();
+  return labels.map((label) => {
+    if (!label) return 'var(--line)';
+    const key = label.includes(' · ') ? label.split(' · ')[0]! : label;
+    const num = /^[A-Za-z]?(\d+)$/.exec(key.trim());
+    let i: number;
+    if (num) i = (Number(num[1]) + (/^[A-Za-z]/.test(key.trim()) ? 2 : -1) + PAL.length * 4) % PAL.length;
+    else { let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0; i = h % PAL.length; }
+    for (let n = 0; n < PAL.length && used.has(i); n++) i = (i + 1) % PAL.length;
+    used.add(i);
+    return PAL[i]!;
+  });
+}
 
 const Svg = ({ html, className }: { html: string; className?: string }) =>
   <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
@@ -104,7 +124,7 @@ export function FlowMini({ data, curM, lang, names, hrefFor }: {
 // Elenco a barre orizzontali (come «Dove vanno le spese» / righe .cbar di Cairn), con percentuale sul totale.
 // many: ogni riga con un colore diverso della palette (categorie, controparti); altrimenti un solo colore
 // un solo colore per elenco (blu ardesia, verde delle entrate o rosso tenue delle uscite): il confronto è sulla lunghezza, non sul colore
-export function HBars({ rows, lang, color = 'var(--c-net)', total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number; many?: boolean }) {
+export function HBars({ rows, lang, color = 'var(--navy)', total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number; many?: boolean }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   const tot = total ?? rows.reduce((s, r) => s + r.value, 0);
   // nome e importo su una riga (il nome va a capo, mai troncato), barra sotto
