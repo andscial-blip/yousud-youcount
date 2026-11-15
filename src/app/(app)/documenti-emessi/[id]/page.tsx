@@ -28,7 +28,8 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
     loadOrg(supabase),
     supabase.from('projects').select('id, name').eq('active', true).order('name'), supabase.from('payment_methods').select('name_it, name_fr').order('sort'), docFormContext(supabase)]);
   const eur = d.movement && d.movement.currency === d.currency && Number(d.movement.amount) === Number(d.amount) ? d.movement.amount_eur : null;
-  const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur },
+  const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur,
+    fx: d.data?.fx_rate ? undefined : (eur != null && d.movement?.fx_rate ? Number(d.movement.fx_rate) : undefined) },
     org);
   const pdf = d.file?.original_path ? (await supabase.storage.from('documents').createSignedUrl(d.file.original_path, 600, { download: d.file.file_name ?? `${d.number}.pdf` })).data?.signedUrl : null;
   // documento annullato: si scarica con la dicitura di annullamento sopra (il file archiviato resta intatto)

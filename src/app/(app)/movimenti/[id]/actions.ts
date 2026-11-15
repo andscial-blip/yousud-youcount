@@ -59,7 +59,7 @@ export async function selfCertAction(form: FormData) {
   const { loadOrg } = await import('@/lib/org');
   const [org, { data: mv }] = await Promise.all([
     loadOrg(supabase),
-    supabase.from('movements').select('ref').eq('id', id).maybeSingle(),
+    supabase.from('movements').select('ref, fx_rate').eq('id', id).maybeSingle(),
   ]);
   const { buildModel } = await import('@/lib/doc-model');
   const { renderPdf } = await import('@/lib/doc-pdf');
@@ -67,6 +67,8 @@ export async function selfCertAction(form: FormData) {
   const md = buildModel({ type: 'AUT', number: s.number, lang: s.lang, doc_date: new Date().toISOString().slice(0, 10), party_name: s.declarant,
     party_tax_id: null, party_address: null, amount: s.amount, currency: s.currency, amount_eur: s.amount_eur, signer_name: s.signer_name,
     signer_role: s.signer_role, movement_ref: mv?.ref ?? null, project_name: s.project_name,
+    // il cambio stampato è quello registrato sul movimento, non il rapporto fra importi arrotondati (revisione del 15/11: 5.357 invece di 5.340)
+    fx: mv?.fx_rate ? Number(mv.fx_rate) : undefined,
     data: { declarant: s.declarant, declarant_role: s.declarant_role, place: s.place, reason: s.reason, exp_date: s.exp_date, supplier: s.supplier,
       description: s.description, category: s.category_code, category_fr: s.category_fr, method: s.method, method_fr: s.method_fr } },
     org);

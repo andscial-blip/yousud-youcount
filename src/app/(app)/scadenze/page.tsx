@@ -264,7 +264,7 @@ export default async function Deadlines({ searchParams }: {
           </div>
         </div>
         <div className="cal">
-          {wd.map((w) => <div key={w} className="cal-wd" role="columnheader">{w}</div>)}
+          {wd.map((w) => <div key={w} className="cal-wd" aria-hidden="true">{w}</div>)}
           {daysGrid.map((d) => {
             const its = calItems.filter((i) => i.date === d);
             return (

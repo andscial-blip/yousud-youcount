@@ -27,8 +27,9 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
   const now = new Date();
   const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0
     : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
-  const Bar = ({ b, a }: { b: number; a: number }) => { const p = b > 0 ? a / b : a > 0 ? 2 : 0;
-    return <span className={`cb-bar${p > 1.0005 ? ' over' : ''}`} aria-hidden="true"><i style={{ width: `${Math.min(p, 1) * 100}%` }} />{b > 0 && year === now.getFullYear() && <em style={{ left: `${elapsed * 100}%` }} />}</span>; };
+  // stessi colori del resto dell'app: giallo = uscite, blu notte = entrate; sforamento (solo per le uscite) come nella tabella per gruppo
+  const Bar = ({ b, a, dir = 'out' }: { b: number; a: number; dir?: 'in' | 'out' }) => { const p = b > 0 ? a / b : a > 0 ? 2 : 0;
+    return <span className={`cb-bar ${dir}${p > 1.0005 ? ' over' : ''}`} aria-hidden="true"><i style={{ width: `${Math.min(p, 1) * 100}%` }} />{b > 0 && year === now.getFullYear() && <em style={{ left: `${elapsed * 100}%` }} />}</span>; };
   const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '');
   const section = (d: 'in' | 'out') => groups.filter((g) => g.direction === d && all.some((x) => x.r.group_id === g.id)).map((g) => {
     const cs = all.filter((x) => x.r.group_id === g.id).sort((a, b) => a.r.category_code.localeCompare(b.r.category_code, 'it', { numeric: true }));
@@ -47,7 +48,7 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
                 ? <Link href={`/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${x.r.category_id}${prj ? `&progetto=${prj}` : ''}`}>{e0(x.a)}</Link> : e0(x.a)}</td>
               <td className={`r num ${d === 'out' && x.b - x.a < 0 ? 'neg' : ''}`} data-l={L('Residuo', 'Reste')}>{e0(x.b - x.a)}</td>
               <td className="r num" data-l="%">{x.b > 0 ? pct(x.a, x.b) : '–'}</td>
-              <td className="cb-bc"><Bar b={x.b} a={x.a} /></td>
+              <td className="cb-bc"><Bar b={x.b} a={x.a} dir={d} /></td>
             </tr>); })}
       </tbody>);
   });
@@ -66,7 +67,7 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
           <td className={`r num ${outB - outA < 0 ? 'neg' : ''}`}><b>{e0(outB - outA)}</b></td><td className="r num"><b>{pct(outA, outB)}</b></td><td className="cb-bc"><Bar b={outB} a={outA} /></td></tr></tbody>
         {section('out')}
         <tbody><tr className="bl-sec"><th colSpan={2} scope="rowgroup">{L('Entrate', 'Recettes')}</th><td className="r num"><b>{e0(inB)}</b></td><td className="r num"><b>{e0(inA)}</b></td>
-          <td className="r num"><b>{e0(inB - inA)}</b></td><td className="r num"><b>{pct(inA, inB)}</b></td><td className="cb-bc"><Bar b={inB} a={inA} /></td></tr></tbody>
+          <td className="r num"><b>{e0(inB - inA)}</b></td><td className="r num"><b>{pct(inA, inB)}</b></td><td className="cb-bc"><Bar b={inB} a={inA} dir="in" /></td></tr></tbody>
         {section('in')}
       </table>
     </div>

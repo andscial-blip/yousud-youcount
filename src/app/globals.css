@@ -1586,9 +1586,10 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
 .cbudget .chip { margin-left: 6px; }
 .cb-bc { width: 150px; }
 .cb-bar { position: relative; display: block; height: 8px; border-radius: 4px; background: var(--band); overflow: hidden; }
-.cb-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: #4A6A8F; }
+.cb-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--c-out); }
+.cb-bar.in i { background: var(--c-in); }
 .cb-bar em { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--navy); opacity: .45; }
-.cb-bar.over i { background: var(--red); }
+.cb-bar.out.over i { background: var(--c-over); }
 @media (max-width: 760px) {
   .cb-bc { width: 80px; }
 }

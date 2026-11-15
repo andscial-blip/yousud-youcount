@@ -13,6 +13,8 @@ export const MESI: Record<Lang, string[]> = {
   it: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
   fr: ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
 };
+// etichetta corta dei mesi sugli assi stretti: tre lettere, senza confondere juin e juillet («Jui», «Jui»)
+export const short3 = (c: string) => (c === 'Juin' ? 'Jun' : c === 'Juil' ? 'Jul' : c.slice(0, 3));
 export const MESI_L: Record<Lang, string[]> = {
   it: ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
   fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
@@ -99,7 +101,7 @@ export function svgMirror(cats: string[], inc: number[], out: number[], opt: { l
     const hov = `<rect class="hov" x="${L + sx * i}" y="${T}" width="${sx}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = opt.hrefs?.[i];
     bars += href && (a > 0 || b > 0) ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
-    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 10.5 : 11.5}" fill="var(--muted)">${esc(ph ? c.slice(0, 3) : c)}</text>`;
+    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 10.5 : 11.5}" fill="var(--muted)">${esc(ph ? short3(c) : c)}</text>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${g}${bars}${dots}</svg>`;
 }

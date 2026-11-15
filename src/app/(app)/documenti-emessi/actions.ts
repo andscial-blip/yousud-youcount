@@ -38,11 +38,11 @@ export async function issueDoc(f: FormData) {
   const sb = await createClient();
   const { error } = await sb.rpc('issued_doc_issue', { p_id: id });
   if (error) redirect(`/documenti-emessi/${id}?err=${encodeURIComponent(error.message)}`);
-  const { data: d } = await sb.from('issued_docs').select('*, movement:movements(ref, amount_eur, currency, amount), project:projects(name)').eq('id', id).single();
+  const { data: d } = await sb.from('issued_docs').select('*, movement:movements(ref, amount_eur, currency, amount, fx_rate), project:projects(name)').eq('id', id).single();
   const org = await loadOrg(sb);
   const eur = d.movement && d.movement.currency === d.currency && Number(d.movement.amount) === Number(d.amount) ? d.movement.amount_eur : null;
-  const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur },
-    org);
+  const md = buildModel({ ...d, movement_ref: d.movement?.ref ?? null, project_name: d.project?.name ?? null, amount_eur: eur,
+    fx: d.data?.fx_rate ? undefined : (eur != null && d.movement?.fx_rate ? Number(d.movement.fx_rate) : undefined) }, org);
   const bytes = await renderPdf(md);
   const st = await storePdf(sb, { orgId: org.id, bytes, number: d.number, date: d.doc_date, clientUuid: d.id,
     docType: d.type === 'RIC' || d.type === 'QUI' ? 'receipt' : 'other', total: d.amount, currency: d.currency });
