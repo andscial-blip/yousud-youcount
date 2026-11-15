@@ -69,6 +69,20 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
   }, []);
   // titolo della scheda del browser: nome della pagina e della sezione, nella lingua dell'utente (revisione 14/11)
   const pageTitle = path === '/altro' ? 'Menu' : sec ? (sub && sub.label !== sec.label ? `${sub.label} · ${sec.label}` : sec.label) : '';
+  // su telefono, durante lo scorrimento, logo, comandi e «Come si fa» rientrano: restano titolo e schede (P2-22).
+  // Due soglie diverse per accendere e spegnere, così l'intestazione che cambia altezza non fa tremare la pagina.
+  useEffect(() => {
+    const root = document.documentElement;
+    let on = false;
+    const f = () => {
+      const y = window.scrollY;
+      if (!on && y > 160) { on = true; root.setAttribute('data-scrolled', ''); }
+      else if (on && y < 24) { on = false; root.removeAttribute('data-scrolled'); }
+    };
+    f();
+    window.addEventListener('scroll', f, { passive: true });
+    return () => { window.removeEventListener('scroll', f); root.removeAttribute('data-scrolled'); };
+  }, [path]);
   useEffect(() => { if (pageTitle) document.title = `${pageTitle} · YouCount`; }, [pageTitle, path]);
   const isMenu = path === '/altro';
   const isTab = isMenu || secs.some((x) => x.subs.some((y) => y.href === path));

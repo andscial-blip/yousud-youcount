@@ -103,6 +103,8 @@ Quarto blocco (14/11 notte): P2-15 in parte («Crea la copia corretta» con `/nu
 
 Quinto blocco (15/11): P2-21 in parte (conto, progetto e modalità proposti dall'ultima spesa della stessa persona, «Usati di recente» nel Codice contabile, quattro motivi pronti per «Perché manca»; restano valuta nel campo importo e ricerca nel codice), P2-16 in parte (ZIP che salta i file mancanti con FILE_MANCANTI.txt, «già allegato a MOV-… del gg/mm: è la stessa spesa?»; restano anteprima con precedente/successivo nell'archivio e «Aggiungi giustificativo» nella scheda).
 
+Sesto blocco (15/11): P2-9 in parte («Contanti che ho in mano» per l'operatore con data per le ricevute, «autorizzati X su Y richiesti»; restano «Chiedi un anticipo» dal «+» e la tappa «Rendiconto»), P2-22 in parte (su telefono durante lo scorrimento restano titolo e schede: `html[data-scrolled]`, impostato in `Shell.tsx`; restano i comandi a 40–44 px e il selettore di Analisi prima degli indicatori).
+
 Da fare: P1-20 è fatto solo per «tiers», «extourne», «Nota di rimborso» e le etichette di pagamento (manca la passata completa su Comptabiliser/Enregistrer, pointer, codice/gruppo/voce, «Struttura e spese generali»); di P1-21 restano lente sopra il titolo e sfumatura delle schede di Impostazioni a 768 px; P2-9, P2-10, P2-12, P2-15…P2-25, P2-27, P2-28 e tutti i P3. Decisioni ancora aperte: cosa vede l'operatore (P2-28) e Analisi › Progetti come collegamento.
 
 La prova di layout ora segnala anche le parole spezzate a metà e il contenuto che esce da una cella (`tests/e2e/layout.e2e.mjs`, controlli 5 e 6). Un testo su due righe voluto si marca con `data-two`.

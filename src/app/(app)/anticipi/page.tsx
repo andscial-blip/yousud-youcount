@@ -108,6 +108,15 @@ export default async function Advances({ searchParams }: { searchParams: Promise
     .sort((a, b) => Number(Boolean(lateReq(b.account_id))) - Number(Boolean(lateReq(a.account_id))) || Number(b.balance) - Number(a.balance));
   const others = rows.filter((r) => r.active && !wallets.includes(r));
   const mine = reqs.filter((r) => r.requested_by === me.id || r.beneficiary_id === me.id);
+  // operatore: saldo dei conti di anticipo che gli sono stati consegnati (i saldi li dà la stessa funzione usata dai Conti)
+  const myAcc = [...new Set(mine.filter((r) => r.status === 'delivered' || r.status === 'reported').map((r) => r.account_id))];
+  const myBal = !staff && myAcc.length ? ((await supabase.rpc('account_balances')).data ?? []) as { account_id: string; balance: string; currency?: string }[] : [];
+  const myHand = myAcc.map((id) => {
+    const bal = Number(myBal.find((b) => b.account_id === id)?.balance ?? NaN);
+    const open = mine.filter((r) => r.account_id === id && r.status === 'delivered');
+    const first = open.slice().sort((x, y) => x.report_by.localeCompare(y.report_by))[0];
+    return { account_id: id, balance: bal, currency: accBy.get(id)?.currency ?? first?.currency ?? 'MGA', by: first?.report_by ?? null, project_id: first?.project_id ?? null };
+  }).filter((h) => Number.isFinite(h.balance) && h.balance > 0);
   const href = (q: Record<string, string | undefined>) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(q)) if (v) u.set(k, v); const s = u.toString(); return `/anticipi${s ? `?${s}` : ''}`; };
 
   // ── portafoglio aperto ──
@@ -146,6 +155,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const reqLine = (r: Req) => (
     <div className="aw-rq-m">
       <b>{accName(accBy.get(r.account_id))}</b> <span className="num">{money(amt(r), r.currency, lang)}</span>
+      {r.authorized_amount != null && Number(r.authorized_amount) !== Number(r.amount) && <div className="small">{LL('autorizzati', 'autorisés')} <span className="num">{money(Number(r.authorized_amount), r.currency, lang)}</span> {LL('su', 'sur')} <span className="num">{money(Number(r.amount), r.currency, lang)}</span> {LL('richiesti', 'demandés')}</div>}
       <div className="aw-p">{r.purpose}{r.project_id && prjBy.get(r.project_id) ? <span className="muted"> · {prjBy.get(r.project_id)}</span> : null}</div>
       <div className="muted small">{LL('chiesta da', 'demandée par')} {who.get(r.requested_by) ?? '–'} · {date(r.requested_at.slice(0, 10))} · {LL('uso', 'usage')} {date(r.use_date)}
         {r.estimate_document_id ? <> · {docLink(r.estimate_document_id, LL('preventivo', 'devis'))}</> : <> · <span className="neg">{LL('senza preventivo', 'sans devis')}</span></>}</div>
@@ -285,6 +295,20 @@ export default async function Advances({ searchParams }: { searchParams: Promise
           {wallets.length > 0 && <div className="pst-leg" aria-hidden="true"><span><i className="pst g" />{LL('in regola', 'en règle')}</span><span><i className="pst o" />{LL('da seguire: richiesta in corso, spese senza ricevuta o scadenza entro 7 giorni', 'à suivre : demande en cours, dépenses sans reçu ou échéance sous 7 jours')}</span><span><i className="pst r" />{LL('ricevute in ritardo', 'reçus en retard')}</span></div>}
           {others.length > 0 && <details className="aw-more"><summary>{others.length === 1 ? LL('Un’altra persona senza contanti in mano', 'Une autre personne sans espèces') : LL(`Altre ${others.length} persone senza contanti in mano`, `${others.length} autres personnes sans espèces`)}</summary>
             <ul className="aw-list aw-who">{others.map((w) => <li key={w.account_id}><Link href={href({ persona: w.account_id })} scroll={false}><span className="pst n" aria-hidden="true"><CIcon name="user" size={17} /></span><span className="aw-n"><b>{accName(w)}</b><small className="muted">{w.currency}</small></span><span className="aw-b num">{money(0, w.currency, lang)}</span></Link></li>)}</ul></details>}
+        </Panel>
+      )}
+
+      {/* chi ha i contanti in tasca vede subito quanto gli resta e entro quando portare le ricevute (P2-9) */}
+      {!staff && myHand.length > 0 && (
+        <Panel title={LL('Contanti che ho in mano', 'Espèces que j’ai en main')}>
+          <ul className="aw-hand">
+            {myHand.map((h) => (
+              <li key={h.account_id}>
+                <span className="aw-hand-m"><b className="num">{money(h.balance, h.currency, lang)}</b>
+                  <small className={h.by && h.by < today ? 'neg' : 'muted'}>{h.by ? `${LL('ricevute entro il', 'reçus avant le')} ${date(h.by)}` : LL('nessuna scadenza per le ricevute', 'pas d’échéance pour les reçus')}</small></span>
+                {writer && <Link className="btn" href={`/nuovo?tipo=expense&conto=${h.account_id}${h.project_id ? `&progetto=${h.project_id}` : ''}`}>+ {LL('Ricevuta', 'Reçu')}</Link>}
+              </li>))}
+          </ul>
         </Panel>
       )}
 

@@ -791,6 +791,10 @@ try {
     // avviso in Scadenze per le ricevute
     await o.goto(`${base}/scadenze?periodo=30`);
     await o.locator('ul.dl').getByRole('link', { name: 'Giustificare l’anticipo: Hery' }).waitFor();
+    // chi ha chiesto l'anticipo vede quanto resta in mano e entro quando portare le ricevute
+    await o.goto(`${base}/anticipi`);
+    await o.getByRole('heading', { name: 'Contanti che ho in mano' }).waitFor();
+    assert.match(await o.locator('.aw-hand').innerText(), /230\.000\sMGA[\s\S]*ricevute entro il \d{2}\/\d{2}\/\d{4}/);
     // portafoglio di Hery: ricevuta di consegna firmata caricata, poi restituzione del resto → saldo a zero e chiusura automatica
     const [{ acc }] = (await pool.query(`select id acc from accounts where kind = 'advance' and holder = 'Hery'`)).rows;
     await p.goto(`${base}/anticipi?persona=${acc}`);
