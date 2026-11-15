@@ -2359,3 +2359,11 @@ a.cal-hit { color: inherit; }
 .side-who .side-who-t b { font-weight: 500; }
 .side-who .side-who-t .side-role { font-size: 12.5px; }
 @media (min-width: 761px) and (max-width: 1099px) { .side-who .side-who-t { display: none; } }
+/* iPhone (visto sul telefono vero il 15/11): Safari su iOS disegna i campi data più larghi del contenitore e col testo al centro.
+   Solo su iOS: larghezza piena dentro il riquadro, testo a sinistra, stessa altezza dei campi vicini. */
+@supports (-webkit-touch-callout: none) {
+  input.input[type="date"], input.input[type="month"], input.input[type="time"], input.input[type="datetime-local"] {
+    -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100% !important; box-sizing: border-box; text-align: left; }
+  input.input[type="date"]::-webkit-date-and-time-value, input.input[type="month"]::-webkit-date-and-time-value,
+  input.input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.35em; }
+}
