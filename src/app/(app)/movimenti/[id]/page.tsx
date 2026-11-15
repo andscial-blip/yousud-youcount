@@ -159,6 +159,23 @@ export default async function MovementDetail({ params, searchParams }: {
               <button className="btn" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
             </form>
           )}
+          {(canEdit || canVerify || canReverse || m.status === 'draft') && (
+            <div className="factions">
+              {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}
+              {canVerify && (
+                <form action={verifyAction}>
+                  <input type="hidden" name="id" value={m.id} /><input type="hidden" name="version" value={m.version} />
+                  <button className="btn primary" type="submit"><Ico name="check" />{t('verify_btn')}</button>
+                </form>
+              )}
+              {m.status === 'draft' && canEdit && (
+                <form action={discardAction}>
+                  <input type="hidden" name="id" value={m.id} />
+                  <button className="btn ghost" type="submit" style={{ color: 'var(--red)' }}>{t('d_discard')}</button>
+                </form>
+              )}
+            </div>
+          )}
           {canReopen && (
             <details className="danger-zone reopen" id="riapri">
               <summary className="btn">{FR ? 'Corriger ce mouvement…' : 'Correggi questo movimento…'}</summary>
@@ -189,23 +206,6 @@ export default async function MovementDetail({ params, searchParams }: {
                 <div><button className="btn danger" type="submit">{FR ? 'Supprimer définitivement' : 'Elimina definitivamente'}</button></div>
               </form>
             </details>
-          )}
-          {(canEdit || canVerify || canReverse || m.status === 'draft') && (
-            <div className="factions">
-              {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}
-              {canVerify && (
-                <form action={verifyAction}>
-                  <input type="hidden" name="id" value={m.id} /><input type="hidden" name="version" value={m.version} />
-                  <button className="btn primary" type="submit"><Ico name="check" />{t('verify_btn')}</button>
-                </form>
-              )}
-              {m.status === 'draft' && canEdit && (
-                <form action={discardAction}>
-                  <input type="hidden" name="id" value={m.id} />
-                  <button className="btn ghost" type="submit" style={{ color: 'var(--red)' }}>{t('d_discard')}</button>
-                </form>
-              )}
-            </div>
           )}
         </div>
         <aside className="detail-side stack">

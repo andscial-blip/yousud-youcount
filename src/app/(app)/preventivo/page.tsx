@@ -140,7 +140,7 @@ export default async function BudgetPage({ searchParams }: {
     const k = catBy.get(i.category_id); const party = i.counterparty_id ? cpBy.get(i.counterparty_id)?.name : null;
     const q = `${num(Number(i.qty), lang)}${i.unit ? ` ${i.unit}` : ''}`;
     return (
-      <tr id={`r-${i.id}`} className={`bq-r${edit?.id === i.id || delRow?.id === i.id ? ' sel' : ''}`}>
+      <tr id={`r-${i.id}`} data-ln={i.line_no} className={`bq-r${edit?.id === i.id || delRow?.id === i.id ? ' sel' : ''}`}>
         <td className="bq-n num">{i.line_no}</td>
         <td className="bq-c"><b>{k?.code}</b><span>{k ? CL(k) : ''}</span></td>
         <td className="bq-d">{i.description || <span className="muted">–</span>}{i.notes && <small>{i.notes}</small>}</td>

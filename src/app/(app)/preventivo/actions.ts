@@ -77,7 +77,7 @@ export async function discardBudget(form: FormData) {
   const year = String(form.get('year'));
   const { error } = await (await createClient()).rpc('budget_discard', { p_id: String(form.get('id')) });
   if (error) err(year, error);
-  done(year);
+  done(year, 'ok=discarded');
 }
 
 // Elimina un'intera versione: bozze e versioni DEMO (responsabile), versione approvata reale solo un amministratore,

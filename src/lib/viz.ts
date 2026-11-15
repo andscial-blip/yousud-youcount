@@ -176,7 +176,9 @@ export function donut(items: { label: string; value: number; color: string; tip?
     const s = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${t.color}" stroke-width="${Wd}" stroke-dasharray="${Math.max(0, f * C - 1.5).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc * C).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(t.tip ?? t.label)}"></circle>`;
     acc += f; return s;
   }).join('');
-  return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="${esc(center.label)}"><circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--line-2)" stroke-width="${Wd}"/>${seg}<text x="100" y="94" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(center.label)}</text><text x="100" y="114" text-anchor="middle" font-size="19" font-weight="700" fill="var(--navy)">${esc(center.value)}</text></svg>`;
+  // il valore al centro si rimpicciolisce quando è lungo, così resta dentro il foro (visto sull'iPhone: 24.231.107 € toccava l'anello)
+  const vfs = Math.max(12, Math.min(19, Math.floor(108 / (Math.max(1, center.value.length) * 0.56))));
+  return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="${esc(center.label)}"><circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--line-2)" stroke-width="${Wd}"/>${seg}<text x="100" y="94" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(center.label)}</text><text x="100" y="114" text-anchor="middle" font-size="${vfs}" font-weight="700" fill="var(--navy)">${esc(center.value)}</text></svg>`;
 }
 
 // Mini grafici dei riquadri numerici (VZ di Cairn).

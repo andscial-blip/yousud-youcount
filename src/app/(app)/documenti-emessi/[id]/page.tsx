@@ -9,6 +9,7 @@ import { DocForm } from '@/components/DocForm';
 import { PageHead, Panel } from '@/components/Page';
 import { Ico } from '@/components/Ui';
 import { archiveDoc, cancelDoc, issueDoc } from '../actions';
+import { PendingButton } from '@/components/PendingButton';
 import { docFormContext } from '../context';
 
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
                 {d.status === 'draft' && writer && !editing && <Link className="btn" href={`/documenti-emessi/${id}?edit=1`}>{L('Modifica', 'Modifier')}</Link>}
                 {d.status === 'draft' && writer && (
                   <form action={issueDoc}><input type="hidden" name="id" value={id} />
-                    <button className="btn primary" type="submit" style={{ width: '100%' }}><Ico name="check" />{L('Emetti e genera il PDF', 'Émettre et générer le PDF')}</button>
+                    <PendingButton busy={L('Emissione in corso…', 'Émission en cours…')} style={{ width: '100%' }}><Ico name="check" />{L('Emetti e genera il PDF', 'Émettre et générer le PDF')}</PendingButton>
                     <p className="hint">{L('Dopo l\'emissione il numero è definitivo e il documento non si modifica più: si può solo annullare.',
                       'Après l\'émission, le numéro est définitif et le document ne se modifie plus : il peut seulement être annulé.')}</p></form>
                 )}

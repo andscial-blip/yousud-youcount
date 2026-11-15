@@ -135,3 +135,17 @@ H=812 node tests/e2e/shot.mjs "/percorso" 375 prefisso      # screenshot (con an
 Note: dopo `tsc` ripristinare `tsconfig.json` (`git checkout -- tsconfig.json`); nei test sostituire gli spazi non separabili con `.replace(/[  ]/g, ' ')`. Un "Page crashed" a catena nei test completi è instabilità del browser: rilanciare i test falliti con `ONLY`.
 
 iPhone: Andrea condivide lo schermo con iPhone Mirroring sul Mac (clic funzionano, scorrimento poco affidabile, digitazione no).
+
+## Prova su iPhone del 15/11 (seconda parte) e correzioni
+Provato dal telefono, in produzione, con «Duplica iPhone»: ricevuta di prova emessa e annullata; revisione 2 del preventivo creata, riga di prova salvata, bozza eliminata (nessun dato di prova rimasto, a parte la ricevuta annullata che resta nello storico come previsto).
+Correzioni nate dalla prova:
+- Preventivo › «Versioni» › «Elimina la bozza» ora chiede conferma («Conferma: elimina la bozza») e poi dice «Bozza eliminata…».
+- Preventivo: dopo il salvataggio la riga viene portata in vista ed evidenziata (`RowReveal`, `tr[data-ln]`).
+- Documento emesso: «Emetti e genera il PDF» mostra «Emissione in corso…» (`PendingButton`).
+- Ciambelle: il valore al centro si rimpicciolisce se lungo (`viz.ts`, `vfs`).
+- Movimento: «Modifica / Verifica» vengono prima di «Correggi questo movimento…» ed «Elimina definitivamente…».
+Ancora da fare, viste sul telefono: «Prepara una revisione» senza conferma (reversibile); striscia dei suggerimenti iOS sopra la barra di stato; due «indietro» nel dettaglio del documento emesso.
+Limite della prova: la digitazione sintetica attraverso «Duplica iPhone» altera le lettere (PROVA→PROAA); gli importi vanno riprovati a mano.
+
+## Archivio su Google Drive (da fare, in attesa di decisioni del proprietario)
+Pareri raccolti il 15/11 (contabile ETS + archivi/Drive API). Scelte proposte: Drive condiviso YouSud (mai quello di Altromercato); account di servizio «Gestore dei contenuti»; copia dal server (Supabase Storage → Drive) con coda `drive_outbox`, ID Drive pre-generati; albero `AAAA/01_Giustificativi/AAAA-MM`, `AAAA/02_Documenti-emessi/<TIPO>`, `03_Banca-e-cassa`, `04_Bilancio`, riservati in un secondo Drive; anno = data del movimento (cassa) e serie di numerazione per gli emessi; niente bozze; mai eliminare. Serve: migrazione (approvazione), progetto Google Cloud, variabili su Vercel.

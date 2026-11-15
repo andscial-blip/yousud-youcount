@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RowReveal } from '@/components/RowReveal';
 import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
 import { date, dateTime, money } from '@/lib/format';
 import { Panel } from '@/components/Page';
@@ -79,7 +80,9 @@ export function BudgetNotes({ c, sp }: { c: Ctx; sp: { ok?: string; err?: string
   const { L } = c;
   const errText = sp.err ? (sp.err === 'missing' ? L('Scegli il codice e indica il costo unitario.', 'Choisissez le code et indiquez le coût unitaire.') : sp.err) : null;
   return (<>
+    {sp.ok === 'row' && !(sp as { nuova?: string }).nuova && <RowReveal n={String(sp.n ?? '')} />}
     {sp.ok && <div className="note ok" role="status">{sp.ok === 'deleted' ? L(`Preventivo eliminato (${sp.n ?? 0} righe).`, `Budget supprimé (${sp.n ?? 0} lignes).`)
+      : sp.ok === 'discarded' ? L('Bozza eliminata. Il preventivo in vigore non è cambiato.', 'Brouillon supprimé. Le budget en vigueur n’a pas changé.')
       : sp.ok === 'row_deleted' ? L('Riga eliminata.', 'Ligne supprimée.')
       : sp.ok === 'row' ? L(`Riga n. ${sp.n ?? ''} salvata.`, `Ligne n° ${sp.n ?? ''} enregistrée.`) : L('Salvato.', 'Enregistré.')}</div>}
     {errText && <div className="note err">{errText}</div>}
@@ -206,8 +209,13 @@ export function VersionBar({ c, base }: { c: Ctx; base: string }) {
               ))}
             </ol>
             {resp && draft && shown.id === draft.id && (
-              <form action={discardBudget}><input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={draft.id} />
-                <button className="btn small danger" type="submit">{L('Elimina la bozza', 'Supprimer le brouillon')}</button></form>
+              /* l'eliminazione di una bozza toglie tutte le sue righe: chiede conferma (visto sul telefono: bastava un tocco) */
+              <details className="pd-act">
+                <summary className="btn small danger">{L('Elimina la bozza', 'Supprimer le brouillon')}</summary>
+                <form action={discardBudget} className="pd-form"><input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={draft.id} />
+                  <p className="muted">{L('La bozza e tutte le sue righe vengono eliminate. Il preventivo in vigore non cambia.', 'Le brouillon et toutes ses lignes sont supprimés. Le budget en vigueur ne change pas.')}</p>
+                  <button className="btn danger" type="submit">{L('Conferma: elimina la bozza', 'Confirmer : supprimer le brouillon')}</button></form>
+              </details>
             )}
             {shown.status !== 'draft' && (admin || (shown.demo && resp)) && (
               <details className="danger-zone">

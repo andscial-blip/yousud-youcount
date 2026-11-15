@@ -2375,3 +2375,10 @@ a.cal-hit { color: inherit; }
   html:has(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, textarea:focus) .phead { position: static; }
 }
 #giust { scroll-margin-top: 130px; }
+
+/* Preventivo: riga appena salvata portata in vista ed evidenziata (prova su iPhone 15/11) */
+.bq-r.just-saved > td { background: var(--st2, #E6EEF7); transition: background .6s; }
+/* conferma di eliminazione della bozza dentro la scheda Versioni: a tutta larghezza, pulsanti uguali */
+.sheet .pd-act, .ver-list ~ .pd-act { display: block; }
+.pd-act .pd-form { display: grid; gap: 8px; }
+.pd-act .pd-form p { margin: 0; }
