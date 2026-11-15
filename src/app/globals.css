@@ -2351,3 +2351,11 @@ a.cal-hit { color: inherit; }
   table.cmp[data-cards] td:not(.num):not(:first-child)::before { float: none; display: inline; width: auto; margin: 0; font-size: 13px; font-weight: 500; content: attr(data-label) ": "; }
   table.cmp[data-cards] td:not(.num):not(:first-child)[data-label=""]::before { content: none; }
 }
+.aut-opt { margin-top: 10px; }
+/* barra laterale: nome su una riga, ruolo sotto su una riga sola */
+.side-who { align-items: center; }
+.side-who .side-who-t { display: grid; gap: 1px; min-width: 0; }
+.side-who .side-who-t b, .side-who .side-who-t .side-role { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-who .side-who-t b { font-weight: 500; }
+.side-who .side-who-t .side-role { font-size: 12.5px; }
+@media (min-width: 761px) and (max-width: 1099px) { .side-who .side-who-t { display: none; } }

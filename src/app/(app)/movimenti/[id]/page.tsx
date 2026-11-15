@@ -34,10 +34,10 @@ const FIELD: Record<string, Key> = {
 };
 
 export default async function MovementDetail({ params, searchParams }: {
-  params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }>;
+  params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; aut?: string }>;
 }) {
   const { id } = await params;
-  const { ok, err } = await searchParams;
+  const { ok, err, aut: autQ } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   const { data: m } = await supabase.from('movements').select(`*,
       account:accounts!movements_account_id_fkey(name_it, name_fr, location, kind, holder),
@@ -91,6 +91,7 @@ export default async function MovementDetail({ params, searchParams }: {
   // autocertificazione: per una spesa senza giustificativo (o con l'AUT già emessa), non verificata, non da chi legge soltanto
   const writer = Boolean(me && me.role !== 'read_only');
   const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
+  const autNow = autQ === '1';   // arrivo da «Registra» con la scelta «prepara l'autocertificazione»
   const showAut = autPossible && (Boolean(aut) || (writer && m.status !== 'verified' && docs.length === 0));
   const autDefaultLang = aut?.lang ?? (m.account?.location === 'MG' || m.currency === 'MGA' ? 'both' : 'it');
   const signedAmount = m.kind === 'transfer' ? Number(m.amount) : Number(m.amount) * (m.reverses_id ? -1 : 1) * (m.kind === 'income' ? 1 : -1);
@@ -244,10 +245,11 @@ export default async function MovementDetail({ params, searchParams }: {
                 </div>
               ) : writer && m.status !== 'verified' ? (
                 <form action={selfCertAction} className="aut-box">
+                  {autNow && <div className="note info" role="status">{t('aut_now')}</div>}
                   <p className="muted" style={{ margin: 0 }}>{t('aut_intro')}</p>
                   <input type="hidden" name="id" value={m.id} />
                   <div className="field"><label htmlFor="aut-decl">{t('aut_declarant')}</label>
-                    <input className="input" id="aut-decl" name="declarant" required maxLength={120}
+                    <input className="input" id="aut-decl" name="declarant" required maxLength={120} autoFocus={autNow}
                            defaultValue={aut?.declarant ?? m.paid_by ?? m.account?.holder ?? ''} /></div>
                   <div className="field"><label htmlFor="aut-role">{t('aut_role')}</label>
                     <input className="input" id="aut-role" name="declarant_role" maxLength={120} defaultValue={aut?.declarant_role ?? ''} /></div>

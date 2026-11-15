@@ -30,8 +30,12 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
     supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const all = (data ?? []) as Balance[];
-  const rows = all.filter((r) => r.kind !== 'advance');
-  const adv = all.filter((r) => r.kind === 'advance' && Number(r.balance) > 0);
+  // operatore (P2-28): solo le casse in contanti e gli anticipi che ha chiesto o ricevuto; banche e anticipi altrui restano
+  // a responsabili e amministratori. È una regola di visualizzazione: i permessi del database non cambiano.
+  const myAdv = staff ? null : new Set((((await supabase.from('advance_requests').select('account_id, requested_by, beneficiary_id').limit(500)).data ?? []) as { account_id: string; requested_by: string; beneficiary_id: string | null }[])
+    .filter((r) => r.requested_by === me?.id || r.beneficiary_id === me?.id).map((r) => r.account_id));
+  const rows = all.filter((r) => r.kind !== 'advance' && (staff || r.kind === 'cash'));
+  const adv = all.filter((r) => r.kind === 'advance' && Number(r.balance) > 0 && (!myAdv || myAdv.has(r.account_id)));
   const cash = rows.filter((r) => r.kind === 'cash');
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   const fx = Number(fxl?.[0]?.rate ?? 0);
@@ -74,9 +78,10 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       <ErrorNote prefix={t('error_load')} error={error} />
       {ok === 'cash' && <div className="note ok" role="status">{t('cc_ok')}</div>}
       {err && <div className="note err">{err}</div>}
+      {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
       <div className="kpis dk">
         <div className="kpi">
-          <div className="l">{L('Liquidità totale', 'Liquidités totales')}</div>
+          <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
           <div className={`v num${tot < 0 ? ' neg' : ''}`}>{e0(tot)}</div>
           {tot > 0 && <><Viz.Stack segs={[{ v: itEur, c: 'var(--navy)' }, { v: mgEur, c: 'var(--green-soft)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />

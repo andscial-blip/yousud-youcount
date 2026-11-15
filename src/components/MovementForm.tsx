@@ -354,7 +354,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       if (error) throw error;
       if (data.outcome === 'conflict') { setError(t.f_conflict); setBusy(false); return; }
       if (!initial) { savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ } }
-      router.push(`/movimenti/${data.id}?ok=${initial ? 'saved' : 'new'}`);
+      // spesa registrata senza giustificativo, con la scelta «prepara l'autocertificazione»: la scheda si apre sul modulo
+      const goAut = status === 'recorded' && kind === 'expense' && noDoc && wantAut && docs.length === 0;
+      router.push(`/movimenti/${data.id}?ok=${initial ? 'saved' : 'new'}${goAut ? '&aut=1' : ''}`);
       router.refresh();
     } catch (e) {
       // la rete è caduta durante l'invio: il movimento nuovo va nella coda invece di andare perso
@@ -395,6 +397,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const draftOn = !initial && !P;
   type LocalDraft = { at: number; kind: Kind; opDate: string; amountTxt: string; accountId: string; categoryId: string; projectId: string; grantId: string; cpId: string; methodId: string; description: string; notes: string };
   const [pending, setPending] = useState<LocalDraft | null>(null);
+  const [wantAut, setWantAut] = useState(true);
   const savedOk = useRef(false);   // dopo il salvataggio la bozza locale non va riscritta
   useEffect(() => {
     if (!draftOn) return;
@@ -488,6 +491,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           <div className="chips-row" role="group" aria-label={t.f_no_doc_reason}>
             {t.f_no_doc_presets.split('|').map((r) => <button type="button" key={r} className="chip-btn" aria-pressed={noDocReason === r} onClick={() => setNoDocReason(r)}>{r}</button>)}
           </div>
+          {/* senza giustificativo la spesa si documenta con un'autocertificazione: si può prepararla subito dopo la registrazione */}
+          {kind === 'expense' && !recordedLocked && (
+            <label className="check aut-opt"><input type="checkbox" checked={wantAut} onChange={(e) => setWantAut(e.target.checked)} /> {t.f_aut_after}</label>)}
           {req(missing.noDocReason)}
         </div>
       )}

@@ -109,6 +109,10 @@ Settimo blocco (15/11): P2-10 in parte (spazio non divisibile nella punteggiatur
 
 Ottavo blocco (15/11): P2-19 in parte (tabelle dei Report su telefono e tablet in «riga compatta»: classe `cmp` sulla tabella, `cmp2` quando ci sono importi in ariary; restano Emessi e il dettaglio progetto).
 
+Nono blocco (15/11): scelta «Dopo la registrazione prepara l’autocertificazione da firmare» nelle spese senza giustificativo (`?aut=1` sulla scheda del movimento); P2-28 fatto a livello di visualizzazione (l'operatore vede le casse in contanti e i propri anticipi in Dashboard e Conti; i permessi del database non cambiano); P2-17 in parte (niente valuta e cambio nelle dichiarazioni senza importo, importo anche per le bozze a righe); nella barra laterale nome su una riga e ruolo sotto.
+
+Da fare dopo le prove su telefono: archiviazione automatica di giustificativi e documenti emessi nel Drive condiviso di YouSud (struttura delle cartelle da far definire agli esperti); punteggio finale degli esperti, anche grafico.
+
 Non fatti, da decidere se servono: P2-17 (documenti emessi), P2-18 (regole dei grafici), P2-19 (riga compatta unica nelle tabelle su telefono), P2-27 (rete lenta), il resto di P2-20 e P2-23, P3-2, 3, 4, 6, 7, 8, 9, 14; cambio password con la password attuale (P3-10).
 
 Da fare: P1-20 è fatto solo per «tiers», «extourne», «Nota di rimborso» e le etichette di pagamento (manca la passata completa su Comptabiliser/Enregistrer, pointer, codice/gruppo/voce, «Struttura e spese generali»); di P1-21 restano lente sopra il titolo e sfumatura delle schede di Impostazioni a 768 px; P2-9, P2-10, P2-12, P2-15…P2-25, P2-27, P2-28 e tutti i P3. Decisioni ancora aperte: cosa vede l'operatore (P2-28) e Analisi › Progetti come collegamento.

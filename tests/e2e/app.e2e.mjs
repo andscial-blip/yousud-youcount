@@ -141,11 +141,12 @@ try {
 
   const op = await login('operatore@test.local');
   await check('operatore: cruscotto con saldi reali', async () => {
-    await op.page.getByText('Saldo dei conti').waitFor();
+    // l'operatore vede le casse in contanti, non i conti bancari
+    await op.page.getByText('Casse in contanti').waitFor();
     const txt = await op.page.locator('main').innerText();
-    assert.match(txt, /2\.500,00\s?€/, 'saldo Banca Italia');
+    assert.doesNotMatch(txt, /Banca Italia/, 'i conti bancari non sono mostrati all\'operatore');
     assert.match(txt, /-?1\.010\.000\s?MGA|MGA\s?-1\.010\.000/, 'saldo Cassa Missione');
-    assert.match(await op.page.locator('aside.side').innerText(), /Operatore di prova · Operatore/);
+    assert.match(await op.page.locator('aside.side').innerText(), /Operatore di prova\s+Operatore/);
     await op.page.screenshot({ path: `${SHOTS}/op_cruscotto.png`, fullPage: true });
   });
   await check('operatore: elenco movimenti, la propria bozza visibile', async () => {
@@ -209,6 +210,22 @@ try {
     await p.getByLabel('Il giustificativo non c’è').check();
     await p.getByRole('button', { name: 'Ricevuta persa' }).click();
     assert.equal(await p.inputValue('#nodoc'), 'Ricevuta persa');
+  });
+  await check('operatore: spesa senza giustificativo con «prepara l\'autocertificazione» → la scheda si apre sul modulo dell\'autocertificazione', async () => {
+    const p = op.page;
+    await p.goto(`${base}/nuovo`);
+    await p.fill('#amount', '12.000');
+    await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+    await p.selectOption('#category', { label: '401 · Materiali di consumo' });
+    await p.selectOption('#method', { label: 'Contanti' });
+    await p.fill('#desc', 'PROVA taxi senza ricevuta');
+    await p.getByLabel('Il giustificativo non c’è').check();
+    await p.getByRole('button', { name: 'Trasporto locale senza biglietto' }).click();
+    assert.ok(await p.getByLabel('Dopo la registrazione prepara l’autocertificazione da firmare').isChecked(), 'la scelta è proposta già spuntata');
+    await p.getByRole('button', { name: 'Registra' }).click();
+    await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}\?ok=new&aut=1$/, { timeout: 30000 });
+    await p.getByText('Spesa registrata senza giustificativo. Completa qui sotto l’autocertificazione').waitFor();
+    assert.equal(await p.locator('#aut-reason').inputValue(), 'Trasporto locale senza biglietto', 'il motivo passa all\'autocertificazione');
   });
   await check('operatore: foto ritagliata e migliorata, lettura IA automatica, registrare conferma tutto', async () => {
     const p = op.page;
@@ -476,7 +493,7 @@ try {
     await p.goto(`${base}/conti`);
     // in alto 4 riquadri (liquidità, Italia, Madagascar, anticipi); i conti di anticipo non sono tra i conti
     assert.equal(await p.locator('.kpis.dk .kpi').count(), 4);
-    assert.match(await p.locator('.kpis.dk').innerText(), /Liquidità totale[\s\S]*Italia[\s\S]*Madagascar[\s\S]*Anticipi aperti/);
+    assert.match(await p.locator('.kpis.dk').innerText(), /Contanti nelle casse[\s\S]*Italia[\s\S]*Madagascar[\s\S]*Anticipi aperti/);
     assert.equal(await p.locator('.bal-t tbody tr', { hasText: /Anticipi/ }).count(), 0);
     // il nome del conto apre il suo dettaglio, con il collegamento a tutti i suoi movimenti
     await p.locator('.bal-t a.bal-a', { hasText: 'Cassa Madagascar' }).click();

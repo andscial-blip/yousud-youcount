@@ -64,6 +64,7 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
   const [nrsShown, setNrsShown] = useState(Math.max(2, lines.length));
   const num = (v: number | string | null | undefined) => (v == null || v === '' ? '' : String(Number(v)).replace('.', ','));
   const withAmount = t !== 'NOT' && t !== 'NRS' && t !== 'BDC' && (t !== 'DIC' || tpl === 'don');
+  const noMoney = t === 'DIC' && tpl !== 'don';
   const qtyLines = t === 'NOT' || t === 'BDC';
 
   return (
@@ -95,11 +96,13 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
         <div className="field"><label htmlFor="df-prj">{L('Progetto', 'Projet')}</label>
           <select className="input" id="df-prj" name="project_id" defaultValue={init.project_id ?? ''}><option value="">–</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+        {/* una dichiarazione senza importi (volontariato, testo libero) non chiede valuta né mostra il cambio (P2-17) */}
+        {noMoney ? <input type="hidden" name="currency" value={init.currency} /> : (
         <div className="field"><label htmlFor="df-cur">{L('Valuta di inserimento', 'Devise de saisie')}</label>
-          <select className="input" id="df-cur" name="currency" defaultValue={init.currency}><option>EUR</option><option>MGA</option></select></div>
+          <select className="input" id="df-cur" name="currency" defaultValue={init.currency}><option>EUR</option><option>MGA</option></select></div>)}
 
         {withAmount && <Fld x={x} k="amount" label={t === 'ASP' ? L('Importo massimo autorizzato', 'Montant maximum autorisé') : t === 'DIC' ? L('Totale donato nell\'anno', 'Total donné dans l\'année') : L('Importo', 'Montant')} type="num" def={num(init.amount)} req />}
-        <p className="hint span2 de-fx" aria-live="polite">{fxInfo}</p>
+        {!noMoney && <p className="hint span2 de-fx" aria-live="polite">{fxInfo}</p>}
         {(t === 'RIC' || t === 'QUI' || t === 'NOT' || t === 'ASP' || t === 'BDC') && <Fld x={x} k="method" label={L('Modalità di pagamento', 'Mode de paiement')} list="df-methods" />}
 
         {t === 'RIC' && <>

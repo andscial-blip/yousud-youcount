@@ -29,13 +29,18 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
       .gte('exp_date', `${year}-01-01`).lte('exp_date', `${year}-12-31`).order('exp_date', { ascending: false }),
   ]);
   type D = { id: string; type: string; number: string | null; status: Status; doc_date: string; party_name: string | null; amount: string | null; currency: string;
-    data: { fx_rate?: number } | null; archived_at: string | null; movement: { id: string; ref: string | null } | null; project: { name: string } | null };
+    data: { fx_rate?: number; lines?: { amt?: number | string | null }[] } | null; archived_at: string | null; movement: { id: string; ref: string | null } | null; project: { name: string } | null };
+  // importo anche per le bozze fatte di righe (notula, nota di rimborso): la somma delle righe già scritte (P2-17)
+  const amtOf = (d: D): string | null => d.amount ?? (() => {
+    const tot = (d.data?.lines ?? []).reduce((x, l) => x + (Number(l.amt) || 0), 0);
+    return tot > 0 ? String(tot) : null;
+  })();
   type A = { id: string; number: string; exp_date: string; declarant: string; amount: string; currency: string; amount_eur: string | null; signed_at: string | null;
     document_id: string | null; movement_id: string; movement: { ref: string | null } | null };
   const eurOf = (a: string | null, cur: string, fx?: number | null) => (a == null ? null : cur === 'EUR' ? Number(a) : fx ? Math.round((Number(a) / fx) * 100) / 100 : null);
   const all: Row[] = [
     ...((docs ?? []) as unknown as D[]).map((d) => ({ id: d.id, href: `/documenti-emessi/${d.id}`, type: d.type, number: d.number, date: d.doc_date, party: d.party_name,
-      amount: d.amount, currency: d.currency, eur: eurOf(d.amount, d.currency, d.data?.fx_rate), status: d.status, archived: !!d.archived_at,
+      amount: amtOf(d), currency: d.currency, eur: eurOf(amtOf(d), d.currency, d.data?.fx_rate), status: d.status, archived: !!d.archived_at,
       movement: d.movement?.ref, project: d.project?.name })),
     ...((auts ?? []) as unknown as A[]).filter((a) => a.document_id).map((a) => ({ id: a.id, href: `/movimenti/${a.movement_id}`, type: 'AUT', number: a.number, date: a.exp_date,
       party: a.declarant, amount: a.amount, currency: a.currency, eur: a.currency === 'EUR' ? Number(a.amount) : a.amount_eur ? Number(a.amount_eur) : null,
