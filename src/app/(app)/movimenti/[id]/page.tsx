@@ -159,6 +159,11 @@ export default async function MovementDetail({ params, searchParams }: {
               <button className="btn" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
             </form>
           )}
+          {/* chi ha inserito il movimento ma non può più toccarlo sa a chi rivolgersi (revisione finale del 15/11) */}
+          {!resp && me!.role !== 'read_only' && m.status !== 'draft' && !rev && !m.reverses_id && (m.created_by === me!.id || m.recorded_by === me!.id) && (
+            <p className="note" style={{ margin: 0 }}>{FR
+              ? 'Une erreur dans ce mouvement ? Une fois comptabilisé, vous ne pouvez plus le modifier : demandez à un responsable de le corriger ou de l’extourner, en lui indiquant le numéro ci-dessus.'
+              : 'C’è un errore in questo movimento? Dopo la registrazione non puoi più modificarlo: chiedi a un responsabile di correggerlo o stornarlo, indicandogli il numero qui sopra.'}</p>)}
           {(canEdit || canVerify || canReverse || m.status === 'draft') && (
             <div className="factions">
               {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}

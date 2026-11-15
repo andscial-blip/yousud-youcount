@@ -12,7 +12,7 @@
    ============================================================================================ */
 :root{
   --slate:#2E3D52; --slate-2:#4A5B73; --navy:#1E2B3C; --mist:#C9D6EA;
-  --green:#23735F; --green-soft:#5FB8A3; --red:#B23B32; --amber:#8A6100; --amber-soft:#E8BE5A; --cost:#2E3D52;
+  --green:#23735F; --green-soft:#5FB8A3; --red:#B23B32; --amber:#18222F; --amber-soft:#E8BE5A; --cost:#2E3D52;
   --vz-real:#2E3D52; --vz-plan:#5B8FD6; --vz-hyp:#A596E6; --tax2:#F2C2B4; --cat-rose:#E3A6C2; --cat-olive:#B9C47A; --cyan:#2F69C2; --tax:#E2917F; --sky:#8FAFD6; --gold-d:#C9A03A; --lilac:#8C80D3; --lilac-bg:#EEEBFA; --lilac-ink:#5A4EA6;
   --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#F2F5F9; --band:#E3EAF4; --line:#D6DDE6; --line-2:#E7EBF0;
   --fg:#18222F; --muted:#556275; --faint:#647182;
@@ -124,7 +124,7 @@ main{padding-block:20px 96px}
 .tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:14px 16px}
 .tcard{border:1px solid var(--line-2);border-left:4px solid var(--line);border-radius:var(--r);background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .tcard.warn{border-left-color:var(--red);background:color-mix(in srgb,var(--pink) 45%,var(--surface))}
-.tcard.do{border-left-color:var(--amber)}
+.tcard.do{border-left-color:var(--amber-soft)}
 .tcard.ok{border-left-color:var(--green-soft)}
 .tcard .th{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .tcard .tb{font-family:var(--f-ui);font-weight:700;font-size:24px;line-height:1.15;color:var(--navy);margin-top:2px}
@@ -137,7 +137,7 @@ main{padding-block:20px 96px}
 .tlist{list-style:none;margin:0;padding:0}
 .tlist li{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:10px 12px;align-items:center;padding:10px 16px;border-top:1px solid var(--line-2);border-left:4px solid transparent}
 .tlist li:first-child{border-top:0}
-.tlist li.warn{border-left-color:var(--red)}.tlist li.do{border-left-color:var(--amber)}.tlist li.ok{border-left-color:var(--green-soft)}
+.tlist li.warn{border-left-color:var(--red)}.tlist li.do{border-left-color:var(--amber-soft)}.tlist li.ok{border-left-color:var(--green-soft)}
 .tlist .tt{font-family:var(--f-ui);font-weight:600;font-size:14px;line-height:1.25}
 .tlist .ts{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tlist .tr{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap}
@@ -147,7 +147,7 @@ main{padding-block:20px 96px}
 .sstrip.v>div{border-left:0;border-top:1px solid var(--line-2)}.sstrip.v>div:nth-child(-n+2){border-top:0}.sstrip.v>div:nth-child(even){border-left:1px solid var(--line-2)}
 .cdp{display:inline-block;font-family:var(--f-ui);font-weight:700;font-size:12px;padding:2px 9px;border-radius:999px;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
 .cdp.late{background:var(--pink);color:var(--pink-fg)}.cdp.soon{background:var(--warn-bg);color:var(--amber)}.cdp.mid{background:var(--band);color:var(--slate)}.cdp.ok{background:var(--ok-bg);color:var(--green)}
-tr.u-late td:first-child{box-shadow:inset 4px 0 var(--red)}tr.u-soon td:first-child{box-shadow:inset 4px 0 var(--amber)}tr.u-mid td:first-child{box-shadow:inset 4px 0 var(--slate-2)}tr.u-ok td{opacity:.62}
+tr.u-late td:first-child{box-shadow:inset 4px 0 var(--red)}tr.u-soon td:first-child{box-shadow:inset 4px 0 var(--amber-soft)}tr.u-mid td:first-child{box-shadow:inset 4px 0 var(--slate-2)}tr.u-ok td{opacity:.62}
 
 @media (max-width:620px){
  table.stack thead{display:none}
@@ -157,7 +157,7 @@ tr.u-late td:first-child{box-shadow:inset 4px 0 var(--red)}tr.u-soon td:first-ch
  table.stack td:nth-child(n+4){order:4}
  table.stack td:last-child{margin-left:auto}
  table.stack td:empty{display:none}
- table.stack tr.u-late{box-shadow:inset 4px 0 var(--red)}table.stack tr.u-soon{box-shadow:inset 4px 0 var(--amber)}table.stack tr.u-mid{box-shadow:inset 4px 0 var(--slate-2)}
+ table.stack tr.u-late{box-shadow:inset 4px 0 var(--red)}table.stack tr.u-soon{box-shadow:inset 4px 0 var(--amber-soft)}table.stack tr.u-mid{box-shadow:inset 4px 0 var(--slate-2)}
  table.stack tbody tr:nth-child(odd){background:color-mix(in srgb,var(--band) 35%,transparent)}
 }
 .simt input{width:100%;min-width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--fg);font:inherit;text-align:right}

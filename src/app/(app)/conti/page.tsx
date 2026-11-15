@@ -58,10 +58,11 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
     return (
       <a className="kpi" href={`#conti-${loc.toLowerCase()}`}>
         <div className="l">{loc === 'IT' ? t('italy') : t('madagascar')}</div>
-        <div className={`v num${n.v < 0 ? ' neg' : ''}${lg(money(n.v, n.c, lang))}`}>{money(n.v, n.c, lang)}</div>
+        {/* regola del committente: euro in grande, ariary in piccolo sotto */}
+        <div className={`v num${n.v < 0 ? ' neg' : ''}${lg(n.c !== 'EUR' ? e0(totEur) : money(n.v, n.c, lang))}`}>{n.c !== 'EUR' ? e0(totEur) : money(n.v, n.c, lang)}</div>
         {sg.length > 0 && <><Viz.Stack segs={sg} max={sg.reduce((a, x) => a + x.v, 0)} tip={tipOf(xs)} />
           <div className="vzl"><span>{top!.n}</span><span>{xs.length === 1 ? L('1 conto', '1 compte') : L(`${xs.length} conti`, `${xs.length} comptes`)}</span></div></>}
-        <div className="s">{n.c !== 'EUR' ? `≈ ${e0(totEur)} · ${L('cambio', 'taux')} ${money(fx, 'MGA', lang)}` : top ? `${top.n}: ${pc(top.v, sg.reduce((a, x) => a + x.v, 0))}` : L('nessun conto', 'aucun compte')}</div>
+        <div className="s">{n.c !== 'EUR' ? `${money(n.v, n.c, lang)} · ${L('cambio', 'taux')} ${money(fx, 'MGA', lang)}` : top ? `${top.n}: ${pc(top.v, sg.reduce((a, x) => a + x.v, 0))}` : L('nessun conto', 'aucun compte')}</div>
       </a>);
   };
 
@@ -93,10 +94,10 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         {locTile('MG', mg, mgEur)}
         <Link className="kpi" href="/anticipi">
           <div className="l">{L('Anticipi aperti', 'Avances en cours')}</div>
-          <div className={`v num${adv.length ? lg(money(advN.v, advN.c, lang)) : ''}`}>{adv.length ? money(advN.v, advN.c, lang) : e0(0)}</div>
+          <div className={`v num${adv.length ? lg(advN.c !== 'EUR' ? e0(advEur) : money(advN.v, advN.c, lang)) : ''}`}>{adv.length ? (advN.c !== 'EUR' ? e0(advEur) : money(advN.v, advN.c, lang)) : e0(0)}</div>
           {advEur > 0 && <><Viz.Stack segs={seg(adv)} max={advEur} tip={adv.map((r) => `${holder(r)}: ${money(r.balance, r.currency, lang)}`).join('\n')} />
             <div className="vzl"><span>{holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></>}
-          <div className="s">{adv.length ? (advN.c !== 'EUR' ? `≈ ${e0(advEur)} · ` : '') + L('contanti in mano alle persone', 'espèces confiées aux personnes') : L('nessun anticipo da giustificare', 'aucune avance à justifier')}</div>
+          <div className="s">{adv.length ? (advN.c !== 'EUR' ? `${money(advN.v, advN.c, lang)} · ` : '') + L('contanti in mano alle persone', 'espèces confiées aux personnes') : L('nessun anticipo da giustificare', 'aucune avance à justifier')}</div>
         </Link>
       </div>
 

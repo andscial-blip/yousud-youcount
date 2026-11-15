@@ -1,10 +1,19 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { guestLang } from '@/lib/session';
+import { createClient } from '@/lib/supabase/server';
 import { translator } from '@/lib/i18n';
 
 export default async function NotFound() {
-  const t = translator(await guestLang());
+  // chi è dentro l'app vede la pagina nella lingua del proprio profilo; senza sessione vale la lingua del browser
+  let lang = await guestLang();
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getClaims();
+    const uid = data?.claims?.sub;
+    if (uid) { const { data: p } = await supabase.from('profiles').select('lang').eq('id', uid).maybeSingle(); if (p?.lang === 'fr' || p?.lang === 'it') lang = p.lang; }
+  } catch { /* senza sessione resta la lingua del browser */ }
+  const t = translator(lang);
   return (
     <main className="auth">
       <section className="auth-card">

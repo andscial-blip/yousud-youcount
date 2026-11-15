@@ -103,11 +103,12 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const kLabel = (k: string) => (mode === 'd' ? `${k.slice(8)}/${k.slice(5, 7)}` : mode === 'y' ? k : `${MESI[lang][Number(k.slice(5, 7)) - 1]!.toLowerCase()} ${k.slice(0, 4)}`);
   const idx = new Map(keys.map((k, i) => [k, i] as const));
   const bIn = keys.map(() => 0), bOut = keys.map(() => 0), bN = keys.map(() => 0);
-  let nIn = 0, nOut = 0, nRec = 0;
+  let nIn = 0, nOut = 0;
+  // «da verificare» conta anche i giroconti, come Dashboard e Verifica (i totali di entrate e uscite invece li escludono)
+  const nRec = (await apply(supabase.from('movements').select('id', { count: 'exact', head: true })).eq('status', 'recorded')).count ?? 0;
   for (const r of sr) {
     const i = idx.get(keyOf(r.op_date)), v = Number(r.amount_eur ?? 0) * r.sign;
     if (r.kind === 'income') nIn++; else if (r.kind === 'expense') nOut++;
-    if (r.status === 'recorded') nRec++;
     if (i == null) continue;
     bN[i]!++; if (r.kind === 'income') bIn[i]! += v; else if (r.kind === 'expense') bOut[i]! += v;
   }

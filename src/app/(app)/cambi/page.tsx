@@ -123,7 +123,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               <div className="field"><label htmlFor="source">{t('fx_source')}</label>
                 <input className="input" id="source" name="source" maxLength={200} placeholder={L('es. BFM, banca, cambio effettivo', 'ex. BFM, banque, taux effectif')} defaultValue={edit?.source ?? ''} /></div>
               <button className="btn primary" type="submit">{t('fx_save')}</button>
-              <p className="hint" style={{ margin: 0 }}>{L('Se il mese ha già un tasso, viene sostituito; i movimenti già registrati mantengono il loro.', 'Si le mois a déjà un taux, il est remplacé ; les mouvements déjà enregistrés gardent le leur.')}</p>
+              <p className="hint" style={{ margin: 0 }}>{L('Se il mese ha già un tasso, viene sostituito; i movimenti già registrati mantengono il loro.', 'Si le mois a déjà un taux, il est remplacé ; les mouvements déjà comptabilisés gardent le leur.')}</p>
             </form>
           </Panel>
         )}

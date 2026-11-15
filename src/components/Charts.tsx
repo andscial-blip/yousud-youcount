@@ -57,7 +57,9 @@ export function Bars({ cats, series, lang, stacked, labels, refs, label, h, href
 }) {
   return (
     <div className="chart-wrap">
-      <Svg className="ch-d" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs })} />
+      <Svg className="ch-s" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 520 })} />
+      <Svg className="ch-d" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 800 })} />
+      <Svg className="ch-w" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 1120 })} />
       <Svg className="ch-m" html={svgBars(cats, series, { stacked, labels: false, refs, label, lang, hrefs, phone: true })} />
     </div>
   );
@@ -70,7 +72,9 @@ export function Lines({ cats, series, lang, refs, label, h, zoom, unit }: {
   const fmt = unit ? (v: number) => `${v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { maximumFractionDigits: 2, useGrouping: 'always' } as Intl.NumberFormatOptions)}\u00a0${unit}` : undefined;
   return (
     <div className="chart-wrap">
-      <Svg className="ch-d" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt })} />
+      <Svg className="ch-s" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 520 })} />
+      <Svg className="ch-d" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 800 })} />
+      <Svg className="ch-w" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 1120 })} />
       <Svg className="ch-m" html={svgLines(cats, series, { refs, label, lang, phone: true, zoom, fmt })} />
     </div>
   );
@@ -105,7 +109,9 @@ export function MonthBars({ data, lang, labels, hrefFor }: {
   return (
     <figure style={{ margin: 0 }}>
       <div className="chart-wrap">
-        <Svg className="ch-d" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names })} />
+        <Svg className="ch-s" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 520 })} />
+        <Svg className="ch-d" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 800 })} />
+        <Svg className="ch-w" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 1120 })} />
         <Svg className="ch-m" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, phone: true })} />
       </div>
       <figcaption><Legend className="under trio" items={[{ label: labels.in, color: C_IN, value: eur0(tin, lang) }, { label: labels.out, color: C_OUT, value: eur0(tout, lang) },

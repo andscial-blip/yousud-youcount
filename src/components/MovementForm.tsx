@@ -136,6 +136,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const dir = kind === 'income' ? 'in' : 'out';
   const cats = R.categories.filter((c) => c.direction === dir);
   const groups = [...new Set(cats.map((c) => c.group))];
+  // ricerca nel selettore delle voci: su 70 codici scorrere l'elenco è lento (revisione finale del 15/11)
+  const [catQ, setCatQ] = useState('');
+  const lang = t.lang_code === 'fr' ? 'fr' : 'it';
+  const nq = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const catHits = catQ.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group}`).includes(nq(catQ.trim()))) : [];
   const recentCats = R.recentCats[dir === 'in' ? 'income' : 'expense'].map((id) => cats.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
@@ -491,7 +496,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       {kind !== 'transfer' && noDoc && (
         <div className="field">
           <label htmlFor="nodoc">{t.f_no_doc_reason}</label>
-          <input className="input" id="nodoc" value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
+          <input className="input" id="nodoc" aria-invalid={touched && missing.noDocReason ? true : undefined} value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
           {req(missing.noDocReason)}
           <div className="chips-row" role="group" aria-label={t.f_no_doc_reason}>
             {t.f_no_doc_presets.split('|').map((r) => <button type="button" key={r} className="chip-btn" aria-pressed={noDocReason === r} onClick={() => setNoDocReason(r)}>{r}</button>)}
@@ -518,7 +523,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       <section className="panel"><div className="panel-b fgrid">
         <div className={aiCls('amount')}>
           <label htmlFor="amount">{t.f_amount}{account || due ? ` (${currency})` : ''}</label>
-          <input className="input big num" id="amount" inputMode="decimal" autoComplete="off" value={amountTxt}
+          <input className="input big num" id="amount" aria-invalid={touched && missing.amount ? true : undefined} inputMode="decimal" autoComplete="off" value={amountTxt}
                  onChange={(e) => { typed(e, setAmountTxt); confirm('amount'); }} onBlur={() => setAmountTxt((v) => settleAmount(v))} placeholder="0,00" />
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
@@ -568,7 +573,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         ) : (
           <div className="field">
             <label htmlFor="account">{kind === 'transfer' ? t.f_from_account : advMode ? t.f_adv_account : t.f_account}</label>
-            <select className="input" id="account" value={accountId ?? ''} onChange={(e) => {
+            <select className="input" id="account" aria-invalid={touched && missing.account ? true : undefined} value={accountId ?? ''} onChange={(e) => {
               setAccountId(e.target.value);
               const h = R.accounts.find((a) => a.id === e.target.value)?.holder;
               if (advMode && h) setPaidBy(h);
@@ -608,13 +613,17 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         {kind !== 'transfer' && (<>
           <div className={aiCls('category')}>
             <label htmlFor="category">{t.f_category}</label>
-            <select className="input" id="category" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
-              <option value="">{t.f_choose}</option>
-              {recentCats.length > 0 && (
+            {cats.length > 15 && (
+              <input className="input cat-q" type="search" inputMode="search" value={catQ} onChange={(e) => setCatQ(e.target.value)} aria-label={lang === 'fr' ? 'Chercher un poste par code ou par nom' : 'Cerca una voce per codice o per nome'}
+                placeholder={lang === 'fr' ? 'Chercher un poste…' : 'Cerca una voce…'} />)}
+            <select className="input" id="category" aria-invalid={touched && missing.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
+              <option value="">{catQ.trim() ? (lang === 'fr' ? `${catHits.length} postes trouvés` : `${catHits.length} voci trovate`) : t.f_choose}</option>
+              {catQ.trim() ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}
+              {!catQ.trim() && recentCats.length > 0 && (
                 <optgroup label={t.f_recent}>
                   {recentCats.map((c) => <option key={`r-${c.id}`} value={c.id}>{c.code} · {c.name}</option>)}
                 </optgroup>)}
-              {groups.map((g) => (
+              {!catQ.trim() && groups.map((g) => (
                 <optgroup key={g} label={g}>
                   {cats.filter((c) => c.group === g).map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}
                 </optgroup>

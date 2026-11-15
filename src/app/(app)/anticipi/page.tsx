@@ -180,10 +180,10 @@ export default async function Advances({ searchParams }: { searchParams: Promise
           <div className="kpis dk">
             <div className="kpi">
               <div className="l">{LL('Anticipi in corso', 'Avances en cours')}</div>
-              <div className={`v num${open.length && curs.length === 1 && money(inHand.get(curs[0]!)!, curs[0]!, lang).length > 11 ? ' long' : ''}`}>{open.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 ? money(inHand.get(curs[0]!)!, curs[0]!, lang) : money(openEur, 'EUR', lang)}</div>
+              <div className={`v num${open.length && curs.length === 1 && curs[0] === 'EUR' && money(inHand.get(curs[0]!)!, curs[0]!, lang).length > 11 ? ' long' : ''}`}>{open.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 && (curs[0] === 'EUR' || !(fxNow > 0)) ? money(inHand.get(curs[0]!)!, curs[0]!, lang) : money(openEur, 'EUR', lang)}</div>
               {openEur > 0 && <><Viz.Stack segs={open.slice(0, 6).map((w, i) => ({ v: toEur(Number(w.balance), w.currency), c: `var(--dn${i + 1})` }))} max={openEur} tip={open.map((w) => `${accName(w)}: ${money(w.balance, w.currency, lang)}`).join('\n')} />
                 <div className="vzl"><span>{accName(open[0]!)}</span><span>{open.length === 1 ? LL('1 persona', '1 personne') : LL(`${open.length} persone`, `${open.length} personnes`)}</span></div></>}
-              <div className="s">{open.length === 0 ? LL('nessun contante da giustificare', 'aucune espèce à justifier') : curs.length > 1 ? [...inHand.entries()].map(([c, v]) => money(v, c, lang)).join(' + ') : curs[0] !== 'EUR' && fxNow > 0 ? `≈ ${money(openEur, 'EUR', lang)}` : LL('contanti ancora da giustificare', 'espèces encore à justifier')}</div>
+              <div className="s">{open.length === 0 ? LL('nessun contante da giustificare', 'aucune espèce à justifier') : curs.length > 1 ? [...inHand.entries()].map(([c, v]) => money(v, c, lang)).join(' + ') : curs[0] !== 'EUR' && fxNow > 0 ? `${money(inHand.get(curs[0]!)!, curs[0]!, lang)} · ${LL('ancora da giustificare', 'encore à justifier')}` : LL('contanti ancora da giustificare', 'espèces encore à justifier')}</div>
             </div>
             <div className="kpi">
               <div className="l">{LL('Da autorizzare', 'À autoriser')}</div>

@@ -283,8 +283,14 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 32px; 
 .legend.center { justify-content: center; }
 .legend.under { margin-top: 10px; }
 .chart-wrap svg { display: block; width: 100%; height: auto; }
-.chart-wrap .ch-m { display: none; }
-@media (max-width: 760px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-m { display: block; } }
+/* Quattro disegni dello stesso grafico (320, 520, 800, 1120 unità): si mostra quello adatto alla larghezza del RIQUADRO,
+   così assi ed etichette restano fra 10 e 14 px invece di ingrandirsi o rimpicciolirsi con l'immagine (revisione del 15/11) */
+.chart-wrap { container-type: inline-size; }
+.chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w { display: none; }
+@container (max-width: 419px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-m { display: block; } }
+@container (min-width: 420px) and (max-width: 659px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-s { display: block; } }
+@container (min-width: 960px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-w { display: block; } }
+@media print { .chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w { display: none !important; } .chart-wrap .ch-d { display: block !important; } }
 .cbars { display: flex; flex-direction: column; }
 .cbar .n a { color: var(--fg); text-decoration: none; }
 .cbar .n a:hover { text-decoration: underline; }
@@ -861,7 +867,9 @@ table.bal-fixed th.r, table.bal-fixed td.r { white-space: nowrap; }
 @media (max-width: 600px) { .h-tiles.s-tiles { grid-template-columns: minmax(0, 1fr); } }
 
 /* Utenti: righe allineate su una griglia comune, dettaglio a tutta larghezza */
-.ulist-h, .urow > summary { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, .8fr) auto; gap: 16px; align-items: center; }
+/* ultima colonna a larghezza fissa: con «auto» intestazione e righe calcolavano colonne diverse e «Ruolo» / «Stato» uscivano d'asse */
+.ulist-h, .urow > summary { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, .8fr) 104px; gap: 16px; align-items: center; }
+.ulist-h > :last-child, .urow > summary > :last-child { justify-self: end; }
 .ulist-h { padding: 10px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line-2); font-family: var(--f-ui); font-weight: 600; font-size: 13px; color: var(--muted); }
 .ulist { list-style: none; margin: 0; padding: 0; }
 .ulist > li { border-bottom: 1px solid var(--line-2); }
@@ -2412,3 +2420,17 @@ nav.segs { flex-wrap: wrap; width: auto; max-width: 100%; overflow: visible; }
 /* «Storna»: l'intestazione mostra un pulsante, così si capisce che si apre */
 .rev-sum { display: flex; align-items: center; gap: 10px; list-style: none; } .rev-sum::-webkit-details-marker { display: none; }
 details[open] > .rev-sum .btn { display: none; }
+.cat-q { margin-bottom: 6px; }
+
+/* Bersagli al tocco di almeno 44 px su telefono (revisione finale del 15/11): schede, frecce, campi, «Come funziona» */
+@media (max-width: 760px) and (pointer: coarse), (max-width: 640px) {
+  .subnav a, nav.segs a, .tabs a { min-height: 44px; display: inline-flex; align-items: center; }
+  .phead .pback, .phead .sync, .phead .ic-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .input, select.input, .btn { min-height: 44px; }
+  .btn.small { min-height: 40px; }
+  .helpline { min-height: 40px; }
+}
+/* Etichette lunghe (francese) nei riquadri e nelle legende su telefono: vanno a capo invece di essere troncate con i puntini */
+@media (max-width: 640px) {
+  .kpi .l, .kpi .s, .legend li span, .bq-leg li span, .hcat li .hc-n { white-space: normal; overflow: visible; text-overflow: clip; }
+}

@@ -36,10 +36,10 @@ export type Series = { name: string; vals: number[]; color: string; dashed?: boo
 export type Ref = { v: number; color: string; label?: string };
 
 // Barre per categoria (mesi, anni): affiancate o impilate, con linee di riferimento tratteggiate.
-export function svgBars(cats: string[], series: Series[], opt: { stacked?: boolean; labels?: boolean; refs?: Ref[]; min?: number; h?: number; label?: string; phone?: boolean; lang?: Lang; hrefs?: (string | null)[] } = {}) {
+export function svgBars(cats: string[], series: Series[], opt: { stacked?: boolean; labels?: boolean; refs?: Ref[]; min?: number; h?: number; label?: string; phone?: boolean; w?: number; lang?: Lang; hrefs?: (string | null)[] } = {}) {
   const lang = opt.lang ?? 'it';
   const ph = !!opt.phone && cats.length <= 12;
-  const W = ph ? 380 : 720, H = ph ? 260 : (opt.h ?? 260), L = ph ? 44 : 56, R = 10, T = 16, B = 30, n = cats.length, k = series.length;
+  const W = ph ? 320 : (opt.w ?? 720), H = ph ? 260 : (opt.h ?? 260), L = ph ? 44 : 56, R = 10, T = 16, B = 30, n = cats.length, k = series.length;
   const tot = (i: number) => opt.stacked ? series.reduce((a, s) => a + Math.max(0, s.vals[i] || 0), 0) : Math.max(...series.map((s) => s.vals[i] || 0));
   const max = Math.max(opt.min ?? 1000, ...cats.map((_, i) => tot(i)), ...(opt.refs ?? []).map((r) => r.v));
   const step = niceStep(max / 4), top = Math.ceil(max / step) * step, sx = (W - L - R) / n;
@@ -79,9 +79,9 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
 
 // Istogramma «a specchio» (scelta 1D del 10/11): entrate sopra lo zero, uscite sotto, pallino per il saldo del mese.
 // Una colonna per mese, simmetrica; la scala è la stessa sopra e sotto, così le altezze si confrontano a occhio.
-export function svgMirror(cats: string[], inc: number[], out: number[], opt: { label?: string; phone?: boolean; lang?: Lang; hrefs?: (string | null)[]; names: [string, string, string] }) {
+export function svgMirror(cats: string[], inc: number[], out: number[], opt: { label?: string; phone?: boolean; w?: number; lang?: Lang; hrefs?: (string | null)[]; names: [string, string, string] }) {
   const lang = opt.lang ?? 'it', ph = !!opt.phone;
-  const W = ph ? 380 : 720, H = ph ? 260 : 280, L = ph ? 44 : 56, R = 10, T = 14, B = 30, n = cats.length;
+  const W = ph ? 320 : (opt.w ?? 720), H = ph ? 260 : 280, L = ph ? 44 : 56, R = 10, T = 14, B = 30, n = cats.length;
   const max = Math.max(1000, ...inc, ...out), step = niceStep(max / 2), top = Math.ceil(max / step) * step;
   const mid = T + (H - T - B) / 2, half = (H - T - B) / 2, sx = (W - L - R) / n, bw = Math.min(ph ? 18 : 30, sx * 0.62);
   const y = (v: number) => mid - (v / top) * half;
@@ -99,17 +99,17 @@ export function svgMirror(cats: string[], inc: number[], out: number[], opt: { l
     const hov = `<rect class="hov" x="${L + sx * i}" y="${T}" width="${sx}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = opt.hrefs?.[i];
     bars += href && (a > 0 || b > 0) ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
-    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 9.5 : 11.5}" fill="var(--muted)">${esc(ph ? c.slice(0, 3) : c)}</text>`;
+    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 10.5 : 11.5}" fill="var(--muted)">${esc(ph ? c.slice(0, 3) : c)}</text>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${g}${bars}${dots}</svg>`;
 }
 
 // Linee (cumulati, andamenti), con area tenue facoltativa e punto sull'ultimo valore.
 // opt.zoom: scala che non parte da zero (per grandezze come i tassi di cambio, dove conta la variazione); opt.fmt: formato dei valori nei tooltip
-export function svgLines(cats: string[], series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[], opt: { refs?: Ref[]; h?: number; label?: string; phone?: boolean; lang?: Lang; zoom?: boolean; fmt?: (v: number) => string } = {}) {
+export function svgLines(cats: string[], series: (Series & { area?: boolean; dash?: string; w?: number; vals: (number | null)[] })[], opt: { refs?: Ref[]; h?: number; label?: string; phone?: boolean; w?: number; lang?: Lang; zoom?: boolean; fmt?: (v: number) => string } = {}) {
   const lang = opt.lang ?? 'it';
   const ph = !!opt.phone && cats.length <= 24;
-  const W = ph ? 380 : 720, H = ph ? 240 : (opt.h ?? 260), L = ph ? 44 : 56, R = 12, T = 16, B = 30, n = cats.length;
+  const W = ph ? 320 : (opt.w ?? 720), H = ph ? 240 : (opt.h ?? 260), L = ph ? 44 : 56, R = 12, T = 16, B = 30, n = cats.length;
   const vals = series.flatMap((s) => s.vals.filter((v): v is number => v != null));
   const all = [...vals, ...(opt.refs ?? []).map((r) => r.v)];
   const max = opt.zoom ? Math.max(...all) : Math.max(1000, ...all), lo = opt.zoom ? Math.min(...all) : 0;

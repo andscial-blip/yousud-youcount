@@ -86,7 +86,7 @@ em,i{font-style:normal}
   .ptitle h1{font-size:24px}.ptitle p{display:none}
   .only-phone{display:inline-flex}.not-phone{display:none!important}
   .yearsel select{height:34px;font-size:14px;padding:0 28px 0 10px}
-  .subnav{padding:0 var(--s4);gap:var(--s4)}.subnav a{min-height:40px;font-size:14px}
+  .subnav{padding:0 var(--s4);gap:var(--s4)}.subnav a{min-height:44px;font-size:14px}
   .main{padding:var(--s4) var(--s4) calc(96px + env(safe-area-inset-bottom,0px))}
   .offline-note{width:calc(100% - 2*var(--s4))}
 }
@@ -432,7 +432,7 @@ details.fold:not([open])>summary{border-bottom:0}
 /* Settings index */
 #app .panel[id]{scroll-margin-top:16px}
 @media (max-width:760px){
-      #app input:not([type=checkbox]):not([type=radio]),#app select{min-height:40px}
+      #app input:not([type=checkbox]):not([type=radio]),#app select{min-height:44px}
 }
 /* Type scale (8 steps): 12 · 13 · 14 · 16 · 20 · 24 · 28 · 32 px. Every size in the app maps to one of these. */
 /* Quick search (⌘K) */

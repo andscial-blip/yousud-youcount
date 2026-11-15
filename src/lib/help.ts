@@ -19,6 +19,7 @@ export const HELP: HelpEntry[] = [
   { href: '/nuovo', sec: 'start',
     it: ['Registrare una spesa o un\'entrata', [
       'Ti servono contanti per una spesa da fare? In alto, «Chiedi un anticipo →» apre la richiesta in Anticipi.',
+      'Sopra l\'elenco delle voci, «Cerca una voce…» filtra per codice o per nome. Negli importi il punto delle migliaia si aggiunge da solo; se lo digiti tu, «1.250» vale milleduecentocinquanta e «12.5» dodici virgola cinque. Un movimento registrato non si modifica più: per un errore rivolgiti a un responsabile.',
       'Premi «+ Nuovo movimento» (sul telefono il «+» al centro in basso). Prima cosa: fotografa o carica il giustificativo; l\'app legge il documento e propone data, importo, fornitore e codice. Controlla i campi evidenziati come incerti.',
       'Scegli il conto da cui escono o in cui entrano i soldi, il codice contabile e il progetto (per le spese fuori progetto: «Spese generali»). Per gli importi in ariary il tasso del mese viene proposto da solo e resta salvato sul movimento.',
       '«Salva bozza» non conta nei saldi; «Registra» assegna il numero MOV e il movimento entra in contabilità. Se il giustificativo non c\'è, va scritto il motivo; se hai pagato di tasca tua scegli «Di tasca propria».',
@@ -27,8 +28,9 @@ export const HELP: HelpEntry[] = [
       'Se esci dal modulo senza registrare, alla riapertura l\'app propone «Riprendi» o «Scarta»: i campi scritti restano su questo dispositivo, gli allegati vanno ricaricati.',
       'In una spesa nuova conto, progetto e modalità partono da quelli della tua ultima spesa (sotto il conto lo dice: «Proposto dal tuo ultimo movimento»): controllali. Nel Codice contabile i primi sono gli «Usati di recente». Se spunti «Il giustificativo non c’è» trovi quattro motivi pronti da toccare. Se carichi un file già in archivio, l\'app dice a quale movimento è allegato.',
       'In una spesa senza giustificativo trovi la casella «Dopo la registrazione prepara l’autocertificazione da firmare», già spuntata: dopo «Registra» la scheda si apre sul modulo dell\'autocertificazione, con il motivo già scritto. Se non serve, togli la spunta.']],
-    fr: ['Enregistrer une dépense ou une recette', [
+    fr: ['Comptabiliser une dépense ou une recette', [
       'Besoin d\'espèces pour une dépense à venir ? En haut, « Demander une avance → » ouvre la demande dans Avances.',
+      'Au-dessus de la liste des postes, « Chercher un poste… » filtre par code ou par nom. Dans les montants, le point des milliers s\'ajoute tout seul ; si vous le tapez vous-même, « 1.250 » vaut mille deux cent cinquante et « 12.5 » douze virgule cinq. Un mouvement comptabilisé ne se modifie plus : pour une erreur, adressez-vous à un responsable.',
       'Appuyez sur « + Nouveau mouvement » (sur téléphone le « + » au centre en bas). D\'abord : photographiez ou chargez la pièce ; l\'application lit le document et propose date, montant, fournisseur et code. Contrôlez les champs signalés comme incertains.',
       'Choisissez le compte, le code comptable et le projet (hors projet : « Spese generali »). Pour les montants en ariary, le taux du mois est proposé automatiquement et reste enregistré sur le mouvement.',
       '« Brouillon » ne compte pas dans les soldes ; « Comptabiliser » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche ».',
@@ -63,7 +65,7 @@ export const HELP: HelpEntry[] = [
       'À droite, « À faire » regroupe ce qui demande une action : mouvements à vérifier, remboursements, avances ouvertes, codes au-delà du budget, taux du mois manquant, sauvegarde, échéances proches. Dessous, les notes partagées.',
       'Couleurs des graphiques, identiques dans toute l\'app : bleu nuit = recettes, jaune = dépenses, vert = solde ou excédent ; le rouge signale seulement un dépassement. Chaque groupe de postes et chaque projet garde sa couleur d\'une page à l\'autre.',
       'Le nombre de « dépenses sans justificatif » (ici et dans le filtre « Sans pièce » des Mouvements) ne compte ni les extournes ni les mouvements extournés.',
-      'Les montants comptent les mouvements enregistrés et vérifiés, en euros au taux enregistré sur chaque mouvement ; les virements internes ne sont ni recettes ni dépenses. L\'année se change en haut à droite.',
+      'Les montants comptent les mouvements comptabilisés et vérifiés, en euros au taux enregistré sur chaque mouvement ; les virements internes ne sont ni recettes ni dépenses. L\'année se change en haut à droite.',
       'Autonomie de trésorerie : nombre de mois que la trésorerie actuelle couvre au rythme moyen des trois derniers mois clos ; remboursements dus déduits, avances au personnel exclues.']] },
   { href: '/scadenze', sec: 'home',
     it: ['Scadenze', [
@@ -84,7 +86,7 @@ export const HELP: HelpEntry[] = [
       'Un movimento registrato non si cancella: si corregge con uno storno dal dettaglio, così il registro resta completo. Si eliminano solo le bozze e i dati dimostrativi (DEMO).',
       'Nel dettaglio di un movimento la freccia in alto riporta all\'elenco con il filtro di prima. Dopo uno storno, «Crea la copia corretta» apre un nuovo movimento con dati e allegati dell\'originale. Nelle schede laterali il tasto Esc chiude.']],
     fr: ['Registre des mouvements', [
-      'Chaque mouvement naît comme brouillon (il ne compte pas), puis il est enregistré (numéro MOV, il compte dans les soldes) et enfin vérifié par un responsable. Le filtre « À vérifier » montre les enregistrés pas encore contrôlés ; un responsable les vérifie depuis le détail.',
+      'Chaque mouvement naît comme brouillon (il ne compte pas), puis il est comptabilisé (numéro MOV, il compte dans les soldes) et enfin vérifié par un responsable. Le filtre « À vérifier » montre les mouvements comptabilisés pas encore contrôlés ; un responsable les vérifie depuis le détail.',
       'Recherche et filtres se combinent : période, type, code, projet, fournisseur ou donateur, mode de paiement, compte, devise, statut, justificatif, données réelles ou de démonstration. Ils restent dans l\'adresse de la page : « Enregistrer ce filtre » les garde sur cet appareil, ou envoyez le lien à un collègue.',
       'Les encadrés en haut portent sur tous les mouvements filtrés (hors brouillons et virements internes pour les totaux), en euros, avec une barre par mois de la période (par jour si le filtre couvre un seul mois). Les montants en ariary montrent dessous la contre-valeur en euros. « Exporter tout … » (avec l\'année), à côté de « Filtres », télécharge les mouvements de l\'année.',
       'Un mouvement enregistré ne se supprime pas : on le corrige par une extourne depuis le détail, pour que le registre reste complet. On supprime seulement les brouillons et les données de démonstration (DEMO).',
@@ -124,11 +126,12 @@ export const HELP: HelpEntry[] = [
       'Movimenti registrati in attesa di verifica. Chi ha inserito un movimento non può verificarlo.',
       'La scheda «Da verificare» è accanto al Registro, in Movimenti. In alto il numero dei movimenti in attesa; i filtri restringono per progetto e per «Inserito da». Ogni riga mostra importo con segno, controvalore in euro e stato del giustificativo; un tocco sulla riga porta alla scheda del movimento, «Verifica» lo segna come verificato.']],
     fr: ['Vérification groupée', [
-      'Un responsable contrôle les mouvements enregistrés par d\'autres et les marque comme vérifiés (le super administrateur peut aussi vérifier les siens). Un mouvement vérifié ne se modifie plus : une erreur se corrige par une extourne.',
-      'Mouvements enregistrés en attente de vérification. La personne qui a saisi un mouvement ne peut pas le vérifier.',
+      'Un responsable contrôle les mouvements comptabilisés par d\'autres et les marque comme vérifiés (le super administrateur peut aussi vérifier les siens). Un mouvement vérifié ne se modifie plus : une erreur se corrige par une extourne.',
+      'Mouvements comptabilisés en attente de vérification. La personne qui a saisi un mouvement ne peut pas le vérifier.',
       'L’onglet « À vérifier » se trouve à côté du Registre, dans Mouvements. En haut, le nombre de mouvements en attente ; les filtres restreignent par projet et par « Saisi par ». Chaque ligne montre le montant avec son signe, la contre-valeur en euros et l’état de la pièce ; un appui sur la ligne mène à la fiche du mouvement, « Vérifier » le marque comme vérifié.']] },
   { href: '/conti', sec: 'cassa',
     it: ['Conti e cassa', [
+      'Nei riquadri in alto l\'importo grande è sempre in euro; per il Madagascar e per gli anticipi in ariary, l\'importo in ariary è scritto sotto, in piccolo.',
       'In alto: liquidità totale in euro, totale dei conti in Italia e in Madagascar, e gli anticipi ancora in mano alle persone (che non sono conti: si gestiscono nella scheda Anticipi).',
       'Saldi di banca, cassa e mobile money in Italia (EUR) e in Madagascar (MGA): saldo iniziale più movimenti registrati e verificati. Saldo positivo in verde, negativo in rosso (di solito manca una registrazione). Il nome del conto apre il suo dettaglio con gli ultimi movimenti e il saldo dopo ciascuno; il numero in «Da verificare» apre i movimenti da verificare di quel conto.',
       'La conta di cassa confronta i contanti contati con il saldo dell\'app e registra la differenza con chi l\'ha fatta. In Madagascar si contano solo banconote, da 100 a 20.000 ariary.',
@@ -136,10 +139,11 @@ export const HELP: HelpEntry[] = [
       'Conta i contanti e registra il totale: l’app lo confronta con il saldo alla stessa data.',
       'Con il ruolo di operatore qui si vedono le casse in contanti e gli anticipi chiesti o ricevuti; i conti bancari li vedono responsabili e amministratori.']],
     fr: ['Comptes et caisse', [
+      'Dans les encadrés du haut, le montant en grand est toujours en euros ; pour Madagascar et pour les avances en ariary, le montant en ariary est écrit dessous, en petit.',
       'En haut : liquidités totales en euros, total des comptes en Italie et à Madagascar, et les avances encore entre les mains des personnes (ce ne sont pas des comptes : elles se gèrent dans l\'onglet Avances).',
-      'Soldes de banque, caisse et mobile money en Italie (EUR) et à Madagascar (MGA) : solde initial plus mouvements enregistrés et vérifiés. Solde positif en vert, négatif en rouge (il manque en général un enregistrement). Le nom du compte ouvre son détail avec les derniers mouvements et le solde après chacun ; le nombre dans « À vérifier » ouvre les mouvements à vérifier de ce compte.',
+      'Soldes de banque, caisse et mobile money en Italie (EUR) et à Madagascar (MGA) : solde initial plus mouvements comptabilisés et vérifiés. Solde positif en vert, négatif en rouge (il manque en général un enregistrement). Le nom du compte ouvre son détail avec les derniers mouvements et le solde après chacun ; le nombre dans « À vérifier » ouvre les mouvements à vérifier de ce compte.',
       'Le comptage de caisse compare les espèces comptées au solde de l\'application et enregistre l\'écart avec la personne qui l\'a fait. À Madagascar on ne compte que des billets, de 100 à 20 000 ariary.',
-      'Les soldes incluent les mouvements enregistrés et vérifiés ; les extournes sont déjà déduites.',
+      'Les soldes incluent les mouvements comptabilisés et vérifiés ; les extournes sont déjà déduites.',
       'Comptez les espèces et enregistrez le total : l’application le compare au solde à la même date.',
       'Avec le rôle d’opérateur, on voit ici les caisses en espèces et les avances demandées ou reçues ; les comptes bancaires sont visibles par les responsables et les administrateurs.']] },
   { href: '/anticipi', sec: 'cassa',
@@ -181,7 +185,7 @@ export const HELP: HelpEntry[] = [
     fr: ['Taux de change', [
       'Un taux par mois, en ariary pour 1 euro, avec sa source (banque, BFM, taux effectif). Il est proposé aux nouveaux mouvements en ariary du mois.',
       'En haut, quatre encadrés : « Taux courant » avec la date de saisie et la source, « Sur un mois » et « Sur un an » avec la variation en pourcentage, et la moyenne de l\'année choisie avec le minimum et le maximum.',
-      'Trois notions : taux du mois (saisi ici), taux courant (dernier mois disponible jusqu\'à aujourd\'hui), taux appliqué (enregistré sur chaque mouvement). Corriger le taux d\'un mois ne change pas les mouvements déjà enregistrés ; la modification reste dans l\'historique.',
+      'Trois notions : taux du mois (saisi ici), taux courant (dernier mois disponible jusqu\'à aujourd\'hui), taux appliqué (enregistré sur chaque mouvement). Corriger le taux d\'un mois ne change pas les mouvements déjà comptabilisés ; la modification reste dans l\'historique.',
       'Le graphique compare le taux du mois à la moyenne des taux appliqués aux mouvements, pondérée par les montants.']] },
   { href: '/preventivo', sec: 'bud',
     it: ['Preventivo analitico', [
@@ -220,7 +224,7 @@ export const HELP: HelpEntry[] = [
       '« Dépenses par poste » et « Recettes par poste » sont deux tableaux aux mêmes colonnes : chaque groupe de postes est suivi de ses codes, avec montant, pourcentage du total du tableau et barre ; en bas le total. Le menu « Tous les projets » limite les tableaux à un seul projet ou à la structure générale ; les encadrés du haut restent calculés sur toute la version.',
       '« Par projet » : pour chaque projet le nombre de lignes, les recettes, les dépenses, le solde et le poids dans les dépenses. Un clic sur le nom ouvre les lignes de ce projet dans « Budget détaillé ».',
       '« Afficher le schéma du compte rendu (Mod. D) » ouvre en bas le budget et le réalisé sur les postes du modèle D (compte rendu de caisse, DM du 5 mars 2020), avec la même règle que le réalisé ; les dépenses des projets de structure vont en section E. Le budget au schéma ETS est un outil interne : la loi n\'en impose pas le format.',
-      'Réalisé : mouvements enregistrés et vérifiés de l\'année, en euros au taux du mouvement. « Exporter vers Excel » télécharge les lignes, la comparaison avec le réalisé et le schéma du compte rendu.']] },
+      'Réalisé : mouvements comptabilisés et vérifiés de l\'année, en euros au taux du mouvement. « Exporter vers Excel » télécharge les lignes, la comparaison avec le réalisé et le schéma du compte rendu.']] },
   { href: '/progetti', sec: 'prj',
     it: ['Progetti', [
       'In alto quattro riquadri per i progetti dell\'anno scelto. «Previsto»: le uscite previste nel preventivo in vigore, con la barra divisa per progetto. «Speso»: le uscite mese per mese, la quota del previsto già usata e la parte di anno trascorsa. «Residuo»: previsto meno speso (in giallo lo speso, in verde il disponibile, in salmone l\'eventuale sforamento). «Entrate»: mese per mese, con il saldo tra entrate e uscite.',
@@ -244,7 +248,7 @@ export const HELP: HelpEntry[] = [
       'Aprendo un finanziamento: i quattro riquadri (con il tempo trascorso e i giorni alla fine), «Ricevuto e speso nel tempo» (somme progressive mese per mese, con la linea tratteggiata del concesso), «Budget e speso per gruppo», la «Qualità della rendicontazione» (spese con giustificativo, giustificativi mancanti, spese ancora da verificare), periodo e scadenze collegate, il rendiconto al finanziatore in Excel per il periodo scelto, il budget per gruppo di spesa e i movimenti collegati.',
       '«Modifica» cambia i dati del finanziamento e, in fondo alla scheda, carica il logo del finanziatore: «Scegli immagine» (PNG, JPEG o WebP, ridotta automaticamente a 256 px), poi «Salva il logo». Il logo vale per tutti i finanziamenti di quel finanziatore e si toglie con «Togli il logo». «Chiudi» sposta il finanziamento tra i chiusi senza toccare i movimenti; «Riapri» lo riporta tra quelli in corso.']],
     fr: ['Financements', [
-      'Un financement est une contribution d\'un bailleur avec un montant accordé et une période. Recettes et dépenses se rattachent au financement depuis le formulaire du mouvement. Sur cette page comptent les mouvements enregistrés ou vérifiés (pas les brouillons) ; les extournes se soustraient d\'elles-mêmes.',
+      'Un financement est une contribution d\'un bailleur avec un montant accordé et une période. Recettes et dépenses se rattachent au financement depuis le formulaire du mouvement. Sur cette page comptent les mouvements comptabilisés ou vérifiés (pas les brouillons) ; les extournes se soustraient d\'elles-mêmes.',
       'En haut, quatre encadrés pour les financements de la liste choisie (« En cours », « Clôturés » ou « Tous »). « Accordé » : la somme des montants accordés, répartie par bailleur ; les montants en ariary sont convertis en euros au taux du jour (valeur indicative). « Reçu » et « Dépensé » : encaissements et dépenses rattachés, avec l\'évolution des 12 derniers mois et la part de l\'accordé. « Disponible en caisse » : reçu moins dépensé ; s\'il est négatif, YouSud avance les dépenses.',
       '« D\'où viennent les fonds » montre l\'accordé par bailleur. « Reçu et dépensé » place côte à côte, pour chaque financement, la barre bleue du reçu et la barre jaune du dépensé (saumon si elle dépasse l\'accordé) ; le repère bleu clair indique le montant accordé.',
       'En dessous, une fiche par financement : logo du bailleur (ou ses initiales, si le logo n\'a pas été chargé), titre, bailleur et projet ; l\'anneau est la part de l\'accordé déjà dépensée ; la barre bleu clair est la part de la période déjà écoulée ; en bas, les pièces manquantes et le code. Une étiquette avertit lorsque la période se termine dans les 60 jours, est terminée, ou lorsque le dépensé dépasse l\'accordé.',
@@ -260,7 +264,7 @@ export const HELP: HelpEntry[] = [
       'Il preventivo è annuale: per capire se la spesa corre troppo si confronta la quota usata con la parte di anno trascorsa («oltre il ritmo» = più del 10% sopra).',
       'Colori: blu notte per le entrate, giallo per le uscite, verde per l\'avanzo, azzurro per il previsto, salmone solo per gli sforamenti. Nei grafici un clic su un mese, su un progetto o su un fornitore apre i movimenti o la scheda corrispondente.']],
     fr: ['Analyses', [
-      'Tous les montants sont en euros et comptent les mouvements enregistrés et vérifiés de l\'année choisie en haut (hors brouillons et virements ; extournes déduites). Le menu « Tous les projets » limite chaque vue à un seul projet.',
+      'Tous les montants sont en euros et comptent les mouvements comptabilisés et vérifiés de l\'année choisie en haut (hors brouillons et virements ; extournes déduites). Le menu « Tous les projets » limite chaque vue à un seul projet.',
       'En haut, quatre encadrés, identiques dans toutes les vues. « Recettes » et « Dépenses » : le total, l\'évolution mois par mois et la comparaison avec les mêmes mois de l\'année précédente. « Excédent » (ou « Déficit ») : recettes moins dépenses. « Budget utilisé » : la part des dépenses prévues déjà dépensée ; le repère sur la barre marque la part de l\'année écoulée.',
       'Sous les encadrés, on choisit la vue. « Vue d\'ensemble » : recettes et dépenses par mois avec le solde, « Où vont les dépenses » par projet et « D\'où viennent les recettes » par poste. « Recettes » : recettes par groupe, principaux donateurs et bailleurs, recettes par mois. « Dépenses » : dépenses par poste, principaux fournisseurs, dépenses par pays du compte de paiement et le tableau des dépenses par groupe par rapport au budget. « Projets » : les dépenses par projet et, pour chacun, prévu et dépensé. « Évolution » : recettes et dépenses par mois et les cumuls de l\'année comparés à l\'année précédente (ligne en pointillé : le budget).',
       '« Budget et réalisé » montre les dépenses par groupe par rapport au budget et, en dessous, la comparaison par code avec le budget en vigueur : prévu, dépensé ou encaissé, reste et pourcentage. Dans la barre, le repère marque la part de l\'année écoulée et le saumon n\'apparaît qu\'au-delà du prévu ; un clic sur le montant dépensé ou encaissé ouvre les mouvements. Un poste avec des mouvements mais sans budget est signalé « non prévue ». Le budget s\'écrit dans la section Budget.',
@@ -351,7 +355,7 @@ export const HELP: HelpEntry[] = [
   { href: '/sincronizzazione', sec: 'set',
     it: ['Sincronizzazione', ['Stato degli invii dal telefono al server: movimenti salvati senza rete e in attesa, ultimi invii riusciti.',
       'Senza rete i movimenti nuovi restano sul telefono e partono da soli appena torna la connessione. Per usare l’app offline aprila almeno una volta con la rete.']],
-    fr: ['Synchronisation', ['État des envois du téléphone vers le serveur : mouvements enregistrés hors ligne en attente, derniers envois réussis.',
+    fr: ['Synchronisation', ['État des envois du téléphone vers le serveur : mouvements saisis hors ligne en attente, derniers envois réussis.',
       'Sans réseau, les nouveaux mouvements restent sur le téléphone et partent tout seuls dès le retour de la connexion. Pour utiliser l’app hors ligne, ouvrez-la au moins une fois avec le réseau.']] },
 ];
 
