@@ -58,7 +58,7 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
       } else {
         const bw = gw / k;
         out += `<rect x="${x0 + bw * j + 1}" y="${y(v)}" width="${bw - 2}" height="${hh(v)}" fill="${st ? 'var(--band)' : s.color}" ${st ? `stroke="${s.color}" stroke-dasharray="3 2"` : ''} rx="2"></rect>`;
-        if (opt.labels) out += `<text class="vl" x="${x0 + bw * j + bw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="10" fill="var(--muted)">${kfmt(v, lang)}</text>`;
+        if (opt.labels) out += `<text class="vl" x="${x0 + bw * j + bw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="11" fill="var(--muted)">${kfmt(v, lang)}</text>`;
       }
     });
     if (opt.stacked && opt.labels && acc > 0) out += `<text class="vl" x="${x0 + gw / 2}" y="${y(acc) - 5}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--muted)">${kfmt(acc, lang)}</text>`;

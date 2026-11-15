@@ -41,7 +41,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
     cancelled: L('Documento annullato.', 'Document annulé.'), archived: L('Documento archiviato.', 'Document archivé.'),
     restored: L('Documento riportato tra i correnti.', 'Document remis parmi les courants.') }[sp.ok ?? ''];
   return (
-    <div className="stack">
+    <div className="stack has-doc-bar">
       <PageHead title={`${L(T.it, T.fr)}${d.number ? ` · ${d.number}` : ''}`}>
         {st}
       </PageHead>
@@ -92,6 +92,14 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
           </aside>
         )}
       </div>
+      {!editing && ((d.status === 'draft' && writer) || pdf) && (
+        <div className="doc-bar no-print">
+          {d.status === 'draft' && writer && <Link className="btn" href={`/documenti-emessi/${id}?edit=1`}>{L('Modifica', 'Modifier')}</Link>}
+          {d.status === 'draft' && writer && (
+            <form action={issueDoc}><input type="hidden" name="id" value={id} />
+              <PendingButton busy={L('Emissione…', 'Émission…')}>{L('Emetti', 'Émettre')}</PendingButton></form>)}
+          {d.status !== 'draft' && pdf && <a className="btn primary" href={pdf}><Ico name="download" />{L('Scarica il PDF', 'Télécharger le PDF')}</a>}
+        </div>)}
     </div>
   );
 }

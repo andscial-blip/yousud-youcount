@@ -76,7 +76,7 @@ async function auth(req, res, url) {
     const u = th.startsWith('th.') && !USED_TOKENS.has(th) && (await userBy('id', th.slice(3)));
     if (!u) return send(res, 403, { code: 403, error_code: 'otp_expired', msg: 'Email link is invalid or has expired' });
     USED_TOKENS.add(th);
-    return send(res, 200, session(u));
+    return send(res, 200, session(u, 'otp'));   // come Supabase: la sessione nata da un link email non è un accesso con password
   }
   if (path === '/logout') return send(res, 204);
   return send(res, 404, { msg: 'not implemented in local stack' });

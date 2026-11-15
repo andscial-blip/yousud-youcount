@@ -2382,3 +2382,18 @@ a.cal-hit { color: inherit; }
 .sheet .pd-act, .ver-list ~ .pd-act { display: block; }
 .pd-act .pd-form { display: grid; gap: 8px; }
 .pd-act .pd-form p { margin: 0; }
+
+/* Schede secondarie: quando non stanno su una riga vanno a capo, a ogni larghezza (a 768 px e in francese erano tagliate a metà parola) */
+@media (min-width: 761px) { .subrow .subnav { flex-wrap: wrap; overflow: visible; row-gap: 0; } }
+/* Documento emesso su telefono: azione principale sempre a portata di pollice, sopra la barra di navigazione */
+.doc-bar { display: none; }
+@media (max-width: 640px) {
+  .doc-bar { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; position: fixed; left: 0; right: 0; z-index: 30;
+    bottom: calc(64px + env(safe-area-inset-bottom)); padding: 10px 14px; background: var(--surface); border-top: 1px solid var(--line-2); box-shadow: 0 -6px 18px rgba(31,42,58,.06); }
+  .doc-bar > *, .doc-bar form > .btn { width: 100%; min-height: 46px; justify-content: center; }
+  .doc-bar form { display: contents; }
+  .has-doc-bar { padding-bottom: 76px; }
+}
+
+/* Impostazioni: una sola freccia. Su telefono quella che torna al menu, da tablet in su quella «indietro» */
+@media (min-width: 761px) { .pback.only-phone { display: none; } }

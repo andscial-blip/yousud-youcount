@@ -18,6 +18,7 @@ export const HELP_SECTIONS: { id: string; it: string; fr: string }[] = [
 export const HELP: HelpEntry[] = [
   { href: '/nuovo', sec: 'start',
     it: ['Registrare una spesa o un\'entrata', [
+      'Ti servono contanti per una spesa da fare? In alto, «Chiedi un anticipo →» apre la richiesta in Anticipi.',
       'Premi «+ Nuovo movimento» (sul telefono il «+» al centro in basso). Prima cosa: fotografa o carica il giustificativo; l\'app legge il documento e propone data, importo, fornitore e codice. Controlla i campi evidenziati come incerti.',
       'Scegli il conto da cui escono o in cui entrano i soldi, il codice contabile e il progetto (per le spese fuori progetto: «Spese generali»). Per gli importi in ariary il tasso del mese viene proposto da solo e resta salvato sul movimento.',
       '«Salva bozza» non conta nei saldi; «Registra» assegna il numero MOV e il movimento entra in contabilità. Se il giustificativo non c\'è, va scritto il motivo; se hai pagato di tasca tua scegli «Di tasca propria».',
@@ -27,6 +28,7 @@ export const HELP: HelpEntry[] = [
       'In una spesa nuova conto, progetto e modalità partono da quelli della tua ultima spesa (sotto il conto lo dice: «Proposto dal tuo ultimo movimento»): controllali. Nel Codice contabile i primi sono gli «Usati di recente». Se spunti «Il giustificativo non c’è» trovi quattro motivi pronti da toccare. Se carichi un file già in archivio, l\'app dice a quale movimento è allegato.',
       'In una spesa senza giustificativo trovi la casella «Dopo la registrazione prepara l’autocertificazione da firmare», già spuntata: dopo «Registra» la scheda si apre sul modulo dell\'autocertificazione, con il motivo già scritto. Se non serve, togli la spunta.']],
     fr: ['Enregistrer une dépense ou une recette', [
+      'Besoin d\'espèces pour une dépense à venir ? En haut, « Demander une avance → » ouvre la demande dans Avances.',
       'Appuyez sur « + Nouveau mouvement » (sur téléphone le « + » au centre en bas). D\'abord : photographiez ou chargez la pièce ; l\'application lit le document et propose date, montant, fournisseur et code. Contrôlez les champs signalés comme incertains.',
       'Choisissez le compte, le code comptable et le projet (hors projet : « Spese generali »). Pour les montants en ariary, le taux du mois est proposé automatiquement et reste enregistré sur le mouvement.',
       '« Brouillon » ne compte pas dans les soldes ; « Comptabiliser » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche ».',
@@ -280,18 +282,20 @@ export const HELP: HelpEntry[] = [
       'Les longs tableaux montrent les 60 premières lignes : « Tout afficher » les ouvre en entier. À l’impression figurent l’en-tête de l’association, le titre, la date et le numéro de page. Dans l’Excel, une colonne « Devise » accompagne les montants en devise d’origine.']] },
   { href: '/documenti-emessi', sec: 'docs',
     it: ['Documenti emessi', [
+      'Su telefono, nella scheda di un documento, la barra in basso tiene a portata di mano «Modifica» ed «Emetti» per una bozza, «Scarica il PDF» per un documento emesso.',
       'Qui ci sono solo i documenti generati e salvati da YouSud (non i modelli), divisi per tipo: ricevute e quietanze, notule, note di rimborso, autocertificazioni, autorizzazioni di spesa, dichiarazioni, note di debito e buoni d\'ordine. Le fatture non si emettono: YouSud non ha partita IVA.',
       '«+ Emetti»: scegli il tipo, compila i dati (precompilati se parti da un movimento o da un progetto) e guarda l\'anteprima che si aggiorna mentre scrivi. Il documento può essere in italiano, francese o bilingue; gli importi sono in euro (grande) e in ariary (piccolo) al tasso del mese o del movimento.',
       'La bozza non ha numero. «Emetti» assegna il numero definitivo (es. RIC-2026-004), genera il PDF con logo e dati dell\'associazione e lo collega al movimento. Un documento emesso non si modifica: «Correggi» crea una nuova bozza con gli stessi dati e l\'originale si annulla con il motivo. «Archivia» toglie dall\'elenco i documenti chiusi senza cancellarli.',
       'Nella nota di rimborso ogni spesa è un riquadro numerato («Spesa 1», «Spesa 2») con data, descrizione, importo e la casella del giustificativo; «+ Aggiungi spesa» ne aggiunge un altro.']],
     fr: ['Documents émis', [
+      'Sur téléphone, dans la fiche d\'un document, la barre en bas garde à portée de main « Modifier » et « Émettre » pour un brouillon, « Télécharger le PDF » pour un document émis.',
       'Ici se trouvent seulement les documents générés et enregistrés par YouSud (pas les modèles), par type : reçus et quittances, notes d\'honoraires, notes de frais, attestations, autorisations de dépense, déclarations, notes de débit et bons de commande. Pas de factures : YouSud n\'a pas de numéro de TVA.',
       '« + Émettre » : choisissez le type, remplissez les données (préremplies si vous partez d\'un mouvement ou d\'un projet) et regardez l\'aperçu qui se met à jour pendant la saisie. Le document peut être en italien, en français ou bilingue ; les montants sont en euros (grand) et en ariary (petit) au taux du mois ou du mouvement.',
       'Le brouillon n\'a pas de numéro. « Émettre » attribue le numéro définitif (ex. RIC-2026-004), génère le PDF avec logo et données de l\'association et le lie au mouvement. Un document émis ne se modifie pas : « Corriger » crée un nouveau brouillon avec les mêmes données et l\'original s\'annule avec le motif. « Archiver » retire de la liste les documents clos sans les supprimer.',
       'Dans la note de remboursement, chaque dépense est un cadre numéroté (« Frais 1 », « Frais 2 ») avec date, description, montant et la case du justificatif ; « + Ajouter un frais » en ajoute un autre.']] },
   { href: '/account', sec: 'set',
-    it: ['Il tuo account', ['Nome, lingua dell\'app (italiano o francese) e password.']],
-    fr: ['Votre compte', ['Nom, langue de l\'application (italien ou français) et mot de passe.']] },
+    it: ['Il tuo account', ['Nome, lingua dell\'app (italiano o francese) e password. «Cambia password» chiede anche la password attuale; «Annulla» torna all\'account senza cambiare nulla.']],
+    fr: ['Votre compte', ['Nom, langue de l\'application (italien ou français) et mot de passe. « Changer le mot de passe » demande aussi le mot de passe actuel ; « Annuler » revient au compte sans rien changer.']] },
   { href: '/admin/utenti', sec: 'set',
     it: ['Utenti', ['Inviti per email, ruolo (amministratore, responsabile, operatore, sola lettura) e progetti visibili a ciascuno. Un utente sospeso non vede e non registra nulla.']],
     fr: ['Utilisateurs', ['Invitations par e-mail, rôle (administrateur, responsable, opérateur, lecture seule) et projets visibles pour chacun. Un utilisateur suspendu ne voit et n\'enregistre rien.']] },

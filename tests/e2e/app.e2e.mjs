@@ -1411,6 +1411,18 @@ try {
     assert.equal(await p.locator('#yc-splash').isVisible(), false);
     await ctx.close();
   });
+  await check('cambio password dall\'account: chiede la password attuale, quella sbagliata è rifiutata, «Annulla» torna all\'account', async () => {
+    const p = sa.page;
+    await p.goto(`${base}/account/password`);
+    await p.getByRole('heading', { name: 'Cambia password' }).first().waitFor();
+    await p.fill('#p0', 'non-è-questa'); await p.fill('#p1', 'nuova-password-lunga'); await p.fill('#p2', 'nuova-password-lunga');
+    await p.getByRole('button', { name: 'Salva la password' }).click();
+    await p.getByText('La password attuale non è corretta.').waitFor();
+    assert.match(p.url(), /\/account\/password$/, 'la password non è stata cambiata');
+    await p.getByRole('link', { name: 'Annulla' }).click();
+    await p.waitForURL(/\/account$/);
+  });
+
   await check('uscita: chiude la sessione', async () => {
     await ro.page.goto(`${base}/altro`);
     await ro.page.getByRole('button', { name: 'Esci' }).first().click();
@@ -1429,7 +1441,8 @@ try {
     // link dei modelli Supabase predefiniti: arriva sulla radice con i dati dopo il #
     await p.goto(`${base}/#access_token=${tok.access_token}&refresh_token=${tok.refresh_token}&type=recovery`);
     await p.waitForURL(/\/account\/password$/, { timeout: 30000 });
-    await p.getByText('Imposta la password').first().waitFor();
+    // il token di prova nasce da un accesso con password: la pagina chiede anche la password attuale
+    await p.getByText(/Imposta la password|Cambia password/).first().waitFor();
     // link scaduto: messaggio chiaro e nessuna sessione
     const ctx2 = await browser.newContext();
     const p2 = await ctx2.newPage();

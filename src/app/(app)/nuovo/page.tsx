@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { docName } from '@/lib/doc-name';
 import { can, requireMe } from '@/lib/session';
 import { dictFor } from '@/lib/i18n';
@@ -55,6 +56,7 @@ export default async function NewMovement({ searchParams }: { searchParams: SP }
   return (
     <div className="stack">
       <PageHead title={t('f_new_title')} />
+      <p className="muted new-adv" style={{ margin: 0 }}>{lang === 'fr' ? 'Besoin d’espèces pour une dépense à venir ? ' : 'Ti servono contanti per una spesa da fare? '}<Link href="/anticipi?nuova=1">{lang === 'fr' ? 'Demander une avance →' : 'Chiedi un anticipo →'}</Link></p>
       {/* l'avviso «dati presi dall'estratto conto» solo quando è vero: importo o descrizione arrivano da una riga dell'estratto */}
       {copyRef
         ? <div className="note info">{lang === 'fr' ? `Copie de ${copyRef} : données et pièces jointes reprises de l’original. Corrigez ce qui était erroné, puis comptabilisez.` : `Copia di ${copyRef}: dati e allegati ripresi dall’originale. Correggi ciò che era sbagliato, poi registra.`}</div>

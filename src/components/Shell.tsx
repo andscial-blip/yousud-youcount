@@ -101,7 +101,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
         {/* la freccia c'è solo nelle pagine di dettaglio: sulle schede di primo livello non c'è un «prima» a cui tornare (P2-5) */}
         {/* le schede di Impostazioni su telefono non hanno la riga delle schede: la freccia riporta al menu */}
         {phoneSub && <Link className="pback only-phone" href="/altro" aria-label={labels.lang === 'fr' ? 'Retour au menu' : 'Torna al menu'}><CIcon name="back" size={20} /></Link>}
-        {path !== '/' && !isTab && <button type="button" className="pback" onClick={goBack} aria-label={labels.lang === 'fr' ? 'Retour à la page précédente' : 'Torna alla pagina precedente'}
+        {path !== '/' && !isTab && <button type="button" className={phoneSub ? 'pback not-phone' : 'pback'} onClick={goBack} aria-label={labels.lang === 'fr' ? 'Retour à la page précédente' : 'Torna alla pagina precedente'}
           title={labels.lang === 'fr' ? 'Retour' : 'Indietro'}><CIcon name="back" size={20} /></button>}
         {sec && <span className="picon not-phone" aria-hidden="true"><CIcon name={sec.ic} size={22} /></span>}
         {/* «Altro» su telefono è il menu; in Impostazioni su telefono il titolo è la scheda aperta (P2-4) */}
