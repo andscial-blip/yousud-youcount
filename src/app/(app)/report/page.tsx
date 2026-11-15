@@ -37,7 +37,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
       <PrintHead sb={supabase} lang={lang} title={`${L(REPORTS.find((r) => r.k === kind)!.it, REPORTS.find((r) => r.k === kind)!.fr)} ${year}`} sub={L('Importi in euro, salvo dove indicato', 'Montants en euros, sauf indication contraire')} />
       <nav className="segs noprint" aria-label={L('Tipo di report', 'Type de rapport')}>
         {REPORTS.map((r) => <Link key={r.k} href={q(r.k, year)} aria-current={(r.k === kind) ? "page" : undefined}>{L(r.it, r.fr)}</Link>)}
-        <Link href={`/rendiconto?anno=${year}`}>{L('Rendiconto ETS', 'Compte ETS')}</Link>
+        <Link href={`/rendiconto?anno=${year}`}>{L('Rendiconto ETS', 'Compte rendu ETS')}</Link>
         <Link href={`/analisi?anno=${year}&vista=budget`}>{L('Preventivo e consuntivo', 'Budget et réalisé')}</Link>
       </nav>
       {err && <div className="note err">{t('error_load')}: {err}</div>}

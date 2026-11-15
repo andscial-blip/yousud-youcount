@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-const KINDS: [string, string, string][] = [['cash', 'Rendiconto per cassa (Mod. D)', 'Compte de caisse (Mod. D)'], ['model_e', 'Rendiconto aggregato (Mod. E)', 'Compte agrégé (Mod. E)'],
+const KINDS: [string, string, string][] = [['cash', 'Rendiconto per cassa (Mod. D)', 'Compte rendu de caisse (Mod. D)'], ['model_e', 'Rendiconto aggregato (Mod. E)', 'Compte agrégé (Mod. E)'],
   ['social', 'Bilancio sociale', 'Bilan social'], ['other', 'Altro atto di bilancio', 'Autre acte comptable']];
 
 async function sha256(f: File) {

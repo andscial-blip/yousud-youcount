@@ -74,7 +74,7 @@ export default async function ProjectDetail({ params, searchParams }: {
           <div className="l">{L('Preventivo uscite', 'Budget dépenses')}</div>
           <div className="v num">{bOut ? e0(bOut) : '–'}</div>
           {bOut > 0 && <><Viz.Stack segs={[{ v: Math.min(out, bOut), c: 'var(--vz-sp)' }, { v: Math.max(0, bOut - out), c: 'var(--band)' }, { v: Math.max(0, out - bOut), c: 'var(--tax)' }]} max={Math.max(bOut, out)}
-            marks={year === now.getFullYear() ? [{ v: elapsed * bOut, c: 'var(--navy)', dash: true }] : undefined}
+            marks={year === now.getFullYear() ? [{ v: elapsed * bOut, c: 'var(--c-in)', dash: true }] : undefined}
             tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}\n${L('Anno trascorso', 'Année écoulée')}: ${Math.round(elapsed * 100)} %`} />
             <div className="vzl"><span>{L('usato', 'utilisé')}</span><span>{pc(out, bOut)}</span></div></>}
           <div className="s">{bOut ? L(`anno trascorso ${Math.round(elapsed * 100)} %`, `année écoulée ${Math.round(elapsed * 100)} %`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
@@ -89,7 +89,7 @@ export default async function ProjectDetail({ params, searchParams }: {
         <div className="kpi">
           <div className="l">{L('Entrate', 'Recettes')}</div>
           <div className="v num">{e0(inc)}</div>
-          <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < curM ? 'var(--navy)' : 'var(--band)'))} tip={mTip(`${L('Entrate', 'Recettes')} ${year}`, (m) => m.inc)} />
+          <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < curM ? 'var(--c-in)' : 'var(--band)'))} tip={mTip(`${L('Entrate', 'Recettes')} ${year}`, (m) => m.inc)} />
           <div className="vzl"><span>{L('saldo', 'solde')}</span><span>{e0(inc - out)}</span></div>
           <div className="s">{inc - out < -0.005 ? L('uscite superiori alle entrate', 'dépenses supérieures aux recettes') : L('entrate che coprono le uscite', 'recettes couvrant les dépenses')}</div>
         </div>

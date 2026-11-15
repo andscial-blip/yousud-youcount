@@ -15,7 +15,7 @@ import { docFormContext } from '../context';
 export const dynamic = 'force-dynamic';
 
 // Documento emesso: anteprima identica al PDF, modifica finché è bozza, emissione numerata, annullamento con motivo.
-export default async function DocDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; edit?: string }> }) {
+export default async function DocDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; edit?: string; emetti?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
@@ -66,10 +66,14 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
               <div className="stack" style={{ gap: 10 }}>
                 {d.status === 'draft' && writer && !editing && <Link className="btn" href={`/documenti-emessi/${id}?edit=1`}>{L('Modifica', 'Modifier')}</Link>}
                 {d.status === 'draft' && writer && (
-                  <form action={issueDoc}><input type="hidden" name="id" value={id} />
-                    <PendingButton busy={L('Emissione in corso…', 'Émission en cours…')} style={{ width: '100%' }}><Ico name="check" />{L('Emetti e genera il PDF', 'Émettre et générer le PDF')}</PendingButton>
-                    <p className="hint">{L('Dopo l\'emissione il numero è definitivo e il documento non si modifica più: si può solo annullare.',
-                      'Après l\'émission, le numéro est définitif et le document ne se modifie plus : il peut seulement être annulé.')}</p></form>
+                  /* emissione in due passi: il numero assegnato è definitivo, quindi prima si conferma (revisione del 15/11) */
+                  <details className="pd-act emit" id="emetti" open={sp.emetti === '1'}>
+                    <summary className="btn primary"><Ico name="check" />{L('Emetti e genera il PDF', 'Émettre et générer le PDF')}</summary>
+                    <form action={issueDoc} className="pd-form"><input type="hidden" name="id" value={id} />
+                      <p className="muted">{L('Con l\'emissione il documento riceve il numero definitivo e non si modifica più: si può solo annullare. Controlla l\'anteprima prima di confermare.',
+                        'À l\'émission, le document reçoit son numéro définitif et ne se modifie plus : il peut seulement être annulé. Vérifiez l\'aperçu avant de confirmer.')}</p>
+                      <PendingButton busy={L('Emissione in corso…', 'Émission en cours…')} style={{ width: '100%' }}>{L('Conferma: emetti il documento', 'Confirmer : émettre le document')}</PendingButton></form>
+                  </details>
                 )}
                 {d.status !== 'draft' && writer && <Link className="btn" href={`/documenti-emessi/nuovo?tipo=${d.type}&da=${id}`}>{L('Correggi (nuova bozza con questi dati)', 'Corriger (nouveau brouillon avec ces données)')}</Link>}
               {pdfHref && <a className={d.status === 'cancelled' ? 'btn' : 'btn primary'} href={pdfHref}><Ico name="download" />{pdfLabel}</a>}
@@ -100,8 +104,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
         <div className="doc-bar no-print">
           {d.status === 'draft' && writer && <Link className="btn" href={`/documenti-emessi/${id}?edit=1`}>{L('Modifica', 'Modifier')}</Link>}
           {d.status === 'draft' && writer && (
-            <form action={issueDoc}><input type="hidden" name="id" value={id} />
-              <PendingButton busy={L('Emissione…', 'Émission…')}>{L('Emetti', 'Émettre')}</PendingButton></form>)}
+            <Link className="btn primary" href={`/documenti-emessi/${id}?emetti=1#emetti`}>{L('Emetti…', 'Émettre…')}</Link>)}
           {d.status !== 'draft' && pdfHref && <a className={d.status === 'cancelled' ? 'btn' : 'btn primary'} href={pdfHref}><Ico name="download" />{pdfLabel}</a>}
         </div>)}
     </div>

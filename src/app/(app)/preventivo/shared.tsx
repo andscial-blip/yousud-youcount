@@ -18,7 +18,7 @@ export type Grp = { id: string; code: string; name_it: string; name_fr: string; 
 export type Prj = { id: string; name: string; active: boolean; kind: string | null };
 export type Cp = { id: string; name: string; kind: 'supplier' | 'donor' | 'beneficiary' | 'staff' | 'other'; active: boolean };
 
-export const C_INC = 'var(--navy)';      // entrate: blu notte
+export const C_INC = 'var(--c-in)';      // entrate: blu notte
 export const C_EXP = 'var(--vz-sp)';     // uscite: giallo
 export const C_NET = 'var(--green-soft)'; // avanzo: verde
 

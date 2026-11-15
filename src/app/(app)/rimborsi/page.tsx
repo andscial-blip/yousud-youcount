@@ -108,11 +108,11 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
       <div className="kpis dk rbk">
         <div className="kpi">
           <div className="l">{LL('Da rimborsare', 'À rembourser')}</div>
-          <div className={`v num${due.length && curs.length === 1 && money(totals.get(curs[0]!)!, curs[0]!, lang).length > 11 ? ' long' : ''}`}>{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
-          {dueEur > 0 && <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: `var(--dn${i + 1})` }))} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
+          <div className={`v num${due.length && e2(dueEur).length > 11 ? ' long' : ''}`}>{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 && curs[0] === 'EUR' ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
+          {dueEur > 0 && <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: `var(--pp${[2, 4, 5, 6, 7, 2][i]})` }))} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
             <div className="vzl"><span>{people[0]!.n.split(' ')[0]}</span><span>{people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></>}
           <div className="s">{due.length === 0 ? LL('non dobbiamo niente a nessuno', 'nous ne devons rien à personne')
-            : curs.length === 1 ? (curs[0] === 'EUR' ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : `≈ ${e2(dueEur)}`)
+            : curs.length === 1 ? (curs[0] === 'EUR' ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : money(totals.get(curs[0]!)!, curs[0]!, lang))
             : [...totals.entries()].map(([c, v]) => money(v, c, lang)).join(' + ')}</div>
         </div>
         <div className="kpi">
@@ -133,7 +133,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
         <div className="kpi">
           <div className="l">{LL(`Rimborsato nel ${Y}`, `Remboursé en ${Y}`)}</div>
           <div className="v num">{e2(paidTot)}</div>
-          {paidTot > 0 && <><Viz.Cols vals={paidM} colors={paidM.map((v) => (v ? 'var(--vz-real)' : 'var(--band)'))} tip={`${LL('Rimborsato', 'Remboursé')} ${Y}\n${paidM.map((v, i) => (v ? `${MESI[lang][i]}: ${e2(v)}` : '')).filter(Boolean).join('\n')}`} />
+          {paidTot > 0 && <><Viz.Cols vals={paidM} colors={paidM.map((v) => (v ? 'var(--c-out)' : 'var(--band)'))} tip={`${LL('Rimborsato', 'Remboursé')} ${Y}\n${paidM.map((v, i) => (v ? `${MESI[lang][i]}: ${e2(v)}` : '')).filter(Boolean).join('\n')}`} />
             <div className="vzl"><span>{MESI[lang][0]!.toLowerCase()}</span><span>{MESI[lang][11]!.toLowerCase()}</span></div></>}
           <div className="s">{paidN === 0 ? LL('nessun rimborso quest’anno', 'aucun remboursement cette année') : `${paidN === 1 ? LL('1 rimborso', '1 remboursement') : LL(`${paidN} rimborsi`, `${paidN} remboursements`)} · ${LL('ultimo il', 'dernier le')} ${dm(lastPaid!)}`}</div>
         </div>

@@ -36,7 +36,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
   const arc = await Promise.all((arcRaw ?? []).map(async (a) => ({ ...a,
     url: a.doc ? (await supabase.storage.from('documents').createSignedUrl(a.doc.original_path, 600, { download: `Rendiconto_${a.year}_approvato.pdf` })).data?.signedUrl ?? null : null,
     view: a.doc ? (await supabase.storage.from('documents').createSignedUrl(a.doc.original_path, 600)).data?.signedUrl ?? null : null })));
-  const KIND: Record<string, [string, string]> = { cash: ['Rendiconto per cassa', 'Compte de caisse'], model_e: ['Rendiconto aggregato (Mod. E)', 'Compte agrégé (Mod. E)'],
+  const KIND: Record<string, [string, string]> = { cash: ['Rendiconto per cassa', 'Compte rendu de caisse'], model_e: ['Rendiconto aggregato (Mod. E)', 'Compte agrégé (Mod. E)'],
     social: ['Bilancio sociale', 'Bilan social'], other: ['Altro atto', 'Autre acte'] };
   const LL = (k: [string, string]) => (lang === 'fr' ? k[1] : k[0]);
   const q = (y: number, m = modelE, c = compact) => `/rendiconto?anno=${y}${m ? '&modello=E' : ''}${c ? '&compatto=1' : ''}`;
@@ -56,7 +56,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       <PageHead title={`${t('rep_title')} ${year}`}>
       </PageHead>
       <PrintHead sb={supabase} lang={lang} draft={!arc.some((a) => a.year === year)}
-        title={lang === 'fr' ? `Compte rendu financier de caisse – ${modelE ? 'Mod. E' : 'Mod. D'} – exercice ${year}` : `Rendiconto per cassa – ${modelE ? 'Mod. E' : 'Mod. D'} – esercizio ${year}`}
+        title={lang === 'fr' ? `Compte rendu de caisse – ${modelE ? 'Mod. E' : 'Mod. D'} – exercice ${year}` : `Rendiconto per cassa – ${modelE ? 'Mod. E' : 'Mod. D'} – esercizio ${year}`}
         sub={lang === 'fr' ? 'DM 5 mars 2020 · montants en euros' : 'DM 5 marzo 2020 · importi in euro'} />
       <div className="h1row noprint" style={{ gap: 8 }}>
         <div className="seg">
@@ -98,7 +98,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
             <summary><b>{rows.length} {t('rep_unclassified')}</b> {lang === 'fr'
               ? `Ils valent ${money(tot, 'EUR', lang)} et ne figurent pas dans ce compte rendu : les totaux et le résultat ci-dessous sont incomplets tant qu’ils ne sont pas reclassés.`
               : `Valgono ${money(tot, 'EUR', lang)} e non entrano in questo rendiconto: i totali e l’avanzo qui sotto sono incompleti finché non li riclassifichi.`}
-              {codes.length > 0 && <> {lang === 'fr' ? 'Codes' : 'Codici'}: {codes.join(', ')}.</>} <span className="rep-unc-open">{lang === 'fr' ? 'Voir les mouvements' : 'Vedi i movimenti'}</span></summary>
+              {codes.length > 0 && <> {lang === 'fr' ? 'Codes\u00a0' : 'Codici'}: {codes.join(', ')}.</>} <span className="rep-unc-open">{lang === 'fr' ? 'Voir les mouvements' : 'Vedi i movimenti'}</span></summary>
             <ul>{rows.slice(0, 50).map((r) => <li key={r.id}><Link href={`/movimenti/${r.id}`}>{r.ref ?? '–'}</Link> · {r.category_code ?? '–'} · <span className="num">{money(Number(r.amount_eur), 'EUR', lang)}</span></li>)}
               {rows.length > 50 && <li>…</li>}</ul>
           </details>);

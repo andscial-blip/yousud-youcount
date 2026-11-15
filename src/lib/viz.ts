@@ -76,7 +76,7 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
   (opt.refs ?? []).forEach((r) => {
     out += `<line x1="${L}" x2="${W - R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label ? `<text class="ref" x="${W - R}" y="${y(r.v) - 5}" text-anchor="end" font-size="11" fill="${r.color}">${esc(r.label)}</text>` : ''}`;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
 }
 
 // Istogramma «a specchio» (scelta 1D del 10/11): entrate sopra lo zero, uscite sotto, pallino per il saldo del mese.
@@ -84,12 +84,13 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
 export function svgMirror(cats: string[], inc: number[], out: number[], opt: { label?: string; phone?: boolean; w?: number; lang?: Lang; hrefs?: (string | null)[]; names: [string, string, string] }) {
   const lang = opt.lang ?? 'it', ph = !!opt.phone;
   const W = ph ? 320 : (opt.w ?? 720), H = ph ? 260 : 280, L = ph ? 44 : 56, R = 10, T = 14, B = 30, n = cats.length;
-  const max = Math.max(1000, ...inc, ...out), step = niceStep(max / 2), top = Math.ceil(max / step) * step;
-  const mid = T + (H - T - B) / 2, half = (H - T - B) / 2, sx = (W - L - R) / n, bw = Math.min(ph ? 18 : 30, sx * 0.62);
-  const y = (v: number) => mid - (v / top) * half;
+  const max = Math.max(1000, ...inc, ...out), step = niceStep(max / 2);
+  const up = Math.max(step, Math.ceil(Math.max(0, ...inc) / step) * step), down = Math.max(step, Math.ceil(Math.max(0, ...out) / step) * step);
+  const span = H - T - B, mid = T + span * (up / (up + down)), sx = (W - L - R) / n, bw = Math.min(ph ? 18 : 30, sx * 0.62);
+  const y = (v: number) => mid - (v / (up + down)) * span;
   const lab = (v: number) => (v === 0 ? '0' : (v > 0 ? '+' : '\u2212') + kfmt(Math.abs(v), lang));
   let g = '';
-  for (let t = -top; t <= top + 0.1; t += step)
+  for (let t = -down; t <= up + 0.1; t += step)
     g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? 'var(--muted)' : 'var(--line-2)'}"${t === 0 ? '' : ' stroke-dasharray="2 4"'}/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${lab(t)}</text>`;
   let bars = '', dots = '';
   cats.forEach((c, i) => {
@@ -103,7 +104,7 @@ export function svgMirror(cats: string[], inc: number[], out: number[], opt: { l
     bars += href && (a > 0 || b > 0) ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
     bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 10.5 : 11.5}" fill="var(--muted)">${esc(ph ? short3(c) : c)}</text>`;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${g}${bars}${dots}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${g}${bars}${dots}</svg>`;
 }
 
 // Linee (cumulati, andamenti), con area tenue facoltativa e punto sull'ultimo valore.
@@ -136,7 +137,7 @@ export function svgLines(cats: string[], series: (Series & { area?: boolean; das
   });
   const every = ph && n > 8 ? 2 : 1;
   cats.forEach((c, i) => { if (i % every && i !== n - 1) return; const a = i === n - 1 && n > 1 ? 'end' : 'middle'; out += `<text x="${i === n - 1 && n > 1 ? x(i) + 4 : x(i)}" y="${H - 9}" text-anchor="${a}" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`; });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
 }
 
 // Grafico mensile della dashboard di Cairn (homeChart): tre strati impilati, mese corrente evidenziato, valore sopra la barra.
@@ -165,7 +166,7 @@ export function monthChart(a: number[], b: number[], c: number[], curM: number, 
     const href = hrefs?.[i];
     bars += href && t > 0 ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(names[0])}" tabindex="0" data-kbd="1">${g}<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>${bars}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(names[0])}" tabindex="0" data-kbd="1">${g}<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>${bars}</svg>`;
 }
 
 // Ciambella (allocazione) con il totale al centro.
@@ -193,16 +194,16 @@ export function flowMini(rows: { inc: number; out: number }[], curM: number, lan
   let o = `<line x1="${L}" x2="${W - R}" y1="${z.toFixed(1)}" y2="${z.toFixed(1)}" stroke="var(--c-soft)"/>`, dots = '';
   rows.forEach((r, i) => {
     const x = L + sx * i + sx / 2, a = Math.max(0, r.inc), b = Math.max(0, r.out), net = a - b, any = a > 0 || b > 0;
-    if (a > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${y(a).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, z - y(a)).toFixed(1)}" rx="3" fill="var(--vz-real)"/>`;
-    if (b > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${z.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y(-b) - z).toFixed(1)}" rx="3" fill="var(--vz-sp)"/>`;
-    if (any) dots += `<circle cx="${x.toFixed(1)}" cy="${y(net).toFixed(1)}" r="3.4" fill="${net < 0 ? 'var(--tax)' : 'var(--green-soft)'}" stroke="var(--surface)" stroke-width="1.6"/>`;
+    if (a > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${y(a).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, z - y(a)).toFixed(1)}" rx="3" fill="var(--c-in)"/>`;
+    if (b > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${z.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y(-b) - z).toFixed(1)}" rx="3" fill="var(--c-out)"/>`;
+    if (any) dots += `<circle cx="${x.toFixed(1)}" cy="${y(net).toFixed(1)}" r="3.4" fill="var(--c-net)" stroke="var(--surface)" stroke-width="1.6"/>`;
     o += `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="${i + 1 === curM ? 'var(--fg)' : 'var(--muted)'}"${i + 1 === curM ? ' font-weight="600"' : ''}>${MESI[lang][i]!.slice(0, 1)}</text>`;
     const tl = [MESI_L[lang][i]!, `${names[0]}: ${eur0(a, lang)}`, `${names[1]}: ${eur0(b, lang)}`, `${names[2]}: ${net < 0 ? '−' : ''}${eur0(Math.abs(net), lang)}`];
     const hov = `<rect class="hov" x="${(L + sx * i).toFixed(1)}" y="${T}" width="${sx.toFixed(1)}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = hrefs?.[i];
     dots += href && any ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(`${names[0]} / ${names[1]}`)}" tabindex="0" data-kbd="1">${o}${dots}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(`${names[0]} / ${names[1]}`)}" tabindex="0" data-kbd="1">${o}${dots}</svg>`;
 }
 
 export const VZ = {

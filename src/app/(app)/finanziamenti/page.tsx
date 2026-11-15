@@ -78,7 +78,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
         <div className="kpi">
           <div className="l">{L('Ricevuto', 'Reçu')}</div>
           <div className="v num">{e0(sum.rec)}</div>
-          <Viz.Cols vals={mRec} colors={mRec.map(() => 'var(--navy)')} tip={mTip(L('Ricevuto, ultimi 12 mesi', 'Reçu, 12 derniers mois'), mRec)} />
+          <Viz.Cols vals={mRec} colors={mRec.map(() => 'var(--c-in)')} tip={mTip(L('Ricevuto, ultimi 12 mesi', 'Reçu, 12 derniers mois'), mRec)} />
           <div className="vzl"><span>{L('del concesso', 'de l\'accordé')}</span><span>{pc(sum.rec, sum.g)}</span></div>
           <div className="s">{sum.g - sum.rec > 0.5 ? L(`da ricevere ${e0(sum.g - sum.rec)}`, `à recevoir ${e0(sum.g - sum.rec)}`) : L('nulla da ricevere', 'rien à recevoir')}</div>
         </div>
@@ -92,7 +92,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
         <div className="kpi">
           <div className="l">{L('Disponibile in cassa', 'Disponible en caisse')}</div>
           <div className={`v num ${net < -0.005 ? 'neg' : 'pos'}`}>{e0(net)}</div>
-          {(sum.rec > 0 || sum.sp > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: sum.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: sum.rec, c: 'var(--navy)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, sum.rec, sum.sp)}
+          {(sum.rec > 0 || sum.sp > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: sum.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: sum.rec, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, sum.rec, sum.sp)}
             tip={`${L('Ricevuto', 'Reçu')}: ${e0(sum.rec)}\n${L('Speso', 'Dépensé')}: ${e0(sum.sp)}`} />
             <div className="vzl"><span>{L('ricevuto meno speso', 'reçu moins dépensé')}</span><span>{net >= 0 ? pc(net, sum.rec) : ''}</span></div></>}
           <div className="s">{sum.adv ? (sum.adv === 1 ? L('1 finanziamento anticipato da YouSud', '1 financement avancé par YouSud') : L(`${sum.adv} finanziamenti anticipati da YouSud`, `${sum.adv} financements avancés par YouSud`)) : L('nessuna spesa anticipata', 'aucune dépense avancée')}</div>
@@ -118,13 +118,13 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
           </section>
           <section className="panel">
             <div className="panel-h"><H2 text={L('Ricevuto e speso', 'Reçu et dépensé')} icon={null} /><div className="spacer" />
-              <Legend items={[{ label: L('Ricevuto', 'Reçu'), color: 'var(--navy)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
+              <Legend items={[{ label: L('Ricevuto', 'Reçu'), color: 'var(--c-in)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
             <div className="panel-b">
               <ul className="bq-pairs prj-pairs">{shown.map((g) => { const x = T(g), gr = granted(g); return (
                 <li key={g.id}>
                   <Link className="bq-pn" href={`/finanziamenti/${g.id}`}>{g.title}</Link>
                   <span className="bq-pb fin-pb">{gr > 0 && <em style={{ left: `${((gr / maxPair) * 100).toFixed(1)}%` }} title={`${L('Concesso', 'Accordé')}: ${e0(gr)}`} />}
-                    <i className={x.rec > 0 ? '' : 'z'} style={{ width: `${((x.rec / maxPair) * 100).toFixed(1)}%`, background: 'var(--navy)' }} />
+                    <i className={x.rec > 0 ? '' : 'z'} style={{ width: `${((x.rec / maxPair) * 100).toFixed(1)}%`, background: 'var(--c-in)' }} />
                     <i className={x.sp > 0 ? '' : 'z'} style={{ width: `${((x.sp / maxPair) * 100).toFixed(1)}%`, background: gr > 0 && x.sp > gr ? 'var(--tax)' : 'var(--vz-sp)' }} /></span>
                   <span className="bq-pv num"><b>{e0(x.rec)}</b><b>{e0(x.sp)}</b></span>
                 </li>); })}</ul>

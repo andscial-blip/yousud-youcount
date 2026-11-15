@@ -22,7 +22,7 @@ export function DocPreview({ md }: { md: Model }) {
       {md.blocks.map((b, i) => b.k === 'p' ? <p key={i} className={b.soft ? 'soft' : ''}>{b.text}</p>
         : b.k === 'table' ? (
           <div key={i} className="dp-tw">
-            <table><thead><tr>{b.head.map((h, j) => <th key={j} className={b.num.includes(j) ? 'r' : ''}>{h}</th>)}</tr></thead>
+            <table><thead><tr>{b.head.map((h, j) => <th key={j} className={b.num.includes(j) ? 'r' : ''}>{h.includes(' / ') ? <span className="two dp-th2">{h.split(' / ').map((x, n) => <span key={n}>{x}</span>)}</span> : h}</th>)}</tr></thead>
               <tbody>{b.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} className={b.num.includes(k) ? 'r num' : ''}><Amt c={c} /></td>)}</tr>)}</tbody></table>
           </div>
         ) : b.k === 'totals' ? (

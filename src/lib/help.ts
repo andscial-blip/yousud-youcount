@@ -20,6 +20,7 @@ export const HELP: HelpEntry[] = [
     it: ['Registrare una spesa o un\'entrata', [
       'Ti servono contanti per una spesa da fare? In alto, «Chiedi un anticipo →» apre la richiesta in Anticipi.',
       'Sopra l\'elenco delle voci, «Cerca una voce…» filtra per codice o per nome. Negli importi il punto delle migliaia si aggiunge da solo; se lo digiti tu, «1.250» vale milleduecentocinquanta e «12.5» dodici virgola cinque. Un movimento registrato non si modifica più: per un errore rivolgiti a un responsabile.',
+      'Per registrare servono anche una descrizione (almeno tre caratteri) e, se la regola è attiva, il giustificativo o il motivo per cui manca: tutti i campi mancanti vengono segnalati insieme.',
       'Premi «+ Nuovo movimento» (sul telefono il «+» al centro in basso). Prima cosa: fotografa o carica il giustificativo; l\'app legge il documento e propone data, importo, fornitore e codice. Controlla i campi evidenziati come incerti.',
       'Scegli il conto da cui escono o in cui entrano i soldi, il codice contabile e il progetto (per le spese fuori progetto: «Spese generali»). Per gli importi in ariary il tasso del mese viene proposto da solo e resta salvato sul movimento.',
       '«Salva bozza» non conta nei saldi; «Registra» assegna il numero MOV e il movimento entra in contabilità. Se il giustificativo non c\'è, va scritto il motivo; se hai pagato di tasca tua scegli «Di tasca propria».',
@@ -31,6 +32,7 @@ export const HELP: HelpEntry[] = [
     fr: ['Comptabiliser une dépense ou une recette', [
       'Besoin d\'espèces pour une dépense à venir ? En haut, « Demander une avance → » ouvre la demande dans Avances.',
       'Au-dessus de la liste des postes, « Chercher un poste… » filtre par code ou par nom. Dans les montants, le point des milliers s\'ajoute tout seul ; si vous le tapez vous-même, « 1.250 » vaut mille deux cent cinquante et « 12.5 » douze virgule cinq. Un mouvement comptabilisé ne se modifie plus : pour une erreur, adressez-vous à un responsable.',
+      'Pour comptabiliser, il faut aussi une description (au moins trois caractères) et, si la règle est active, la pièce justificative ou le motif de son absence : tous les champs manquants sont signalés ensemble.',
       'Appuyez sur « + Nouveau mouvement » (sur téléphone le « + » au centre en bas). D\'abord : photographiez ou chargez la pièce ; l\'application lit le document et propose date, montant, fournisseur et code. Contrôlez les champs signalés comme incertains.',
       'Choisissez le compte, le code comptable et le projet (hors projet : « Spese generali »). Pour les montants en ariary, le taux du mois est proposé automatiquement et reste enregistré sur le mouvement.',
       '« Brouillon » ne compte pas dans les soldes ; « Comptabiliser » attribue le numéro MOV et le mouvement entre en comptabilité. Sans pièce, il faut indiquer le motif ; si vous avez payé de votre poche, choisissez « De sa poche ».',
@@ -101,7 +103,7 @@ export const HELP: HelpEntry[] = [
       'Qui paie de sa poche enregistre la dépense avec « De sa poche » : elle ne touche pas les comptes avant le remboursement.',
       'En haut, quatre encadrés : le total dû (la barre montre à qui), depuis combien de jours attend la dépense la plus ancienne, combien de dépenses n\'ont pas encore leur pièce et le total remboursé dans l\'année, mois par mois.',
       'Dessous, une ligne par personne : « Rembourser » ouvre ses dépenses, avec la caisse déjà proposée et un seul bouton pour enregistrer le remboursement. La dépense entre en comptabilité à la date du remboursement et sur le compte qui paie.',
-      'Dépenses payées de sa poche. Elles ne touchent pas les comptes tant qu’elles ne sont pas remboursées : le remboursement les enregistre à la date où l’argent sort, comme le veut le compte de caisse.']] },
+      'Dépenses payées de sa poche. Elles ne touchent pas les comptes tant qu’elles ne sont pas remboursées : le remboursement les enregistre à la date où l’argent sort, comme le veut le compte rendu de caisse.']] },
   { href: '/documenti', sec: 'docs',
     it: ['Giustificativi', [
       'Archivio di scontrini, fatture e ricevute caricati con i movimenti. Ogni file prende il nome del movimento a cui è collegato; lo stesso file caricato due volte non crea un doppione (si riconosce dall\'impronta).',
@@ -288,14 +290,16 @@ export const HELP: HelpEntry[] = [
       'Les longs tableaux montrent les 60 premières lignes : « Tout afficher » les ouvre en entier. À l’impression figurent l’en-tête de l’association, le titre, la date et le numéro de page. Dans l’Excel, une colonne « Devise » accompagne les montants en devise d’origine.']] },
   { href: '/documenti-emessi', sec: 'docs',
     it: ['Documenti emessi', [
-      'Su telefono, nella scheda di un documento, la barra in basso tiene a portata di mano «Modifica» ed «Emetti» per una bozza, «Scarica il PDF» per un documento emesso.',
+      'Su telefono, nella scheda di un documento, la barra in basso tiene a portata di mano «Modifica» ed «Emetti…» per una bozza, «Scarica il PDF» per un documento emesso.',
+      '«Emetti e genera il PDF» chiede una conferma («Conferma: emetti il documento»): il numero assegnato è definitivo.',
       'Un documento annullato si scarica con «Scarica il PDF annullato»: il file porta la dicitura di annullamento su ogni pagina; l\'originale archiviato resta com\'era.',
       'Qui ci sono solo i documenti generati e salvati da YouSud (non i modelli), divisi per tipo: ricevute e quietanze, notule, note di rimborso, autocertificazioni, autorizzazioni di spesa, dichiarazioni, note di debito e buoni d\'ordine. Le fatture non si emettono: YouSud non ha partita IVA.',
       '«+ Emetti»: scegli il tipo, compila i dati (precompilati se parti da un movimento o da un progetto) e guarda l\'anteprima che si aggiorna mentre scrivi. Il documento può essere in italiano, francese o bilingue; gli importi sono in euro (grande) e in ariary (piccolo) al tasso del mese o del movimento.',
       'La bozza non ha numero. «Emetti» assegna il numero definitivo (es. RIC-2026-004), genera il PDF con logo e dati dell\'associazione e lo collega al movimento. Un documento emesso non si modifica: «Correggi» crea una nuova bozza con gli stessi dati e l\'originale si annulla con il motivo. «Archivia» toglie dall\'elenco i documenti chiusi senza cancellarli.',
       'Nella nota di rimborso ogni spesa è un riquadro numerato («Spesa 1», «Spesa 2») con data, descrizione, importo e la casella del giustificativo; «+ Aggiungi spesa» ne aggiunge un altro.']],
     fr: ['Documents émis', [
-      'Sur téléphone, dans la fiche d\'un document, la barre en bas garde à portée de main « Modifier » et « Émettre » pour un brouillon, « Télécharger le PDF » pour un document émis.',
+      'Sur téléphone, dans la fiche d\'un document, la barre en bas garde à portée de main « Modifier » et « Émettre… » pour un brouillon, « Télécharger le PDF » pour un document émis.',
+      '« Émettre et générer le PDF » demande une confirmation (« Confirmer : émettre le document ») : le numéro attribué est définitif.',
       'Un document annulé se télécharge avec « Télécharger le PDF annulé » : le fichier porte la mention d\'annulation sur chaque page ; l\'original archivé reste inchangé.',
       'Ici se trouvent seulement les documents générés et enregistrés par YouSud (pas les modèles), par type : reçus et quittances, notes d\'honoraires, notes de frais, attestations, autorisations de dépense, déclarations, notes de débit et bons de commande. Pas de factures : YouSud n\'a pas de numéro de TVA.',
       '« + Émettre » : choisissez le type, remplissez les données (préremplies si vous partez d\'un mouvement ou d\'un projet) et regardez l\'aperçu qui se met à jour pendant la saisie. Le document peut être en italien, en français ou bilingue ; les montants sont en euros (grand) et en ariary (petit) au taux du mois ou du mouvement.',

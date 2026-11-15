@@ -192,7 +192,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{t('legend_in')}</div>
           <div className="v num">{e0(totIn)}</div>
-          <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < lastM ? 'var(--navy)' : 'var(--band)'))} tip={mTip(`${t('legend_in')} ${year}`, 'inc')} />
+          <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < lastM ? 'var(--c-in)' : 'var(--band)'))} tip={mTip(`${t('legend_in')} ${year}`, 'inc')} />
           {prevIn ? <div className="vzl"><span>{lg('sull\'anno prima, stessi mesi', 'sur l\'année précédente, mêmes mois')}</span><span>{delta(same(months, 'inc'), same(pm, 'inc'))}</span></div> : null}
           {prevIn ? <div className="s">{`${year - 1}: ${e0(same(pm, 'inc'))}`}</div> : null}
         </div>
@@ -206,7 +206,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{net < -0.005 ? lg('Disavanzo', 'Déficit') : lg('Avanzo', 'Excédent')}</div>
           <div className={`v num ${net < -0.005 ? 'neg' : 'pos'}`}>{e0(net)}</div>
-          {(totIn > 0 || totOut > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: totOut, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: totIn, c: 'var(--navy)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, totIn, totOut)}
+          {(totIn > 0 || totOut > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: totOut, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: totIn, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, totIn, totOut)}
             tip={`${t('legend_in')}: ${e0(totIn)}\n${t('legend_out')}: ${e0(totOut)}`} />
             <div className="vzl"><span>{lg('entrate meno uscite', 'recettes moins dépenses')}</span><span>{net >= 0 ? pc(net, totIn) : ''}</span></div></>}
           <div className="s">{net >= 0 ? lg('le entrate coprono le uscite', 'les recettes couvrent les dépenses') : lg('le uscite superano le entrate', 'les dépenses dépassent les recettes')}</div>
@@ -216,7 +216,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           <div className="l">{t('an_budget_used')}</div>
           <div className={`v num ${totBudget && totOut > totBudget ? 'neg' : ''}`}>{totBudget ? pc(totOut, totBudget) : '–'}</div>
           {totBudget > 0 && <><Viz.Stack segs={[{ v: Math.min(totOut, totBudget), c: 'var(--vz-sp)' }, { v: Math.max(0, totBudget - totOut), c: 'var(--band)' }, { v: Math.max(0, totOut - totBudget), c: 'var(--tax)' }]} max={Math.max(totBudget, totOut)}
-            marks={year === now.getFullYear() ? [{ v: elapsed * totBudget, c: 'var(--navy)', dash: true }] : undefined} tip={`${lg('Previsto', 'Prévu')}: ${e0(totBudget)}\n${lg('Speso', 'Dépensé')}: ${e0(totOut)}`} />
+            marks={year === now.getFullYear() ? [{ v: elapsed * totBudget, c: 'var(--c-in)', dash: true }] : undefined} tip={`${lg('Previsto', 'Prévu')}: ${e0(totBudget)}\n${lg('Speso', 'Dépensé')}: ${e0(totOut)}`} />
             <div className="vzl"><span>{lg('anno trascorso', 'année écoulée')}</span><span>{Math.round(elapsed * 100)}{' '}%</span></div></>}
           <div className="s">{totBudget ? `${lg('su', 'sur')} ${e0(totBudget)} ${lg('previsti', 'prévus')}` : t('an_no_budget')}</div>
         </div>
@@ -253,7 +253,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         </div>
         <BarsCard title={t('an_by_country')} eyebrow={lg('conto da cui si è pagato', 'compte de paiement')}>
           <ul className="bq-flow an-loc">
-            <li><span>{t('italy')}</span><span className="bq-bb"><i style={{ width: `${((itOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--navy)' }} /></span><b className="num">{e0(itOut)}</b></li>
+            <li><span>{t('italy')}</span><span className="bq-bb"><i style={{ width: `${((itOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--c-in)' }} /></span><b className="num">{e0(itOut)}</b></li>
             <li><span>{t('madagascar')}</span><span className="bq-bb"><i style={{ width: `${((mgOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--green-soft)' }} /></span><b className="num">{e0(mgOut)}</b></li>
           </ul>
         </BarsCard>
@@ -277,9 +277,9 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
             <div className="panel-h"><H2 text={lg('Entrate cumulate', 'Recettes cumulées')} icon={null} /><div className="spacer" /><span className="eyebrow">{year}{prevIn ? ` · ${year - 1}` : ""}</span></div>
             <div className="panel-b">
               <Lines lang={lang} cats={MESI[lang]} label={lg('Entrate cumulate', 'Recettes cumulées')}
-                series={[{ name: String(year), color: 'var(--navy)', w: 2.4, vals: cum(months.map((m) => m.inc), lastM) as number[] },
+                series={[{ name: String(year), color: 'var(--c-in)', w: 2.4, vals: cum(months.map((m) => m.inc), lastM) as number[] },
                   ...(prevIn ? [{ name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.inc)) as number[] }] : [])]} />
-              <Legend className="under" items={[{ label: String(year), color: 'var(--navy)', value: e0(totIn) }, ...(prevIn ? [{ label: String(year - 1), color: 'var(--vz-hyp)', value: e0(prevIn) }] : [])]} />
+              <Legend className="under" items={[{ label: String(year), color: 'var(--c-in)', value: e0(totIn) }, ...(prevIn ? [{ label: String(year - 1), color: 'var(--vz-hyp)', value: e0(prevIn) }] : [])]} />
             </div>
           </section>
         </div>

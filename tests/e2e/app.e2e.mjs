@@ -356,7 +356,7 @@ try {
     await p.waitForURL(/\/rimborsi$/);
     // riquadri in alto: quanto dobbiamo (nella valuta della spesa, con il controvalore), giustificativi, rimborsato nell'anno
     const tiles = (await p.locator('.kpis.dk.rbk').innerText()).replace(/[\u00a0\u202f]/g, ' ');
-    assert.match(tiles, /Da rimborsare\s+18\.000 MGA[\s\S]*1 persona[\s\S]*≈ [\d,]+ €/);
+    assert.match(tiles, /Da rimborsare\s+[\d,]+ €[\s\S]*1 persona[\s\S]*18\.000 MGA/);
     assert.match(tiles, /In attesa da[\s\S]*Da documentare\s+0[\s\S]*Rimborsato nel \d{4}\s+0,00 €/);
     assert.equal(await p.locator('.kpis.dk.rbk .kpi').count(), 4);
     // una riga per persona; aprendola: spese, cassa già proposta, un solo tasto «Rimborsa …»
@@ -1049,7 +1049,8 @@ try {
     await p.getByRole('button', { name: /Salva la bozza/ }).click();
     await p.waitForURL(/ok=saved/);
     assert.match(await p.locator('.docprev').innerText(), /BOZZA[\s\S]*Mario Rossi[\s\S]*2\.500,00/);
-    await p.getByRole('button', { name: 'Emetti e genera il PDF' }).click();
+    await p.locator('#emetti > summary').click();   // primo passo: apre la conferma
+    await p.getByRole('button', { name: 'Conferma: emetti il documento' }).click();
     await p.waitForURL(/ok=issued/);
     const [d] = (await pool.query(`select number, status, document_id from issued_docs`)).rows;
     assert.match(d.number, new RegExp(`^RIC-${year}-001$`));

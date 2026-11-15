@@ -56,7 +56,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const mix = mix0.map((x, n) => ({ ...x, color: mixCols[n]! }));
   const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
   const maxPair = Math.max(1, ...pairs.flatMap((p) => [A(p.id).bOut, A(p.id).out]));
-  const C_PLAN = 'var(--vz-plan)', C_SP = 'var(--vz-sp)', C_IN = 'var(--navy)';
+  const C_PLAN = 'var(--vz-plan)', C_SP = 'var(--vz-sp)', C_IN = 'var(--c-in)';   // previsto = blu del «piano», come in Dashboard, Analisi e Finanziamenti; entrate = blu notte
 
   return (
     <div className="stack prj">

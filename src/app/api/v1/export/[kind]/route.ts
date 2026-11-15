@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     if (!data?.length) return NextResponse.json({ error: 'non disponibile per questo ruolo' }, { status: 403 });
     const { data: lbl } = await supabase.from('report_lines').select('direction, key, section_fr, name_fr');
     const frl = new Map((lbl ?? []).map((l) => [`${l.direction}/${l.key}`, l]));
-    const ws = sheet(wb, fr ? 'Compte de caisse' : 'Rendiconto', [
+    const ws = sheet(wb, fr ? 'Compte rendu de caisse' : 'Rendiconto', [
       { header: fr ? 'Poste' : 'Voce', key: 'item', width: 70 }, { header: String(year), key: 'cur', width: 16, fmt: '#,##0.00' },
       { header: String(year - 1), key: 'prev', width: 16, fmt: '#,##0.00' },
     ]);

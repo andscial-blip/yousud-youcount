@@ -117,7 +117,7 @@ export default async function GrantDetail({ params, searchParams }: {
         <div className="kpi">
           <div className="l">{L('Ricevuto', 'Reçu')}</div>
           <div className="v num">{e0(x.rec)}</div>
-          <Viz.Cols vals={win(mRec)} colors={win(mRec).map(() => 'var(--navy)')} tip={winTip(mRec)} />
+          <Viz.Cols vals={win(mRec)} colors={win(mRec).map(() => 'var(--c-in)')} tip={winTip(mRec)} />
           <div className="vzl"><span>{L('del concesso', 'de l\'accordé')}</span><span>{pc(x.rec, granted)}</span></div>
           <div className="s">{tranches.length === 1 ? L('1 incasso', '1 encaissement') : L(`${tranches.length} incassi`, `${tranches.length} encaissements`)}{granted - x.rec > 0.5 ? ` · ${L('da ricevere', 'à recevoir')} ${e0(granted - x.rec)}` : ''}</div>
         </div>
@@ -131,7 +131,7 @@ export default async function GrantDetail({ params, searchParams }: {
         <div className="kpi">
           <div className="l">{L('Disponibile in cassa', 'Disponible en caisse')}</div>
           <div className={`v num ${net < -0.005 ? 'neg' : 'pos'}`}>{e0(net)}</div>
-          {(x.rec > 0 || x.sp > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: x.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: x.rec, c: 'var(--navy)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, x.rec, x.sp)}
+          {(x.rec > 0 || x.sp > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: x.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: x.rec, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, x.rec, x.sp)}
             tip={`${L('Ricevuto', 'Reçu')}: ${e0(x.rec)}\n${L('Speso', 'Dépensé')}: ${e0(x.sp)}`} />
             <div className="vzl"><span>{L('ricevuto meno speso', 'reçu moins dépensé')}</span><span>{net >= 0 ? pc(net, x.rec) : ''}</span></div></>}
           <div className="s">{net < -0.005 ? L('spese anticipate da YouSud', 'dépenses avancées par YouSud') : L('fondi ricevuti e non ancora spesi', 'fonds reçus et pas encore dépensés')}</div>
@@ -143,9 +143,9 @@ export default async function GrantDetail({ params, searchParams }: {
           <div className="panel-h"><H2 text={L('Ricevuto e speso nel tempo', 'Reçu et dépensé dans le temps')} icon={null} /></div>
           <div className="panel-b">{moves.length === 0 ? <p className="muted bq-none">{L('Nessun movimento collegato: il grafico compare con il primo incasso o la prima spesa.', 'Aucun mouvement lié : le graphique apparaît avec le premier encaissement ou la première dépense.')}</p> : (<>
             <Lines cats={axis} lang={lang} label={L('Ricevuto e speso cumulati', 'Reçu et dépensé cumulés')}
-              series={[{ name: L('Ricevuto', 'Reçu'), vals: cum(mRec) as number[], color: 'var(--navy)', w: 2.4 }, { name: L('Speso', 'Dépensé'), vals: cum(mSp) as number[], color: 'var(--vz-sp)', w: 2.4 }]}
+              series={[{ name: L('Ricevuto', 'Reçu'), vals: cum(mRec) as number[], color: 'var(--c-in)', w: 2.4 }, { name: L('Speso', 'Dépensé'), vals: cum(mSp) as number[], color: 'var(--vz-sp)', w: 2.4 }]}
               refs={granted ? [{ v: granted, color: 'var(--vz-plan)', label: L('concesso', 'accordé') }] : undefined} />
-            <Legend className="under" items={[{ label: L('Ricevuto', 'Reçu'), color: 'var(--navy)', value: e0(x.rec) }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)', value: e0(x.sp) },
+            <Legend className="under" items={[{ label: L('Ricevuto', 'Reçu'), color: 'var(--c-in)', value: e0(x.rec) }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)', value: e0(x.sp) },
               ...(granted ? [{ label: L('Concesso', 'Accordé'), color: 'var(--vz-plan)', value: e0(granted) }] : [])]} /></>)}</div>
         </section>
         <section className="panel">

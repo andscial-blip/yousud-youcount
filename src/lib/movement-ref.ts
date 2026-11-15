@@ -17,7 +17,7 @@ export type RefData = {
   recentCats: { income: string[]; expense: string[] };   // codici contabili usati di recente da questa persona
   lastMine: Record<'income' | 'expense', { account_id: string | null; project_id: string | null; payment_method_id: string | null } | null>;
   grants: { id: string; title: string; project_id: string | null }[];
-  aiEnabled: boolean;
+  aiEnabled: boolean; requireDoc: boolean;
 };
 
 export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang): Promise<RefData> {
@@ -66,6 +66,8 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     rates: (fx.data ?? []).map((r) => ({ year: r.year, month: r.month, rate: Number(r.rate) })),
     grants: gr.data ?? [],
     aiEnabled: ai.data?.value === true,
+    // regola «giustificativo obbligatorio» (attiva se non impostata): il modulo la segnala insieme agli altri campi mancanti
+    requireDoc: ((await supabase.from('settings').select('value').eq('key', 'require_document').maybeSingle()).data?.value ?? true) !== false,
     recentCats: { income: recentCats('income'), expense: recentCats('expense') },
     lastMine: { income: lastOf('income'), expense: lastOf('expense') },
     lastRate: last.data?.fx_rate ? { rate: Number(last.data.fx_rate), date: last.data.op_date } : null,

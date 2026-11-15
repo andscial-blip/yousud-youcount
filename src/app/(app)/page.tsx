@@ -120,7 +120,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // chi può verificare va alla pagina di verifica in blocco; gli altri vedono l'elenco nel registro
   const verHref = ['super_admin', 'admin', 'responsabile'].includes(me!.role) ? '/verifica' : '/movimenti?stato=recorded';
   const todo: Todo[] = [];
-  if (toVerify) todo.push({ lvl: 'do', ic: 'check', title: L(`${toVerify} movimenti da verificare`, `${toVerify} mouvements à vérifier`), sub: L('Registrati ma non ancora controllati', 'Comptabilisés mais pas encore contrôlés'),
+  // il compito «da verificare» si mostra solo a chi può verificare: l'operatore lo vedeva senza poterlo aprire (revisione del 15/11)
+  if (toVerify && ['super_admin', 'admin', 'responsabile'].includes(me!.role)) todo.push({ lvl: 'do', ic: 'check', title: L(`${toVerify} movimenti da verificare`, `${toVerify} mouvements à vérifier`), sub: L('Registrati ma non ancora controllati', 'Comptabilisés mais pas encore contrôlés'),
     href: verHref, act: L('Verifica', 'Vérifier') });
   if (dueCount) todo.push({ lvl: 'warn', ic: 'wallet', title: L(`${dueCount} ${dueCount === 1 ? 'spesa da rimborsare' : 'spese da rimborsare'}`, `${dueCount} dépense${dueCount === 1 ? '' : 's'} à rembourser`),
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });

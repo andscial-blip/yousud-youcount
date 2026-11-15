@@ -51,7 +51,7 @@ export function ResetPanel({ lang, c }: { lang: 'it' | 'fr'; c: Record<string, n
       </ul>
       <p className="muted">{L('Restano: conti, categorie, progetti, controparti, utenti, tassi di cambio, impostazioni; giustificativi e documenti emessi restano in archivio, scollegati. La numerazione MOV riparte da 001. Ogni riga eliminata resta nel registro modifiche e nel backup.',
         'Restent : comptes, catégories, projets, tiers, utilisateurs, taux de change, paramètres ; justificatifs et documents émis restent archivés, sans lien. La numérotation MOV repart de 001. Chaque ligne supprimée reste dans l\'historique et dans la sauvegarde.')}</p>
-      <p className={fresh ? 'note ok' : 'note err'}>{fresh ? L(`Backup scaricato il ${bk!.toLocaleString('it-IT', { timeZone: 'Indian/Antananarivo' })}.`, `Sauvegarde téléchargée le ${bk!.toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' })}.`)
+      <p className={fresh ? 'note ok' : 'note err'}>{fresh ? L(`Backup scaricato il ${bk!.toLocaleString('it-IT', { timeZone: 'Indian/Antananarivo' })}.`, `Sauvegarde téléchargée le ${bk!.toLocaleString('fr-FR', { timeZone : 'Indian/Antananarivo' })}.`)
         : L('Prima scarica il backup completo (serve un backup delle ultime 24 ore).', 'Téléchargez d\'abord la sauvegarde complète (moins de 24 heures).')} <a href="/api/v1/backup">{L('Scarica il backup', 'Télécharger la sauvegarde')}</a></p>
       <form action={resetAccounting} className="stack" style={{ gap: 10 }}>
         <input type="hidden" name="movements" value={n('movements')} /><input type="hidden" name="budgets" value={n('budgets')} />

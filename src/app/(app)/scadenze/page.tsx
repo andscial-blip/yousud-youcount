@@ -209,7 +209,7 @@ export default async function Deadlines({ searchParams }: {
         <Link className="kpi" href={`${href({ periodo: '30', tipo: 'inc' })}#elenco`}>
           <div className="l">{L('Da incassare in 30 gg', 'À encaisser sous 30 j')}</div>
           <div className="v num">{eur0(toGetEur)}</div>
-          {toGetEur > 0 && <><Viz.Cols vals={getDays} colors={getDays.map((v) => (v ? 'var(--vz-real)' : 'var(--band)'))} tip={tipOf(toGet, true)} />
+          {toGetEur > 0 && <><Viz.Cols vals={getDays} colors={getDays.map((v) => (v ? 'var(--c-in)' : 'var(--band)'))} tip={tipOf(toGet, true)} />
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 30))}</span></div></>}
           <div className="s">{toGet.length === 0 ? L('nessun incasso atteso', 'aucun encaissement attendu') : toGet.length === 1 ? L('1 incasso atteso', '1 encaissement attendu') : L(`${toGet.length} incassi attesi`, `${toGet.length} encaissements attendus`)}</div>
         </Link>

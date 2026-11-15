@@ -108,7 +108,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
         <div className="ptitle"><h1>{isMenu ? 'Menu' : phoneSub ? <><span className="not-phone">{sec?.label}</span><span className="only-phone">{sub!.label}</span></> : sec?.label ?? labels.brand}</h1>{sec?.hint && !isMenu && <p>{sec.hint}</p>}</div>
         <div className="pctl">
           <span className="only-phone">{phoneSync}</span>
-          <button type="button" className="btn ghost searchbtn" onClick={() => setCmd(true)} aria-label={`${labels.search} (⌘K)`} title={`${labels.search} (⌘K)`}>
+          <button type="button" className="btn ghost searchbtn" onClick={() => setCmd(true)} aria-label={`${labels.search} ⌘K`} title={`${labels.search} (⌘K)`}>
             <CIcon name="search" size={16} /><span className="not-phone">{labels.search}</span><kbd className="not-phone">⌘K</kbd>
           </button>
           <Link className="btn ghost askbtn" href="/chiedi" title={labels.lang === 'fr' ? 'Demander à l\'IA' : 'Chiedi all\'AI'} aria-label={labels.lang === 'fr' ? 'Demander à l\'IA' : 'Chiedi all\'AI'}>

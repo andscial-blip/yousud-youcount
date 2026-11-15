@@ -130,7 +130,7 @@ export function FlowMini({ data, curM, lang, names, hrefFor }: {
 // Elenco a barre orizzontali (come «Dove vanno le spese» / righe .cbar di Cairn), con percentuale sul totale.
 // many: ogni riga con un colore diverso della palette (categorie, controparti); altrimenti un solo colore
 // un solo colore per elenco (blu ardesia, verde delle entrate o rosso tenue delle uscite): il confronto è sulla lunghezza, non sul colore
-export function HBars({ rows, lang, color = 'var(--navy)', total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number; many?: boolean }) {
+export function HBars({ rows, lang, color = 'var(--c-in)', total }: { rows: { label: string; value: number; href?: string; color?: string }[]; lang: Lang; color?: string; total?: number; many?: boolean }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   const tot = total ?? rows.reduce((s, r) => s + r.value, 0);
   // nome e importo su una riga (il nome va a capo, mai troncato), barra sotto
@@ -177,7 +177,7 @@ export function BudgetBar({ budget, spent }: { budget: number; spent: number }) 
   return (
     <span className="bbar" aria-hidden="true">
       <i className="bb" style={{ width: `${(budget / max) * 100}%`, background: C_BUDGET }} />
-      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: 'var(--c-out)', borderRadius: 5 }} />
+      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: 'var(--c-out)', borderRadius: 8 }} />
       {over && <i className="bs" style={{ left: `${(budget / max) * 100}%`, width: `${((spent - budget) / max) * 100}%`, background: C_OVER }} />}
       {budget > 0 && <i className="bm" style={{ left: `calc(${(budget / max) * 100}% - 1px)` }} />}
     </span>

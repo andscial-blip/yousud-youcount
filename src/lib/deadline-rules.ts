@@ -41,9 +41,9 @@ export const DL_RULES: Rule[] = [
 
 // Soglie sulle entrate dell'esercizio (art. 13 e 14 CTS, come modificati dalla L. 104/2024).
 export const THRESHOLDS: { v: number; it: string; fr: string }[] = [
-  { v: 60000, it: 'Rendiconto per cassa in forma aggregata (fino a 60.000 €, art. 13 c.2-bis CTS)', fr: 'Compte de caisse sous forme agrégée (jusqu\'à 60 000 €, art. 13 al.2-bis CTS)' },
+  { v: 60000, it: 'Rendiconto per cassa in forma aggregata (fino a 60.000 €, art. 13 c.2-bis CTS)', fr: 'Compte rendu de caisse sous forme agrégée (jusqu\'à 60 000 €, art. 13 al.2-bis CTS)' },
   { v: 100000, it: 'Pubblicazione dei compensi (oltre 100.000 €, art. 14 c.2 CTS)', fr: 'Publication des rémunérations (au-delà de 100 000 €, art. 14 al.2 CTS)' },
-  { v: 300000, it: 'Rendiconto per cassa per enti senza personalità giuridica (fino a 300.000 €, art. 13 c.2 CTS)', fr: 'Compte de caisse pour organismes sans personnalité juridique (jusqu\'à 300 000 €, art. 13 al.2 CTS)' },
+  { v: 300000, it: 'Rendiconto per cassa per enti senza personalità giuridica (fino a 300.000 €, art. 13 c.2 CTS)', fr: 'Compte rendu de caisse pour organismes sans personnalité juridique (jusqu\'à 300 000 €, art. 13 al.2 CTS)' },
   { v: 1000000, it: 'Bilancio sociale (oltre 1 milione, art. 14 c.1 CTS)', fr: 'Bilan social (au-delà d\'1 million, art. 14 al.1 CTS)' },
 ];
 

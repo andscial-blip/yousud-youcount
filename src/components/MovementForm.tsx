@@ -278,12 +278,16 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     toAmount: kind === 'transfer' && !parseAmount(toAmountTxt),
     category: kind !== 'transfer' && !categoryId, project: kind === 'expense' && !projectId,
     rate: currency === 'MGA' && !rate, noDocReason: kind !== 'transfer' && noDoc && noDocReason.trim().length < 5,
+    // descrizione obbligatoria per registrare (un movimento «Uscita» senza testo non si riconosce più); giustificativo se la regola è attiva:
+    // tutti i campi mancanti si vedono insieme, non a tappe (revisione del 15/11)
+    desc: kind !== 'transfer' && description.trim().length < 3,
+    doc: kind !== 'transfer' && R.requireDoc && !noDoc && docs.length === 0,
   };
 
   // riepilogo accanto ai pulsanti: quali campi mancano per registrare
   const missingNames = ([['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
-    ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['noDocReason', t.f_doc]] as const)
-    .filter(([k]) => missing[k]).map(([, l]) => l.toLowerCase());
+    ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.f_doc]] as const)
+    .filter(([k]) => missing[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
 
   function errorText(msg: string) {
     const code = msg.split(':')[0].trim();
@@ -448,7 +452,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                     onDone={(r) => { setScanQueue((q) => q.slice(1)); upload(r); }}
                     onCancel={() => setScanQueue((q) => q.slice(1))} />
       )}
-      <section className="panel doc-first" id="giust"><div className="panel-h"><h2>{t.f_doc}</h2>{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
+      <section className="panel doc-first" id="giust"><div className="panel-h"><h2>{t.f_doc}</h2>{touched && missing.doc && <span className="ferr">{t.f_required}</span>}{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
           <input type="file" accept="image/*" capture="environment" className="vh-file" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
@@ -529,7 +533,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
           {amount ? <span className="hint amt-echo">{t.f_amount_read}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
-            {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
+            {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
             {currency === 'MGA' && amount % 1 ? <> · {t.f_mga_round}</> : null}</span> : null}
           {/* cassa in contanti sotto zero: avviso, non blocco (di solito è la spesa sul conto sbagliato o un prelievo non registrato) */}
           {!initial && kind === 'expense' && account?.kind === 'cash' && account.balance != null && amount != null && amount > 0 && amount > account.balance + 0.005
@@ -677,8 +681,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         </div>
         <div className={`${aiCls('description')} span2`}>
           <label htmlFor="desc">{t.f_description}</label>
-          <input className="input" id="desc" maxLength={500} placeholder={t.f_description_ph} value={description}
+          <input className="input" id="desc" aria-invalid={touched && missing.desc ? true : undefined} maxLength={500} placeholder={t.f_description_ph} value={description}
                  onChange={(e) => { setDescription(e.target.value); confirm('description'); }} />
+          {req(missing.desc)}
           {aiTag('description')}
         </div>
       </div></section>
@@ -710,7 +715,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         )}
         <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : due ? t.f_save_due : t.f_record}</button>
         <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint}</span>
-        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{t.f_missing_list}: {missingNames.join(', ')}</span>}
+        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{t.f_missing_list}{t.lang_code === 'fr' ? '\u00a0' : ''}: {missingNames.join(', ')}</span>}
       </div>
     </form>
   );

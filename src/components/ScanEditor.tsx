@@ -117,7 +117,7 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
           <div className="scan-stage">
             {!img ? <p className="muted">{t.scan_working}</p> : (
               <div style={{ position: 'relative', width: '100%', aspectRatio: `${img.width} / ${img.height}`, maxHeight: '62vh' }}>
-                <canvas ref={preview} style={{ width: '100%', height: '100%', display: 'block', borderRadius: 6 }} />
+                <canvas ref={preview} style={{ width: '100%', height: '100%', display: 'block', borderRadius: 8 }} />
                 <svg ref={svg} viewBox={`0 0 ${img.width} ${img.height}`} preserveAspectRatio="none"
                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}
                      onPointerMove={(e) => { if (drag !== null) setCorners((cs) => cs.map((p, i) => (i === drag ? point(e) : p))); }}
@@ -142,7 +142,7 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
             </div>
             {result ? (
               <div style={{ position: 'relative', width: '100%', aspectRatio: `${result.width} / ${result.height}`, maxHeight: '58vh' }}>
-                <canvas ref={out} style={{ width: '100%', height: '100%', display: 'block', borderRadius: 6, boxShadow: '0 1px 6px rgba(0,0,0,.18)', background: '#fff' }} />
+                <canvas ref={out} style={{ width: '100%', height: '100%', display: 'block', borderRadius: 8, boxShadow: '0 1px 6px rgba(0,0,0,.18)', background: '#fff' }} />
                 {busy && <div className="scan-busy">{t.scan_working}</div>}
               </div>
             ) : <p className="muted">{t.scan_working}</p>}

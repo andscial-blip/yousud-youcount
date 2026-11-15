@@ -5,7 +5,7 @@ import { Empty, ErrorNote } from '@/components/Page';
 import { BalancesTable, type Balance } from '@/components/Balances';
 import { CountryMark } from '@/components/CountryMark';
 import { CashCounter } from '@/components/CashCounter';
-import { Viz } from '@/components/Charts';
+import { Viz, fixedColors } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +48,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   // totale di un paese: nella sua valuta se i conti ne hanno una sola, altrimenti in euro
   const native = (xs: Balance[]) => { const cs = [...new Set(xs.map((r) => r.currency))]; return cs.length === 1 ? { v: xs.reduce((a, r) => a + Number(r.balance), 0), c: cs[0]! } : { v: sumEur(xs), c: 'EUR' as const }; };
   const it = byLoc('IT'), mg = byLoc('MG'), itEur = sumEur(it), mgEur = sumEur(mg), tot = itEur + mgEur;
-  const seg = (xs: Balance[]) => [...xs].filter((r) => eur(r) > 0).sort((a, b) => eur(b) - eur(a)).slice(0, 6).map((r, i) => ({ v: eur(r), c: `var(--dn${i + 1})`, n: nm(lang, r), r }));
+  const seg = (xs: Balance[]) => [...xs].filter((r) => eur(r) > 0).sort((a, b) => eur(b) - eur(a)).slice(0, 6).map((r, i, all) => ({ v: eur(r), c: fixedColors(all.map((x) => nm(lang, x)))[i]!, n: nm(lang, r), r }));   // conti: colori delle voci, non quelli di entrate/uscite/saldo
   const tipOf = (xs: Balance[]) => xs.map((r) => `${nm(lang, r)}: ${money(r.balance, r.currency, lang)}`).join('\n');
   const advEur = sumEur(adv), advN = native(adv);
   const holder = (r: Balance) => nm(lang, r).replace(/^(Anticipi|Avances)\s*[–-]\s*/i, '');
@@ -62,7 +62,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         <div className={`v num${n.v < 0 ? ' neg' : ''}${lg(n.c !== 'EUR' ? e0(totEur) : money(n.v, n.c, lang))}`}>{n.c !== 'EUR' ? e0(totEur) : money(n.v, n.c, lang)}</div>
         {sg.length > 0 && <><Viz.Stack segs={sg} max={sg.reduce((a, x) => a + x.v, 0)} tip={tipOf(xs)} />
           <div className="vzl"><span>{top!.n}</span><span>{xs.length === 1 ? L('1 conto', '1 compte') : L(`${xs.length} conti`, `${xs.length} comptes`)}</span></div></>}
-        <div className="s">{n.c !== 'EUR' ? `${money(n.v, n.c, lang)} · ${L('cambio', 'taux')} ${money(fx, 'MGA', lang)}` : top ? `${top.n}: ${pc(top.v, sg.reduce((a, x) => a + x.v, 0))}` : L('nessun conto', 'aucun compte')}</div>
+        <div className="s">{n.c !== 'EUR' ? `${money(n.v, n.c, lang)} · ${L('cambio', 'taux')} ${money(fx, 'MGA', lang)}` : top ? `${top.n}${lang === 'fr' ? '\u00a0' : ''}: ${pc(top.v, sg.reduce((a, x) => a + x.v, 0))}` : L('nessun conto', 'aucun compte')}</div>
       </a>);
   };
 

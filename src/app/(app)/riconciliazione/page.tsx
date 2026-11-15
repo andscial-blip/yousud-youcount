@@ -72,7 +72,7 @@ export default async function Reconciliation({ searchParams }: {
                     <span className={`cdp ${st === 'g' ? 'ok' : st === 'y' ? 'mid' : 'late'}`}>{s.last ? (lang === 'fr' ? `il y a ${age} j` : `${age} giorni fa`) : t('rec_never')}</span></div>
                   {/* quanta parte dei movimenti del conto è già spuntata su un estratto */}
                   <div className="rc-vz">
-                    <Viz.Stack segs={[{ v: s.done, c: 'var(--vz-real)' }, { v: s.open.length, c: 'var(--vz-sp)' }]} max={Math.max(1, s.done + s.open.length)}
+                    <Viz.Stack segs={[{ v: s.done, c: 'var(--pp4)' }, { v: s.open.length, c: 'var(--pp2)' }]} max={Math.max(1, s.done + s.open.length)}
                       tip={lang === 'fr' ? `Pointés : ${s.done}\nÀ pointer : ${s.open.length}` : `Spuntati: ${s.done}\nDa spuntare: ${s.open.length}`} />
                     <div className="vzl"><span>{lang === 'fr' ? `pointés ${s.done}` : `spuntati ${s.done}`}</span><span>{lang === 'fr' ? `à pointer ${s.open.length}` : `da spuntare ${s.open.length}`}</span></div>
                   </div>

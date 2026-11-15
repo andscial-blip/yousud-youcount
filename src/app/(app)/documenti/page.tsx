@@ -24,6 +24,8 @@ const TYPE: Record<string, [string, string]> = {
   contract: ['Contratto', 'Contrat'], other: ['Altro', 'Autre'],
 };
 
+const soft = (x: string) => x.replace(/([_\-.])/g, '$1\u200b');
+
 export default async function Documents({ searchParams }: { searchParams: Promise<{ q?: string; f?: string; ok?: string; err?: string }> }) {
   const { q: q0 = '', f = '', ok, err } = await searchParams;
   const term = q0.trim().slice(0, 60).toLowerCase();
@@ -72,15 +74,16 @@ export default async function Documents({ searchParams }: { searchParams: Promis
       <Panel>
         {rows.length === 0 ? <EmptyState title={t('empty_docs')} badge="clip" />
           : shown.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('empty_search_docs')}</p> : (
-          <table className="t">
+          <table className="t" data-cards>
             <thead><tr><th>{t('doc_name')}</th><th>{t('doc_movement')}</th><th>{t('date')}</th><th className="r">{t('amount')}</th>
               <th className="hm">{t('type')}</th><th className="hm">{t('doc_uploaded')}</th></tr></thead>
             <tbody>
               {shown.map(({ d, m, more, name }) => (
                 <tr key={d.id}>
-                  <td>{m ? <Link className="rowlink" href={`/movimenti/${m.id}`}>{name}</Link>
-                    : orphanUrl.get(d.id) ? <a href={orphanUrl.get(d.id)} className="dl-link"><Ico name="download" />{name}</a> : name}</td>
-                  <td>{m ? <><span className="num">{m.ref ?? t('st_draft')}</span> <span className="muted">· {m.description}</span>
+                  {/* nomi di file lunghi: possono andare a capo dopo «_», «-» e «.» (mai dentro una parola) */}
+                  <td data-label="">{m ? <Link className="rowlink" href={`/movimenti/${m.id}`}>{soft(name)}</Link>
+                    : orphanUrl.get(d.id) ? <a href={orphanUrl.get(d.id)} className="dl-link"><Ico name="download" />{soft(name)}</a> : soft(name)}</td>
+                  <td data-label={t('doc_movement')}>{m ? <><span className="num">{m.ref ?? t('st_draft')}</span> <span className="muted">· {m.description}</span>
                     {more > 0 && <span className="muted"> · +{more}</span>}</> : (
                     <div className="orph">
                       <span className="chip warn">{t('doc_orphan')}</span>
@@ -90,10 +93,10 @@ export default async function Documents({ searchParams }: { searchParams: Promis
                         <button className="btn small" type="submit">{FR ? 'Lier' : 'Collega'}</button>
                       </form>}
                     </div>)}</td>
-                  <td className="num">{date(d.doc_date ?? m?.doc_date ?? m?.op_date ?? null)}</td>
-                  <td className="r num">{d.total && d.currency ? money(d.total, d.currency, lang) : m ? money(Number(m.amount) * m.sign, m.currency, lang) : '–'}</td>
-                  <td className="hm"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><span className="kind" style={{ background: 'var(--surface-2)', color: 'var(--slate-2)' }}><Ico name={TYPE_ICON[d.doc_type] ?? 'invoice'} /></span>{TYPE[d.doc_type]?.[lang === 'fr' ? 1 : 0] ?? d.doc_type}</span></td>
-                  <td className="num hm">{date(d.created_at)}</td>
+                  <td className="num" data-label={t('date')}>{date(d.doc_date ?? m?.doc_date ?? m?.op_date ?? null)}</td>
+                  <td className="r num" data-label={t('amount')}>{d.total && d.currency ? money(d.total, d.currency, lang) : m ? money(Number(m.amount) * m.sign, m.currency, lang) : '–'}</td>
+                  <td className="hm" data-label={t('type')}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><span className="kind" style={{ background: 'var(--surface-2)', color: 'var(--slate-2)' }}><Ico name={TYPE_ICON[d.doc_type] ?? 'invoice'} /></span>{TYPE[d.doc_type]?.[lang === 'fr' ? 1 : 0] ?? d.doc_type}</span></td>
+                  <td className="num hm" data-label={t('doc_uploaded')}>{date(d.created_at)}</td>
                 </tr>
               ))}
             </tbody>

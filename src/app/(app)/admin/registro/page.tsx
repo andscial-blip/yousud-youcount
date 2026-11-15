@@ -16,7 +16,7 @@ const TABLE: Record<string, [string, string]> = {
   counterparties: ['Fornitori e donatori', 'Fournisseurs et donateurs'], counterparty_private: ['Dati personali controparti', 'Données personnelles'],
   project_members: ['Accessi ai progetti', 'Accès aux projets'], grants: ['Finanziamenti', 'Financements'],
   budget_lines: ['Budget', 'Budget'], cash_counts: ['Conte di cassa', 'Comptages de caisse'], fx_rates: ['Tassi di cambio', 'Taux de change'],
-  organizations: ['Ente', 'Organisation'], report_lines: ['Righe del rendiconto', 'Lignes du compte de caisse'],
+  organizations: ['Ente', 'Organisation'], report_lines: ['Righe del rendiconto', 'Lignes du compte rendu de caisse'],
   category_groups: ['Gruppi di codici', 'Groupes de codes'], payment_methods: ['Modalità di pagamento', 'Moyens de paiement'],
   bank_reconciliations: ['Riconciliazioni bancarie', 'Rapprochements bancaires'],
   budget_items: ['Righe del preventivo', 'Lignes du budget'], budgets: ['Preventivi', 'Budgets'], issued_docs: ['Documenti emessi', 'Documents émis'],
