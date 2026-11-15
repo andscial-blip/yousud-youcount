@@ -2367,3 +2367,11 @@ a.cal-hit { color: inherit; }
   input.input[type="date"]::-webkit-date-and-time-value, input.input[type="month"]::-webkit-date-and-time-value,
   input.input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.35em; }
 }
+/* Tastiera aperta sul telefono (visto sull'iPhone vero il 15/11): la barra in basso saliva sopra la tastiera coprendo la pagina
+   e l'intestazione fissa finiva sotto l'orologio. Mentre si scrive in un campo la barra in basso sparisce e l'intestazione
+   scorre con la pagina. */
+@media (max-width: 640px) and (pointer: coarse) {
+  html:has(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, textarea:focus) .bnav { display: none; }
+  html:has(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, textarea:focus) .phead { position: static; }
+}
+#giust { scroll-margin-top: 130px; }

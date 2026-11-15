@@ -420,6 +420,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     }, 600);
     return () => clearTimeout(h);
   }, [draftOn, pending, draftKey, kind, opDate, amountTxt, accountId, categoryId, projectId, grantId, cpId, methodId, description, notes]);
+  // un messaggio di errore non resta in pagina dopo che si è corretto ciò che mancava
+  useEffect(() => { setError(null); }, [noDoc, noDocReason, docs.length]);
   const dropDraft = () => { try { localStorage.removeItem(draftKey); } catch { /* idem */ } setPending(null); };
   const resumeDraft = () => {
     const d = pending; if (!d) return;
@@ -441,7 +443,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                     onDone={(r) => { setScanQueue((q) => q.slice(1)); upload(r); }}
                     onCancel={() => setScanQueue((q) => q.slice(1))} />
       )}
-      <section className="panel doc-first"><div className="panel-h"><h2>{t.f_doc}</h2>{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
+      <section className="panel doc-first" id="giust"><div className="panel-h"><h2>{t.f_doc}</h2>{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
           <input type="file" accept="image/*" capture="environment" className="vh-file" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
@@ -490,13 +492,13 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <div className="field">
           <label htmlFor="nodoc">{t.f_no_doc_reason}</label>
           <input className="input" id="nodoc" value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
+          {req(missing.noDocReason)}
           <div className="chips-row" role="group" aria-label={t.f_no_doc_reason}>
             {t.f_no_doc_presets.split('|').map((r) => <button type="button" key={r} className="chip-btn" aria-pressed={noDocReason === r} onClick={() => setNoDocReason(r)}>{r}</button>)}
           </div>
           {/* senza giustificativo la spesa si documenta con un'autocertificazione: si può prepararla subito dopo la registrazione */}
           {kind === 'expense' && !recordedLocked && (
             <label className="check aut-opt"><input type="checkbox" checked={wantAut} onChange={(e) => setWantAut(e.target.checked)} /> {t.f_aut_after}</label>)}
-          {req(missing.noDocReason)}
         </div>
       )}
       <div className={aiCls('docDate')}>
@@ -688,7 +690,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           </ul>
         </div>
       )}
-      {error && <div className="note err" role="alert">{error}</div>}
+      {error && <div className="note err" role="alert">{error}
+        {/* l'errore sul giustificativo si risolve in cima al modulo: un pulsante porta lì (visto sul telefono vero il 15/11) */}
+        {error === t.err_document_required && <button type="button" className="btn small" style={{ marginTop: 8 }} onClick={() => document.getElementById('giust')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t.f_go_doc}</button>}
+      </div>}
 
       <div className="factions">
         {(!initial || initial.status === 'draft') && !due && (
