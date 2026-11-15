@@ -10,8 +10,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#FFFFFF',
-    theme_color: '#44546A',
+    // gli stessi colori dell'app (layout.tsx), così l'avvio non cambia colore
+    background_color: '#F3F5F8',
+    theme_color: '#F3F5F8',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

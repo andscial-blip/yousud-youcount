@@ -20,7 +20,7 @@ export const SECTIONS: Section[] = [
   { id: 'mov', key: 'nav_movements', hint: 'hint_mov', ic: 'list', also: ['/nuovo'], subs: [
     { href: '/movimenti', key: 'sub_register' }, { href: '/verifica', key: 'nav_verify', roles: RESP }, { href: '/rimborsi', key: 'nav_reimb' }, { href: '/controparti', key: 'sub_parties' }] },
   { id: 'cassa', key: 'nav_accounts', hint: 'hint_cassa', ic: 'bank', subs: [
-    { href: '/conti', key: 'nav_accounts' }, { href: '/anticipi', key: 'nav_advances' },
+    { href: '/conti', key: 'sub_balances' }, { href: '/anticipi', key: 'nav_advances' },
     { href: '/riconciliazione', key: 'sub_rec', roles: STAFF }, { href: '/cambi', key: 'sub_fx' }] },
   // Preventivo in due schede (12/11): le righe con riquadri e grafici, e il riepilogo; il confronto con il consuntivo è in Analisi
   { id: 'bud', key: 'nav_budget', hint: 'hint_bud', ic: 'wallet', roles: STAFF, subs: [
@@ -28,7 +28,7 @@ export const SECTIONS: Section[] = [
   { id: 'prj', key: 'nav_projects', hint: 'hint_prj', ic: 'brief', subs: [
     { href: '/progetti', key: 'nav_projects' }, { href: '/finanziamenti', key: 'nav_grants' }] },
   { id: 'anal', key: 'nav_analysis', hint: 'hint_anal', ic: 'chart', roles: STAFF, subs: [
-    { href: '/analisi', key: 'nav_analysis' }, { href: '/report', key: 'nav_reports' }, { href: '/chiedi', key: 'nav_ask' }] },
+    { href: '/analisi', key: 'sub_charts' }, { href: '/report', key: 'nav_reports' }, { href: '/chiedi', key: 'nav_ask' }] },
   // Documenti in tre sottoschede (scelta 7B): rendiconti (prospetto aggiornato e versioni approvate), emessi, giustificativi
   { id: 'docs', key: 'nav_documents', hint: 'hint_docs', ic: 'receipt', subs: [
     { href: '/rendiconto', key: 'sub_statements', roles: STAFF }, { href: '/documenti-emessi', key: 'sub_issued' }, { href: '/documenti', key: 'sub_receipts' }] },

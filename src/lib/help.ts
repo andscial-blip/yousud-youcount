@@ -1,3 +1,4 @@
+import { frTypo } from './i18n';
 // Guida dell'app: una voce per ogni scheda. Lo stesso testo compare in «Come funziona questa scheda» (riga delle sotto-schede di ogni
 // pagina) e nella pagina Guida, così non ci sono due versioni da tenere allineate. Va aggiornata quando cambia una funzione.
 export type HelpEntry = { href: string; sec: string; it: [string, string[]]; fr: [string, string[]] };
@@ -94,12 +95,12 @@ export const HELP: HelpEntry[] = [
   { href: '/documenti', sec: 'docs',
     it: ['Giustificativi', [
       'Archivio di scontrini, fatture e ricevute caricati con i movimenti. Ogni file prende il nome del movimento a cui è collegato; lo stesso file caricato due volte non crea un doppione (si riconosce dall\'impronta).',
-      'Da qui si cercano i giustificativi e si vede a quale movimento appartengono. I documenti generati dall\'app (ricevute, notule…) sono in Documenti › Emessi; i rendiconti approvati in Documenti › Rendiconti.',
+      'Da qui si cercano i giustificativi e si vede a quale movimento appartengono. I documenti generati dall\'app (ricevute, notule…) sono in Documenti › Documenti emessi; i rendiconti approvati in Documenti › Rendiconti.',
       '«Scarica tutti (ZIP)» raccoglie in un solo file i giustificativi dell\'anno o del mese scelto, con i nomi data_MOV-… (per il commercialista). Un giustificativo rimasto senza movimento si scarica dal suo nome e si collega scrivendo il numero del movimento.',
       '«Scarica tutti (ZIP)» salta i file che non sono più nell\'archivio e li elenca nel file FILE_MANCANTI.txt dentro lo ZIP.']],
     fr: ['Justificatifs', [
       'Archive des tickets, factures et reçus chargés avec les mouvements. Chaque fichier prend le nom du mouvement lié ; le même fichier chargé deux fois ne crée pas de doublon (reconnu par son empreinte).',
-      'Ici on recherche les justificatifs et on voit à quel mouvement ils appartiennent. Les documents générés par l\'application (reçus, notes d\'honoraires…) sont dans Documents › Émis ; les comptes rendus approuvés dans Documents › Comptes rendus.',
+      'Ici on recherche les justificatifs et on voit à quel mouvement ils appartiennent. Les documents générés par l\'application (reçus, notes d\'honoraires…) sont dans Documents › Documents émis ; les comptes rendus approuvés dans Documents › Comptes rendus.',
       '« Tout télécharger (ZIP) » rassemble dans un seul fichier les justificatifs de l\'année ou du mois choisi, nommés date_MOV-… (pour le comptable). Un justificatif sans mouvement se télécharge depuis son nom et se lie en saisissant le numéro du mouvement.',
       '« Tout télécharger (ZIP) » ignore les fichiers qui ne sont plus dans l’archive et les énumère dans le fichier FICHIERS_MANQUANTS.txt du ZIP.']] },
   { href: '/controparti', sec: 'mov',
@@ -108,7 +109,7 @@ export const HELP: HelpEntry[] = [
       'Una controparte collegata ai movimenti permette di filtrare il registro e di vedere nelle Analisi i principali fornitori e donatori.']],
     fr: ['Tiers', [
       'Fournisseurs, donateurs, bailleurs et bénéficiaires. Les données personnelles (code fiscal, adresse) ne sont visibles que par les responsables et administrateurs.',
-      'Une contrepartie liée aux mouvements permet de filtrer le registre et de voir dans les Analyses les principaux fournisseurs et donateurs.']] },
+      'Un tiers lié aux mouvements permet de filtrer le registre et de voir dans les Analyses les principaux fournisseurs et donateurs.']] },
   { href: '/verifica', sec: 'mov',
     it: ['Verifica in blocco', [
       'Un responsabile controlla i movimenti registrati da altri e li segna come verificati (il super amministratore può verificare anche i propri). Un movimento verificato non si modifica più: un errore si corregge con uno storno.',
@@ -347,3 +348,6 @@ export function helpFor(path: string): HelpEntry | null {
   }
   return best;
 }
+
+// tipografia francese: spazio non divisibile prima di : ; ? ! » e dopo «
+for (const e of HELP) e.fr = [frTypo(e.fr[0]), e.fr[1].map(frTypo)];

@@ -23,7 +23,8 @@ export function date(d: string | null | undefined) {
 export function dateTime(d: string | null | undefined, lang: Lang = 'it') {
   if (!d) return '–';
   return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', {
-    dateStyle: 'short', timeStyle: 'short', timeZone: 'Indian/Antananarivo', // ora del Madagascar, indicata nel testo
+    // anno a quattro cifre come nel resto dell'app (P3-5); ora del Madagascar, indicata nel testo
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Indian/Antananarivo',
   }).format(new Date(d));
 }
 

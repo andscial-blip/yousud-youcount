@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-type Labels = { email: string; password: string; btn: string; busy: string; bad: string; offline: string };
+type Labels = { email: string; password: string; btn: string; busy: string; bad: string; offline: string; show: string; hide: string };
 
 export function LoginForm({ labels: L }: { labels: Labels }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
 
   // link email arrivato sull'indirizzo base: i dati di accesso sono dopo il #, li gestisce /auth/callback
   useEffect(() => {
@@ -26,6 +27,8 @@ export function LoginForm({ labels: L }: { labels: Labels }) {
     if (error) {
       setBusy(false);
       setError(navigator.onLine ? L.bad : L.offline);
+      // dopo un errore si riparte dalla password, già selezionata
+      const pw = document.getElementById('password') as HTMLInputElement | null; pw?.focus(); pw?.select();
       return;
     }
     const next = new URLSearchParams(window.location.search).get('next');
@@ -40,7 +43,10 @@ export function LoginForm({ labels: L }: { labels: Labels }) {
       </div>
       <div className="field">
         <label htmlFor="password">{L.password}</label>
-        <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
+        <div className="pw-wrap">
+          <input className="input" id="password" name="password" type={show ? 'text' : 'password'} autoComplete="current-password" required />
+          <button type="button" className="pw-eye" aria-pressed={show} onClick={() => setShow((v) => !v)}>{show ? L.hide : L.show}</button>
+        </div>
       </div>
       {error && <div className="note err" role="alert">{error}</div>}
       <button className="btn primary" type="submit" disabled={busy} style={{ width: '100%', minHeight: 46, marginTop: 4 }}>{busy ? L.busy : L.btn}</button>

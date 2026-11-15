@@ -2324,3 +2324,11 @@ table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
   html[data-scrolled] .phead .pbrand, html[data-scrolled] .phead .pctl > *, html[data-scrolled] .phead .helpline { display: none; }
   html[data-scrolled] .phead .phead-row { padding-top: 8px; padding-bottom: 2px; }
 }
+/* «Mostra» la password: pulsante dentro il campo */
+.pw-wrap { position: relative; }
+.pw-wrap .input { padding-right: 96px; }
+.pw-eye { position: absolute; right: 4px; top: 4px; bottom: 4px; min-width: 84px; padding: 0 10px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--ink); font: 600 13px var(--f-ui); cursor: pointer; }
+/* un solo stile di collegamento nel testo: niente blu predefinito del browser (P3-1) */
+:where(main, .sheet) :where(p, .note, .muted, .hint, .s, small, .hcat-f, .empty) > :where(a:not([class])) { color: var(--slate-2); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+/* (specificità zero e solo dentro il testo: righe e schede cliccabili restano come sono) */
+a.cal-hit { color: inherit; }

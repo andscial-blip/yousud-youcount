@@ -70,6 +70,8 @@ const it = {
   not_configured_long: 'Mancano le variabili NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY. Copia .env.example in .env.local e inserisci i valori del progetto Supabase. Nessun dato viene mostrato finché il collegamento non è attivo.',
   account_suspended: 'Account sospeso. Rivolgiti all\'amministratore di YouSud.',
   account_noprofile: 'Account senza profilo. Rivolgiti all\'amministratore di YouSud.',
+  sub_balances: 'Saldi', sub_charts: 'Grafici',
+  pw_show: 'Mostra', pw_hide: 'Nascondi',
   f_doc_dup_of: 'del', f_doc_dup_mov: 'già allegato a {m}: è la stessa spesa?',
   f_recent: 'Usati di recente', f_from_last: 'Proposto dal tuo ultimo movimento: controlla che sia giusto.', f_no_doc_presets: 'Venditore senza ricevuta|Ricevuta persa|Trasporto locale senza biglietto|Mancia o piccola spesa',
   f_draft_found: 'Hai un inserimento non concluso:', f_draft_files: 'Gli allegati non sono stati conservati e vanno ricaricati.', f_draft_resume: 'Riprendi', f_draft_drop: 'Scarta',
@@ -227,7 +229,7 @@ const it = {
   hint_docs: 'Rendiconti, documenti emessi e giustificativi', sub_overview: 'Panoramica', sub_fx: 'Tassi di cambio',
   hint_anal: 'Andamenti, report e domande all’AI', hint_adem: 'Scadenze, documenti emessi e controparti',
   hint_set: 'Account, utenti, categorie e dati', sec_duties: 'Adempimenti',
-  sub_register: 'Registro', sub_receipts: 'Giustificativi', sub_statements: 'Rendiconti', sub_issued: 'Emessi', sub_rec: 'Riconciliazione', sub_parties: 'Controparti',
+  sub_register: 'Registro', sub_receipts: 'Giustificativi', sub_statements: 'Rendiconti', sub_issued: 'Documenti emessi', sub_rec: 'Riconciliazione', sub_parties: 'Controparti',
   sub_users: 'Utenti', sub_cost_centres: 'Progetti', sub_org: 'Ente e documenti',
   cmd_search: 'Cerca', cmd_ph: 'Cerca un movimento o vai a una sezione…', cmd_mov: 'Cerca «{q}» nei movimenti', cmd_go: 'Vai a', cmd_none: 'Nessuna sezione con questo nome',
   year_label: 'Anno', sync_ok: 'Sincronizzato', sync_off: 'Offline', sync_wait: 'in attesa',
@@ -286,8 +288,8 @@ const fr: Record<Key, string> = {
   coming: 'En construction', error_load: 'Données indisponibles',
   dash_it: 'Trésorerie en Italie', dash_it_s: 'banque, caisse et comptes en ligne en EUR',
   dash_mg: 'Trésorerie à Madagascar', dash_mg_s: 'banque, caisse et mobile money en MGA',
-  dash_verify_s: 'mouvements enregistrés pas encore vérifiés', dash_drafts: 'Mes brouillons',
-  dash_drafts_s: 'à compléter et enregistrer', balances: 'Soldes des comptes',
+  dash_verify_s: 'mouvements comptabilisés pas encore vérifiés', dash_drafts: 'Mes brouillons',
+  dash_drafts_s: 'à compléter et comptabiliser', balances: 'Soldes des comptes',
   balances_note: 'Les soldes incluent les mouvements enregistrés et vérifiés ; les extournes sont déjà déduites.',
   verify_intro: 'Mouvements enregistrés en attente de vérification. La personne qui a saisi un mouvement ne peut pas le vérifier.',
   verify_btn: 'Vérifier', verify_own: 'saisi par vous', verify_done: 'Vérifié.', entered_by: 'Saisi par',
@@ -321,6 +323,8 @@ const fr: Record<Key, string> = {
   not_configured_long: 'Les variables NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY sont manquantes. Copiez .env.example dans .env.local et indiquez les valeurs du projet Supabase. Aucune donnée n\'est affichée tant que la connexion n\'est pas active.',
   account_suspended: 'Compte suspendu. Adressez-vous à l\'administrateur de YouSud.',
   account_noprofile: 'Compte sans profil. Adressez-vous à l\'administrateur de YouSud.',
+  sub_balances: 'Soldes', sub_charts: 'Graphiques',
+  pw_show: 'Afficher', pw_hide: 'Masquer',
   f_doc_dup_of: 'du', f_doc_dup_mov: 'déjà joint à {m} : est-ce la même dépense ?',
   f_recent: 'Utilisés récemment', f_from_last: 'Proposé d’après votre dernier mouvement : vérifiez qu’il est correct.', f_no_doc_presets: 'Vendeur sans reçu|Reçu perdu|Transport local sans billet|Pourboire ou petite dépense',
   f_draft_found: 'Vous avez une saisie non terminée :', f_draft_files: 'Les pièces jointes n’ont pas été conservées et doivent être rechargées.', f_draft_resume: 'Reprendre', f_draft_drop: 'Abandonner',
@@ -413,7 +417,7 @@ const fr: Record<Key, string> = {
   q_pending: 'à envoyer', q_title: 'Sur le téléphone, en attente d’envoi', q_send: 'Envoyer maintenant', q_sending: 'Envoi en cours…', q_delete: 'Supprimer',
   q_delete_confirm: 'Supprimer ce mouvement du téléphone ? Il n’a pas encore été envoyé et sera perdu.',
   q_err: 'non envoyé', q_wait: 'en attente', q_empty: 'Aucun mouvement en attente : tout a été envoyé.',
-  q_edit_offline: 'Pour modifier un mouvement déjà enregistré, il faut le réseau.', q_files: 'pièces',
+  q_edit_offline: 'Pour modifier un mouvement déjà comptabilisé, il faut le réseau.', q_files: 'pièces',
   q_signout_warn: 'Des mouvements enregistrés sur le téléphone n’ont pas encore été envoyés. Si vous vous déconnectez maintenant, ils seront perdus. Se déconnecter quand même ?',
   q_server_log: 'Derniers envois reçus par le serveur', q_no_ai: 'Sans réseau, la lecture IA n’est pas disponible : remplissez les champs à la main.',
   bk_title: 'Sauvegarde des données', bk_btn: 'Télécharger la sauvegarde complète', bk_go: 'Télécharger la sauvegarde',
@@ -465,12 +469,12 @@ const fr: Record<Key, string> = {
   reimb_no_doc: 'pièce manquante', reimb_selected: 'dépenses', reimb_one: 'dépense', reimb_recent: 'Derniers remboursements', reimb_done: 'Remboursement enregistré :',
   dash_reimb: 'dépenses à rembourser', dash_reimb_one: 'dépense à rembourser',
   nav_rec: 'Rapprochement bancaire',
-  hint_home: 'Situation, choses à faire et échéances', hint_mov: 'Registre, remboursements, justificatifs et contreparties',
+  hint_home: 'Situation, choses à faire et échéances', hint_mov: 'Registre, remboursements, justificatifs et tiers',
   hint_cassa: 'Comptes, caisse, avances, banque et taux', hint_prj: 'Projets et financements', hint_guide: 'Mode d\'emploi, pas à pas', sub_data: 'Données et sécurité', nav_ask: 'Demander à l\'IA', hint_bud: 'Budget annuel : lignes, versions et récapitulatif', sub_budget_lines: 'Budget détaillé', sub_budget_sum: 'Récapitulatif',
   hint_docs: 'Comptes rendus, documents émis et justificatifs', sub_overview: 'Vue d\'ensemble', sub_fx: 'Taux de change',
-  hint_anal: 'Tendances, rapports et questions à l’IA', hint_adem: 'Échéances, documents émis et contreparties',
+  hint_anal: 'Tendances, rapports et questions à l’IA', hint_adem: 'Échéances, documents émis et tiers',
   hint_set: 'Compte, utilisateurs, catégories et données', sec_duties: 'Obligations',
-  sub_register: 'Registre', sub_receipts: 'Justificatifs', sub_statements: 'Comptes rendus', sub_issued: 'Émis', sub_rec: 'Rapprochement', sub_parties: 'Tiers',
+  sub_register: 'Registre', sub_receipts: 'Justificatifs', sub_statements: 'Comptes rendus', sub_issued: 'Documents émis', sub_rec: 'Rapprochement', sub_parties: 'Tiers',
   sub_users: 'Utilisateurs', sub_cost_centres: 'Projets', sub_org: 'Association et documents',
   cmd_search: 'Rechercher', cmd_ph: 'Rechercher un mouvement ou aller à une section…', cmd_mov: 'Rechercher « {q} » dans les mouvements', cmd_go: 'Aller à', cmd_none: 'Aucune section avec ce nom',
   year_label: 'Année', sync_ok: 'Synchronisé', sync_off: 'Hors ligne', sync_wait: 'en attente',
@@ -479,7 +483,7 @@ const fr: Record<Key, string> = {
   dh_bud: 'Budget des dépenses {y}', dh_bud_of: 'du budget', dh_spent: 'dépensé', dh_committed: '+ engagé', dh_bud_total: 'budget {v}',
   dh_bud_none: 'Aucun budget approuvé pour {y}.', dh_bud_make: 'Préparer le budget', dh_today: 'aujourd’hui {d}', dh_more: 'Tout afficher ({n} de plus)',
   dh_where: 'Où vont les dépenses', dh_where_s: 'par groupe de codes', dh_others: 'Autres', dh_in_days: 'dans {n} j', dh_late_days: 'en retard de {n} j', dh_today_chip: 'aujourd’hui',
-  dh_verify: '{n} mouvements à vérifier', dh_verify_s: 'enregistrés, pas encore contrôlés', dh_drafts: '{n} brouillons à compléter', dh_drafts_s: 'vos brouillons pas encore enregistrés',
+  dh_verify: '{n} mouvements à vérifier', dh_verify_s: 'comptabilisés, pas encore contrôlés', dh_drafts: '{n} brouillons à compléter', dh_drafts_s: 'vos brouillons pas encore enregistrés',
   dh_open: 'Ouvrir', dh_go: 'Voir', dh_all_ok: 'Rien à faire : tout est en ordre.', dh_bud_over: '{n} codes au-dessus du budget', dh_bud_over_s: 'dépenses enregistrées au-dessus de la ligne du budget approuvé',
   dh_by_prj: 'Dépenses par projet', dh_months: 'mois', dh_runway: 'Autonomie de trésorerie', dh_runway_s: 'trésorerie moins remboursements dus, sur la dépense moyenne des 3 derniers mois',
   dh_burn: 'Dépense moyenne mensuelle', dh_due: 'Remboursements dus', dh_accounts: 'Comptes', dh_accounts_all: 'Tous les comptes',
@@ -505,7 +509,12 @@ const fr: Record<Key, string> = {
   err_reconciled: 'Mouvement coché dans un rapprochement bancaire : montant, compte, date et statut ne se modifient pas. Un administrateur peut annuler le dernier rapprochement.',
 };
 
-const DICT: Record<Lang, Record<Key, string>> = { it, fr };
+// Tipografia francese (P2-10): spazio non divisibile prima di : ; ? ! » e dopo «, così il segno non va a capo da solo.
+// Si applica una volta a tutto il dizionario; le chiavi tecniche (codici, elenchi separati da |) non contengono questi casi.
+export const frTypo = (v: string) => v.replace(/ ([:;?!»])/g, '\u00A0$1').replace(/« /g, '«\u00A0');
+const frT = Object.fromEntries(Object.entries(fr).map(([k, v]) => [k, frTypo(v)])) as Record<Key, string>;
+
+const DICT: Record<Lang, Record<Key, string>> = { it, fr: frT };
 
 export const normLang = (v: string | null | undefined): Lang => (v === 'fr' ? 'fr' : 'it');
 export const translator = (lang: Lang) => (k: Key) => DICT[lang][k];

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
 import { STAFF, can, requireMe } from '@/lib/session';
@@ -22,6 +23,8 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : '';
   const VIEWS = ['panoramica', 'entrate', 'uscite', 'progetti', 'andamento', 'budget'] as const;
   const view = (VIEWS as readonly string[]).includes(sp.vista ?? '') ? sp.vista as (typeof VIEWS)[number] : 'panoramica';
+  // i progetti hanno la loro pagina, con budget e speso: qui resta solo il collegamento (P2-20, decisione 9 della revisione)
+  if (view === 'progetti') redirect(`/progetti${sp.anno ? `?anno=${sp.anno}` : ''}`);
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, STAFF)) return <Denied text={t('only_staff')} />;
   let lq = supabase.from('v_ledger').select('kind, amount_eur, category_id, project_id, project_name, counterparty_id, account_id, month')
@@ -172,20 +175,32 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   return (
     <div className="stack prj an">
       <ErrorNote prefix={t('error_load')} error={error} />
+      {/* il selettore delle viste sta prima degli indicatori: su telefono si sceglie la vista senza scorrere (P2-22) */}
+      <section className="panel fin-bar an-bar">
+        <nav className="segs" aria-label={lg('Viste', 'Vues')}>{tabs.map(([k, l]) => (k === 'progetti'
+          ? <Link key={k} href={`/progetti?anno=${year}`}>{l} →</Link>
+          : <Link key={k} href={q({ vista: k })} aria-current={(view === k) ? "page" : undefined} scroll={false}>{l}</Link>))}</nav>
+        <FilterBar className="bare" action="/analisi" lang={lang} hidden={{ anno: String(year), vista: view }}
+          inline={<select className="input" name="progetto" defaultValue={prj} aria-label={t('project')}>
+            <option value="">{t('an_all_projects')}</option>
+            {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>} />
+      </section>
+
       <div className="kpis dk prk">
         <div className="kpi">
           <div className="l">{t('legend_in')}</div>
           <div className="v num">{e0(totIn)}</div>
           <Viz.Cols vals={months.map((m) => m.inc)} colors={months.map((_, k) => (k < lastM ? 'var(--navy)' : 'var(--band)'))} tip={mTip(`${t('legend_in')} ${year}`, 'inc')} />
-          <div className="vzl"><span>{lg('sull\'anno prima, stessi mesi', 'sur l\'année précédente, mêmes mois')}</span><span>{delta(same(months, 'inc'), same(pm, 'inc'))}</span></div>
-          <div className="s">{prevIn ? `${year - 1}: ${e0(same(pm, 'inc'))}` : lg(`nessuna entrata nel ${year - 1}`, `aucune recette en ${year - 1}`)}</div>
+          {prevIn ? <div className="vzl"><span>{lg('sull\'anno prima, stessi mesi', 'sur l\'année précédente, mêmes mois')}</span><span>{delta(same(months, 'inc'), same(pm, 'inc'))}</span></div> : null}
+          {prevIn ? <div className="s">{`${year - 1}: ${e0(same(pm, 'inc'))}`}</div> : null}
         </div>
         <div className="kpi">
           <div className="l">{t('legend_out')}</div>
           <div className="v num">{e0(totOut)}</div>
           <Viz.Cols vals={months.map((m) => m.out)} colors={months.map((_, k) => (k < lastM ? 'var(--vz-sp)' : 'var(--band)'))} tip={mTip(`${t('legend_out')} ${year}`, 'out')} />
-          <div className="vzl"><span>{lg('sull\'anno prima, stessi mesi', 'sur l\'année précédente, mêmes mois')}</span><span>{delta(same(months, 'out'), same(pm, 'out'))}</span></div>
-          <div className="s">{prevOut ? `${year - 1}: ${e0(same(pm, 'out'))}` : lg(`nessuna uscita nel ${year - 1}`, `aucune dépense en ${year - 1}`)}</div>
+          {prevOut ? <div className="vzl"><span>{lg('sull\'anno prima, stessi mesi', 'sur l\'année précédente, mêmes mois')}</span><span>{delta(same(months, 'out'), same(pm, 'out'))}</span></div> : null}
+          {prevOut ? <div className="s">{`${year - 1}: ${e0(same(pm, 'out'))}`}</div> : null}
         </div>
         <div className="kpi">
           <div className="l">{net < -0.005 ? lg('Disavanzo', 'Déficit') : lg('Avanzo', 'Excédent')}</div>
@@ -205,15 +220,6 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           <div className="s">{totBudget ? `${lg('su', 'sur')} ${e0(totBudget)} ${lg('previsti', 'prévus')}` : t('an_no_budget')}</div>
         </div>
       </div>
-
-      <section className="panel fin-bar an-bar">
-        <nav className="segs" aria-label={lg('Viste', 'Vues')}>{tabs.map(([k, l]) => <Link key={k} href={q({ vista: k })} aria-current={(view === k) ? "page" : undefined} scroll={false}>{l}</Link>)}</nav>
-        <FilterBar className="bare" action="/analisi" lang={lang} hidden={{ anno: String(year), vista: view }}
-          inline={<select className="input" name="progetto" defaultValue={prj} aria-label={t('project')}>
-            <option value="">{t('an_all_projects')}</option>
-            {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>} />
-      </section>
 
       {view === 'panoramica' && <>
         {trend}
@@ -253,28 +259,10 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         {groupTable}
       </>}
 
-      {view === 'progetti' && <>
-        <div className="prj-two">
-          <DonutCard title={lg('Dove vanno le uscite', 'Où vont les dépenses')} eyebrow={lg('per progetto', 'par projet')} rows={prjRows} center={t('legend_out')} tot={prjRows.reduce((a, r) => a + r.v, 0)} empty={t('none')} />
-          <section className="panel">
-            <div className="panel-h"><H2 text={lg('Previsto e speso', 'Prévu et dépensé')} icon={null} /><div className="spacer" />
-              <Legend items={[{ label: lg('Previsto', 'Prévu'), color: 'var(--vz-plan)' }, { label: lg('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
-            <div className="panel-b">{pairRows.length === 0 ? <p className="muted bq-none">{t('none')}</p> : (
-              <ul className="bq-pairs prj-pairs">{pairRows.map((r) => (
-                <li key={r.k}><Link className="bq-pn" href={`/progetti/${r.k}?anno=${year}`}>{r.label}</Link>
-                  <span className="bq-pb"><i className={r.b > 0 ? '' : 'z'} style={{ width: `${((r.b / pairMax) * 100).toFixed(1)}%`, background: 'var(--vz-plan)' }} />
-                    <i className={r.s > 0 ? '' : 'z'} style={{ width: `${((r.s / pairMax) * 100).toFixed(1)}%`, background: r.b > 0 && r.s > r.b ? 'var(--tax)' : 'var(--vz-sp)' }} /></span>
-                  <span className="bq-pv num"><b>{r.b ? e0(r.b) : '–'}</b><b>{e0(r.s)}</b></span></li>))}</ul>)}</div>
-          </section>
-        </div>
-        <p className="muted small" style={{ margin: 0 }}><Link href={`/progetti?anno=${year}`}>{lg('Schede dei progetti con preventivo e residuo', 'Fiches des projets avec budget et reste')} →</Link></p>
-      </>}
-
       {view === 'andamento' && <>
-        {trend}
         <div className="prj-two">
           <section className="panel">
-            <div className="panel-h"><H2 text={lg('Uscite cumulate', 'Dépenses cumulées')} icon={null} /><div className="spacer" /><span className="eyebrow">{year} · {year - 1}</span></div>
+            <div className="panel-h"><H2 text={lg('Uscite cumulate', 'Dépenses cumulées')} icon={null} /><div className="spacer" /><span className="eyebrow">{year}{prevOut ? ` · ${year - 1}` : ""}</span></div>
             <div className="panel-b">
               <Lines lang={lang} cats={MESI[lang]} label={lg('Uscite cumulate', 'Dépenses cumulées')}
                 refs={totBudget ? [{ v: totBudget, color: 'var(--vz-plan)', label: lg('preventivo', 'budget') }] : undefined}
@@ -285,7 +273,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
             </div>
           </section>
           <section className="panel">
-            <div className="panel-h"><H2 text={lg('Entrate cumulate', 'Recettes cumulées')} icon={null} /><div className="spacer" /><span className="eyebrow">{year} · {year - 1}</span></div>
+            <div className="panel-h"><H2 text={lg('Entrate cumulate', 'Recettes cumulées')} icon={null} /><div className="spacer" /><span className="eyebrow">{year}{prevIn ? ` · ${year - 1}` : ""}</span></div>
             <div className="panel-b">
               <Lines lang={lang} cats={MESI[lang]} label={lg('Entrate cumulate', 'Recettes cumulées')}
                 series={[{ name: String(year), color: 'var(--navy)', w: 2.4, vals: cum(months.map((m) => m.inc), lastM) as number[] },

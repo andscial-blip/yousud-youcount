@@ -294,7 +294,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <div className="panel-h"><H2 icon={null} text={L('Note', 'Notes')} /><div className="spacer" /><span className="eyebrow">{L('condivise', 'partagées')}</span></div>
             <div className="panel-b">
               <DashNotes text={notes?.text ?? ''} lang={lang} canWrite={me!.role !== 'read_only'}
-                meta={notes?.at ? `${notes.by_name ?? ''} · ${new Date(notes.at).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'short' })}` : ''} />
+                meta={notes?.at ? `${notes.by_name ?? ''} · ${new Date(notes.at).toLocaleString(loc, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''} />
             </div>
           </section>
         </div>

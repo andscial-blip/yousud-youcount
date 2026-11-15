@@ -9,10 +9,12 @@ export function AutoTranslate({ ids }: { ids: string[] }) {
   const router = useRouter();
   useEffect(() => {
     const todo = ids.filter((i) => !asked.has(i)).slice(0, 40);
-    if (!todo.length || !navigator.onLine) return;
+    // se il server ha già risposto di no (AI spenta o ruolo senza permesso) non si richiama a ogni apertura del Registro
+    let off = false; try { off = sessionStorage.getItem('yc-notr') === '1'; } catch { /* memoria non disponibile */ }
+    if (!todo.length || !navigator.onLine || off) return;
     todo.forEach((i) => asked.add(i));
     fetch('/api/v1/translate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: todo }) })
-      .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.done) router.refresh(); }).catch(() => {});
+      .then((r) => { if (!r.ok) { try { sessionStorage.setItem('yc-notr', '1'); } catch { /* idem */ } return null; } return r.json(); }).then((j) => { if (j?.done) router.refresh(); }).catch(() => {});
   }, [ids, router]);
   return null;
 }

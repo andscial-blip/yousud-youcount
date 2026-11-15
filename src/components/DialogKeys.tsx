@@ -24,10 +24,12 @@ export function DialogKeys() {
         if (!current) origin = lastFocus;
         current = d;
         if (!d.contains(document.activeElement)) {
-          // il primo campo del modulo, se c'è; altrimenti la scheda stessa (così il lettore di schermo ne legge il titolo)
+          // il primo campo del modulo, se c'è; altrimenti il primo comando della scheda
           const field = d.querySelector<HTMLElement>('.sheet-b input:not([type="hidden"]):not([disabled]), .sheet-b select, .sheet-b textarea');
           if (field && visible(field) && window.matchMedia('(min-width: 641px)').matches) field.focus({ preventScroll: true });
-          else { if (!d.hasAttribute('tabindex')) d.setAttribute('tabindex', '-1'); d.focus({ preventScroll: true }); }
+          // su telefono il primo comando della scheda (di solito «Chiudi»): non si aggiunge alcun attributo alla scheda,
+          // perché è disegnata dal server e un attributo in più farebbe fallire l'idratazione delle parti che arrivano dopo
+          else items(d)[0]?.focus({ preventScroll: true });
         }
       } else {
         current = null;

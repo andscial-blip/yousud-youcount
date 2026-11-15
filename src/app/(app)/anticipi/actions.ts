@@ -196,7 +196,7 @@ export async function signDelivery(id: string, receiverPng: string, giverPng: st
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const amt = money(Number(r.authorized_amount ?? r.amount), r.currency, lang);
   const now = new Date();
-  const stamp = now.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { timeZone: 'Indian/Antananarivo', dateStyle: 'short', timeStyle: 'short' });
+  const stamp = now.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { timeZone: 'Indian/Antananarivo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const gName = giverName.trim().slice(0, 120) || me.full_name;
   const bytes = await renderDeliveryPdf({
     org: ente, title: L('Ricevuta di consegna di contanti', 'Reçu de remise d’espèces'),

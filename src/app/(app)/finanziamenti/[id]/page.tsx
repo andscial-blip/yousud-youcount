@@ -90,8 +90,18 @@ export default async function GrantDetail({ params, searchParams }: {
         <span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? L('in corso', 'en cours') : L('chiuso', 'clôturé')}</span>
         {resp && <div className="g-act">
           <Link className="btn" href={`${back}?modifica=1`} scroll={false}>{L('Modifica', 'Modifier')}</Link>
-          <form action={setGrantStatus}><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value={g.status === 'active' ? 'closed' : 'active'} />
-            <button className="btn" type="submit">{g.status === 'active' ? L('Chiudi', 'Clôturer') : L('Riapri', 'Rouvrir')}</button></form>
+          {/* la chiusura chiede conferma (P2-23); la riapertura no, perché non toglie nulla */}
+          {g.status === 'active' ? (
+            <details className="pd-act">
+              <summary className="btn">{L('Chiudi', 'Clôturer')}</summary>
+              <form action={setGrantStatus} className="pd-form"><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value="closed" />
+                <p className="muted">{L('Un finanziamento chiuso non compare più tra quelli a cui collegare nuovi movimenti. I movimenti già collegati restano. Si può riaprire.',
+                  'Un financement clôturé n’apparaît plus parmi ceux auxquels relier de nouveaux mouvements. Les mouvements déjà reliés restent. Il peut être rouvert.')}</p>
+                <button className="btn primary" type="submit">{L('Conferma la chiusura', 'Confirmer la clôture')}</button></form>
+            </details>
+          ) : (
+            <form action={setGrantStatus}><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value="active" />
+              <button className="btn" type="submit">{L('Riapri', 'Rouvrir')}</button></form>)}
         </div>}
       </section>
 

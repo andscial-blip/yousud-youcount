@@ -461,7 +461,9 @@ try {
     await p.waitForURL(/ok=logo/);
     assert.equal(await p.locator('.g-head .dmark.has img').count(), 1);
     assert.equal((await pool.query(`select count(*)::int n from counterparty_logos`)).rows[0].n, 1);
-    await p.getByRole('button', { name: 'Chiudi', exact: true }).click();
+    // la chiusura chiede conferma
+    await p.locator('.g-head summary', { hasText: 'Chiudi' }).click();
+    await p.getByRole('button', { name: 'Conferma la chiusura' }).click();
     await p.waitForURL(/ok=1/);
     assert.match(await p.locator('.g-head').innerText(), /chiuso/);
     await p.getByRole('button', { name: 'Riapri' }).click();
@@ -640,9 +642,10 @@ try {
     await p.goto(`${base}/analisi?vista=uscite`);
     await p.getByText('Uscite per gruppo di spesa e preventivo').waitFor();
     await p.locator('.an .bq-donut svg.donut').first().waitFor();
-    await p.locator('.an-bar').getByRole('link', { name: 'Progetti' }).click();
-    await p.waitForURL(/vista=progetti/);
-    await p.locator('.an .bq-pairs li').first().waitFor();
+    // «Progetti» non è più una vista di Analisi: porta alla pagina dei progetti
+    await p.locator('.an-bar').getByRole('link', { name: /Progetti/ }).click();
+    await p.waitForURL((u) => u.pathname === '/progetti');
+    await p.goto(`${base}/analisi?vista=uscite`);
     await p.locator('.an-bar').getByRole('link', { name: 'Andamento' }).click();
     await p.waitForURL(/vista=andamento/);
     assert.equal(await p.locator('.an .prj-two .chart-wrap').count(), 2, 'uscite ed entrate cumulate');
@@ -1053,7 +1056,10 @@ try {
     }
     await p.goto(`${base}/report?tipo=mensile&anno=${year}`);
     const ExcelJS = require('exceljs');
-    const r = await p.request.get(`${base}/api/v1/export/report?tipo=mensile&anno=${year}`);
+    // nella serie completa la prima compilazione di questa rotta supera a volte i 30 secondi: si misura il tempo invece di fallire
+    const t0 = Date.now();
+    const r = await p.request.get(`${base}/api/v1/export/report?tipo=mensile&anno=${year}`, { timeout: 120000 });
+    console.log(`  (Excel del report mensile in ${Math.round((Date.now() - t0) / 1000)} s)`);
     const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await r.body());
     const ws = wb.worksheets[0];
     const tot = ws.getRow(ws.rowCount - 1).values.filter((v) => typeof v === 'number');

@@ -19,7 +19,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <section className="auth-card" aria-labelledby="t">
         <div className="auth-brand"><Logo size={72} /><h1 id="t" className="yc-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></h1><p>{t('app_tagline')}</p></div>
         {supabaseConfigured ? (
-          <LoginForm labels={{ email: t('email'), password: t('password'), btn: t('login_btn'), busy: t('login_busy'), bad: t('login_bad'), offline: t('login_offline') }} />
+          <LoginForm labels={{ email: t('email'), password: t('password'), btn: t('login_btn'), busy: t('login_busy'), bad: t('login_bad'), offline: t('login_offline'), show: t('pw_show'), hide: t('pw_hide') }} />
         ) : <div className="note err">{t('not_configured')}</div>}
         {sent && <div className="note ok" role="status" style={{ marginTop: 14 }}>{t('forgot_sent')}</div>}
         {err === 'link' && <div className="note err" style={{ marginTop: 14 }}>{t('link_err')}</div>}
