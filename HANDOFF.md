@@ -219,3 +219,11 @@ Da fare (i più pesanti): colori delle voci che cambiano fra italiano e francese
   francese: «justificatif» ovunque, «Codes comptables»; «Codici contabili» al posto di «Categorie»; un solo codice trovato = scelto; aiuto per Chiedi all'AI e Altro;
   campi obbligatori con asterisco, aria-required, aria-describedby e fuoco sul primo errore; pastiglia «automatica» nelle scadenze ricavate dai dati.
 - Verifiche: unit 35/35, db 52/52, e2e 52/53 nel giro completo (la prova dei documenti emessi è passata da sola: riavvio del server), layout 0 problemi IT 375/768/1440 e FR 768; FR 375 «Remboursements» spezzato corretto dopo.
+
+## 16/11 — velocità
+- Causa principale: regole di accesso (RLS) che chiamavano app.me_org()/app.has_role()/app.can_see_movement() a ogni riga.
+  Migrazione `20261116000100_rls_speed.sql`: (select …) attorno alle funzioni sull'utente (calcolate una volta per interrogazione),
+  movements_select riscritta in linea, collegamenti ai movimenti senza ripetere can_see_movement (lo fa già la regola di movements).
+  Stessi permessi: test:db 52/52. Locale: count(*) su 1.017 movimenti 154 ms → 2 ms. **In produzione solo dopo il via libera di Andrea.**
+- Registro: conteggio «da verificare» in parallelo. Scheda movimento: storno d'origine, traduzione e collegamenti dei file in parallelo.
+- e2e completo: 51/53, i due falliti (riconciliazione, documenti emessi) passano da soli o con le prove che li precedono (server di sviluppo riavviato per memoria).

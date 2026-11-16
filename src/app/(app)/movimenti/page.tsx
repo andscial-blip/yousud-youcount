@@ -66,7 +66,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     return q as Q;
   };
   const admin = can(me, ['super_admin', 'admin']);
-  const [{ data, error, count }, { data: sums }, { data: projects }, { data: accounts }, { data: cats }, { data: cps }, { data: pms }, { count: allCount }, { data: bk }] = await Promise.all([
+  const [{ data, error, count }, { data: sums }, { data: projects }, { data: accounts }, { data: cats }, { data: cps }, { data: pms }, { count: allCount }, { data: bk }, { count: nRec0 }] = await Promise.all([
     apply(supabase.from('movements')
       .select(`id, ref, op_date, kind, status, demo, description, amount, currency, sign, amount_eur, reverses_id, no_doc_reason, reimb_status, paid_by, docs:movement_documents(count),
              account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name), counterparty:counterparties(name),
@@ -81,6 +81,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     supabase.from('payment_methods').select('id, name_it, name_fr').order('sort'),
     admin ? supabase.from('movements').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: 0 }),
     admin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
+    // «da verificare» conta anche i giroconti, come Dashboard e Verifica (i totali di entrate e uscite invece li escludono); in parallelo, non dopo
+    apply(supabase.from('movements').select('id', { count: 'exact', head: true })).eq('status', 'recorded'),
   ]);
   const total = count ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
@@ -104,8 +106,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const idx = new Map(keys.map((k, i) => [k, i] as const));
   const bIn = keys.map(() => 0), bOut = keys.map(() => 0), bN = keys.map(() => 0);
   let nIn = 0, nOut = 0;
-  // «da verificare» conta anche i giroconti, come Dashboard e Verifica (i totali di entrate e uscite invece li escludono)
-  const nRec = (await apply(supabase.from('movements').select('id', { count: 'exact', head: true })).eq('status', 'recorded')).count ?? 0;
+  const nRec = nRec0 ?? 0;
   for (const r of sr) {
     const i = idx.get(keyOf(r.op_date)), v = Number(r.amount_eur ?? 0) * r.sign;
     if (r.kind === 'income') nIn++; else if (r.kind === 'expense') nOut++;

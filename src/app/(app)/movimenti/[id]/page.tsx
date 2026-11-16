@@ -46,8 +46,8 @@ export default async function MovementDetail({ params, searchParams }: {
       method:payment_methods(name_it, name_fr)`).eq('id', id).maybeSingle<M>();
   if (!m) notFound();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const origRef = m.reverses_id ? (await supabase.from('movements').select('ref').eq('id', m.reverses_id).maybeSingle<{ ref: string }>()).data?.ref ?? null : null;
-  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }] = await Promise.all([
+  // velocità (16/11): tutte le letture che dipendono solo dal movimento partono insieme (prima tre erano in fila)
+  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }, { data: orig }, { data: tr }] = await Promise.all([
     supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
     supabase.rpc('user_directory'),
@@ -58,7 +58,10 @@ export default async function MovementDetail({ params, searchParams }: {
     supabase.from('self_certs').select('id, number, declarant, declarant_role, place, reason, lang, document_id, signed_at, signed_by')
       .eq('movement_id', id).maybeSingle<{ id: string; number: string; declarant: string; declarant_role: string | null; place: string | null;
         reason: string; lang: string; document_id: string | null; signed_at: string | null; signed_by: string | null }>(),
+    m.reverses_id ? supabase.from('movements').select('ref').eq('id', m.reverses_id).maybeSingle<{ ref: string }>() : Promise.resolve({ data: null }),
+    supabase.from('movement_translations').select('source, it, fr').eq('movement_id', m.id).maybeSingle(),
   ]);
+  const origRef = (orig as { ref: string } | null)?.ref ?? null;
   const recDates = ((recs ?? []) as unknown as { side: string; rec: { statement_date: string } | null }[])
     .map((r) => r.rec?.statement_date).filter(Boolean) as string[];
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
@@ -70,10 +73,9 @@ export default async function MovementDetail({ params, searchParams }: {
       return { ...l.document!, path, name: docName(m.ref, l.seq, path, l.document!.file_name) };
     });
   const bucket = supabase.storage.from('documents');
-  const signed = await Promise.all(docs.map(async (d) => ({
-    open: (await bucket.createSignedUrl(d.path, 600)).data?.signedUrl,
-    save: (await bucket.createSignedUrl(d.path, 600, { download: d.name })).data?.signedUrl,
-  })));
+  // i due collegamenti di ogni file insieme, non uno dopo l'altro
+  const signed = await Promise.all(docs.map(async (d) => { const [o, sv] = await Promise.all([bucket.createSignedUrl(d.path, 600), bucket.createSignedUrl(d.path, 600, { download: d.name })]);
+    return { open: o.data?.signedUrl, save: sv.data?.signedUrl }; }));
   const resp = me && RESP.includes(me.role);
   const strict = fe?.value !== false;
   // il super amministratore verifica anche i propri movimenti; per gli altri vale «quattro occhi»
@@ -87,7 +89,6 @@ export default async function MovementDetail({ params, searchParams }: {
   const superAdmin = me?.role === 'super_admin';
   const canReopen = superAdmin && m.status === 'verified' && !rev && !m.reverses_id;
   const FR = lang === 'fr';
-  const { data: tr } = await supabase.from('movement_translations').select('source, it, fr').eq('movement_id', m.id).maybeSingle();
   // autocertificazione: per una spesa senza giustificativo (o con l'AUT già emessa), non verificata, non da chi legge soltanto
   const writer = Boolean(me && me.role !== 'read_only');
   const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
