@@ -195,7 +195,7 @@ export default async function Deadlines({ searchParams }: {
         <Link className="kpi" href={`${href({ periodo: '14', tipo: '' })}#elenco`}>
           <div className="l">{L('Prossimi 14 gg', '14 prochains j')}</div>
           <div className="v num">{soon}</div>
-          {soon > 0 && <><Viz.Cols vals={soonDays} colors={soonDays.map((v) => (v ? 'var(--vz-plan)' : 'var(--band)'))} tip={tipOf(soonL)} />
+          {soon > 0 && <><Viz.Cols vals={soonDays} colors={soonDays.map((v) => (v ? 'var(--slate-2)' : 'var(--band)'))} tip={tipOf(soonL)} />
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 14))}</span></div></>}
           <div className="s">{soonL[0] ? (soonL[0].date === td ? L('la prima oggi', 'la première aujourd\'hui') : L(`la prima il ${dm(soonL[0].date)}`, `la première le ${dm(soonL[0].date)}`)) : L('niente in arrivo', 'rien à venir')}</div>
         </Link>

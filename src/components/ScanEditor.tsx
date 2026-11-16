@@ -163,7 +163,7 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
           </div>
         )}
 
-        <div className="factions" style={{ padding: '0 16px 16px', position: 'static', background: 'none' }}>
+        <div className="factions scan-acts" style={{ padding: '0 16px 16px', position: 'static', background: 'none' }}>
           {step === 'crop' ? (
             <>
               <button type="button" className="btn" disabled={!img || busy}

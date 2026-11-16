@@ -43,7 +43,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
     bq,
     supabase.from('counterparties').select('id, name'),
     supabase.from('accounts').select('id, location'),
-    supabase.from('projects').select('id, name').order('name'),
+    supabase.from('projects').select('id, name, created_at').order('name'),
     supabase.rpc('budget_compare', { p_year: year }),
   ]);
   const L = (g: { name_it: string; name_fr: string | null }) => (lang === 'fr' && g.name_fr ? g.name_fr : g.name_it);
@@ -142,7 +142,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
   const net = totIn - totOut;
   const mTip = (title: string, k: 'inc' | 'out') => `${title}\n${months.slice(0, Math.max(lastM, 1)).map((m, n) => `${MESI[lang][n]}: ${e0(m[k])}`).join('\n')}`;
-  const prjCols = projectColorMap((projects ?? []).map((p) => p.id as string));
+  const prjCols = projectColorMap([...(projects ?? [])].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)) || String(a.id).localeCompare(String(b.id))).map((p) => p.id as string));
   const top6 = (xs: { k: string; label: string; v: number; href?: string }[], rest: string) => {
     const all = xs.filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
     const r = all.length > 6 ? [...all.slice(0, 5), { k: 'rest', label: `${rest} (${all.length - 5})`, v: all.slice(5).reduce((a, x) => a + x.v, 0) }] : all;

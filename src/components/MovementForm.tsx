@@ -105,7 +105,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       setAccountId(mine.length === 1 ? mine[0]!.id : '');
     }
   };
-  const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial?.currency === 'MGA' ? 'MGA' : 'EUR');
+  const isOp = R.role === 'operator';
+  const [otherKinds, setOtherKinds] = useState(false);
+  // di tasca propria: la valuta proposta è quella del conto usato di solito (sul campo l'ariary), non sempre l'euro
+  const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial ? (initial.currency === 'MGA' ? 'MGA' : 'EUR')
+    : R.accounts.find((a) => a.id === lmAccount)?.currency === 'MGA' || (isOp && R.accounts.some((a) => a.location === 'MG')) ? 'MGA' : 'EUR');
   const [toAccountId, setToAccountId] = useState(initial?.to_account_id ?? '');
   const [toAmountTxt, setToAmountTxt] = useState(initial?.to_amount ? fmt(Number(initial.to_amount)) : '');
   const [rateTxt, setRateTxt] = useState(initial?.fx_rate ? fmt(Number(initial.fx_rate)) : '');
@@ -280,7 +284,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   }
 
   const missing = {
-    amount: !amount, account: !accountId && !due, opDate: !!opDate && Date.parse(opDate) - Date.now() > 61 * 864e5, toAccount: kind === 'transfer' && !toAccountId,
+    amount: !amount, account: !accountId && !due, opDate: !!opDate && (Date.parse(opDate) - Date.now() > (R.role === 'operator' ? 0.5 : 61) * 864e5 || (R.role === 'operator' && Number(opDate.slice(0, 4)) < new Date().getFullYear())), toAccount: kind === 'transfer' && !toAccountId,
     paidBy: kind === 'expense' && !paidBy.trim(),
     toAmount: kind === 'transfer' && !parseAmount(toAmountTxt),
     category: kind !== 'transfer' && !categoryId, project: kind === 'expense' && !projectId,
@@ -307,11 +311,12 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   }
 
   async function save(status: 'draft' | 'recorded') {
-    setTouched(true);
     setError(null);
     const needed = status === 'recorded'
       ? Object.values(missing).some(Boolean)
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
+    // per la bozza bastano importo e conto: gli altri campi non si colorano di rosso (revisione operatore, 16/11)
+    setTouched(status === 'recorded' || Boolean(needed));
     // il fuoco va al primo campo da completare (prima restava sul pulsante e l'errore poteva essere fuori schermo)
     if (needed) setTimeout(() => { const el = document.querySelector<HTMLElement>('.mform [aria-invalid="true"], .mform #giust .ferr'); if (el?.matches('.ferr')) el.scrollIntoView({ block: 'center' }); else el?.focus(); }, 60);
     // spesa di tasca propria: resta "da rimborsare" (bozza senza conto) finché un responsabile non la rimborsa
@@ -539,12 +544,18 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       </div>
       </div></section>
 
+      {/* l'operatore registra quasi solo spese: entrate e giroconti restano a un tocco («Altro tipo»), revisione del 16/11 */}
+      {isOp && !otherKinds && kind === 'expense' ? (
+        <div className="kinds-op"><span className="chip ichip"><Ico name="expense" size={16} />{t.k_expense}</span>
+          <button type="button" className="btn ghost small" onClick={() => setOtherKinds(true)}>{t.lang_code === 'fr' ? 'Autre type…' : 'Altro tipo…'}</button></div>
+      ) : (
       <div className="seg kinds" role="group" aria-label={t.f_kind}>
         {(['expense', 'income', 'transfer'] as const).map((k) => (
           <button type="button" key={k} aria-pressed={kind === k} disabled={Boolean(recordedLocked)}
                   onClick={() => { setKind(k); setCategoryId(''); if (k === 'income' && R.accounts.find((a) => a.id === accountId)?.kind === 'advance') setAccountId(''); }}><Ico name={k} size={18} />{t[`k_${k}`]}</button>
         ))}
       </div>
+      )}
 
       <section className="panel"><div className="panel-b fgrid">
         <div className={aiCls('amount')}>
@@ -554,12 +565,13 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
+          {payMode === 'own' && currency === 'EUR' && amount != null && amount >= 1000 && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? `Ce sont vraiment ${money(amount, 'EUR', 'fr')} ? Si vous avez payé en ariary, choisissez MGA.` : `Sono davvero ${money(amount, 'EUR', 'it')}? Se hai pagato in ariary, scegli MGA.`}</span>}
           {decCut === 'amount' && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'Deux décimales au maximum : le chiffre en plus n’a pas été écrit.' : 'Al massimo due decimali: la cifra in più non è stata scritta.'}</span>}
-          {amount ? <span className="hint amt-echo">{t.f_amount_read}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
+          {amount ? <span className="hint amt-echo">{t.f_amount_read}{t.lang_code === 'fr' ? '\u00a0' : ''}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
             {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
             {currency === 'MGA' && amount % 1 ? <> · {t.f_mga_round}</> : null}</span> : null}
           {/* cassa in contanti sotto zero: avviso, non blocco (di solito è la spesa sul conto sbagliato o un prelievo non registrato) */}
-          {!initial && kind === 'expense' && account?.kind === 'cash' && account.balance != null && amount != null && amount > 0 && amount > account.balance + 0.005
+          {!initial && !isOp && payMode === 'org' && kind === 'expense' && account?.kind === 'cash' && account.balance != null && amount != null && amount > 0 && amount > account.balance + 0.005
             ? <span className="hint warn-txt" role="status">{t.f_cash_neg.replace('{c}', account.name).replace('{s}', money(account.balance, account.currency, t.lang_code as Lang))}</span> : null}
         </div>
         <div className={aiCls('opDate')}>
@@ -567,6 +579,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           <input className="input" id="opdate" type="date" value={opDate} onChange={(e) => { setOpDate(e.target.value); confirm('opDate'); }} />
           {(() => { const today = new Date().toISOString().slice(0, 10); if (!opDate) return null;
             const diff = Math.round((Date.parse(opDate) - Date.parse(today)) / 864e5);
+            if (R.role === 'operator' && diff > 0) return <span className="ferr" role="alert">{t.lang_code === 'fr' ? 'Cette date est dans le futur : corrigez-la.' : 'Questa data è nel futuro: correggila.'}</span>;
+            if (R.role === 'operator' && Number(opDate.slice(0, 4)) < new Date().getFullYear()) return <span className="ferr" role="alert">{t.lang_code === 'fr' ? `Les dépenses de ${opDate.slice(0, 4)} sont saisies par un responsable.` : `Le spese del ${opDate.slice(0, 4)} le registra un responsabile.`}</span>;
             return diff > 60 ? <span className="ferr" role="alert">{t.lang_code === 'fr' ? 'La date est trop loin dans le futur : corrigez-la.' : 'La data è troppo nel futuro: correggila.'}</span>
               : diff > 0 ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date est dans le futur : vérifiez-la.' : 'La data è nel futuro: controllala.'}</span>
               : diff < -30 ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? `C’est il y a plus de 30 jours (${-diff} j) : vérifiez la date.` : `È di più di 30 giorni fa (${-diff} gg): controlla la data.`}</span> : null; })()}
@@ -623,7 +637,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         {currency === 'MGA' && (
           <div className="field">
             <label htmlFor="rate">{t.f_rate}</label>
-            <input className="input num" id="rate" inputMode="decimal" value={rateTxt}
+            <input className="input num" id="rate" inputMode="decimal" value={rateTxt} readOnly={isOp && Boolean(suggested)}
                    onChange={(e) => { typed(e, setRateTxt); setRateTouched(true); }} onBlur={() => setRateTxt((v) => settleAmount(v))} />
             <span className="hint">{suggested ? (!rateTouched || rate === suggested ? (rateSugg?.src === 'last' ? t.f_rate_last : t.f_rate_auto) : '') : t.f_rate_missing}</span>
             {req(missing.rate)}

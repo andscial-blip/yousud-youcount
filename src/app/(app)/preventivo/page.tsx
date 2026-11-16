@@ -104,7 +104,7 @@ export default async function BudgetPage({ searchParams }: {
     return rows.length === 0 ? <p className="muted bq-none">{L('Nessuna riga.', 'Aucune ligne.')}</p> : (
       <ul className="bq-bars">{rows.map((r) => (
         <li key={r.k}><span className="bq-bn">{r.label}</span><b className="num">{e0(r.v)}<small>{pc(r.v, tot)}</small></b>
-          <span className="bq-bb"><i style={{ width: `${(Math.min(tot > 0 ? r.v / tot : 0, 1) * 100).toFixed(1)}%`, background: r.k === 'rest' ? 'var(--c-soft)' : color }} /></span></li>))}</ul>);
+          <span className="bq-bb"><i style={{ width: `${(Math.min(tot > 0 ? r.v / tot : 0, 1) * 100).toFixed(1)}%`, background: r.k === 'rest' ? '#E3E8EF' : color }} /></span></li>))}</ul>);
   };
   const DonutBlock = ({ title, xs, tot }: { title: string; xs: Item[]; tot: number }) => {
     const rows0 = top(sumBy(xs, (i) => catBy.get(i.category_id)?.group_id ?? ''), grpLabel, 5);

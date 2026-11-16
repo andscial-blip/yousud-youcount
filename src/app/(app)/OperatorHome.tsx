@@ -20,14 +20,15 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const td = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [{ data: bal }, { data: reqs }, { data: last }, { count: waiting }, { count: drafts }, { data: due }, { data: auts }, { data: fx }, { data: dls }, { data: notesRow }, { data: advAcc }] = await Promise.all([
     supabase.rpc('account_balances'),
-    supabase.from('advance_requests').select('account_id, report_by, status').eq('beneficiary_id', me.id).in('status', ['delivered', 'reported']),
+    supabase.from('advance_requests').select('account_id, report_by, status, authorized_amount, amount, currency').eq('beneficiary_id', me.id).in('status', ['authorized', 'delivered', 'reported']),
     supabase.from('movements').select('id, ref, op_date, kind, description, amount, currency, amount_eur, sign, status, reimb_status')
       .eq('created_by', me.id).order('created_at', { ascending: false }).limit(5).returns<Mov[]>(),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('created_by', me.id).eq('status', 'recorded'),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('created_by', me.id).eq('status', 'draft').is('reimb_status', null),
     supabase.from('movements').select('amount, currency, amount_eur').eq('created_by', me.id).eq('reimb_status', 'due'),
     supabase.from('self_certs').select('id, movement_id').is('signed_at', null).not('document_id', 'is', null).limit(20),
-    supabase.from('fx_rates').select('rate').order('year', { ascending: false }).order('month', { ascending: false }).limit(1).maybeSingle(),
+    // stesso tasso di Anticipi (quello del mese di oggi), così lo stesso importo vale gli stessi euro in tutte le pagine
+    supabase.rpc('fx_rate_for', { p_date: td }).then((r) => ({ data: r.data != null ? { rate: r.data as number } : null })),
     supabase.from('deadlines').select('id, title, due_date, status').eq('status', 'open').lte('due_date', `${now.getFullYear() + 1}-12-31`).order('due_date').limit(5),
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('accounts').select('id, holder').eq('kind', 'advance'),
@@ -35,12 +36,15 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const rate = Number(fx?.rate ?? 0);
   const eurOf = (v: number, cur: string) => (cur === 'EUR' ? v : rate ? v / rate : 0);
   type B = { account_id: string; name_it: string; name_fr: string | null; kind: string; currency: string; balance: string };
-  const advIds = new Set([...((reqs ?? []) as { account_id: string }[]).map((r) => r.account_id),
+  type Rq = { account_id: string | null; report_by: string | null; status: string; authorized_amount: string | null; amount: string; currency: string };
+  const rqs = (reqs ?? []) as Rq[];
+  const toCollect = rqs.filter((r) => r.status === 'authorized');
+  const advIds = new Set([...rqs.filter((r) => r.status !== 'authorized' && r.account_id).map((r) => r.account_id!),
     ...((advAcc ?? []) as { id: string; holder: string | null }[]).filter((a) => (a.holder ?? '').toLowerCase() === me.full_name.toLowerCase()).map((a) => a.id)]);
   const myAdv = ((bal ?? []) as B[]).filter((b) => b.kind === 'advance' && advIds.has(b.account_id));
   const inHand = myAdv.reduce((s, b) => s + Number(b.balance), 0);
   const handCur = myAdv[0]?.currency ?? 'MGA';
-  const reportBy = ((reqs ?? []) as { report_by: string | null }[]).map((r) => r.report_by).filter(Boolean).sort()[0] ?? null;
+  const reportBy = rqs.filter((r) => r.status !== 'authorized').map((r) => r.report_by).filter(Boolean).sort()[0] ?? null;
   const dueRows = (due ?? []) as { amount: string; currency: string; amount_eur: string | null }[];
   const dueEur = dueRows.reduce((s, r) => s + (r.currency === 'EUR' ? Number(r.amount) : Number(r.amount_eur ?? 0) || eurOf(Number(r.amount), r.currency)), 0);
   const autRows = (auts ?? []) as { id: string; movement_id: string }[];
@@ -52,6 +56,8 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const todo: Todo[] = [];
   if (autRows.length) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da far firmare: ${autRows.length}`, `Attestations à faire signer${nb}: ${autRows.length}`),
     sub: L('Stampa il PDF, falla firmare e consegnala al responsabile', 'Imprimez le PDF, faites-la signer et remettez-la au responsable'), href: `/movimenti/${autRows[0]!.movement_id}`, act: L('Apri', 'Ouvrir') });
+  for (const r of toCollect) todo.push({ lvl: 'do', ic: 'wallet', title: L(`Anticipo autorizzato: ritira ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`, `Avance autorisée : retirez ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`),
+    sub: L('I contanti te li consegna il responsabile della cassa', 'Le responsable de la caisse vous remet les espèces'), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (myAdv.length && inHand > 0) todo.push({ lvl: reportBy && reportBy < td ? 'warn' : 'do', ic: 'wallet',
     title: L(`Hai in mano ${money(inHand, handCur, lang)}`, `Vous avez en main ${money(inHand, handCur, lang)}`),
     sub: reportBy ? L(`Porta le ricevute entro il ${date(reportBy)}`, `Apportez les reçus avant le ${date(reportBy)}`) : L('Registra ogni spesa con «Anticipo»', 'Enregistrez chaque dépense avec « Avance »'),
@@ -73,11 +79,11 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
       <div className="kpis dk">
         <Link className="kpi" href="/anticipi"><div className="l">{L('Contanti in mano', 'Espèces en main')}</div>
           {myAdv.length ? big(eurOf(inHand, handCur), { v: inHand, cur: handCur }) : <div className="v num">–</div>}
-          <div className="s">{myAdv.length ? (reportBy ? L(`ricevute entro il ${date(reportBy)}`, `reçus avant le ${date(reportBy)}`) : L('anticipo ricevuto', 'avance reçue')) : L('nessun anticipo aperto', 'aucune avance ouverte')}</div></Link>
+          <div className="s">{myAdv.length ? (reportBy ? L(`ricevute entro il ${date(reportBy)}`, `reçus avant le ${date(reportBy)}`) : L('anticipo ricevuto', 'avance reçue')) : toCollect.length ? L('anticipo autorizzato: da ritirare', 'avance autorisée : à retirer') : L('nessun anticipo aperto', 'aucune avance ouverte')}</div></Link>
         <Link className="kpi" href="/rimborsi"><div className="l">{L('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className="v num">{money(dueEur, 'EUR', lang)}</div>
           <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de votre poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de votre poche`)}</div></Link>
-        <Link className="kpi" href="/movimenti?stato=recorded"><div className="l">{L('In attesa di verifica', 'En attente de vérification')}</div>
+        <Link className="kpi" href="/movimenti?stato=recorded"><div className="l">{L('In attesa di verifica', 'En vérification')}</div>
           <div className="v num">{waiting ?? 0}</div><div className="s">{L('le controlla un responsabile', 'un responsable les contrôle')}</div></Link>
         <Link className="kpi" href="/movimenti?stato=draft"><div className="l">{L('Bozze', 'Brouillons')}</div>
           <div className="v num">{drafts ?? 0}</div><div className="s">{L('da completare e registrare', 'à compléter et comptabiliser')}</div></Link>

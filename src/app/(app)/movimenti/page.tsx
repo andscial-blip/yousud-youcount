@@ -155,11 +155,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       {sp.ok === 'purged_all' && <div className="note ok" role="status">{L('Tutti i movimenti sono stati eliminati. I loro dati restano nel registro modifiche e nel backup.', 'Tous les mouvements ont été supprimés. Leurs données restent dans le journal et la sauvegarde.')}</div>}
       {sp.err && <div className="note err" role="alert">{sp.err}</div>}
       {/* riquadri nel disegno di Cairn: riguardano i movimenti filtrati (bozze e giroconti esclusi dai totali), con una barra per mese del periodo */}
-      <div className="kpis dk mvk">
+      {!isOp && (<div className="kpis dk mvk">
         <div className="kpi">
           <div className="l">{L('Movimenti', 'Mouvements')}</div>
           <div className="v num">{num(total, lang)}</div>
-          <Viz.Cols vals={bN} colors={bN.map((v) => (v ? 'var(--vz-plan)' : 'var(--band)'))} tip={bTip(L('Movimenti', 'Mouvements'), bN, (v) => num(v, lang))} />
+          <Viz.Cols vals={bN} colors={bN.map((v) => (v ? 'var(--slate-2)' : 'var(--band)'))} tip={bTip(L('Movimenti', 'Mouvements'), bN, (v) => num(v, lang))} />
           {bN.some(Boolean) && axis}
           <div className="s">{nRec > 0 ? <Link href={href({ stato: 'recorded' })} scroll={false}>{nRec === 1 ? L('1 da verificare', '1 à vérifier') : L(`${num(nRec, lang)} da verificare`, `${num(nRec, lang)} à vérifier`)}</Link> : L('niente da verificare', 'rien à vérifier')}</div>
         </div>
@@ -187,9 +187,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               <div className="vzl"><span>{L('entrate', 'recettes')}</span><span>{L('disavanzo', 'déficit')}</span></div></>) : null}
           <div className="s">{L('entrate meno uscite', 'recettes moins dépenses')}</div>
         </div>
-      </div>
+      </div>)}
       <ErrorNote prefix={t('error_load')} error={error} />
 
+      {/* l'operatore: niente riquadri contabili, la lista subito sotto le schede con una riga di riepilogo (revisione operatore, 16/11) */}
+      {isOp && <p className="muted mv-oprow">{L(`${num(total, lang)} movimenti`, `${num(total, lang)} mouvements`)}{nRec > 0 && <> · <Link href={href({ stato: 'recorded' })}>{L(`${num(nRec, lang)} in attesa di verifica`, `${num(nRec, lang)} en vérification`)}</Link></>}</p>}
       {isOp && <nav className="seg mv-mine" aria-label={L('Quali movimenti', 'Quels mouvements')}>
         <Link href={href({ mie: '' })} scroll={false} aria-current={mine ? 'true' : undefined}>{L('I miei', 'Les miens')}</Link>
         <Link href={href({ mie: '0' })} scroll={false} aria-current={!mine ? 'true' : undefined}>{L('Tutti', 'Tous')}</Link></nav>}

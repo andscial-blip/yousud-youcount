@@ -112,3 +112,18 @@ export async function unverifyAction(form: FormData) {
   revalidatePath('/', 'layout');
   back(id, error ? `err=${encodeURIComponent(error.message)}` : 'ok=reopened');
 }
+
+// «Segnala un errore» (revisione operatore, 16/11): chi ha registrato il movimento ma non può correggerlo scrive cosa è sbagliato;
+// diventa una scadenza di oggi, priorità alta, collegata al movimento: la vedono i responsabili in Scadenze e in «Da fare».
+export async function reportErrorAction(form: FormData) {
+  const id = String(form.get('id'));
+  const what = String(form.get('what') ?? '').trim().slice(0, 900);
+  if (what.length < 5) back(id, `err=${encodeURIComponent(String(form.get('lang')) === 'fr' ? 'Écrivez ce qui ne va pas (au moins 5 caractères).' : 'Scrivi cosa è sbagliato (almeno 5 caratteri).')}#segnala`);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const { error } = await (await createClient()).rpc('deadline_save', { p: {
+    title: `${String(form.get('lang')) === 'fr' ? 'Erreur signalée' : 'Errore segnalato'}: ${String(form.get('ref') || '')}`.slice(0, 200),
+    category: 'int', due_date: today, priority: 'high', movement_id: id, notes: what } });
+  revalidatePath('/', 'layout');
+  back(id, error ? `err=${encodeURIComponent(error.message)}` : 'ok=reported');
+}

@@ -1110,10 +1110,9 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
 /* Tassi di cambio: un tocco di colore della palette */
 .fxchg { display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
 .kpi .v .fxchg { font-size: 20px; padding: 2px 10px; }
-.fxchg.up { background: color-mix(in srgb, #8FAFD6 24%, transparent); color: #3F6491; }
-.fxchg.down { background: color-mix(in srgb, #A596E6 24%, transparent); color: #5E4FA6; }
-:root[data-theme="dark"] .fxchg.up { color: #A9C3E3; } :root[data-theme="dark"] .fxchg.down { color: #C4B8F0; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fxchg.up { color: #A9C3E3; } :root:not([data-theme="light"]) .fxchg.down { color: #C4B8F0; } }
+.fxchg.up, .fxchg.down { background: var(--band); color: var(--navy); }   /* la variazione del tasso non è buona né cattiva: neutra, la freccia dice il verso (16/11) */
+:root[data-theme="dark"] .fxchg.up, :root[data-theme="dark"] .fxchg.down { color: var(--fg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fxchg.up, :root:not([data-theme="light"]) .fxchg.down { color: var(--fg); } }
 
 /* ── Filtri (scelta 3A): ricerca + «Filtri (n)»; pannello dal basso sul telefono, riquadro sul computer ── */
 .fbar { position: relative; display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
@@ -1197,7 +1196,7 @@ a.k4:hover { transform: translateY(-1px); }
 }
 
 /* ── Scadenze (scelta 4A): calendario per primo con colori per importanza, elenco allineato, righello delle soglie ── */
-:root { --imp-c: #E2917F; --imp-a: #E3A6C2; --imp-n: #8FAFD6; --imp-p: #A596E6; --imp-f: #B9C47A; }   /* importanza: critica corallo, alta rosa, normale cielo, promemoria lilla, fatta oliva (16/11: giallo e verde acqua restano a uscite e saldo) */
+:root { --imp-c: #E2917F; --imp-a: #9C8AA5; --imp-n: #8497B0; --imp-p: #C9D6EA; --imp-f: #A8C3A1; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
 .cal-i.i-c { background: color-mix(in srgb, var(--imp-c) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-c); }
 .cal-i.i-a { background: color-mix(in srgb, var(--imp-a) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-a); }
 .cal-i.i-n { background: color-mix(in srgb, var(--imp-n) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-n); }
@@ -2027,7 +2026,7 @@ table.bqs.bqs-p tr.lv2 td:first-child { padding-left: 18px; }
 }
 
 /* ---------- Progetti nel disegno di Cairn (14/11): giallo = uscite, blu notte = entrate, verde = disponibile ---------- */
-.prj { --c-in: var(--navy); --c-out: var(--vz-sp); --c-net: var(--green-soft); }
+.prj { --c-in: var(--vz-real); --c-out: var(--vz-sp); --c-net: var(--green-soft); }   /* stesso blu notte delle entrate ovunque */
 .prj-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); align-items: stretch; }
 .prj-two > .panel { margin: 0; min-width: 0; }
 .prj-two > .panel > .panel-h { flex-wrap: nowrap; gap: 10px 14px; }
@@ -2586,3 +2585,15 @@ details[open] > .rev-sum .btn { display: none; }
 .op-r { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; white-space: nowrap; }
 .op-r .two { display: grid; justify-items: end; } .op-r .two b { font-size: 14px; } .op-r .two small { font-size: 12px; color: var(--muted); }
 .op-home .h-left > .op-last { grid-column: 1 / -1; }
+.kinds-op { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.kinds-op .chip { min-height: 32px; font-size: 14px; }
+.mv-oprow { margin: 0; font-size: 14px; }
+.stack:has(> .mv-oprow) > .mv-mine { margin-top: -4px; }
+/* scansione su telefono: pulsanti tutti alti uguali, due per riga, «Usa» a tutta riga in fondo */
+@media (max-width: 760px) {
+  .scan-acts { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .scan-acts > .spacer { display: none; }
+  .scan-acts > .btn { min-height: 44px; justify-content: center; white-space: normal; text-align: center; }
+  .scan-acts > .btn.primary { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) { .scan-acts > .btn:first-child:nth-last-child(3) { grid-column: 1 / -1; } }

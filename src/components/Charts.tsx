@@ -12,26 +12,22 @@ export const C_HYP = 'var(--vz-hyp)';
 export const C_NET = 'var(--green-soft)';
 export const C_OVER = 'var(--tax)';
 export const C_BUDGET = 'var(--band)';
-import { PAL } from '@/lib/palette';
+import { PAL, REST, groupColor } from '@/lib/palette';
 export { PAL };
 
 /** Colore fisso per voce: lo stesso gruppo di voci (o progetto) ha lo stesso colore in tutte le pagine, qualunque sia
  *  la sua posizione in classifica. Chiave = codice del gruppo («01 · Risorse umane» → 01) o, senza codice, il nome.
  *  Dentro uno stesso grafico due voci non hanno mai lo stesso colore finché la tavolozza basta; '' = «Altre voci» (grigio). */
 export function fixedColors(labels: string[], ids?: string[], fixed?: Map<string, string>): string[] {
-  const used = new Set<number>();
+  // niente spostamenti per evitare doppioni: il colore dipende solo dall'elemento, mai da cosa c'è nello stesso grafico (16/11)
   return labels.map((label, n) => {
-    if (!label) return 'var(--c-soft)';
+    if (!label) return REST;
     const f = ids?.[n] ? fixed?.get(ids[n]!) : undefined; if (f) return f;
-    // senza codice la chiave è l'identificativo (ids), non il nome: il nome cambia con la lingua e il colore cambiava con lui
-    const key = label.includes(' · ') ? label.split(' · ')[0]! : (ids?.[n] || label);
-    const num = /^[A-Za-z]?(\d+)$/.exec(key.trim());
-    let i: number;
-    if (num) i = (Number(num[1]) + (/^[A-Za-z]/.test(key.trim()) ? 2 : -1) + PAL.length * 4) % PAL.length;
-    else { let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0; i = h % PAL.length; }
-    for (let n = 0; n < PAL.length && used.has(i); n++) i = (i + 1) % PAL.length;
-    used.add(i);
-    return PAL[i]!;
+    const code = label.includes(' · ') ? label.split(' · ')[0]! : '';
+    const g = code ? groupColor(code) : null; if (g) return g;
+    const key = ids?.[n] || label;
+    let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return PAL[h % PAL.length]!;
   });
 }
 

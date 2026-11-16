@@ -1,3 +1,4 @@
+import { PendingButton } from '@/components/PendingButton';
 import { docName } from '@/lib/doc-name';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
@@ -7,7 +8,7 @@ import { date, dateTime, money, nm, rate as fxRate, noDocReason } from '@/lib/fo
 import type { Key } from '@/lib/i18n';
 import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
-import { deleteDemoAction, discardAction, purgeAction, reverseAction, selfCertAction, signSelfCertAction, unverifyAction, verifyAction } from './actions';
+import { deleteDemoAction, discardAction, purgeAction, reverseAction, selfCertAction, signSelfCertAction, unverifyAction, verifyAction, reportErrorAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,7 +116,7 @@ export default async function MovementDetail({ params, searchParams }: {
           : m.status === 'draft' ? L('Bozza salvata: non conta ancora nei saldi. Completala e premi «Registra».', 'Brouillon enregistré : il ne compte pas encore dans les soldes. Complétez-le et appuyez sur « Comptabiliser ».')
           : `${L('Movimento registrato', 'Mouvement comptabilisé')}: ${m.ref}. ${L('Ora lo controlla un responsabile.', 'Un responsable va maintenant le contrôler.')}`)
         : ok === 'saved' ? L('Modifiche salvate.', 'Modifications enregistrées.')
-        : ok === 'reversed' ? L(`Storno registrato: ${m.ref} annulla ${origRef ?? 'il movimento originale'}. Va verificato da un'altra persona.`, `Extourne comptabilisée : ${m.ref} annule ${origRef ?? 'le mouvement d’origine'}. Elle doit être vérifiée par une autre personne.`) : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
+        : ok === 'reversed' ? L(`Storno registrato: ${m.ref} annulla ${origRef ?? 'il movimento originale'}. Va verificato da un'altra persona.`, `Extourne comptabilisée : ${m.ref} annule ${origRef ?? 'le mouvement d’origine'}. Elle doit être vérifiée par une autre personne.`) : ok === 'reported' ? L('Segnalazione inviata ai responsabili.', 'Signalement envoyé aux responsables.') : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
       {/* dopo lo storno: la copia corretta riparte da dati e allegati dell'originale (P2-15) */}
       {writer && m.kind !== 'transfer' && (rev || (m.reverses_id && ok === 'reversed')) && (
         <div className="row-btns eq after-new"><Link className="btn" href={`/nuovo?copia=${rev ? m.id : m.reverses_id}`}>{L('Crea la copia corretta', 'Créer la copie corrigée')}</Link></div>)}
@@ -277,14 +278,27 @@ export default async function MovementDetail({ params, searchParams }: {
                         <label key={l}><input type="radio" name="lang" value={l} defaultChecked={autDefaultLang === l} /> {t(`aut_lang_${l}`)}</label>
                       ))}
                     </div></div>
-                  <p className="hint" style={{ margin: 0 }}>{t('aut_data')} {t('aut_check')}</p>
+                  <p className="hint" style={{ margin: 0 }}>{t('aut_data')}{resp ? ` ${t('aut_check')}` : ''}</p>
                   <div><button className="btn primary" type="submit"><Ico name="download" />{t('aut_create')}</button></div>
                 </form>
               ) : null}
             </Panel>
           )}
 
-          {writer && !m.reverses_id && m.kind !== 'transfer' && (
+          {/* chi non può correggere un movimento già registrato lo segnala a un responsabile */}
+          {!resp && writer && m.status !== 'draft' && !rev && (
+            <Panel title={L('Hai trovato un errore?', 'Vous avez trouvé une erreur ?')} pad>
+              <form action={reportErrorAction} className="stack" id="segnala" style={{ gap: 8 }}>
+                <input type="hidden" name="id" value={m.id} /><input type="hidden" name="ref" value={m.ref ?? ''} /><input type="hidden" name="lang" value={lang} />
+                <label className="field"><span className="flabel">{L('Cosa è sbagliato (importo, data, codice…)', 'Ce qui ne va pas (montant, date, code…)')}</span>
+                  <textarea className="input" name="what" rows={2} minLength={5} maxLength={900} required /></label>
+                <div className="row-btns"><PendingButton className="btn" busy={L('Invio…', 'Envoi…')}>{L('Segnala al responsabile', 'Signaler au responsable')}</PendingButton></div>
+                <p className="hint" style={{ margin: 0 }}>{L('La segnalazione arriva ai responsabili in «Da fare» e in Scadenze: la correggono loro.', 'Le signalement arrive aux responsables dans « À faire » et dans Échéances : ce sont eux qui corrigent.')}</p>
+              </form>
+            </Panel>
+          )}
+
+          {writer && me!.role !== 'operator' && !m.reverses_id && m.kind !== 'transfer' && (
             <Panel title={t('gen_docs')} pad>
               <div className="gen-docs">
                 {(m.kind === 'income' ? ['RIC', 'NDD'] : ['QUI', 'NOT', 'NRS']).map((k) => (

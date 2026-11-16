@@ -1,3 +1,4 @@
+import { COUNTRY_SHADES } from '@/lib/palette';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money, nm, rate as fxRate } from '@/lib/format';
@@ -5,7 +6,7 @@ import { Empty, ErrorNote } from '@/components/Page';
 import { BalancesTable, type Balance } from '@/components/Balances';
 import { CountryMark } from '@/components/CountryMark';
 import { CashCounter } from '@/components/CashCounter';
-import { Viz, fixedColors } from '@/components/Charts';
+import { Viz } from '@/components/Charts';
 import { CIcon } from '@/components/CIcon';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,10 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   // totale di un paese: nella sua valuta se i conti ne hanno una sola, altrimenti in euro
   const native = (xs: Balance[]) => { const cs = [...new Set(xs.map((r) => r.currency))]; return cs.length === 1 ? { v: xs.reduce((a, r) => a + Number(r.balance), 0), c: cs[0]! } : { v: sumEur(xs), c: 'EUR' as const }; };
   const it = byLoc('IT'), mg = byLoc('MG'), itEur = sumEur(it), mgEur = sumEur(mg), tot = itEur + mgEur;
-  const seg = (xs: Balance[]) => [...xs].filter((r) => eur(r) > 0).sort((a, b) => eur(b) - eur(a)).slice(0, 6).map((r, i, all) => ({ v: eur(r), c: fixedColors(all.map((x) => nm(lang, x)), all.map((x) => x.account_id))[i]!, n: nm(lang, r), r }));   // conti: colori delle voci, non quelli di entrate/uscite/saldo
+  // ogni conto ha una sfumatura del colore del suo paese (Italia cielo, Madagascar lilla), fissa: ordine per codice fra i conti del paese (16/11)
+  const shade = new Map<string, string>();
+  for (const loc of ['IT', 'MG'] as const) [...all].filter((r) => r.location === loc).sort((a, b) => String(a.code).localeCompare(String(b.code))).forEach((r, i) => shade.set(r.account_id, COUNTRY_SHADES[loc][i % COUNTRY_SHADES[loc].length]!));
+  const seg = (xs: Balance[]) => [...xs].filter((r) => eur(r) > 0).sort((a, b) => eur(b) - eur(a)).slice(0, 6).map((r) => ({ v: eur(r), c: shade.get(r.account_id) ?? '#E3E8EF', n: nm(lang, r), r }));   // conti: colori delle voci, non quelli di entrate/uscite/saldo
   const tipOf = (xs: Balance[]) => xs.map((r) => `${nm(lang, r)}: ${money(r.balance, r.currency, lang)}`).join('\n');
   const advEur = sumEur(adv), advN = native(adv);
   const holder = (r: Balance) => nm(lang, r).replace(/^(Anticipi|Avances)\s*[–-]\s*/i, '');

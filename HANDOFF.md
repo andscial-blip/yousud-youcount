@@ -242,3 +242,15 @@ Da fare (i più pesanti): colori delle voci che cambiano fra italiano e francese
   motivi rapidi senza giustificativo mostrati nella lingua di chi legge. loadRefData: letture tutte in parallelo.
 - Da fare ancora (non fatti): separatore delle migliaia con lo spazio nel campo importo in francese; «Registra» immediato con invio in sottofondo; conti del modulo ridotti per l'operatore.
 - Verifiche: unit 35/35, db 52/52, e2e 51/53 nel giro completo con i 2 falliti passati da soli (server riavviato), layout 0 problemi IT 375/768/1440 e FR 375.
+
+## 16/11 — quinto giro (colori 8,5/6,5/5/7/8,5 · operatore 8) e correzioni
+- Colori: palette degli elementi a 9 tinte senza significato (lib/palette.ts ITEM_PAL): gruppo di voci = colore dal codice (01…09, E1…E4), progetti in ordine di creazione,
+  nessuno spostamento per evitare doppioni; conti in sfumature del paese (COUNTRY_SHADES); finanziatori e icone dei progetti in tinte senza significato;
+  riconciliazione ardesia/grigio; un solo blu notte per le entrate (.prj); importanza scadenze corallo/prugna/acciaio/nebbia/salvia; variazione del tasso neutra; Cambi senza blu extra.
+- Operatore: «Segnala al responsabile» sui movimenti registrati (crea una scadenza di oggi, priorità alta, collegata al movimento: reportErrorAction);
+  modulo con «Uscita» già scelta e «Altro tipo…»; date future o di anni precedenti bloccate per l'operatore; valuta di tasca propria proposta in ariary e avviso oltre 1.000 €;
+  tasso non modificabile per l'operatore; avviso cassa sotto zero solo ai responsabili; bozza con solo importo e conto senza campi rossi; documenti dal movimento nascosti all'operatore;
+  Dashboard: anticipo autorizzato da ritirare, tasso unico (fx_rate_for); Registro dell'operatore senza riquadri contabili; scansione con pulsanti simmetrici su telefono.
+- Non fatto: «Registra» con invio in sottofondo immediato; separatore delle migliaia con spazio nel campo importo in francese.
+- Verifiche: unit 35/35, layout 0 problemi IT 375/768/1440 e FR 375; e2e: 14/14 operatore; giro completo 42/53 con 11 cadute per crash del browser (memoria),
+  tutte superate rilanciate in gruppi piccoli (una richiedeva la prova che crea la controparte).

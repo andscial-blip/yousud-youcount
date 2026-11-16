@@ -24,7 +24,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const { data: bud } = await supabase.from('budgets').select('id').eq('year', year).eq('status', 'approved').maybeSingle();
   const [{ data: projects, error }, { data: ledger }, { data: items }] = await Promise.all([
-    supabase.from('projects').select('id, name, kind, active, demo, theme').order('kind').order('name'),
+    supabase.from('projects').select('id, name, kind, active, demo, theme, created_at').order('kind').order('name'),
     supabase.from('v_ledger').select('project_id, kind, amount_eur, month').eq('year', year).neq('kind', 'transfer').eq('out_of_report', false).limit(50000).returns<Led[]>(),
     bud ? supabase.from('budget_items').select('project_id, amount_eur, category:categories(direction)').eq('budget_id', bud.id).returns<BI[]>() : Promise.resolve({ data: [] as BI[] }),
   ]);
@@ -53,7 +53,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const top5 = <T extends { v: number }>(xs: T[], rest: (v: number, n: number) => T) => xs.length > 6 ? [...xs.slice(0, 5), rest(xs.slice(5).reduce((a, x) => a + x.v, 0), xs.length - 5)] : xs;
   const mix0 = top5(shown.filter((p) => A(p.id).out > 0).sort((x, y) => A(y.id).out - A(x.id).out).map((p) => ({ k: p.id, label: p.name, v: A(p.id).out })),
     (v, n) => ({ k: 'rest', label: L(`Altri progetti (${n})`, `Autres projets (${n})`), v }));
-  const prjCols = projectColorMap((projects ?? []).map((p) => p.id));
+  const prjCols = projectColorMap([...(projects ?? [])].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)) || a.id.localeCompare(b.id)).map((p) => p.id));
   const mixCols = fixedColors(mix0.map((x) => (x.k === 'rest' ? '' : x.label)), mix0.map((x) => x.k), prjCols);
   const mix = mix0.map((x, n) => ({ ...x, color: mixCols[n]! }));
   const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
@@ -67,7 +67,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{L('Previsto', 'Prévu')}</div>
           <div className="v num">{tot.b ? e0(tot.b) : '–'}</div>
-          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: prjCols.get(p.id) ?? 'var(--c-soft)' }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
+          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: prjCols.get(p.id) ?? '#E3E8EF' }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
             <div className="vzl"><span>{withB[0]!.name}</span><span>{pc(A(withB[0]!.id).bOut, tot.b)}</span></div></>}
           <div className="s">{tot.b ? L(`uscite ${year} · ${withB.length === 1 ? '1 progetto' : `${withB.length} progetti`}`, `dépenses ${year} · ${withB.length === 1 ? '1 projet' : `${withB.length} projets`}`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>
