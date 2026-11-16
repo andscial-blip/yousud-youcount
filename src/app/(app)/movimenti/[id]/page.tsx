@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
 import { ADMIN, requireMe, RESP } from '@/lib/session';
-import { date, dateTime, money, nm } from '@/lib/format';
+import { date, dateTime, money, nm, rate as fxRate } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
@@ -123,7 +123,7 @@ export default async function MovementDetail({ params, searchParams }: {
               <span className="l">{t('amount')}</span>
               {/* euro in evidenza con il segno; sotto l'importo nella valuta del conto (quello scritto sulla ricevuta) e il tasso */}
               <span className={`v num ${signedAmount < 0 ? '' : m.kind === 'income' ? 'pos' : ''}`}>{m.currency === 'MGA' && m.amount_eur ? money(Number(m.amount_eur) * Math.sign(signedAmount || 1), 'EUR', lang) : money(signedAmount, m.currency, lang)}</span>
-              {m.currency === 'MGA' && m.amount_eur && <span className="s num"><b>{money(signedAmount, m.currency, lang)}</b> · {t('f_rate')} {money(m.fx_rate, 'MGA', lang).replace(/\s?MGA$/, '')}</span>}
+              {m.currency === 'MGA' && m.amount_eur && <span className="s num"><b>{money(signedAmount, m.currency, lang)}</b> · {t('f_rate')} {fxRate(m.fx_rate, lang, false)}</span>}
             </div>
             <div className="panel-b">
               <dl className="kv">

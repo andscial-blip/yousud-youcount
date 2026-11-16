@@ -12,7 +12,9 @@ export async function verifyMovement(form: FormData) {
   });
   revalidatePath('/verifica');
   revalidatePath('/');
-  if (error) redirect(`/verifica?err=${encodeURIComponent(error.message)}`);
-  if (data?.outcome === 'conflict') redirect('/verifica?err=conflict');
-  redirect(`/verifica?ok=${encodeURIComponent(data?.ref ?? '')}`);
+  // il filtro scelto resta (16/11): prima si tornava all'elenco intero e chi verificava «per persona» perdeva il punto
+  const keep = ['progetto', 'autore'].map((k) => [k, String(form.get(k) ?? '')]).filter(([, v]) => v).map(([k, v]) => `&${k}=${encodeURIComponent(v!)}`).join('');
+  if (error) redirect(`/verifica?err=${encodeURIComponent(error.message)}${keep}`);
+  if (data?.outcome === 'conflict') redirect(`/verifica?err=conflict${keep}`);
+  redirect(`/verifica?ok=${encodeURIComponent(data?.ref ?? '')}${keep}`);
 }

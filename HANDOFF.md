@@ -202,3 +202,20 @@ Non fatto: terzo giro dei revisori; avviso sulle spese in contanti di importo al
 ## Terzo giro dei revisori (16/11, rapporti in docs/revisione-finale-2026-11-15/terzo-giro/)
 Voti: Identità 8,5 · Design system 7,5 · UI 8 · Grafici 7,5 · Desktop 8,5 · Tablet 7,5 · Mobile 8 · Coerenza visiva 8 · Professionalità 8,5 · UX 7,5 · Facilità operatore 7,5 · Completezza 8,5 · Affidabilità dati 8 · Navigazione 8 · Qualità complessiva 8 · Italiano 8,5 · Francese 8 · Coerenza terminologica 7,5 · Guida 8,5 · Accessibilità 8,5. Nessun P0 o P1.
 Da fare (i più pesanti): colori delle voci che cambiano fra italiano e francese (chiave = nome tradotto: usare codice o id); ariary ancora in grande in alcuni riquadri di Rimborsi/Anticipi; Cambi a 768 px che scorre e colonna «Fonte» stretta; barre «per codice» illeggibili a 768 px; titolo del finanziamento ancora troncato; calendario delle Scadenze (etichette troncate, bersagli piccoli); 8 altezze di pulsante e campi 34–54 px; lista di Verifica e bozza del Preventivo che non si aggiornano subito dopo l'azione; Dashboard dell'operatore con «Da verificare 40»; tasso mostrato arrotondato (5.340 invece di 5.339,63); terza cifra decimale scartata senza avviso; titolo della scheda in italiano su login/offline/404 francesi; quattro nomi per «codice contabile»; aiuto vuoto su /chiedi e /altro; `aria-invalid` incompleto.
+
+## 16/11 — chiusura dei rilievi del terzo giro
+- Colori: chiave di colore = id/codice (non più il nome tradotto); palette categoriale senza i colori con significato fisso
+  (blu notte entrate, giallo uscite, verde acqua saldo, blu preventivo, corallo sforamento): PAL = lilla, cielo, oliva, rosa, ardesia, nebbia.
+  Italia = cielo, Madagascar = lilla ovunque. Cambi: tasso blu, applicato lilla tratteggiato. Tinte dei tipi di progetto senza marrone/ocra. Tolto src/lib/palette.ts (inutilizzato).
+- Una sola barra di preventivo (BudgetBar = cb-bar): traccia = previsto, riempimento = speso, tutta corallo oltre il previsto, tacca tratteggiata = anno trascorso.
+  Pastiglie: verde nei tempi, gialla oltre il ritmo, rossa oltre il preventivo. Tablet: colonna Residuo nascosta (cb-res).
+- Euro grande / ariary piccolo anche nelle schede per persona di Anticipi e Rimborsi.
+- Tablet: tabella dei cambi a schede fino a 1023 px; calendario a trattini fino a 1023 px; intestazione con «Nuovo»/«Nouveau», AI a icona, «Accueil» nella colonna di icone.
+- Telefono: aiuto (i) sulla stessa riga delle sotto-schede (che scorrono con sfumatura); filtri rapidi con molte voci in griglia a due colonne; «Emetti» a tutta riga con icona; righe del Registro più basse.
+- Scala altezze: pulsanti 32/38/44, campi 40 (eccezione: importo di Nuovo movimento 54). Testo dei grafici 13, ciambella ≥14.
+- Niente puntini di troncamento nei testi di contenuto.
+- Non grafici: «Verifica» conserva il filtro; PendingButton su Verifica ed Elimina la bozza; Dashboard operatore («In attesa di verifica» = propri movimenti; autocertificazioni da firmare in Da fare);
+  tasso mostrato e stampato con i decimali (format.rate); avviso sulla terza cifra decimale (extraDecimals); titolo della scheda del browser in francese su login/offline/404;
+  francese: «justificatif» ovunque, «Codes comptables»; «Codici contabili» al posto di «Categorie»; un solo codice trovato = scelto; aiuto per Chiedi all'AI e Altro;
+  campi obbligatori con asterisco, aria-required, aria-describedby e fuoco sul primo errore; pastiglia «automatica» nelle scadenze ricavate dai dati.
+- Verifiche: unit 35/35, db 52/52, e2e 52/53 nel giro completo (la prova dei documenti emessi è passata da sola: riavvio del server), layout 0 problemi IT 375/768/1440 e FR 768; FR 375 «Remboursements» spezzato corretto dopo.

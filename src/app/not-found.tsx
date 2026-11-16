@@ -18,6 +18,8 @@ export default async function NotFound() {
     <main className="auth">
       {/* la pagina dichiara la lingua in cui è scritta (il documento nasce con lang="it") */}
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang='${lang}'` }} />
+      {/* il titolo segue la lingua del profilo, che può differire da quella del browser */}
+      <script dangerouslySetInnerHTML={{ __html: `document.title=${JSON.stringify(lang === 'fr' ? 'Page introuvable · YouCount' : 'Pagina non trovata · YouCount')}` }} />
       <section className="auth-card">
         <div className="auth-brand"><Logo size={72} /><h1 className="yc-wm"><span className="wm-you">You</span><span className="wm-count">Count</span></h1></div>
         <h2 style={{ fontSize: 20, margin: '0 0 10px', textAlign: 'center' }}>{t('nf_title')}</h2>

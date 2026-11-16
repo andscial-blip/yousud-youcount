@@ -11,7 +11,7 @@ type A = { id: number; at: string; table_name: string; action: 'insert' | 'updat
 
 const TABLE: Record<string, [string, string]> = {
   movements: ['Movimenti', 'Mouvements'], documents: ['Documenti', 'Documents'], movement_documents: ['Collegamenti documenti', 'Liens documents'],
-  accounts: ['Conti', 'Comptes'], categories: ['Categorie', 'Catégories'], projects: ['Progetti', 'Projets'],
+  accounts: ['Conti', 'Comptes'], categories: ['Codici contabili', 'Codes comptables'], projects: ['Progetti', 'Projets'],
   profiles: ['Utenti', 'Utilisateurs'], periods: ['Chiusure', 'Clôtures'], settings: ['Impostazioni', 'Paramètres'],
   counterparties: ['Fornitori e donatori', 'Fournisseurs et donateurs'], counterparty_private: ['Dati personali controparti', 'Données personnelles'],
   project_members: ['Accessi ai progetti', 'Accès aux projets'], grants: ['Finanziamenti', 'Financements'],
@@ -29,7 +29,7 @@ const FIELD: Record<string, [string, string]> = {
   amount: ['Importo', 'Montant'], currency: ['Valuta', 'Devise'], status: ['Stato', 'Statut'], description: ['Descrizione', 'Description'], op_date: ['Data', 'Date'],
   notes: ['Note', 'Notes'], fx_rate: ['Tasso', 'Taux'], rate: ['Tasso', 'Taux'], name: ['Nome', 'Nom'], name_it: ['Nome', 'Nom'], title: ['Titolo', 'Titre'],
   role: ['Ruolo', 'Rôle'], active: ['Attivo', 'Actif'], closed_at: ['Chiuso il', 'Clôturé le'], reopen_reason: ['Motivo della riapertura', 'Motif de la réouverture'],
-  verified_at: ['Verificato il', 'Vérifié le'], recorded_at: ['Registrato il', 'Comptabilisé le'], ref: ['Numero', 'Numéro'], no_doc_reason: ['Motivo senza documento', 'Motif sans pièce'],
+  verified_at: ['Verificato il', 'Vérifié le'], recorded_at: ['Registrato il', 'Comptabilisé le'], ref: ['Numero', 'Numéro'], no_doc_reason: ['Motivo senza documento', 'Motif sans justificatif'],
   reversal_reason: ['Motivo dello storno', 'Motif de l’extourne'], due_date: ['Scadenza', 'Échéance'], qty: ['Quantità', 'Quantité'], unit_cost: ['Costo unitario', 'Coût unitaire'],
   start_date: ['Inizio', 'Début'], end_date: ['Fine', 'Fin'], paid_by: ['Pagato da', 'Payé par'], reimb_status: ['Rimborso', 'Remboursement'], value: ['Valore', 'Valeur'],
 };

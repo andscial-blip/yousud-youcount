@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 
 // nomi delle operazioni del server in parole dell'utente
 const OP: Record<string, [string, string]> = {
-  save_movement: ['Movimento salvato', 'Mouvement enregistré'], register_document: ['Giustificativo caricato', 'Pièce chargée'],
+  save_movement: ['Movimento salvato', 'Mouvement enregistré'], register_document: ['Giustificativo caricato', 'Justificatif chargé'],
   verify_movement: ['Movimento verificato', 'Mouvement vérifié'], reverse_movement: ['Storno', 'Extourne'],
   reimburse_expenses: ['Rimborso registrato', 'Remboursement enregistré'], reconcile_account: ['Riconciliazione bancaria', 'Rapprochement bancaire'],
-  delete_draft: ['Bozza eliminata', 'Brouillon supprimé'], link_document: ['Giustificativo collegato', 'Pièce liée'],
+  delete_draft: ['Bozza eliminata', 'Brouillon supprimé'], link_document: ['Giustificativo collegato', 'Justificatif lié'],
 };
 
 type S = { id: number; at: string; operation: string; outcome: 'applied' | 'duplicate' | 'conflict'; device_id: string | null };

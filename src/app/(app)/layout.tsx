@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="app">
         <aside className="side" aria-label={t('nav_sections')}>
           <Link href="/" className="side-brand" aria-label={`YouCount, ${t('nav_dashboard')}`}><Logo /><Wordmark /></Link>
-          <SideNav secs={secs} label={t('nav_sections')} />
+          <SideNav secs={secs} label={t('nav_sections')} home={lang === 'fr' ? 'Accueil' : undefined} />
           <div className="side-foot">
             <SyncBadge labels={syncL} lang={lang} />
             <Link className="side-who" href="/account" title={t('nav_account')}><CIcon name="user" size={16} /><span className="side-who-t"><b>{me.full_name || t('nav_account')}</b><small className="side-role">{t(`r_${me.role}` as 'r_operator')}</small></span></Link>

@@ -76,7 +76,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
         const tin = tot('in'), tout = tot('out'), pin = tot('in', true), pout = tot('out', true);
         const has = tin !== 0 || tout !== 0, hasPrev = pin !== 0 || pout !== 0;
         const v = (n: number) => (has ? money(n, 'EUR', lang) : '–');
-        const pv = (n: number) => `${year - 1}: ${hasPrev ? money(n, 'EUR', lang) : '–'}`;
+        const pv = (n: number) => `${year - 1}${lang === 'fr' ? '\u00a0' : ''}: ${hasPrev ? money(n, 'EUR', lang) : '–'}`;
         const net = tin - tout;
         return (
           <div className="kpis rep-kpis noprint">

@@ -57,3 +57,9 @@ test('digitando il punto delle migliaia a mano l\'importo resta in migliaia', ()
   assert.equal(settleAmount('12.'), '12');
   assert.equal(settleAmount('12,'), '12');
 });
+
+test('terza cifra decimale scartata: va segnalata', async () => {
+  const { extraDecimals } = await import('../../src/lib/amount.ts');
+  for (const [raw, exp] of [['12,505', true], ['1,250', true], ['12,50', false], ['12,5', false], ['1.250', false], ['1.250,00', false], ['1.250,001', true], ['', false]] as [string, boolean][])
+    assert.equal(extraDecimals(raw), exp, raw);
+});

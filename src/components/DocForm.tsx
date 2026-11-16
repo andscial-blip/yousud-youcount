@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { buildModel, DIC_TPL, DOC_TYPES, type DocType, type NotLine, type NrsLine, type Org } from '@/lib/doc-model';
 import { LINES, pickRate, readDocForm } from '@/lib/doc-form';
-import { money } from '@/lib/format';
+import { money, rate as fxRate } from '@/lib/format';
 import { saveDoc } from '@/app/(app)/documenti-emessi/actions';
 import { DocPreview } from './DocPreview';
 
@@ -50,7 +50,7 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
       signer_role: signer.role ?? null, movement_ref: movementRef ?? null, project_name: prj, data: { ...p.data, fx_rate: fx || undefined } }, org));
     const a = Number(p.amount) || 0;
     setFxInfo(!fx ? L('Nessun tasso di cambio per il mese: il documento mostrerà solo la valuta scelta.', 'Aucun taux pour le mois : le document affichera seulement la devise choisie.')
-      : `1 € = ${money(fx, 'MGA', lang)}${a ? ` · ${p.currency === 'EUR' ? money(Math.round(a * fx), 'MGA', lang) : money(Math.round((a / fx) * 100) / 100, 'EUR', lang)}` : ''}`
+      : `1 € = ${fxRate(fx, lang)}${a ? ` · ${p.currency === 'EUR' ? money(Math.round(a * fx), 'MGA', lang) : money(Math.round((a / fx) * 100) / 100, 'EUR', lang)}` : ''}`
         + (movementRate ? L(' (tasso del movimento)', ' (taux du mouvement)') : L(' (tasso del mese)', ' (taux du mois)')));
   }, [rates, movementRate, projects, signer, movementRef, org, lang]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { refresh(); }, [refresh, tpl]);

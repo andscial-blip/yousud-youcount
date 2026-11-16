@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Dict, Lang } from '@/lib/i18n';
 import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
-import { formatTyping, parseAmount, settleAmount } from '@/lib/amount';
+import { extraDecimals, formatTyping, parseAmount, settleAmount } from '@/lib/amount';
 import { useCaret } from '@/lib/use-caret';
 import dynamic from 'next/dynamic';
 import type { ScanResult } from './ScanEditor';
@@ -70,8 +70,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const fmt = (n: number | string) => formatTyping(String(n).replace('.', ',')).text;
   const typed = (e: React.ChangeEvent<HTMLInputElement>, set: (v: string) => void) => {
     const el = e.target; const r = formatTyping(el.value, el.selectionStart ?? el.value.length);
-    setCaret(el, r.caret); set(r.text);
+    setCaret(el, r.caret); set(r.text); setDecCut(extraDecimals(el.value) ? el.id : '');
   };
+  // campo in cui è stata appena scartata una terza cifra decimale: lo si dice sotto il campo
+  const [decCut, setDecCut] = useState('');
   const [amountTxt, setAmountTxt] = useState(initial ? fmt(Number(initial.amount))
     : P?.amount ? fmt(P.amount) : '');
   // movimento nuovo senza dati precompilati: conto, progetto e modalità partono da quelli dell'ultimo movimento dello stesso
@@ -302,6 +304,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     const needed = status === 'recorded'
       ? Object.values(missing).some(Boolean)
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
+    // il fuoco va al primo campo da completare (prima restava sul pulsante e l'errore poteva essere fuori schermo)
+    if (needed) setTimeout(() => { const el = document.querySelector<HTMLElement>('.mform [aria-invalid="true"], .mform #giust .ferr'); if (el?.matches('.ferr')) el.scrollIntoView({ block: 'center' }); else el?.focus(); }, 60);
     // spesa di tasca propria: resta "da rimborsare" (bozza senza conto) finché un responsabile non la rimborsa
     if (due) status = 'draft';
     if (needed) {
@@ -377,6 +381,16 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     }
   }
 
+  // accessibilità (16/11): i campi obbligatori sono dichiarati tali, e il messaggio «Campo obbligatorio» è collegato al suo campo
+  useEffect(() => {
+    const need: Record<string, boolean> = { amount: true, account: !due, category: kind !== 'transfer', project: kind === 'expense', desc: kind !== 'transfer', paidby: kind === 'expense' };
+    Object.entries(need).forEach(([id, on]) => { const el = document.getElementById(id); if (el) { if (on) el.setAttribute('aria-required', 'true'); else el.removeAttribute('aria-required'); } });
+    document.querySelectorAll<HTMLElement>('.mform .field, .mform #giust').forEach((f, i) => {
+      const e = f.querySelector<HTMLElement>('.ferr'); const cs = f.matches('#giust') ? f.querySelectorAll<HTMLElement>('button, input[type=checkbox]') : f.querySelectorAll<HTMLElement>('input, select, textarea');
+      if (e && !e.id) e.id = `ferr-${i}`;
+      cs.forEach((c) => { if (e) c.setAttribute('aria-describedby', e.id); else if (c.getAttribute('aria-describedby')?.startsWith('ferr-')) c.removeAttribute('aria-describedby'); });
+    });
+  });
   const req = (bad: boolean) => (touched && bad ? <span className="ferr">{t.f_required}</span> : null);
   // campi compilati dall'IA: chi registra li conferma tutti insieme; in giallo solo quelli incerti.
   // Un campo corretto a mano perde l'etichetta (confirmed = modificato dall'utente).
@@ -532,6 +546,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
           {req(missing.amount)}
+          {decCut === 'amount' && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'Deux décimales au maximum : le chiffre en plus n’a pas été écrit.' : 'Al massimo due decimali: la cifra in più non è stata scritta.'}</span>}
           {amount ? <span className="hint amt-echo">{t.f_amount_read}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
             {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
             {currency === 'MGA' && amount % 1 ? <> · {t.f_mga_round}</> : null}</span> : null}
@@ -618,10 +633,12 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           <div className={aiCls('category')}>
             <label htmlFor="category">{t.f_category}</label>
             {cats.length > 15 && (
-              <input className="input cat-q" type="search" inputMode="search" value={catQ} onChange={(e) => setCatQ(e.target.value)} aria-label={lang === 'fr' ? 'Chercher un poste par code ou par nom' : 'Cerca una voce per codice o per nome'}
-                placeholder={lang === 'fr' ? 'Chercher un poste…' : 'Cerca una voce…'} />)}
+              <input className="input cat-q" type="search" inputMode="search" value={catQ} onChange={(e) => { const q = e.target.value; setCatQ(q);
+                // un solo codice trovato: è già scelto, senza aprire l'elenco
+                const hits = q.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group}`).includes(nq(q.trim()))) : []; if (hits.length === 1) { setCategoryId(hits[0]!.id); confirm('category'); } }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
+                placeholder={lang === 'fr' ? 'Chercher un code…' : 'Cerca un codice…'} />)}
             <select className="input" id="category" aria-invalid={touched && missing.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
-              <option value="">{catQ.trim() ? (lang === 'fr' ? `${catHits.length} postes trouvés` : `${catHits.length} voci trovate`) : t.f_choose}</option>
+              <option value="">{catQ.trim() ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé' : `${catHits.length} codes trouvés`) : (catHits.length === 1 ? '1 codice trovato' : `${catHits.length} codici trovati`)) : t.f_choose}</option>
               {catQ.trim() ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}
               {!catQ.trim() && recentCats.length > 0 && (
                 <optgroup label={t.f_recent}>
@@ -638,7 +655,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           </div>
           <div className="field">
             <label htmlFor="project">{t.f_project}</label>
-            <select className="input" id="project" value={projectId} onChange={(e) => {
+            <select className="input" id="project" aria-invalid={touched && missing.project ? true : undefined} value={projectId} onChange={(e) => {
               const pid = e.target.value; setProjectId(pid);
               // se il progetto ha un solo finanziamento, lo propongo già scelto (si può togliere): partire da «Nessuno» sottostima il rendiconto
               const own = R.grants.filter((g) => g.project_id === pid);
@@ -714,7 +731,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           <button type="button" className="btn" disabled={busy} onClick={() => save('draft')}>{t.f_save_draft}</button>
         )}
         <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : due ? t.f_save_due : t.f_record}</button>
-        <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint}</span>
+        <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint} {t.lang_code === 'fr' ? '* obligatoire pour comptabiliser.' : '* obbligatorio per registrare.'}</span>
         {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{t.f_missing_list}{t.lang_code === 'fr' ? '\u00a0' : ''}: {missingNames.join(', ')}</span>}
       </div>
     </form>

@@ -14,7 +14,7 @@ export const MESI: Record<Lang, string[]> = {
   fr: ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
 };
 // etichetta corta dei mesi sugli assi stretti: tre lettere, senza confondere juin e juillet («Jui», «Jui»)
-export const short3 = (c: string) => (c === 'Juin' ? 'Jun' : c === 'Juil' ? 'Jul' : c.slice(0, 3));
+export const short3 = (c: string) => (/^juin/i.test(c) ? (c[0] === 'j' ? 'jun' : 'Jun') : /^juil/i.test(c) ? (c[0] === 'j' ? 'jul' : 'Jul') : c.slice(0, 3));
 export const MESI_L: Record<Lang, string[]> = {
   it: ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
   fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
@@ -30,7 +30,7 @@ export function niceStep(x: number) {
 function axis(top: number, step: number, L: number, W: number, R: number, y: (v: number) => number, lang: Lang, bottom = 0, full = false) {
   let g = '';
   for (let t = bottom; t <= top + 0.1; t += step)
-    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${t >= 1000 && !full ? (t / 1000).toLocaleString(loc(lang)) + 'k' : Math.round(t).toLocaleString(loc(lang), { useGrouping: 'always' } as Intl.NumberFormatOptions)}</text>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="13" fill="var(--muted)">${t >= 1000 && !full ? (t / 1000).toLocaleString(loc(lang)) + 'k' : Math.round(t).toLocaleString(loc(lang), { useGrouping: 'always' } as Intl.NumberFormatOptions)}</text>`;
   return g;
 }
 
@@ -60,10 +60,10 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
       } else {
         const bw = gw / k;
         out += `<rect x="${x0 + bw * j + 1}" y="${y(v)}" width="${bw - 2}" height="${hh(v)}" fill="${st ? 'var(--band)' : s.color}" ${st ? `stroke="${s.color}" stroke-dasharray="3 2"` : ''} rx="2"></rect>`;
-        if (opt.labels) out += `<text class="vl" x="${x0 + bw * j + bw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="11" fill="var(--muted)">${kfmt(v, lang)}</text>`;
+        if (opt.labels) out += `<text class="vl" x="${x0 + bw * j + bw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="13" fill="var(--muted)">${kfmt(v, lang)}</text>`;
       }
     });
-    if (opt.stacked && opt.labels && acc > 0) out += `<text class="vl" x="${x0 + gw / 2}" y="${y(acc) - 5}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--muted)">${kfmt(acc, lang)}</text>`;
+    if (opt.stacked && opt.labels && acc > 0) out += `<text class="vl" x="${x0 + gw / 2}" y="${y(acc) - 5}" text-anchor="middle" font-size="13" font-weight="600" fill="var(--muted)">${kfmt(acc, lang)}</text>`;
     const tl = [c]; let sum = 0;
     series.forEach((s) => { const v = s.vals[i] || 0; if (v > 0) { tl.push(`${s.name}: ${eur0(v, lang)}`); sum += v; } });
     if (opt.stacked && tl.length > 2) tl.push(`${lang === 'fr' ? 'Total' : 'Totale'}: ${eur0(sum, lang)}`);
@@ -71,10 +71,10 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
     const hov = `<rect class="hov" x="${L + sx * i}" y="${T}" width="${sx}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = opt.hrefs?.[i];
     out += href && sum > 0 ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
-    out += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`;
+    out += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="13" fill="var(--muted)">${ph && n > 8 && i % 2 ? '' : esc(ph ? short3(c) : c)}</text>`;
   });
   (opt.refs ?? []).forEach((r) => {
-    out += `<line x1="${L}" x2="${W - R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label ? `<text class="ref" x="${W - R}" y="${y(r.v) - 5}" text-anchor="end" font-size="11" fill="${r.color}">${esc(r.label)}</text>` : ''}`;
+    out += `<line x1="${L}" x2="${W - R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label ? `<text class="ref" x="${W - R}" y="${y(r.v) - 5}" text-anchor="end" font-size="13" fill="${r.color}">${esc(r.label)}</text>` : ''}`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
 }
@@ -91,7 +91,7 @@ export function svgMirror(cats: string[], inc: number[], out: number[], opt: { l
   const lab = (v: number) => (v === 0 ? '0' : (v > 0 ? '+' : '\u2212') + kfmt(Math.abs(v), lang));
   let g = '';
   for (let t = -down; t <= up + 0.1; t += step)
-    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? 'var(--muted)' : 'var(--line-2)'}"${t === 0 ? '' : ' stroke-dasharray="2 4"'}/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${lab(t)}</text>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? 'var(--muted)' : 'var(--line-2)'}"${t === 0 ? '' : ' stroke-dasharray="2 4"'}/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="13" fill="var(--muted)">${lab(t)}</text>`;
   let bars = '', dots = '';
   cats.forEach((c, i) => {
     const a = Math.max(0, inc[i] || 0), b = Math.max(0, out[i] || 0), x = L + sx * i + (sx - bw) / 2, net = a - b;
@@ -102,7 +102,7 @@ export function svgMirror(cats: string[], inc: number[], out: number[], opt: { l
     const hov = `<rect class="hov" x="${L + sx * i}" y="${T}" width="${sx}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = opt.hrefs?.[i];
     bars += href && (a > 0 || b > 0) ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
-    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="${ph ? 10.5 : 11.5}" fill="var(--muted)">${esc(ph ? short3(c) : c)}</text>`;
+    bars += `<text x="${L + sx * i + sx / 2}" y="${H - 9}" text-anchor="middle" font-size="13" fill="var(--muted)">${ph && n > 8 && i % 2 ? '' : esc(ph ? short3(c) : c)}</text>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${g}${bars}${dots}</svg>`;
 }
@@ -120,7 +120,7 @@ export function svgLines(cats: string[], series: (Series & { area?: boolean; das
   const bottom = opt.zoom ? Math.max(0, Math.floor(lo / step) * step - (lo % step === 0 ? step : 0)) : 0, sx = (W - L - R) / (n - 1 || 1);
   const y = (v: number) => T + (H - T - B) * (1 - (v - bottom) / (top - bottom || 1)), x = (i: number) => L + sx * i;
   let out = axis(top, step, L, W, R, y, lang, bottom, !!opt.zoom);
-  (opt.refs ?? []).forEach((r) => { out += `<line x1="${L}" x2="${W - R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label ? `<text class="ref" x="${L + 6}" y="${y(r.v) - 5}" font-size="11" fill="${r.color}">${esc(r.label)}</text>` : ''}`; });
+  (opt.refs ?? []).forEach((r) => { out += `<line x1="${L}" x2="${W - R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label ? `<text class="ref" x="${L + 6}" y="${y(r.v) - 5}" font-size="13" fill="${r.color}">${esc(r.label)}</text>` : ''}`; });
   series.forEach((s) => {
     const pts = s.vals.map((v, i) => (v == null ? null : [x(i), y(v)] as const));
     let d = '';
@@ -136,7 +136,7 @@ export function svgLines(cats: string[], series: (Series & { area?: boolean; das
     out += `<rect class="hov" x="${Math.max(L, x(i) - w / 2)}" y="${T}" width="${w}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
   });
   const every = ph && n > 8 ? 2 : 1;
-  cats.forEach((c, i) => { if (i % every && i !== n - 1) return; const a = i === n - 1 && n > 1 ? 'end' : 'middle'; out += `<text x="${i === n - 1 && n > 1 ? x(i) + 4 : x(i)}" y="${H - 9}" text-anchor="${a}" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`; });
+  cats.forEach((c, i) => { if ((n - 1 - i) % every) return; const a = i === n - 1 && n > 1 ? 'end' : 'middle'; out += `<text x="${i === n - 1 && n > 1 ? x(i) + 4 : x(i)}" y="${H - 9}" text-anchor="${a}" font-size="13" fill="var(--muted)">${esc(c)}</text>`; });
   return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
 }
 
@@ -148,7 +148,7 @@ export function monthChart(a: number[], b: number[], c: number[], curM: number, 
   const y = (v: number) => T + (H - T - B) * (1 - v / top), hh = (v: number) => (H - T - B) * v / top;
   const M = MESI[lang], ML = MESI_L[lang];
   let g = '';
-  for (let t = step; t <= top + 0.1; t += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)" stroke-dasharray="2 4"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--faint)">${kfmt(t, lang)}</text>`;
+  for (let t = step; t <= top + 0.1; t += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)" stroke-dasharray="2 4"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end" font-size="13" fill="var(--faint)">${kfmt(t, lang)}</text>`;
   const seg = (x: number, y0: number, h: number, col: string, round: boolean) => {
     if (h <= 0) return '';
     const r = round ? Math.min(6, h, bw / 2) : 0;
@@ -160,7 +160,7 @@ export function monthChart(a: number[], b: number[], c: number[], curM: number, 
     const tl = [ML[i]!]; if (v) tl.push(`${names[0]}: ${eur0(v, lang)}`); if (bi) tl.push(`${names[1]}: ${eur0(bi, lang)}`); if (ci) tl.push(`${names[2]}: ${eur0(ci, lang)}`); if (tl.length === 1) tl.push('—');
     if (i === curM) bars += `<rect x="${L + sx * i + 2}" y="${T - 18}" width="${sx - 4}" height="${H - T - B + 18 + 22}" rx="10" fill="var(--surface-2)"/>`;
     bars += seg(x, y(v), hh(v), 'var(--vz-real)', !bi && !ci) + seg(x, y(v + bi), hh(bi), 'var(--vz-plan)', !ci) + seg(x, y(t), hh(ci), 'var(--vz-hyp)', true);
-    if (t > 0 && !compact) bars += `<text x="${x + bw / 2}" y="${y(t) - 6}" text-anchor="middle" font-size="11" font-weight="600" fill="${!v && !bi ? 'var(--lilac-ink)' : 'var(--muted)'}">${kfmt(t, lang)}</text>`;
+    if (t > 0 && !compact) bars += `<text x="${x + bw / 2}" y="${y(t) - 6}" text-anchor="middle" font-size="13" font-weight="600" fill="${!v && !bi ? 'var(--lilac-ink)' : 'var(--muted)'}">${kfmt(t, lang)}</text>`;
     bars += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="${compact ? 10.5 : 11.5}" font-weight="${i === curM ? 700 : 500}" fill="${i === curM ? 'var(--fg)' : 'var(--faint)'}">${M[i]}</text>`;
     const hov = `<rect class="hov" x="${L + sx * i}" y="${T - 18}" width="${sx}" height="${H - T - B + 18}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = hrefs?.[i];
@@ -180,8 +180,8 @@ export function donut(items: { label: string; value: number; color: string; tip?
     acc += f; return s;
   }).join('');
   // il valore al centro si rimpicciolisce quando è lungo, così resta dentro il foro (visto sull'iPhone: 24.231.107 € toccava l'anello)
-  const vfs = Math.max(12, Math.min(19, Math.floor(108 / (Math.max(1, center.value.length) * 0.56))));
-  return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="${esc(center.label)}"><circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--line-2)" stroke-width="${Wd}"/>${seg}<text x="100" y="94" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(center.label)}</text><text x="100" y="114" text-anchor="middle" font-size="${vfs}" font-weight="700" fill="var(--navy)">${esc(center.value)}</text></svg>`;
+  const vfs = Math.max(14, Math.min(19, Math.floor(108 / (Math.max(1, center.value.length) * 0.56))));
+  return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="${esc(center.label)}"><circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--line-2)" stroke-width="${Wd}"/>${seg}<text x="100" y="94" text-anchor="middle" font-size="13" fill="var(--muted)">${esc(center.label)}</text><text x="100" y="114" text-anchor="middle" font-size="${vfs}" font-weight="700" fill="var(--navy)">${esc(center.value)}</text></svg>`;
 }
 
 // Mini grafici dei riquadri numerici (VZ di Cairn).
@@ -197,7 +197,7 @@ export function flowMini(rows: { inc: number; out: number }[], curM: number, lan
     if (a > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${y(a).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, z - y(a)).toFixed(1)}" rx="3" fill="var(--c-in)"/>`;
     if (b > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${z.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y(-b) - z).toFixed(1)}" rx="3" fill="var(--c-out)"/>`;
     if (any) dots += `<circle cx="${x.toFixed(1)}" cy="${y(net).toFixed(1)}" r="3.4" fill="var(--c-net)" stroke="var(--surface)" stroke-width="1.6"/>`;
-    o += `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="${i + 1 === curM ? 'var(--fg)' : 'var(--muted)'}"${i + 1 === curM ? ' font-weight="600"' : ''}>${MESI[lang][i]!.slice(0, 1)}</text>`;
+    o += `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="13" fill="${i + 1 === curM ? 'var(--fg)' : 'var(--muted)'}"${i + 1 === curM ? ' font-weight="600"' : ''}>${MESI[lang][i]!.slice(0, 1)}</text>`;
     const tl = [MESI_L[lang][i]!, `${names[0]}: ${eur0(a, lang)}`, `${names[1]}: ${eur0(b, lang)}`, `${names[2]}: ${net < 0 ? '−' : ''}${eur0(Math.abs(net), lang)}`];
     const hov = `<rect class="hov" x="${(L + sx * i).toFixed(1)}" y="${T}" width="${sx.toFixed(1)}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = hrefs?.[i];

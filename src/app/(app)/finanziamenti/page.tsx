@@ -55,7 +55,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   for (const g of shown) { const k = g.donor?.id ?? ''; const x = byDonor.get(k) ?? { label: g.donor?.name ?? L('Finanziatore da indicare', 'Bailleur à préciser'), v: 0 }; x.v += granted(g); byDonor.set(k, x); }
   const dn = [...byDonor.entries()].map(([k, x]) => ({ k: k || 'none', ...x })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
   const dnTop0 = (dn.length > 6 ? [...dn.slice(0, 5), { k: 'rest', label: L(`Altri (${dn.length - 5})`, `Autres (${dn.length - 5})`), v: dn.slice(5).reduce((s, x) => s + x.v, 0) }] : dn);
-  const dnCols = fixedColors(dnTop0.map((x) => (x.k === 'rest' ? '' : x.label)));
+  const dnCols = fixedColors(dnTop0.map((x) => (x.k === 'rest' ? '' : x.label)), dnTop0.map((x) => x.k));
   const dnTop = dnTop0.map((x, n) => ({ ...x, color: dnCols[n]! }));
   const maxPair = Math.max(1, ...shown.flatMap((g) => [granted(g), T(g).rec, T(g).sp]));
   const net = sum.rec - sum.sp;
@@ -87,7 +87,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
           <div className="v num">{e0(sum.sp)}</div>
           <Viz.Cols vals={mSp} colors={mSp.map(() => 'var(--vz-sp)')} tip={mTip(L('Speso, ultimi 12 mesi', 'Dépensé, 12 derniers mois'), mSp)} />
           <div className="vzl"><span>{L('del concesso', 'de l\'accordé')}</span><span>{pc(sum.sp, sum.g)}</span></div>
-          <div className="s">{sum.miss ? (sum.miss === 1 ? L('1 spesa senza giustificativo', '1 dépense sans pièce') : L(`${sum.miss} spese senza giustificativo`, `${sum.miss} dépenses sans pièce`)) : L('tutte le spese con giustificativo', 'toutes les dépenses avec pièce')}</div>
+          <div className="s">{sum.miss ? (sum.miss === 1 ? L('1 spesa senza giustificativo', '1 dépense sans justificatif') : L(`${sum.miss} spese senza giustificativo`, `${sum.miss} dépenses sans justificatif`)) : L('tutte le spese con giustificativo', 'toutes les dépenses avec justificatif')}</div>
         </div>
         <div className="kpi">
           <div className="l">{L('Disponibile in cassa', 'Disponible en caisse')}</div>
@@ -162,7 +162,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
                   <span className="g-tl"><span>{g.start_date && g.end_date ? `${date(g.start_date)} – ${date(g.end_date)}` : L('periodo da indicare', 'période à préciser')}</span>
                     <span>{tm ? L(`tempo ${Math.round(tm.p * 100)} %`, `temps ${Math.round(tm.p * 100)} %`) : ''}</span></span>
                 </div>
-                <div className="pr-f"><span>{!x.nExp ? L('nessuna spesa collegata', 'aucune dépense liée') : x.miss ? (x.miss === 1 ? L('1 giustificativo mancante', '1 pièce manquante') : L(`${x.miss} giustificativi mancanti`, `${x.miss} pièces manquantes`)) : L('giustificativi completi', 'pièces complètes')}</span>
+                <div className="pr-f"><span>{!x.nExp ? L('nessuna spesa collegata', 'aucune dépense liée') : x.miss ? (x.miss === 1 ? L('1 giustificativo mancante', '1 justificatif manquant') : L(`${x.miss} giustificativi mancanti`, `${x.miss} justificatifs manquants`)) : L('giustificativi completi', 'justificatifs complets')}</span>
                   <span>{g.code ?? ''}</span></div>
               </Link>
             );

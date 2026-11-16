@@ -165,9 +165,9 @@ export default async function GrantDetail({ params, searchParams }: {
           <div className="panel-h"><H2 text={L('Qualità della rendicontazione', 'Qualité du rapport')} icon={null} /></div>
           <div className="panel-b">
             <dl className="g-q">
-              <div><dt>{L('Spese con documento', 'Dépenses avec pièce')}</dt><dd className="num">{x.nExp ? `${withDoc} ${L('su', 'sur')} ${x.nExp}` : '–'}</dd>
+              <div><dt>{L('Spese con documento', 'Dépenses avec justificatif')}</dt><dd className="num">{x.nExp ? `${withDoc} ${L('su', 'sur')} ${x.nExp}` : '–'}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (withDoc / x.nExp) * 100 : 0}%`, background: 'var(--green-soft)' }} /></span></div>
-              <div><dt>{L('Senza documento, motivo dichiarato', 'Sans pièce, motif déclaré')}</dt><dd className="num">{x.declared}</dd>
+              <div><dt>{L('Senza documento, motivo dichiarato', 'Sans justificatif, motif déclaré')}</dt><dd className="num">{x.declared}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.declared / x.nExp) * 100 : 0}%`, background: 'var(--vz-plan)' }} /></span></div>
               <div><dt>{L('Da documentare', 'À documenter')}</dt><dd className={`num ${x.miss ? 'neg' : ''}`}>{x.miss}</dd>
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.miss / x.nExp) * 100 : 0}%`, background: 'var(--tax)' }} /></span></div>
@@ -175,7 +175,7 @@ export default async function GrantDetail({ params, searchParams }: {
                 <span className="bqs-bar"><i style={{ width: `${x.nExp ? (x.unver / x.nExp) * 100 : 0}%`, background: 'var(--vz-sp)' }} /></span></div>
             </dl>
             {looseN > 0 && g.project && <p className="note warn g-loose"><Link href={`/movimenti?progetto=${g.project.id}${g.start_date ? `&dal=${g.start_date}` : ''}${g.end_date ? `&al=${g.end_date}` : ''}&tipo=expense`}>{L(`Spese del progetto non attribuite ad alcun finanziamento: ${looseN} · ${e0(looseEur)}`, `Dépenses du projet non rattachées à un financement : ${looseN} · ${e0(looseEur)}`)}</Link>{' '}{L('Se appartengono a questo finanziamento, collegale dal modulo del movimento.', 'Si elles relèvent de ce financement, rattachez-les depuis le formulaire du mouvement.')}</p>}
-            <p className="muted small fin-note">{L('Si contano le spese registrate o verificate. «Con documento»: almeno un file allegato. «Senza documento, motivo dichiarato»: nessun file, ma il motivo è scritto. «Da documentare»: né file né motivo.', 'On compte les dépenses enregistrées ou vérifiées. « Avec pièce » : au moins un fichier joint. « Sans pièce, motif déclaré » : aucun fichier, mais le motif est écrit. « À documenter » : ni fichier ni motif.')}</p>
+            <p className="muted small fin-note">{L('Si contano le spese registrate o verificate. «Con documento»: almeno un file allegato. «Senza documento, motivo dichiarato»: nessun file, ma il motivo è scritto. «Da documentare»: né file né motivo.', 'On compte les dépenses enregistrées ou vérifiées. « Avec justificatif » : au moins un fichier joint. « Sans justificatif, motif déclaré » : aucun fichier, mais le motif est écrit. « À documenter » : ni fichier ni motif.')}</p>
           </div>
         </section>
         <section className="panel">

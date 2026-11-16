@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'YouCount · Contabilità YouSud',
     short_name: 'YouCount',
-    description: 'Ogni spesa, il suo giustificativo – Chaque dépense, sa pièce justificative',
+    description: 'Ogni spesa, il suo giustificativo – Chaque dépense, son justificatif',
     lang: 'it',
     start_url: '/',
     scope: '/',

@@ -33,7 +33,7 @@ export default async function AdminAccounts({ searchParams }: { searchParams: Pr
           <EditRow key={a.id} inactive={!a.active} summary={<>
             <b className="grow">{nm(lang, a)}</b>
             <span className="muted meta">{KIND[a.kind]?.[L] ?? a.kind} · {a.location === 'IT' ? t('italy') : t('madagascar')}</span>
-            <span className="num amt">{t('acc_opening')}: {money(a.opening_balance, a.currency, lang)}</span>
+            <span className="num amt">{t('acc_opening')}{lang === 'fr' ? '\u00a0' : ''}: {money(a.opening_balance, a.currency, lang)}</span>
             {!a.active && <span className="chip">{t('inactive')}</span>}
           </>}>
             <form action={saveRow} className="fgrid">
@@ -44,7 +44,7 @@ export default async function AdminAccounts({ searchParams }: { searchParams: Pr
               <F label={t('opening_date')}><input className="input" type="date" name="opening_date" defaultValue={a.opening_date ?? ''} /></F>
               <F label={t('sort_l')}><input className="input num" name="sort" inputMode="numeric" defaultValue={a.sort} /></F>
               <label className="check" style={{ alignSelf: 'end' }}><input type="checkbox" name="active" defaultChecked={a.active} /> {t('active')}</label>
-              <p className="hint span2" style={{ margin: 0 }}>{t('code')}: {a.code} · {t('currency')}: {a.currency} · {t('retro_warn')}</p>
+              <p className="hint span2" style={{ margin: 0 }}>{t('code')}{lang === 'fr' ? '\u00a0' : ''}: {a.code} · {t('currency')}{lang === 'fr' ? '\u00a0' : ''}: {a.currency} · {t('retro_warn')}</p>
               <SaveBar label={t('save')} />
             </form>
           </EditRow>

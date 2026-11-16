@@ -305,7 +305,7 @@ export default async function Deadlines({ searchParams }: {
                 <div className="dl-act">
                   {!i.auto && writer && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
                   {!i.auto && !i.rule_key && writer && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
-                  {i.auto && <span className="chip">{L('dai dati', 'des données')}</span>}
+                  {i.auto && <span className="chip">{L('automatica', 'automatique')}</span>}
                 </div>
               </li>
             ))}
@@ -316,7 +316,7 @@ export default async function Deadlines({ searchParams }: {
 
       {staff && (
         <Panel title={L(`Soglie ETS · entrate ${Y}`, `Seuils ETS · recettes ${Y}`)} pad>
-          <p className="muted small" style={{ marginTop: 0 }}>{L('Entrate', 'Recettes')} {Y - 1}: <b className="num">{money(inc(Y - 1), 'EUR', lang)}</b> · {Y} {L('finora', 'à ce jour')}: <b className="num">{money(inc(Y), 'EUR', lang)}</b> · {L('fine anno stimata', 'fin d’année estimée')}: <b className="num">≈ {money(Math.round(est / 1000) * 1000, 'EUR', lang).replace(/,00(?=\s?€)/, '')}</b></p>
+          <p className="muted small" style={{ marginTop: 0 }}>{L('Entrate', 'Recettes')} {Y - 1}{lang === 'fr' ? '\u00a0' : ''}: <b className="num">{money(inc(Y - 1), 'EUR', lang)}</b> · {Y} {L('finora', 'à ce jour')}{lang === 'fr' ? '\u00a0' : ''}: <b className="num">{money(inc(Y), 'EUR', lang)}</b> · {L('fine anno stimata', 'fin d’année estimée')}: <b className="num">≈ {money(Math.round(est / 1000) * 1000, 'EUR', lang).replace(/,00(?=\s?€)/, '')}</b></p>
           <div className="ruler" role="img" aria-label={L('Righello delle soglie', 'Règle des seuils')}>
             <div className="ru-track"><i style={{ width: `${pos(inc(Y))}%` }} /></div>
             {THRESHOLDS.map((th) => <span key={th.v} className={`ru-th${inc(Y) > th.v ? ' past' : ''}`} style={{ left: `${pos(th.v)}%` }}><span>{k(th.v)}</span></span>)}

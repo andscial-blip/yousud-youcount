@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { money } from '@/lib/format';
 import { Empty } from './Page';
+import { BudgetBar } from './Charts';
 
 export type CmpRow = { direction: 'in' | 'out'; group_id: string; group_code: string; category_id: string; category_code: string; cat_it: string;
   cat_fr: string | null; project_id: string | null; project_name: string | null; budget_eur: string; actual_eur: string; committed_eur: string; movements: number };
@@ -28,16 +29,15 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
   const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0
     : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
   // stessi colori del resto dell'app: giallo = uscite, blu notte = entrate; sforamento (solo per le uscite) come nella tabella per gruppo
-  const Bar = ({ b, a, dir = 'out' }: { b: number; a: number; dir?: 'in' | 'out' }) => { const p = b > 0 ? a / b : a > 0 ? 2 : 0;
-    return <span className={`cb-bar ${dir}${p > 1.0005 ? ' over' : ''}`} aria-hidden="true"><i style={{ width: `${Math.min(p, 1) * 100}%` }} />{b > 0 && year === now.getFullYear() && <em style={{ left: `${elapsed * 100}%` }} />}</span>; };
-  const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '');
+  const Bar = ({ b, a, dir = 'out' }: { b: number; a: number; dir?: 'in' | 'out' }) => <BudgetBar budget={b} spent={a} dir={dir} elapsed={year === now.getFullYear() ? elapsed : undefined} />;
+  const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}${lang === 'fr' ? '\u00a0' : ''}%` : '');
   const section = (d: 'in' | 'out') => groups.filter((g) => g.direction === d && all.some((x) => x.r.group_id === g.id)).map((g) => {
     const cs = all.filter((x) => x.r.group_id === g.id).sort((a, b) => a.r.category_code.localeCompare(b.r.category_code, 'it', { numeric: true }));
     const gb = cs.reduce((s, x) => s + x.b, 0), ga = cs.reduce((s, x) => s + x.a, 0);
     return (
       <tbody key={g.id}>
         <tr className="cb-grp"><th scope="rowgroup" colSpan={2}>{g.code} · {N(g)}</th><td className="r num">{e0(gb)}</td><td className="r num">{e0(ga)}</td>
-          <td className={`r num ${d === 'out' && gb - ga < 0 ? 'neg' : ''}`}>{e0(gb - ga)}</td><td className="r num">{pct(ga, gb)}</td><td /></tr>
+          <td className={`r num cb-res ${d === 'out' && gb - ga < 0 ? 'neg' : ''}`}>{e0(gb - ga)}</td><td className="r num">{pct(ga, gb)}</td><td /></tr>
         {cs.map((x) => { const isOver = d === 'out' && x.a > x.b + 0.005;
           return (
             <tr key={x.r.category_id} className={isOver ? 'over' : ''}>
@@ -46,7 +46,7 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
               <td className="r num" data-l={L('Previsto', 'Prévu')}>{e0(x.b)}</td>
               <td className="r num" data-l={d === 'out' ? L('Speso', 'Dépensé') : L('Incassato', 'Encaissé')}>{x.n > 0
                 ? <Link href={`/movimenti?dal=${year}-01-01&al=${year}-12-31&codice=${x.r.category_id}${prj ? `&progetto=${prj}` : ''}`}>{e0(x.a)}</Link> : e0(x.a)}</td>
-              <td className={`r num ${d === 'out' && x.b - x.a < 0 ? 'neg' : ''}`} data-l={L('Residuo', 'Reste')}>{e0(x.b - x.a)}</td>
+              <td className={`r num cb-res ${d === 'out' && x.b - x.a < 0 ? 'neg' : ''}`} data-l={L('Residuo', 'Reste')}>{e0(x.b - x.a)}</td>
               <td className="r num" data-l="%">{x.b > 0 ? pct(x.a, x.b) : '–'}</td>
               <td className="cb-bc"><Bar b={x.b} a={x.a} dir={d} /></td>
             </tr>); })}
@@ -62,12 +62,12 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
     <div className="tscroll">
       <table className="t keep cbudget">
         <thead><tr><th>{L('Codice', 'Code')}</th><th>{L('Voce', 'Poste')}</th><th className="r">{L('Previsto', 'Prévu')}</th><th className="r">{L('Speso / incassato', 'Dépensé / encaissé')}</th>
-          <th className="r">{L('Residuo', 'Reste')}</th><th className="r">%</th><th className="cb-bc" /></tr></thead>
+          <th className="r cb-res">{L('Residuo', 'Reste')}</th><th className="r">%</th><th className="cb-bc" /></tr></thead>
         <tbody><tr className="bl-sec"><th colSpan={2} scope="rowgroup">{L('Uscite', 'Dépenses')}</th><td className="r num"><b>{e0(outB)}</b></td><td className="r num"><b>{e0(outA)}</b></td>
-          <td className={`r num ${outB - outA < 0 ? 'neg' : ''}`}><b>{e0(outB - outA)}</b></td><td className="r num"><b>{pct(outA, outB)}</b></td><td className="cb-bc"><Bar b={outB} a={outA} /></td></tr></tbody>
+          <td className={`r num cb-res ${outB - outA < 0 ? 'neg' : ''}`}><b>{e0(outB - outA)}</b></td><td className="r num"><b>{pct(outA, outB)}</b></td><td className="cb-bc"><Bar b={outB} a={outA} /></td></tr></tbody>
         {section('out')}
         <tbody><tr className="bl-sec"><th colSpan={2} scope="rowgroup">{L('Entrate', 'Recettes')}</th><td className="r num"><b>{e0(inB)}</b></td><td className="r num"><b>{e0(inA)}</b></td>
-          <td className="r num"><b>{e0(inB - inA)}</b></td><td className="r num"><b>{pct(inA, inB)}</b></td><td className="cb-bc"><Bar b={inB} a={inA} dir="in" /></td></tr></tbody>
+          <td className="r num cb-res"><b>{e0(inB - inA)}</b></td><td className="r num"><b>{pct(inA, inB)}</b></td><td className="cb-bc"><Bar b={inB} a={inA} dir="in" /></td></tr></tbody>
         {section('in')}
       </table>
     </div>

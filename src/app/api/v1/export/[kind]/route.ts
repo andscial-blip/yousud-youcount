@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       { header: fr ? 'Financement' : 'Finanziamento', key: 'grant', width: 22 }, { header: fr ? 'Tiers' : 'Controparte', key: 'cp', width: 22 },
       { header: fr ? 'Compte' : 'Conto', key: 'account', width: 26 }, { header: fr ? 'Vers le compte' : 'Al conto', key: 'to', width: 22 },
       { header: fr ? 'Devise' : 'Valuta', key: 'cur', width: 7 }, { header: fr ? 'Montant' : 'Importo', key: 'amount', width: 15, fmt: '#,##0.00' },
-      { header: fr ? 'Taux' : 'Tasso', key: 'rate', width: 9, fmt: '#,##0' }, { header: fr ? 'Montant EUR' : 'Importo EUR', key: 'eur', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Taux' : 'Tasso', key: 'rate', width: 10, fmt: '#,##0.##' }, { header: fr ? 'Montant EUR' : 'Importo EUR', key: 'eur', width: 14, fmt: '#,##0.00' },
     ]);
     type N = { name_it: string; name_fr: string } | null;
     const L = (o: N) => (!o ? '' : fr && o.name_fr ? o.name_fr : o.name_it);
@@ -292,7 +292,7 @@ async function grantReport(supabase: Sb, req: NextRequest, fr: boolean, wb: Exce
     fr ? 'Montants en EUR au taux enregistré sur chaque mouvement; les extournes sont déduites.'
       : 'Importi in EUR al tasso registrato su ciascun movimento; gli storni sono sottratti.',
     nv ? (fr ? `${nv} mouvement(s) pas encore vérifié(s) : voir la colonne Statut.` : `${nv} movimento/i non ancora verificato/i: vedi la colonna Stato.`) : '',
-    nd ? (fr ? `${nd} dépense(s) sans pièce justificative jointe : voir la colonne Justificatifs.` : `${nd} spesa/e senza giustificativo allegato: vedi la colonna Giustificativi.`) : '',
+    nd ? (fr ? `${nd} dépense(s) sans justificatif joint : voir la colonne Justificatifs.` : `${nd} spesa/e senza giustificativo allegato: vedi la colonna Giustificativi.`) : '',
     fr ? 'Document préparé par YouCount : à contrôler avant l’envoi au bailleur.' : 'Documento preparato da YouCount: da controllare prima dell’invio al finanziatore.',
   ].filter(Boolean);
   for (const n of notes) ws.addRow({ g: n }).font = { color: { argb: 'FF5E6B7C' } };
@@ -307,7 +307,7 @@ async function grantReport(supabase: Sb, req: NextRequest, fr: boolean, wb: Exce
       { header: fr ? 'Code' : 'Codice', key: 'code', width: 8 }, { header: fr ? 'Libellé' : 'Voce', key: 'cn', width: 30 },
       ...(withDocs ? [{ header: fr ? 'Groupe' : 'Gruppo', key: 'grp', width: 26 }] : []),
       { header: fr ? 'Devise' : 'Valuta', key: 'cur', width: 7 }, { header: fr ? 'Montant' : 'Importo', key: 'amt', width: 15, fmt: '#,##0.00' },
-      { header: fr ? 'Taux' : 'Tasso', key: 'rate', width: 9, fmt: '#,##0' }, { header: fr ? 'Montant EUR' : 'Importo EUR', key: 'eur', width: 14, fmt: '#,##0.00' },
+      { header: fr ? 'Taux' : 'Tasso', key: 'rate', width: 10, fmt: '#,##0.##' }, { header: fr ? 'Montant EUR' : 'Importo EUR', key: 'eur', width: 14, fmt: '#,##0.00' },
       { header: fr ? 'Statut' : 'Stato', key: 'st', width: 13 },
       ...(withDocs ? [{ header: fr ? 'Justificatifs' : 'Giustificativi', key: 'docs', width: 44 }] : []),
     ]);

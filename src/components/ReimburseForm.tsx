@@ -30,8 +30,8 @@ export function ReimburseForm({ rows, currency, canPay, accounts, methods, lang,
     <form action={reimburse} className="rb-form">
       <input type="hidden" name="client_batch" value={batch} /><input type="hidden" name="person" value={person} /><input type="hidden" name="currency" value={currency} />
       {missing.length > 0 && <p className="note warn" style={{ margin: '0 0 10px' }}>{missing.length === 1
-        ? L('1 spesa senza giustificativo: allegalo (o scrivi perché manca) dalla spesa, poi si può rimborsare.', '1 dépense sans pièce : joignez-la (ou indiquez pourquoi elle manque) depuis la dépense, puis on peut la rembourser.')
-        : L(`${missing.length} spese senza giustificativo: allegalo (o scrivi perché manca) dalla spesa, poi si possono rimborsare.`, `${missing.length} dépenses sans pièce : joignez-la (ou indiquez pourquoi elle manque) depuis la dépense, puis on peut les rembourser.`)}</p>}
+        ? L('1 spesa senza giustificativo: allegalo (o scrivi perché manca) dalla spesa, poi si può rimborsare.', '1 dépense sans justificatif : joignez-le (ou indiquez pourquoi il manque) depuis la dépense, puis on peut la rembourser.')
+        : L(`${missing.length} spese senza giustificativo: allegalo (o scrivi perché manca) dalla spesa, poi si possono rimborsare.`, `${missing.length} dépenses sans justificatif : joignez-le (ou indiquez pourquoi il manque) depuis la dépense, puis on peut les rembourser.`)}</p>}
       <ul className="rb-list">
         {rows.map((r) => (
           <li key={r.id} className={ok(r) ? '' : 'nodoc'}>
@@ -39,7 +39,7 @@ export function ReimburseForm({ rows, currency, canPay, accounts, methods, lang,
             <span className="rb-d">{day(r.doc_date ?? r.op_date)}</span>
             <span className="rb-t"><Link href={`/movimenti/${r.id}`}>{r.description || '–'}</Link>
               <small className="muted">{[r.category?.code, r.project?.name].filter(Boolean).join(' · ')}
-                {!ok(r) && <> · <Link className="neg" href={`/movimenti/${r.id}`}>{L('allega il giustificativo', 'joindre la pièce')}</Link></>}</small></span>
+                {!ok(r) && <> · <Link className="neg" href={`/movimenti/${r.id}`}>{L('allega il giustificativo', 'joindre le justificatif')}</Link></>}</small></span>
             <b className="num">{money(Number(r.amount), currency, lang)}</b>
           </li>
         ))}

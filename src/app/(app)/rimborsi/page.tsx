@@ -77,7 +77,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
   const AGE = [7, 30, 60];
   const ageBuckets = [0, 0, 0, 0];
   for (const r of due) { const d = daysAgo(since(r)); ageBuckets[d <= AGE[0]! ? 0 : d <= AGE[1]! ? 1 : d <= AGE[2]! ? 2 : 3]! += eurOf(r); }
-  const AGE_C = ['var(--green-soft)', 'var(--vz-sp)', 'var(--amber-soft)', 'var(--tax)'];
+  const AGE_C = ['var(--green-soft)', 'var(--c-sun-soft)', 'var(--tax2)', 'var(--tax)'];   // età del debito: verde → giallo chiaro → corallo chiaro → corallo
   const AGE_L = [LL('fino a 7 giorni', 'jusqu’à 7 jours'), LL('da 8 a 30 giorni', 'de 8 à 30 jours'), LL('da 31 a 60 giorni', 'de 31 à 60 jours'), LL('oltre 60 giorni', 'plus de 60 jours')];
   // tre stati con lo stesso nome ovunque: con documento · senza documento, motivo dichiarato · da documentare
   const withFile = due.filter((r) => (r.docs?.[0]?.count ?? 0) > 0).length, declared = due.filter((r) => !(r.docs?.[0]?.count) && r.no_doc_reason).length;
@@ -123,12 +123,12 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="s">{oldest ? LL(`la più vecchia: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`, `la plus ancienne : ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`) : LL('nessuna spesa in attesa', 'aucune dépense en attente')}</div>
         </div>
         <div className="kpi">
-          {due.length > 0 && <Viz.Ring p={ready / due.length} color={missing ? 'var(--gold-d)' : 'var(--green-soft)'} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec pièce : ${withFile}\nSans pièce, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />}
+          {due.length > 0 && <Viz.Ring p={ready / due.length} color={missing ? 'var(--gold-d)' : 'var(--green-soft)'} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />}
           <div className="l">{LL('Da documentare', 'À documenter')}</div>
           <div className={`v num${missing ? ' amb' : ''}`}>{missing}</div>
-          {due.length > 0 && <><Viz.Stack segs={[{ v: ready, c: 'var(--green-soft)' }, { v: missing, c: 'var(--amber-soft)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec pièce : ${withFile}\nSans pièce, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />
-            <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec pièce ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></>}
-          <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile} con documento, ${declared} con motivo dichiarato`, `${withFile} avec pièce, ${declared} avec motif déclaré`) : LL('tutte con documento', 'toutes avec pièce')) : LL('niente da completare', 'rien à compléter')}</div>
+          {due.length > 0 && <><Viz.Stack segs={[{ v: ready, c: 'var(--green-soft)' }, { v: missing, c: 'var(--gold-d)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />
+            <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec justificatif ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></>}
+          <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile} con documento, ${declared} con motivo dichiarato`, `${withFile} avec justificatif, ${declared} avec motif déclaré`) : LL('tutte con documento', 'toutes avec justificatif')) : LL('niente da completare', 'rien à compléter')}</div>
         </div>
         <div className="kpi">
           <div className="l">{LL(`Rimborsato nel ${Y}`, `Remboursé en ${Y}`)}</div>
@@ -155,7 +155,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
                   <span className="rb-av" aria-hidden="true">{ini(g.person)}</span>
                   <span className="aw-n"><b>{g.person}</b><small className="muted">{g.rows.length === 1 ? LL(`1 spesa del ${dm(since(first))}`, `1 dépense du ${dm(since(first))}`) : LL(`${g.rows.length} spese, la più vecchia del ${dm(since(first))}`, `${g.rows.length} dépenses, la plus ancienne du ${dm(since(first))}`)}</small></span>
                   {nd > 0 && <span className="cdp soon rb-nd">{LL(`${nd} da documentare`, `${nd} à documenter`)}</span>}
-                  <span className="aw-b num">{money(tot, g.currency, lang)}{g.currency !== 'EUR' && <small>≈ {e2(g.rows.reduce((s, r) => s + eurOf(r), 0))}</small>}</span>
+                  <span className="aw-b num">{g.currency !== 'EUR' ? e2(g.rows.reduce((s, r) => s + eurOf(r), 0)) : money(tot, g.currency, lang)}{g.currency !== 'EUR' && <small>{money(tot, g.currency, lang)}</small>}</span>
                   <span className="btn small rb-go">{resp ? LL('Rimborsa', 'Rembourser') : LL('Apri', 'Ouvrir')}</span>
                 </Link></li>);
             })}

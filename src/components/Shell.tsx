@@ -24,14 +24,14 @@ export function locateNav(secs: NavSec[], path: string) {
   return best ? { sec: best.sec, sub: best.sub } : { sec: null, sub: null };
 }
 
-export function SideNav({ secs, label }: { secs: NavSec[]; label: string }) {
+export function SideNav({ secs, label, home }: { secs: NavSec[]; label: string; home?: string }) {
   const path = usePathname();
   const active = locateNav(secs, path).sec?.id;
   return (
     <nav className="side-nav" aria-label={label}>
       {secs.map((s) => (
         <Link key={s.id} href={s.subs[0]!.href} className="side-link" aria-current={active === s.id ? 'page' : undefined} title={s.label}>
-          <CIcon name={s.ic} size={18} /><span>{s.label}</span>
+          <CIcon name={s.ic} size={18} />{s.id === 'home' && home ? <><span className="lbl-full">{s.label}</span><span className="lbl-rail">{home}</span></> : <span>{s.label}</span>}
         </Link>
       ))}
     </nav>
@@ -121,7 +121,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
               </select>
             </label>
           )}
-          {canWrite && <Link className="btn primary not-phone" href="/nuovo"><CIcon name="plus" size={16} />{labels.newMov}</Link>}
+          {canWrite && <Link className="btn primary not-phone" href="/nuovo" aria-label={labels.newMov}><CIcon name="plus" size={16} /><span>{labels.newMov.split(' ')[0]}<span className="lbl-rest"> {labels.newMov.split(' ').slice(1).join(' ')}</span></span></Link>}
         </div>
       </div>
       {/* sotto-schede e, sulla stessa riga a destra, «Come funziona questa scheda» (scelta del 12/11: più visibile dell'icona) */}

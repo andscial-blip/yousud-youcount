@@ -285,7 +285,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                       <span className="aw-n"><b>{accName(w)}</b><small className="muted">{late ? <span className="neg">{LL(`ricevute in ritardo dal ${date(late.report_by)}`, `reçus en retard depuis le ${date(late.report_by)}`)}</span>
                         : due ? LL(`ricevute entro il ${date(due)}`, `reçus avant le ${date(due)}`) : bal < 0 ? LL('da rimborsare alla persona', 'à rembourser à la personne') : LL('nessuna scadenza', 'aucune échéance')}
                         {w.spent_no_doc > 0 ? ` · ${LL(`${w.spent_no_doc} senza ricevuta`, `${w.spent_no_doc} sans reçu`)}` : ''}{pend ? ` · ${LL(`${pend} richiesta in corso`, `${pend} demande en cours`)}` : ''}</small></span>
-                      <span className={`aw-b num ${bal < 0 ? 'neg' : bal > 0 ? 'pos' : ''}`}>{money(bal, w.currency, lang)}<small>{bal < 0 ? LL('anticipato dalla persona', 'avancé par la personne') : LL('in mano', 'en main')}</small></span>
+                      <span className={`aw-b num ${bal < 0 ? 'neg' : bal > 0 ? 'pos' : ''}`}>{w.currency !== 'EUR' && fxNow > 0 ? money(bal / fxNow, 'EUR', lang) : money(bal, w.currency, lang)}<small>{w.currency !== 'EUR' && fxNow > 0 ? `${money(bal, w.currency, lang)} · ` : ''}{bal < 0 ? LL('anticipato dalla persona', 'avancé par la personne') : LL('in mano', 'en main')}</small></span>
                     </Link>
                   </li>
                 );

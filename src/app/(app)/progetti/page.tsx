@@ -52,7 +52,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const top5 = <T extends { v: number }>(xs: T[], rest: (v: number, n: number) => T) => xs.length > 6 ? [...xs.slice(0, 5), rest(xs.slice(5).reduce((a, x) => a + x.v, 0), xs.length - 5)] : xs;
   const mix0 = top5(shown.filter((p) => A(p.id).out > 0).sort((x, y) => A(y.id).out - A(x.id).out).map((p) => ({ k: p.id, label: p.name, v: A(p.id).out })),
     (v, n) => ({ k: 'rest', label: L(`Altri progetti (${n})`, `Autres projets (${n})`), v }));
-  const mixCols = fixedColors(mix0.map((x) => (x.k === 'rest' ? '' : x.label)));
+  const mixCols = fixedColors(mix0.map((x) => (x.k === 'rest' ? '' : x.label)), mix0.map((x) => x.k));
   const mix = mix0.map((x, n) => ({ ...x, color: mixCols[n]! }));
   const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
   const maxPair = Math.max(1, ...pairs.flatMap((p) => [A(p.id).bOut, A(p.id).out]));
@@ -65,7 +65,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{L('Previsto', 'Prévu')}</div>
           <div className="v num">{tot.b ? e0(tot.b) : '–'}</div>
-          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: fixedColors(withB.slice(0, 6).map((x) => x.name))[n]! }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
+          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: fixedColors(withB.slice(0, 6).map((x) => x.name), withB.slice(0, 6).map((x) => x.id))[n]! }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
             <div className="vzl"><span>{withB[0]!.name}</span><span>{pc(A(withB[0]!.id).bOut, tot.b)}</span></div></>}
           <div className="s">{tot.b ? L(`uscite ${year} · ${withB.length === 1 ? '1 progetto' : `${withB.length} progetti`}`, `dépenses ${year} · ${withB.length === 1 ? '1 projet' : `${withB.length} projets`}`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>

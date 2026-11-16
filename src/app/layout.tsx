@@ -10,15 +10,17 @@ import './cairn-base.css';
 import './cairn-ds.css';
 import './globals.css';
 import { RegisterSW } from '@/components/RegisterSW';
+import { guestLang } from '@/lib/session';
 
-export const metadata: Metadata = {
-  title: { default: 'YouCount · Contabilità YouSud', template: '%s · YouCount' },
-  description: 'Ogni spesa, il suo giustificativo. Contabilità di YouSud ODV.',
+// titolo e descrizione nella lingua di chi guarda (16/11: accesso, pagina senza rete e 404 avevano il titolo in italiano con il testo in francese)
+export async function generateMetadata(): Promise<Metadata> { const fr = (await guestLang()) === 'fr'; return {
+  title: { default: fr ? 'YouCount · Comptabilité YouSud' : 'YouCount · Contabilità YouSud', template: '%s · YouCount' },
+  description: fr ? 'Chaque dépense, son justificatif. Comptabilité de YouSud ODV.' : 'Ogni spesa, il suo giustificativo. Contabilità di YouSud ODV.',
   applicationName: 'YouCount',
   appleWebApp: { capable: true, title: 'YouCount', statusBarStyle: 'default' },
   icons: { icon: '/favicon.ico', apple: '/icons/apple-touch-icon.png' },
   robots: { index: false, follow: false },
-};
+}; }
 
 export const viewport: Viewport = {
   themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#10151C' }, { color: '#F3F5F8' }],

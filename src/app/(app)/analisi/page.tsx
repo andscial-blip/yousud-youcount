@@ -82,7 +82,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const byLoc = sumBy(out, (r) => (r.account_id ? loc.get(r.account_id) ?? null : null));
   const byPrj = [...sumBy(out, (r) => r.project_id)].filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]);
   const prjName = new Map(rows.map((r) => [r.project_id, r.project_name]));
-  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '–');
+  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}${lang === 'fr' ? '\u00a0' : ''}%` : '–');
   const q = (o: Record<string, string>) => { const u = new URLSearchParams({ anno: String(year), ...(prj ? { progetto: prj } : {}), ...o }); return `/analisi?${u}`; };
   const mov = (o: Record<string, string>) => `/movimenti?${new URLSearchParams({ dal: `${year}-01-01`, al: `${year}-12-31`, ...(prj ? { progetto: prj } : {}), ...o })}`;
   const state = (spent: number, bud: number) => (!bud ? '' : spent > bud ? 'over' : spent > bud * elapsed * 1.1 ? 'ahead' : 'ok');
@@ -116,11 +116,11 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
               const sp2 = spentG.get(g.id) ?? 0, b = budG.get(g.id) ?? 0, st = state(sp2, b);
               return (
                 <tr key={g.id}>
-                  <td data-label={t('an_group')}><Link className="rowlink" href={mov({ tipo: 'expense' })}>{gName.get(g.id)}</Link>{st && <> <span className={`chip ${st === 'ok' ? 'ok' : 'warn'}`}>{t(`an_${st}` as 'an_ok')}</span></>}</td>
+                  <td data-label={t('an_group')}><Link className="rowlink" href={mov({ tipo: 'expense' })}>{gName.get(g.id)}</Link>{st && <> <span className={`chip ${st === 'ok' ? 'ok' : st === 'over' ? 'bad' : 'warn'}`}>{t(`an_${st}` as 'an_ok')}</span></>}</td>
                   <td className="r num nw" data-label={t('budget')}>{b ? money(b, 'EUR', lang) : '–'}</td>
                   <td className="r num nw" data-label={t('prj_spent')}>{money(sp2, 'EUR', lang)}</td>
                   <td className="r num" data-label="%">{pct(sp2, b)}</td>
-                  <td data-label=""><BudgetBar budget={b} spent={sp2} /></td>
+                  <td data-label=""><BudgetBar budget={b} spent={sp2} elapsed={elapsed} /></td>
                 </tr>
               );
             })}
@@ -144,7 +144,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const top6 = (xs: { k: string; label: string; v: number; href?: string }[], rest: string) => {
     const all = xs.filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
     const r = all.length > 6 ? [...all.slice(0, 5), { k: 'rest', label: `${rest} (${all.length - 5})`, v: all.slice(5).reduce((a, x) => a + x.v, 0) }] : all;
-    const cols = fixedColors(r.map((x) => (x.k === 'rest' ? '' : x.label)));
+    const cols = fixedColors(r.map((x) => (x.k === 'rest' ? '' : x.label)), r.map((x) => x.k));
     return r.map((x, n) => ({ ...x, color: cols[n] })) as { k: string; label: string; v: number; href?: string; color: string }[];
   };
   const DonutCard = ({ title, eyebrow, rows: rs, center, tot, empty }: { title: string; eyebrow: string; rows: ReturnType<typeof top6>; center: string; tot: number; empty: string }) => (
@@ -253,8 +253,8 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         </div>
         <BarsCard title={t('an_by_country')} eyebrow={lg('conto da cui si è pagato', 'compte de paiement')}>
           <ul className="bq-flow an-loc">
-            <li><span>{t('italy')}</span><span className="bq-bb"><i style={{ width: `${((itOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--c-in)' }} /></span><b className="num">{e0(itOut)}</b></li>
-            <li><span>{t('madagascar')}</span><span className="bq-bb"><i style={{ width: `${((mgOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--green-soft)' }} /></span><b className="num">{e0(mgOut)}</b></li>
+            <li><span>{t('italy')}</span><span className="bq-bb"><i style={{ width: `${((itOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--pp4)' }} /></span><b className="num">{e0(itOut)}</b></li>
+            <li><span>{t('madagascar')}</span><span className="bq-bb"><i style={{ width: `${((mgOut / Math.max(1, itOut, mgOut)) * 100).toFixed(1)}%`, background: 'var(--pp2)' }} /></span><b className="num">{e0(mgOut)}</b></li>
           </ul>
         </BarsCard>
         {groupTable}

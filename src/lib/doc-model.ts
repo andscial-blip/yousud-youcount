@@ -1,4 +1,4 @@
-import { date, money } from './format';
+import { date, money, rate as fxRate } from './format';
 
 // Modelli dei documenti emessi da YouCount. Lo stesso modello produce l'anteprima nella pagina e il PDF,
 // così ciò che si controlla prima dell'emissione è ciò che viene stampato. Testi ripresi dal Gestionale YouSud
@@ -215,7 +215,7 @@ export function buildModel(d: DocData, org: Org): Model {
   if (d.project_name && d.type !== 'ASP') meta.push([J('Progetto', 'Projet'), d.project_name]);
   const orgLine = [org.address, org.tax_id ? `C.F.\u00a0${org.tax_id}` : null].filter(Boolean).join(' · ');
   const footer = [org.runts, org.email, org.phone?.replace(/ /g, '\u00a0'), org.web].filter(Boolean).join(' · ');
-  const fxNote = fx && !(d.type === 'DIC' && !Number(d.amount)) ? J(`Cambio applicato: 1\u00a0€ = ${money(fx, 'MGA', 'it')}`, `Taux appliqué\u00a0: 1\u00a0€ = ${money(fx, 'MGA', 'fr')}`) : null;
+  const fxNote = fx && !(d.type === 'DIC' && !Number(d.amount)) ? J(`Cambio applicato: 1\u00a0€ = ${fxRate(fx, 'it')}`, `Taux appliqué\u00a0: 1\u00a0€ = ${fxRate(fx, 'fr')}`) : null;
   return { title, number: d.number, meta, blocks, org, draftLabel: J('BOZZA – non valida', 'BROUILLON – non valable'), placeDate: J('Luogo e data', 'Lieu et date'),
     orgLine, footer, fxNote };
 }

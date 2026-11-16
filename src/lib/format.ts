@@ -14,6 +14,14 @@ export function money(value: number | string | null | undefined, currency: strin
   } as Intl.NumberFormatOptions).format(n);
 }
 
+// Tasso di cambio (MGA per 1 EUR): sempre con i decimali salvati, mai arrotondato all'intero. Prima «5.339,63» veniva mostrato e
+// stampato «5.340» e i conti sul documento non tornavano (16/11).
+export function rate(value: number | string | null | undefined, lang: Lang = 'it', unit = true) {
+  if (value === null || value === undefined || value === '') return '–';
+  const s = new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 2, useGrouping: 'always' } as Intl.NumberFormatOptions).format(Number(value));
+  return unit ? `${s}\u00a0MGA` : s;
+}
+
 export function date(d: string | null | undefined) {
   if (!d) return '–';
   const [y, m, day] = d.slice(0, 10).split('-');

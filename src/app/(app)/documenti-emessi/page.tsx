@@ -1,3 +1,4 @@
+import { CIcon } from '@/components/CIcon';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
 import { requireMe } from '@/lib/session';
@@ -67,7 +68,7 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
   return (
     <div className="stack">
       <PageHead title={L('Documenti emessi', 'Documents émis')}>
-        {writer && <Link className="btn primary" href="/documenti-emessi/nuovo">+ {L('Emetti', 'Émettre')}</Link>}
+        {writer && <Link className="btn primary de-new" href="/documenti-emessi/nuovo"><CIcon name="plus" size={16} />{L('Emetti', 'Émettre')}</Link>}
       </PageHead>
       {sp.ok === 'deleted' && <div className="note ok" role="status">{L('Bozza eliminata.', 'Brouillon supprimé.')}</div>}
       <ErrorNote prefix={t('error_load')} error={error} />
@@ -88,7 +89,7 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
         {rows.length === 0 ? (
           <div className="empty">
             <p>{q || stato ? L('Nessun documento con questi filtri.', 'Aucun document avec ces filtres.') : L(`Nessun documento nel ${year}${sez ? ` in «${sez.it}»` : ''}.`, `Aucun document en ${year}${sez ? ` dans « ${sez.fr} »` : ''}.`)}</p>
-            {writer && !arch && <Link className="btn" href="/documenti-emessi/nuovo">+ {L('Emetti nuovo documento', 'Émettre un nouveau document')}</Link>}
+            {writer && !arch && <Link className="btn" href="/documenti-emessi/nuovo"><CIcon name="plus" size={16} />{L('Emetti nuovo documento', 'Émettre un nouveau document')}</Link>}
           </div>
         ) : (
           <table className="t" data-cards="">

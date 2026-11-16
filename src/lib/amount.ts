@@ -46,6 +46,10 @@ export function formatTyping(text: string, caret = text.length): { text: string;
   return { text: decDot >= 0 ? out.replace(',', '.') : out, caret: pos };
 }
 
+// Vero se nel testo digitato c'è una terza cifra decimale (dopo la virgola): formatTyping la scarta, e chi scrive va avvisato
+// («12,505» diventava 12,50 senza dire nulla, 16/11).
+export const extraDecimals = (raw: string): boolean => /,\d*[.,]?\d*$/.test(raw) && raw.slice(raw.indexOf(',') + 1).replace(/\D/g, '').length > 2;
+
 // All'uscita dal campo: il punto rimasto in attesa (seguito da 1-2 cifre) è la virgola dei decimali; un separatore finale si toglie.
 export function settleAmount(text: string): string {
   if (text.includes(',')) return text.replace(/,$/, '');

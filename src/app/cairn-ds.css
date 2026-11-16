@@ -85,7 +85,7 @@ em,i{font-style:normal}
   .phead-row{padding:10px var(--s4) 8px;gap:var(--s2)}
   .ptitle h1{font-size:24px}.ptitle p{display:none}
   .only-phone{display:inline-flex}.not-phone{display:none!important}
-  .yearsel select{height:34px;font-size:14px;padding:0 28px 0 10px}
+  .yearsel select{height:40px;font-size:14px;padding:0 28px 0 10px}
   .subnav{padding:0 var(--s4);gap:var(--s4)}.subnav a{min-height:44px;font-size:14px}
   .main{padding:var(--s4) var(--s4) calc(96px + env(safe-area-inset-bottom,0px))}
   .offline-note{width:calc(100% - 2*var(--s4))}

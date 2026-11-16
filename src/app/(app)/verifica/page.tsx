@@ -1,3 +1,4 @@
+import { PendingButton } from '@/components/PendingButton';
 import Link from 'next/link';
 import { can, requireMe, RESP } from '@/lib/session';
 import { date, money, nm } from '@/lib/format';
@@ -68,8 +69,8 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
                 const action = mine(r) ? <span className="chip">{t('verify_own')}</span> : (
                   <form action={verifyMovement}>
                     <input type="hidden" name="id" value={r.id} />
-                    <input type="hidden" name="version" value={r.version} />
-                    <button className="btn primary small" type="submit"><Ico name="check" />{t('verify_btn')}</button>
+                    <input type="hidden" name="version" value={r.version} /><input type="hidden" name="progetto" value={progetto} /><input type="hidden" name="autore" value={autore} />
+                    <PendingButton className="btn primary small" busy={L('Verifico…', 'Vérification…')}><Ico name="check" />{t('verify_btn')}</PendingButton>
                   </form>
                 );
                 return (
@@ -98,10 +99,10 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
                     {r.reverses_id && <span className="chip tiny">{t('reversal')}</span>}</span></div>
                 <span className={`mc-a two num ${r.kind === 'income' ? 'amt-in' : ''}`}><b>{eq(r) ?? money(signed(r), r.currency, lang)}</b>{eq(r) && <small>{money(signed(r), r.currency, lang)}</small>}</span>
                 <div className="vf-act">
-                  <Link className="btn small" href={`/movimenti/${r.id}`}>{ds === 'doc' ? L('Apri e controlla il documento', 'Ouvrir et contrôler la pièce') : L('Apri', 'Ouvrir')}</Link>
+                  <Link className="btn small" href={`/movimenti/${r.id}`}>{ds === 'doc' ? L('Apri e controlla il documento', 'Ouvrir et contrôler le justificatif') : L('Apri', 'Ouvrir')}</Link>
                   {mine(r) ? <span className="chip tiny">{t('verify_own')}</span> : (
-                    <form action={verifyMovement}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="version" value={r.version} />
-                      <button className="btn primary small" type="submit"><Ico name="check" />{t('verify_btn')}</button></form>)}</div>
+                    <form action={verifyMovement}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="version" value={r.version} /><input type="hidden" name="progetto" value={progetto} /><input type="hidden" name="autore" value={autore} />
+                      <PendingButton className="btn primary small" busy={L('Verifico…', 'Vérification…')}><Ico name="check" />{t('verify_btn')}</PendingButton></form>)}</div>
               </div></li>); })}
           </ul></>
         )}

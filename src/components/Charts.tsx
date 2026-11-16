@@ -14,16 +14,19 @@ export const C_OVER = 'var(--tax)';
 export const C_BUDGET = 'var(--band)';
 // Colori delle voci (gruppi di spesa, progetti): lilla, azzurro, corallo, oliva, rosa, grigio azzurro. Blu notte, giallo e verde
 // restano riservati a entrate, uscite e saldo: un colore, un significato.
-export const PAL = ['var(--pp2)', 'var(--pp4)', 'var(--pp5)', 'var(--pp6)', 'var(--pp7)', 'var(--dn6)'];
+// Colori per voci, progetti, conti e finanziatori (16/11): lilla, cielo, oliva, rosa, blu ardesia, nebbia. Esclusi di proposito i colori
+// con un significato fisso: blu notte (entrate), giallo (uscite), verde acqua (saldo), blu (preventivo), corallo (oltre il limite).
+export const PAL = ['var(--pp2)', 'var(--pp4)', 'var(--pp6)', 'var(--pp7)', 'var(--pp8)', 'var(--dn6)'];
 
 /** Colore fisso per voce: lo stesso gruppo di voci (o progetto) ha lo stesso colore in tutte le pagine, qualunque sia
  *  la sua posizione in classifica. Chiave = codice del gruppo («01 · Risorse umane» → 01) o, senza codice, il nome.
  *  Dentro uno stesso grafico due voci non hanno mai lo stesso colore finché la tavolozza basta; '' = «Altre voci» (grigio). */
-export function fixedColors(labels: string[]): string[] {
+export function fixedColors(labels: string[], ids?: string[]): string[] {
   const used = new Set<number>();
-  return labels.map((label) => {
+  return labels.map((label, n) => {
     if (!label) return 'var(--line)';
-    const key = label.includes(' · ') ? label.split(' · ')[0]! : label;
+    // senza codice la chiave è l'identificativo (ids), non il nome: il nome cambia con la lingua e il colore cambiava con lui
+    const key = label.includes(' · ') ? label.split(' · ')[0]! : (ids?.[n] || label);
     const num = /^[A-Za-z]?(\d+)$/.exec(key.trim());
     let i: number;
     if (num) i = (Number(num[1]) + (/^[A-Za-z]/.test(key.trim()) ? 2 : -1) + PAL.length * 4) % PAL.length;
@@ -170,16 +173,14 @@ export const Viz = {
   Ring: (p: { p: number; color: string; tip?: string }) => <Svg html={VZ.ring(p.p, p.color, p.tip)} />,
 };
 
-// Barra di avanzamento sul budget: traccia = preventivo, riempimento = speso, salmone oltre il preventivo.
-export function BudgetBar({ budget, spent }: { budget: number; spent: number }) {
-  const max = Math.max(budget, spent, 1);
-  const over = budget > 0 && spent > budget;
+// Barra di avanzamento sul preventivo, una sola grammatica in tutta l'app (16/11): traccia = preventivo (100%), riempimento = speso,
+// tutta rossa se oltre il preventivo, tacca tratteggiata = parte di anno trascorsa (solo quando viene passata).
+export function BudgetBar({ budget, spent, elapsed, dir = 'out' }: { budget: number; spent: number; elapsed?: number; dir?: 'in' | 'out' }) {
+  const p = budget > 0 ? spent / budget : spent > 0 ? 2 : 0;
   return (
-    <span className="bbar" aria-hidden="true">
-      <i className="bb" style={{ width: `${(budget / max) * 100}%`, background: C_BUDGET }} />
-      <i className="bs" style={{ width: `${(Math.min(spent, budget || spent) / max) * 100}%`, background: 'var(--c-out)', borderRadius: 8 }} />
-      {over && <i className="bs" style={{ left: `${(budget / max) * 100}%`, width: `${((spent - budget) / max) * 100}%`, background: C_OVER }} />}
-      {budget > 0 && <i className="bm" style={{ left: `calc(${(budget / max) * 100}% - 1px)` }} />}
+    <span className={`cb-bar ${dir}${dir === 'out' && p > 1.0005 ? ' over' : ''}`} aria-hidden="true">
+      <i style={{ width: `${Math.min(p, 1) * 100}%` }} />
+      {budget > 0 && elapsed !== undefined && elapsed > 0 && elapsed < 1 && <em style={{ left: `${elapsed * 100}%` }} />}
     </span>
   );
 }

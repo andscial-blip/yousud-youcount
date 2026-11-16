@@ -287,9 +287,10 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 32px; 
    così assi ed etichette restano fra 10 e 14 px invece di ingrandirsi o rimpicciolirsi con l'immagine (revisione del 15/11) */
 .chart-wrap { container-type: inline-size; }
 .chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w { display: none; }
-@container (max-width: 419px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-m { display: block; } }
-@container (min-width: 420px) and (max-width: 659px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-s { display: block; } }
-@container (min-width: 960px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-w { display: block; } }
+/* soglie (16/11): ogni variante è usata da ~0,92 volte la sua larghezza in su, così il testo dell'asse (13) non scende sotto 12 px a schermo */
+@container (max-width: 479px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-m { display: block; } }
+@container (min-width: 480px) and (max-width: 739px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-s { display: block; } }
+@container (min-width: 1040px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-w { display: block; } }
 @media print { .chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w { display: none !important; } .chart-wrap .ch-d { display: block !important; } }
 .cbars { display: flex; flex-direction: column; }
 .cbar .n a { color: var(--fg); text-decoration: none; }
@@ -792,7 +793,7 @@ table.recent .rc-d { display: block; margin-top: 2px; font-size: 12px; }
 }
 /* tassi di cambio: schede su telefono */
 .fx-cards { display: none; list-style: none; margin: 0; padding: 0; }
-@media (max-width: 760px) {
+@media (max-width: 1023px) {
   .fx-t { display: none !important; }
   .fx-cards { display: block; }
   .fx-cards li { padding: 12px 16px; border-bottom: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 4px; }
@@ -1585,10 +1586,12 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
 .cbudget tr.over td:nth-child(4) { color: var(--red); font-weight: 600; }
 .cbudget .chip { margin-left: 6px; }
 .cb-bc { width: 150px; }
-.cb-bar { position: relative; display: block; height: 8px; border-radius: 4px; background: var(--band); overflow: hidden; }
+.cb-bar { position: relative; display: block; height: 8px; min-width: 96px; border-radius: 4px; background: var(--band); }
 .cb-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--c-out); }
 .cb-bar.in i { background: var(--c-in); }
-.cb-bar em { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--navy); opacity: .45; }
+.cb-bar em { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dotted var(--navy); }
+/* tablet: senza «Residuo» la barra per codice torna leggibile */
+@media (min-width: 701px) and (max-width: 1023px) { table.cbudget .cb-res { display: none; } table.cbudget .cb-bc { width: 22%; } }
 .cb-bar.out.over i { background: var(--c-over); }
 @media (max-width: 760px) {
   .cb-bc { width: 80px; }
@@ -1711,7 +1714,7 @@ ul.dl.dl2.dl-day-list .dl-tag { grid-column: 2 !important; grid-row: 1 !importan
 .kpis.dk .kpi .vzr { display: block; width: 42px; height: 42px; }
 .kpis.dk .kpi .v.amb { color: var(--amber-ink); }
 .rb-panel > .panel-h .btn { font-size: 14px; white-space: nowrap; }
-.rb-av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--band); color: var(--navy); font: 600 12.5px/1 var(--f-ui); letter-spacing: .02em; }
+.rb-av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--band); color: var(--navy); font: 600 12px/1 var(--f-ui); letter-spacing: .02em; }
 .rb-av.ok { background: color-mix(in srgb, var(--green-soft) 22%, var(--surface)); color: var(--green); }
 .aw-list.rb-who > li > a { grid-template-columns: auto minmax(0, 1fr) auto auto auto; gap: 14px; }
 .rb-who .aw-n b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1802,7 +1805,7 @@ a.chip.warn { text-decoration: none; } a.chip.warn:hover { filter: brightness(.9
 @media (max-width: 380px) { .kpis.dk .kpi .v.long { font-size: 16px; line-height: 1.75; } }
 /* Tassi di cambio su tablet: via le colonne meno utili, e se ancora non basta la tabella scorre dentro il suo riquadro */
 .fx-scroll { overflow-x: auto; }
-@media (min-width: 761px) and (max-width: 1180px) {
+@media (min-width: 1024px) and (max-width: 1180px) {
   .fx-t th:nth-child(5), .fx-t td:nth-child(5), .fx-t th:nth-child(7), .fx-t td:nth-child(7) { display: none; }
 }
 
@@ -2479,3 +2482,90 @@ details[open] > .rev-sum .btn { display: none; }
 @media (max-width: 640px) { .fbar .fb-search { flex: 1 1 100%; width: 100%; } }
 .bq-pn, .pr-n b, .pr-n small, .bq-dl li span { overflow-wrap: normal; word-break: normal; hyphens: manual; } .pr-h { grid-template-columns: auto minmax(0, 1fr) auto; } .pr-n { min-width: 0; }
 @media (max-width: 1099px) { .pr-h { grid-template-columns: auto minmax(0, 1fr); } .pr-h > :nth-child(3) { grid-column: 1 / -1; justify-self: start; } }
+
+/* 16/11 (terzo giro): niente puntini di troncamento nei testi di contenuto; il testo va a capo tra le parole */
+.gcard .pr-n small, .k4 > small, .rc-t b, .rb-who .aw-n b, .mini2 small, .acclist .an, .bq-tab td.bq-c span, ul.rec-list .rl-t, ul.rec-list .rl-t small, .h3n small, .cbar .n {
+  white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; }
+/* Calendario delle scadenze (16/11): su computer l'etichetta va a capo per intero, niente puntini; fino a 1023 px le scadenze sono
+   trattini colorati e si tocca il giorno intero (come già su telefono), così nulla è troncato e il bersaglio è la cella */
+.cal-i { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; hyphens: none; }
+@media (min-width: 761px) and (max-width: 1023px) {
+  .cal-d { min-height: 72px; }
+  .cal-i { font-size: 0; padding: 0; height: 6px; border-radius: 4px; box-shadow: none !important; }
+  .cal-i.i-c { background: var(--imp-c); } .cal-i.i-a { background: var(--imp-a); } .cal-i.i-n { background: var(--imp-n); }
+  .cal-i.i-p { background: var(--imp-p); } .cal-i.i-f { background: var(--imp-f); }
+  .cal-hit { display: block; position: absolute; inset: 0; z-index: 1; }
+  .cal-more { font-size: 12px; }
+}
+
+/* Intestazione su tablet (16/11): in francese titolo e comandi non ci stavano («Tableau de bord» copriva la lente).
+   Il pulsante principale mostra la prima parola («Nuovo» / «Nouveau»), l'AI resta icona; nella colonna di icone la prima voce in francese è «Accueil» come sul telefono */
+.lbl-rail { display: none; }
+@media (min-width: 761px) and (max-width: 1099px) {
+  .side-link .lbl-full { display: none; } .side-link .lbl-rail { display: inline; }
+  .phead-row { gap: 12px; }
+  .phead-row .ptitle { flex: 1 1 auto; min-width: max-content; }
+  .phead-row .pctl .lbl-rest { display: none; }
+  .phead-row .pctl .askbtn > span { display: none; } .phead-row .pctl .askbtn { width: 38px; padding: 0; justify-content: center; }
+}
+/* Registro su telefono (16/11): righe più basse. Dati e pastiglie usano tutta la larghezza sotto titolo e importo, così restano su una riga */
+@media (max-width: 900px) {
+  ul.mv-cards:not(.vf-cards) > li > a { padding: 10px 14px; row-gap: 3px; }
+  ul.mv-cards:not(.vf-cards) .mc-m { display: contents; }
+  ul.mv-cards:not(.vf-cards) .mc-t { grid-column: 2; grid-row: 1; }
+  ul.mv-cards:not(.vf-cards) .mc-a { grid-column: 3; grid-row: 1; }
+  ul.mv-cards:not(.vf-cards) .mc-s, ul.mv-cards:not(.vf-cards) .mc-c { grid-column: 2 / -1; }
+}
+/* Registro su computer: il numero del movimento non si spezza */
+.mv-table td.num.nw small, .mv-table td.num.nw .muted { white-space: nowrap; }
+/* Scala delle altezze (16/11, terzo giro). Pulsanti: 32 (piccoli e di riga) · 38 (normali) · 44 (azione principale di un modulo e voci di menu).
+   Campi: 40. Eccezioni volute: l'importo di «Nuovo movimento» (54, è il dato principale) e il pulsante accanto a un campo, che ne prende l'altezza (40). */
+.helpline { height: 32px; }
+.note-bar button { width: 32px; height: 32px; }
+.ask-chip { min-height: 38px; }
+.cc-row .input { min-height: 40px; }
+#app input[type="date"].input, #app input[type="month"].input, #app input[type="time"].input { height: 40px; }
+#app .search > .input, #app .search input.input { min-height: 40px; height: 40px; }
+@media (min-width: 761px) {
+  .side-link { min-height: 44px; }
+  .seg button, .seg a, .seg label, .segs a, .segs button, .seg .seg-opt { min-height: 32px; }
+  .seg.kinds button { min-height: 32px; font-size: 14px; padding: 0 16px; }
+  .seg.stackable button { min-height: 32px; padding: 0 8px; white-space: nowrap; line-height: 1.2; }
+}
+@media (min-width: 761px) and (max-width: 1099px) { .side-link { min-height: 56px; } }
+/* «Come è stata pagata» su tablet: a tutta riga, così le tre scelte stanno su una riga senza andare a capo */
+@media (min-width: 761px) and (max-width: 1099px) { .field:has(> .seg.stackable) { grid-column: 1 / -1; } }
+@media (min-width: 761px) and (max-width: 1099px) { .field:has(> #paidby), .field:has(#paidby) { grid-column: 1 / -1; } }
+/* Ciambelle Uscite/Entrate del Preventivo sullo stesso asse (16/11): le due metà hanno la stessa altezza e ciascuna centra ciambella e legenda */
+.bq-two { align-items: stretch; }
+.bq-half { display: flex; flex-direction: column; }
+.bq-half > .bq-donut { flex: 1 1 auto; }
+@media (min-width: 1100px) { .bq-donut { grid-template-columns: 200px minmax(0, 1fr); } .bq-donut svg.donut { width: 200px; height: 200px; } }
+
+/* campi obbligatori di «Nuovo movimento»: asterisco accanto all'etichetta (la legenda è accanto ai pulsanti) */
+.mform .field:has([aria-required="true"]) > label::after { content: ' *'; color: var(--muted); font-weight: 600; }
+/* calendario fino a 1023 px: il trattino non contiene testo da mandare a capo */
+@media (max-width: 1023px) { .cal-i { white-space: nowrap; overflow: hidden; } }
+
+/* Telefono (16/11): sotto-schede e «Come si fa» sulla stessa riga. Le schede scorrono, l'aiuto è un cerchio con la «i»
+   allineato al centro delle schede (il nome resta per i lettori di schermo e come suggerimento). */
+@media (max-width: 760px) {
+  .subrow { flex-wrap: nowrap; gap: 0 8px; }
+  .subrow .subnav { flex: 1 1 auto; overflow-x: auto; scrollbar-width: none; }
+  .subrow > .helpline, .subrow > .helpline:first-child { order: 2; flex: none; width: 36px; height: 36px; padding: 0; margin: 0 0 6px auto; justify-content: center; border-radius: 50%; }
+  .subrow > .helpline .hl-long, .subrow > .helpline .hl-short { display: none; }
+  /* filtri rapidi con molte voci: griglia a due colonne di uguale larghezza, «Tutti» a tutta riga */
+  .quick:has(> a:nth-child(5)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .quick:has(> a:nth-child(5)) > a { justify-content: center; text-align: center; min-height: 40px; padding: 4px 10px; white-space: normal; line-height: 1.2; text-wrap: balance; }
+  .quick:has(> a:nth-child(5)) > a:first-child { grid-column: 1 / -1; }
+  .h1row:has(> .de-new) .spacer { display: none; }
+  .de-new { flex: 1 1 100%; justify-content: center; min-height: 44px; }
+}
+@media (max-width: 760px) {
+  .subrow .subnav { flex-wrap: nowrap !important; }
+  .subrow .subnav > a { flex: none; }
+  .quick:has(> a:nth-child(5)) > a:last-child:nth-child(even) { grid-column: 1 / -1; }
+}
+
+/* telefono: le sotto-schede che non entrano sfumano sul bordo destro, segno che la riga scorre */
+@media (max-width: 760px) { .subrow .subnav { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 24px; } }

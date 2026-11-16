@@ -1,3 +1,4 @@
+import { PendingButton } from '@/components/PendingButton';
 import Link from 'next/link';
 import { RowReveal } from '@/components/RowReveal';
 import { ADMIN, RESP, STAFF, can, requireMe } from '@/lib/session';
@@ -214,7 +215,7 @@ export function VersionBar({ c, base }: { c: Ctx; base: string }) {
                 <summary className="btn small danger">{L('Elimina la bozza', 'Supprimer le brouillon')}</summary>
                 <form action={discardBudget} className="pd-form"><input type="hidden" name="year" value={year} /><input type="hidden" name="id" value={draft.id} />
                   <p className="muted">{L('La bozza e tutte le sue righe vengono eliminate. Il preventivo in vigore non cambia.', 'Le brouillon et toutes ses lignes sont supprimés. Le budget en vigueur ne change pas.')}</p>
-                  <button className="btn danger" type="submit">{L('Conferma: elimina la bozza', 'Confirmer : supprimer le brouillon')}</button></form>
+                  <PendingButton className="btn danger" busy={L('Elimino la bozza…', 'Suppression du brouillon…')}>{L('Conferma: elimina la bozza', 'Confirmer : supprimer le brouillon')}</PendingButton></form>
               </details>
             )}
             {shown.status !== 'draft' && (admin || (shown.demo && resp)) && (

@@ -2,7 +2,7 @@ import { CIcon } from './CIcon';
 
 // Segno del finanziatore: il logo se c'è, altrimenti le iniziali su una tinta tenue che dipende dal nome (sempre la stessa
 // per lo stesso nome); icona grigia neutra quando il finanziatore non è indicato. Stesso riquadro bianco in tutti i casi.
-const TINTS = ['var(--pp2)', 'var(--pp4)', 'var(--pp5)', 'var(--pp6)', 'var(--pp7)', 'var(--dn6)'];
+const TINTS = ['var(--pp2)', 'var(--pp4)', 'var(--pp6)', 'var(--pp7)', 'var(--pp8)', 'var(--dn6)'];
 export function initials(name: string) {
   const w = name.replace(/[^\p{L}\p{N}\s&]/gu, ' ').split(/\s+/).filter((x) => x.length > 1 && !/^(di|de|del|della|des|du|la|le|per|pour|the|of|and|et|e)$/i.test(x));
   return ((w[0]?.[0] ?? name[0] ?? '?') + (w[1]?.[0] ?? '')).toUpperCase();

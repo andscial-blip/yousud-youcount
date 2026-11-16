@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { advanceLate } from '@/lib/advance-late';
 import { ruleItems } from '@/lib/deadline-rules';
 import { STAFF, can, requireMe } from '@/lib/session';
-import { date, money, num } from '@/lib/format';
+import { date, money, num, rate as fxRate } from '@/lib/format';
 import { MESI, MESI_L } from '@/lib/viz';
 import { ErrorNote, H2 } from '@/components/Page';
 import { type Balance } from '@/components/Balances';
@@ -27,6 +27,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const staff = can(me, STAFF);
   const isAdmin = ['super_admin', 'admin'].includes(me!.role);
+  const isResp = ['super_admin', 'admin', 'responsabile'].includes(me!.role);
   const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const td = ymd(now), in30 = ymd(new Date(cy, now.getMonth(), now.getDate() + 30)), ago45 = ymd(new Date(cy, now.getMonth(), now.getDate() - 45));
   const cfFrom = new Date(cy, now.getMonth() - 3, 1), cfTo = new Date(cy, now.getMonth(), 0);
@@ -34,9 +35,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // storni e movimenti stornati non contano fra le «uscite senza giustificativo»: si annullano a vicenda
   const revIds = ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string);
   const [{ data: bal, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }, { data: advs },
-    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }, { data: advReqs }] = await Promise.all([
+    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }, { data: advReqs }, { data: autOpen }] = await Promise.all([
     supabase.rpc('account_balances'),
-    supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded'),
+    // chi non verifica vede i propri movimenti in attesa, non quelli di tutti (16/11: «Da verificare 40» sopra «Tutto in ordine»)
+    (isResp ? supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded')
+      : supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded').eq('created_by', me!.id)),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'draft').eq('created_by', me!.id).is('reimb_status', null),
     supabase.from('v_ledger').select('month, kind, amount_eur, project_id, project_name, category_id').eq('year', year).neq('kind', 'transfer').eq('out_of_report', false)
       .limit(50000).returns<Led[]>(),
@@ -53,6 +56,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('movements').select('id', { count: 'exact', head: true }).neq('status', 'draft').not('no_doc_reason', 'is', null).eq('kind', 'expense').is('reverses_id', null).not('id', 'in', `(${revIds.join(',') || '00000000-0000-0000-0000-000000000000'})`).gte('op_date', `${year}-01-01`).lte('op_date', `${year}-12-31`),
     supabase.from('advance_requests').select('account_id, status, report_by').in('status', ['requested', 'authorized', 'delivered', 'reported']),
+    // autocertificazioni generate e non ancora firmate che l'utente può vedere (per l'operatore: le sue)
+    supabase.from('self_certs').select('id, movement_id').is('signed_at', null).not('document_id', 'is', null).limit(50),
   ]);
 
   // ---- anno in sintesi
@@ -103,7 +108,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // stessa regola di Conti › Anticipi e di Scadenze (lib/advance-late)
   const advLate = advRows.filter((r) => advanceLate(r, advReqRows, td)).length;
   const advToAuth = advReqRows.filter((r) => r.status === 'requested').length;
-  const autToSign = advRows.reduce((n, r) => n + r.aut_to_sign, 0);
+  const autRows = (autOpen ?? []) as { id: string; movement_id: string }[];
+  const autToSign = Math.max(advRows.reduce((n, r) => n + r.aut_to_sign, 0), autRows.length);
   const backupAt = (lastBackup?.value as { at?: string } | null)?.at;
   const backupDays = backupAt ? Math.floor((Date.now() - new Date(backupAt).getTime()) / 86400000) : null;
   const savedBy = new Map((dls ?? []).filter((d) => d.rule_key).map((d) => [d.rule_key as string, d]));
@@ -127,7 +133,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });
   if (advToAuth && me && ['super_admin', 'admin', 'responsabile'].includes(me.role)) todo.push({ lvl: 'warn', ic: 'user', title: L(`Richieste di anticipo da autorizzare: ${advToAuth}`, `Demandes d’avance à autoriser : ${advToAuth}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi con ricevute in ritardo: ${advLate}`, `Avances avec reçus en retard : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
-  if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
+  if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: autRows.length === 1 ? `/movimenti/${autRows[0]!.movement_id}` : isResp ? '/documenti-emessi' : autRows[0] ? `/movimenti/${autRows[0].movement_id}` : '/anticipi', act: L('Apri', 'Ouvrir') });
   if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/analisi?anno=${year}&vista=budget`, act: L('Vedi', 'Voir') });
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });
   if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
@@ -136,7 +142,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   for (const u of upcoming.slice(0, 5)) todo.push({ lvl: days(u.date) < 0 ? 'warn' : 'do', ic: 'cal', title: u.title, sub: date(u.date), chip: chipFor(u.date), href: '/scadenze' });
   // prima ciò che è in ritardo o blocca qualcuno (warn), poi il resto; a parità resta l'ordine di inserimento (P2-24)
   todo.sort((x, y) => (x.lvl === 'warn' ? 0 : 1) - (y.lvl === 'warn' ? 0 : 1));
-  if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: L('Niente da verificare, rimborsare o firmare', 'Rien à vérifier, rembourser ou signer'), href: '/movimenti' });
+  if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: isResp ? L('Niente da verificare, rimborsare o firmare', 'Rien à vérifier, rembourser ou signer') : L('Niente da completare, rimborsare o firmare', 'Rien à compléter, rembourser ou signer'), href: '/movimenti' });
   const TODO_MAX = 7;
   const notes = (notesRow?.value ?? null) as { text?: string; by_name?: string; at?: string } | null;
 
@@ -202,9 +208,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </Link>
         ) : (
           <Link className="kpi" href={verHref}>
-            <div className="l">{L('Da verificare', 'À vérifier')}</div>
+            <div className="l">{L('In attesa di verifica', 'En attente de vérification')}</div>
             <div className="v num">{toVerify ?? 0}</div>
-            <div className="s">{L('movimenti registrati', 'mouvements comptabilisés')}</div>
+            <div className="s">{L('tuoi movimenti: li controlla un responsabile', 'vos mouvements : un responsable les contrôle')}</div>
           </Link>
         )}
       </div>
@@ -261,7 +267,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <div className="meter-legend"><span>0</span><span>3</span><span>6 {L('mesi', 'mois')}</span></div></div>
                 <div className="mini2">
                   <Link href="/rimborsi"><span>{L('Da rimborsare', 'À rembourser')}</span><b className="num">{e0(due)}</b><small>{dueCount ?? 0} {(dueCount ?? 0) === 1 ? L('spesa', 'dépense') : L('spese', 'dépenses')}</small></Link>
-                  <Link href="/cambi"><span>{L('Tasso di cambio', 'Taux de change')}</span><b className="num">{fx ? money(rate, 'MGA', lang) : '–'}</b>
+                  <Link href="/cambi"><span>{L('Tasso di cambio', 'Taux de change')}</span><b className="num">{fx ? fxRate(rate, lang) : '–'}</b>
                     <small>{fx ? <>1 € · {MS[fx.month - 1]!.toLowerCase()} {fx.year}{fxChg != null ? ` · ${fxChg >= 0 ? '+' : ''}${n1(fxChg)} %` : ''}</> : L('da inserire', 'à saisir')}</small></Link>
                 </div>
                 <p className="muted small h-foot">{L(`Mesi di spesa coperti dalla liquidità di oggi, al ritmo medio degli ultimi tre mesi (${e0(burn)} al mese)${due > 0 ? `, già tolti i rimborsi dovuti (${e0(due)})` : ''}.`,
