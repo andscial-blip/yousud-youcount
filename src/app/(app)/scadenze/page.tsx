@@ -151,7 +151,7 @@ export default async function Deadlines({ searchParams }: {
     if (i.status === 'done') return <span className="chip ok">{L('Fatta', 'Faite')}</span>;
     if (i.status === 'cancelled') return <span className="chip">{L('Annullata', 'Annulée')}</span>;
     const n = daysTo(i.date);
-    return n < 0 ? <span className="chip bad">{L(`Scaduta da ${-n} gg`, `En retard de ${-n} j`)}</span> : n === 0 ? <span className="chip bad">{L('Oggi', 'Aujourd\'hui')}</span>
+    return n < 0 ? <span className="chip bad">{L(`Scaduta da ${-n} gg`, `En retard de ${-n} j`)}</span> : n === 0 ? <span className="chip warn">{L('Oggi', 'Aujourd\'hui')}</span>
       : n <= 14 ? <span className="chip warn">{L(`Tra ${n} gg`, `Dans ${n} j`)}</span> : <span className="chip">{L(`Tra ${n} gg`, `Dans ${n} j`)}</span>;
   };
   const href = (q: Record<string, string>) => { const u = new URLSearchParams({ periodo: per, ...(tipo ? { tipo } : {}), ...(month !== td.slice(0, 7) ? { mese: month } : {}), ...q });

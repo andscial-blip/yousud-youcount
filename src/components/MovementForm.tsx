@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Dict, Lang } from '@/lib/i18n';
 import { money } from '@/lib/format';
 import type { RefData } from '@/lib/movement-ref';
+import { CAT_KEYWORDS } from '@/lib/cat-keywords';
 import { extraDecimals, formatTyping, parseAmount, settleAmount } from '@/lib/amount';
 import { useCaret } from '@/lib/use-caret';
 import dynamic from 'next/dynamic';
@@ -86,7 +87,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
   // come è stata pagata una spesa: dall'ente (conto), di tasca propria (da rimborsare) o con l'anticipo di una persona
-  const advances = R.accounts.filter((a) => a.kind === 'advance');
+  // anticipi: prima quelli di chi compila (dalla richiesta o dal nome); l'operatore vede solo i suoi, se ne ha (revisione operatore, 16/11)
+  const isMineAdv = (a: { id: string; holder: string | null }) => (R.myAdvances ?? []).includes(a.id) || (a.holder ?? '').toLowerCase() === R.userName.toLowerCase();
+  const advAll = R.accounts.filter((a) => a.kind === 'advance');
+  const advMine = advAll.filter(isMineAdv);
+  const advances = R.role === 'operator' && advMine.length ? advMine : [...advMine, ...advAll.filter((a) => !isMineAdv(a))];
   // dal portafoglio anticipi (conto anticipi già scelto) o da Rimborsi («di tasca propria») il modulo parte già impostato
   const [payMode, setPayMode] = useState<'org' | 'own' | 'adv'>(initial?.reimb_status === 'due' || (!initial && P?.own) ? 'own'
     : R.accounts.find((a) => a.id === (initial?.account_id ?? P?.account_id))?.kind === 'advance' ? 'adv' : 'org');
@@ -96,7 +101,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     const isAdv = R.accounts.find((a) => a.id === accountId)?.kind === 'advance';
     if ((m === 'adv') !== isAdv) {
       // passando ad «Anticipo» si propone l'anticipo di chi compila, non quello di un altro
-      const mine = m === 'adv' ? advances.filter((a) => (a.holder ?? '').toLowerCase() === R.userName.toLowerCase()) : [];
+      const mine = m === 'adv' ? advMine : [];
       setAccountId(mine.length === 1 ? mine[0]!.id : '');
     }
   };
@@ -142,7 +147,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [catQ, setCatQ] = useState('');
   const lang = t.lang_code === 'fr' ? 'fr' : 'it';
   const nq = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const catHits = catQ.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group}`).includes(nq(catQ.trim()))) : [];
+  const catHits = catQ.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group} ${CAT_KEYWORDS[c.code] ?? ''}`).includes(nq(catQ.trim()))) : [];
   const recentCats = R.recentCats[dir === 'in' ? 'income' : 'expense'].map((id) => cats.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
@@ -275,7 +280,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   }
 
   const missing = {
-    amount: !amount, account: !accountId && !due, toAccount: kind === 'transfer' && !toAccountId,
+    amount: !amount, account: !accountId && !due, opDate: !!opDate && Date.parse(opDate) - Date.now() > 61 * 864e5, toAccount: kind === 'transfer' && !toAccountId,
     paidBy: kind === 'expense' && !paidBy.trim(),
     toAmount: kind === 'transfer' && !parseAmount(toAmountTxt),
     category: kind !== 'transfer' && !categoryId, project: kind === 'expense' && !projectId,
@@ -287,7 +292,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   };
 
   // riepilogo accanto ai pulsanti: quali campi mancano per registrare
-  const missingNames = ([['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
+  const missingNames = ([['opDate', t.f_op_date], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
     ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.f_doc]] as const)
     .filter(([k]) => missing[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
 
@@ -295,7 +300,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     const code = msg.split(':')[0].trim();
     if (msg.includes('movements_expense_project')) return t.err_expense_project;
     const k = `err_${code}` as keyof Dict;
-    return k in t ? t[k] : `${t.err_generic}: ${msg}`;
+    if (k in t) return t[k];
+    // mai il codice tecnico («invalid: …») davanti al messaggio (revisione operatore, 16/11)
+    const rest = msg.includes(':') ? msg.slice(msg.indexOf(':') + 1).trim() : msg;
+    return code === 'invalid' ? `${t.lang_code === 'fr' ? 'Donnée à corriger' : 'Dato da correggere'}${t.lang_code === 'fr' ? '\u00a0' : ''}: ${rest}` : `${t.err_generic}: ${rest}`;
   }
 
   async function save(status: 'draft' | 'recorded') {
@@ -557,6 +565,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <div className={aiCls('opDate')}>
           <label htmlFor="opdate">{t.f_op_date}</label>
           <input className="input" id="opdate" type="date" value={opDate} onChange={(e) => { setOpDate(e.target.value); confirm('opDate'); }} />
+          {(() => { const today = new Date().toISOString().slice(0, 10); if (!opDate) return null;
+            const diff = Math.round((Date.parse(opDate) - Date.parse(today)) / 864e5);
+            return diff > 60 ? <span className="ferr" role="alert">{t.lang_code === 'fr' ? 'La date est trop loin dans le futur : corrigez-la.' : 'La data è troppo nel futuro: correggila.'}</span>
+              : diff > 0 ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date est dans le futur : vérifiez-la.' : 'La data è nel futuro: controllala.'}</span>
+              : diff < -30 ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? `C’est il y a plus de 30 jours (${-diff} j) : vérifiez la date.` : `È di più di 30 giorni fa (${-diff} gg): controlla la data.`}</span> : null; })()}
           {aiTag('opDate')}
         </div>
         {kind === 'expense' && (<>
@@ -578,6 +591,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             </div>
             {due && <span className="hint">{t.f_due_hint}</span>}
             {payMode === 'adv' && kind === 'expense' && <span className="hint">{t.f_adv_hint}</span>}
+            {payMode === 'adv' && kind === 'expense' && account?.kind === 'advance' && account.balance != null && (
+              <span className="hint adv-left" role="status"><b>{t.lang_code === 'fr' ? 'Vous avez en main' : 'Hai in mano'}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance, account.currency, t.lang_code as Lang)}</b>
+                {amount ? <> · {t.lang_code === 'fr' ? 'après cette dépense' : 'dopo questa spesa'}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance - amount, account.currency, t.lang_code as Lang)}</> : null}</span>)}
           </div>
         </>)}
         {due ? (
@@ -635,8 +651,13 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             {cats.length > 15 && (
               <input className="input cat-q" type="search" inputMode="search" value={catQ} onChange={(e) => { const q = e.target.value; setCatQ(q);
                 // un solo codice trovato: è già scelto, senza aprire l'elenco
-                const hits = q.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group}`).includes(nq(q.trim()))) : []; if (hits.length === 1) { setCategoryId(hits[0]!.id); confirm('category'); } }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
+                const hits = q.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group} ${CAT_KEYWORDS[c.code] ?? ''}`).includes(nq(q.trim()))) : []; if (hits.length === 1) { setCategoryId(hits[0]!.id); confirm('category'); } }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
                 placeholder={lang === 'fr' ? 'Chercher un code…' : 'Cerca un codice…'} />)}
+            {/* codici più usati: un tocco li sceglie (i propri recenti, altrimenti i sei più comuni sul campo) */}
+            {dir === 'out' && !catQ.trim() && (() => { const quick = [...recentCats, ...['202', '203', '204', '307', '401', '606'].map((k) => cats.find((c) => c.code === k)).filter((c): c is NonNullable<typeof c> => Boolean(c))].filter((c, i, all) => all.findIndex((x) => x.id === c.id) === i).slice(0, 6);
+              return quick.length > 1 ? <div className="chips-row cat-quick" role="group" aria-label={lang === 'fr' ? 'Codes fréquents' : 'Codici frequenti'}>
+                {quick.map((c) => <button key={`f-${c.id}`} type="button" className={`chip-btn${categoryId === c.id ? ' on' : ''}`} aria-pressed={categoryId === c.id} onClick={() => { setCategoryId(c.id); confirm('category'); }}>
+                  <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}</div> : null; })()}
             <select className="input" id="category" aria-invalid={touched && missing.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
               <option value="">{catQ.trim() ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé' : `${catHits.length} codes trouvés`) : (catHits.length === 1 ? '1 codice trovato' : `${catHits.length} codici trovati`)) : t.f_choose}</option>
               {catQ.trim() ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}

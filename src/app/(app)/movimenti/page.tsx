@@ -22,7 +22,7 @@ type Row = {
 const PAGE = 40;   // pagine corte: su telefono 100 schede erano 15.000 px (revisione 14/11)
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isId = (v: string) => /^[0-9a-f-]{36}$/.test(v);
-const KEYS = ['stato', 'q', 'progetto', 'conto', 'dal', 'al', 'codice', 'tipo', 'cp', 'metodo', 'valuta', 'doc', 'demo', 'p'] as const;
+const KEYS = ['mie', 'stato', 'q', 'progetto', 'conto', 'dal', 'al', 'codice', 'tipo', 'cp', 'metodo', 'valuta', 'doc', 'demo', 'p'] as const;
 type SP = Partial<Record<(typeof KEYS)[number] | 'ok' | 'err', string>>;
 
 // Registro dei movimenti: ricerca e filtri combinabili (tutti nell'indirizzo, quindi salvabili e condivisibili),
@@ -41,6 +41,9 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     cur: ['EUR', 'MGA'].includes(sp.valuta ?? '') ? sp.valuta! : '', doc: ['si', 'no'].includes(sp.doc ?? '') ? sp.doc! : '',
     demo: ['si', 'no'].includes(sp.demo ?? '') ? sp.demo! : '',
   };
+  // l'operatore vede per prima cosa i propri movimenti; «Tutti» mostra anche quelli dei progetti assegnati (revisione operatore, 16/11)
+  const isOp = me!.role === 'operator';
+  const mine = isOp ? sp.mie !== '0' : sp.mie === '1';
   const page = Math.max(1, Math.min(1000, Number(sp.p) || 1));
   const revIds = f.doc === 'no' ? ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string) : [];
   // gli stessi filtri valgono per l'elenco e per i totali
@@ -63,6 +66,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     if (f.doc === 'no') { q = q.not('no_doc_reason', 'is', null); if (stato !== 'storni') q = q.is('reverses_id', null).not('id', 'in', `(${revIds.join(',') || '00000000-0000-0000-0000-000000000000'})`); }
     if (f.doc === 'si') q = q.is('no_doc_reason', null).neq('kind', 'transfer');
     if (f.demo) q = q.eq('demo', f.demo === 'si');
+    if (mine) q = q.eq('created_by', me!.id);
     return q as Q;
   };
   const admin = can(me, ['super_admin', 'admin']);
@@ -113,7 +117,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     if (i == null) continue;
     bN[i]!++; if (r.kind === 'income') bIn[i]! += v; else if (r.kind === 'expense') bOut[i]! += v;
   }
-  const cur: SP = { stato, q: term, progetto: f.prj, conto: f.acc, dal: f.from, al: f.to, codice: f.cat, tipo: f.tipo, cp: f.cp, metodo: f.pm, valuta: f.cur, doc: f.doc, demo: f.demo };
+  const cur: SP = { mie: isOp ? (mine ? '' : '0') : (mine ? '1' : ''), stato, q: term, progetto: f.prj, conto: f.acc, dal: f.from, al: f.to, codice: f.cat, tipo: f.tipo, cp: f.cp, metodo: f.pm, valuta: f.cur, doc: f.doc, demo: f.demo };
   const qs = (over: SP) => { const u = new URLSearchParams(); for (const [k, x] of Object.entries({ ...cur, p: '', ...over })) if (x) u.set(k, String(x)); return u.toString(); };
   const href = (over: SP) => { const s = qs(over); return s ? `/movimenti?${s}` : '/movimenti'; };
   const active = [f.prj, f.acc, f.from, f.to, f.cat, f.tipo, f.cp, f.pm, f.cur, f.doc, f.demo].filter(Boolean).length;
@@ -186,8 +190,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       </div>
       <ErrorNote prefix={t('error_load')} error={error} />
 
+      {isOp && <nav className="seg mv-mine" aria-label={L('Quali movimenti', 'Quels mouvements')}>
+        <Link href={href({ mie: '' })} scroll={false} aria-current={mine ? 'true' : undefined}>{L('I miei', 'Les miens')}</Link>
+        <Link href={href({ mie: '0' })} scroll={false} aria-current={!mine ? 'true' : undefined}>{L('Tutti', 'Tous')}</Link></nav>}
       <Panel>
-        <FilterBar action="/movimenti" lang={lang} search={{ value: term, placeholder: t('search_mov') }}
+        <FilterBar action="/movimenti" lang={lang} hidden={cur.mie ? { mie: cur.mie } : undefined} search={{ value: term, placeholder: t('search_mov') }}
           after={<a className="btn fb-exp" href={expHref} aria-label={expLabel} title={L('Scarica tutti i movimenti dell’anno: non segue i filtri', 'Télécharge tous les mouvements de l’année : ne suit pas les filtres')}><Ico name="download" /><span>{expLabel}</span></a>}
           active={active + (stato ? 1 : 0)} reset={term || stato || active > 0 ? '/movimenti' : null}
           result={L(`Mostra ${num(total, lang)} movimenti`, `Afficher ${num(total, lang)} mouvements`)}
@@ -258,7 +265,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                         return <span className="two"><b>{eur != null ? `${eur > 0 ? '+' : ''}${money(m.kind === 'transfer' ? Math.abs(eur) : eur, 'EUR', lang)}` : orig}</b>{eur != null && <small>{orig}</small>}</span>; })()}</td>
                     <td>{m.kind !== 'transfer' && <DocIndicator count={m.docs?.[0]?.count ?? 0} noDocReason={m.no_doc_reason}
                       labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
-                    <td><StatusChip s={m.status} label={t(`st_${m.status}`)} /></td>
+                    <td>{m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}</td>
                   </tr>
                 );
               })}
@@ -274,7 +281,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
                   <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
-                    <span className="mc-c"><StatusChip s={m.status} label={t(`st_${m.status}`)} />{m.demo && <span className="chip warn tiny">DEMO</span>}
+                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip warn tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('motivo dichiarato', 'motif déclaré')}</span>}</span></div>
                   <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                     <b>{eur != null ? `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}` : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>

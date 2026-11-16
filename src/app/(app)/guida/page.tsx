@@ -17,7 +17,7 @@ const SEC_IC: Record<string, string> = { start: 'info', home: 'home', mov: 'list
 export default async function Guide() {
   const { lang, me } = await requireMe();
   const staff = can(me, STAFF);
-  const tasks = GUIDE_TASKS.filter((g) => staff || !g.staff);
+  const tasks = GUIDE_TASKS.filter((g) => (staff ? !g.op : !g.staff));
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   return (
     <div className="stack guide">

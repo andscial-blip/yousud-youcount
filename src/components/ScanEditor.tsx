@@ -93,6 +93,20 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
     await render(mode);
   }
 
+  // un tocco (revisione operatore, 16/11): bordi trovati in automatico, miglioramento con l'ultima modalità scelta, e si usa subito
+  async function quick() {
+    if (!img) return;
+    setBusy(true);
+    await tick();
+    const w = warp(img, inset(corners));
+    const r = enhance(w, mode);
+    const c = document.createElement('canvas');
+    draw(c, r);
+    const jpeg: Blob = await new Promise((res) => c.toBlob((b) => res(b!), 'image/jpeg', mode === 'photo' ? 0.88 : 0.9));
+    const pdf = await makePdf(jpeg, r.width, r.height);
+    onDone({ original: file, enhanced: jpeg, pdf });
+  }
+
   async function finish() {
     if (!result) return;
     setBusy(true);
@@ -157,7 +171,8 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
               <button type="button" className="btn" disabled={!img || busy} onClick={() => setCorners(detectCorners(img!))}>{t.scan_reset}</button>
               <div className="spacer" />
               <button type="button" className="btn" disabled={busy} onClick={() => onDone({ original: file })}>{t.scan_original}</button>
-              <button type="button" className="btn primary" disabled={!img || busy} onClick={next}>{busy ? t.scan_working : t.scan_next}</button>
+              <button type="button" className="btn" disabled={!img || busy} onClick={next}>{t.scan_next}</button>
+              <button type="button" className="btn primary" disabled={!img || busy} onClick={quick}>{busy ? t.scan_working : t.scan_use_now}</button>
             </>
           ) : (
             <>

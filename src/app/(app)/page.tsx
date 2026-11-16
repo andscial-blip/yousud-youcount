@@ -1,3 +1,4 @@
+import { OperatorHome } from './OperatorHome';
 import Link from 'next/link';
 import { advanceLate } from '@/lib/advance-late';
 import { ruleItems } from '@/lib/deadline-rules';
@@ -24,6 +25,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const cy = now.getFullYear();
   const year = Number(anno) || cy;
   const { supabase, me, t, lang } = await requireMe();
+  // l'operatore ha una Dashboard sua, più corta e più leggera (revisione operatore, 16/11)
+  if (me!.role === 'operator') return <OperatorHome supabase={supabase} me={me!} t={t} lang={lang} />;
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const staff = can(me, STAFF);
   const isAdmin = ['super_admin', 'admin'].includes(me!.role);
@@ -45,7 +48,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       .limit(50000).returns<Led[]>(),
     isAdmin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('reimb_status', 'due'),
-    me!.role !== 'operator' ? supabase.rpc('advance_summary') : Promise.resolve({ data: null }),
+    supabase.rpc('advance_summary'),
     supabase.from('categories').select('id, group:category_groups(code, name_it, name_fr)'),
     supabase.from('fx_rates').select('year, month, rate, source').order('year', { ascending: false }).order('month', { ascending: false }).limit(14),
     supabase.from('deadlines').select('id, rule_key, title, due_date, status').gte('due_date', `${cy - 1}-01-01`).lte('due_date', in30),
@@ -121,7 +124,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   ].sort((a, b) => a.date.localeCompare(b.date));
   const days = (d: string) => Math.round((Date.parse(d) - Date.parse(td)) / 864e5);
   const chipFor = (d: string) => { const n = days(d);
-    return n < 0 ? { c: 'late', t: L(`scaduta da ${-n} g`, `en retard de ${-n} j`) } : n === 0 ? { c: 'late', t: L('oggi', 'aujourd\'hui') }
+    return n < 0 ? { c: 'late', t: L(`scaduta da ${-n} g`, `en retard de ${-n} j`) } : n === 0 ? { c: 'soon', t: L('oggi', 'aujourd\'hui') }
       : n <= 7 ? { c: 'soon', t: L(`tra ${n} g`, `dans ${n} j`) } : { c: 'mid', t: L(`tra ${n} g`, `dans ${n} j`) }; };
   // chi può verificare va alla pagina di verifica in blocco; gli altri vedono l'elenco nel registro
   const verHref = ['super_admin', 'admin', 'responsabile'].includes(me!.role) ? '/verifica' : '/movimenti?stato=recorded';
@@ -129,7 +132,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // il compito «da verificare» si mostra solo a chi può verificare: l'operatore lo vedeva senza poterlo aprire (revisione del 15/11)
   if (toVerify && ['super_admin', 'admin', 'responsabile'].includes(me!.role)) todo.push({ lvl: 'do', ic: 'check', title: L(`${toVerify} movimenti da verificare`, `${toVerify} mouvements à vérifier`), sub: L('Registrati ma non ancora controllati', 'Comptabilisés mais pas encore contrôlés'),
     href: verHref, act: L('Verifica', 'Vérifier') });
-  if (dueCount) todo.push({ lvl: 'warn', ic: 'wallet', title: L(`${dueCount} ${dueCount === 1 ? 'spesa da rimborsare' : 'spese da rimborsare'}`, `${dueCount} dépense${dueCount === 1 ? '' : 's'} à rembourser`),
+  if (dueCount) todo.push({ lvl: 'do', ic: 'wallet', title: L(`${dueCount} ${dueCount === 1 ? 'spesa da rimborsare' : 'spese da rimborsare'}`, `${dueCount} dépense${dueCount === 1 ? '' : 's'} à rembourser`),
     big: due ? money(due, 'EUR', lang) : undefined, href: '/rimborsi', act: L('Rimborsa', 'Rembourser') });
   if (advToAuth && me && ['super_admin', 'admin', 'responsabile'].includes(me.role)) todo.push({ lvl: 'warn', ic: 'user', title: L(`Richieste di anticipo da autorizzare: ${advToAuth}`, `Demandes d’avance à autoriser : ${advToAuth}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi con ricevute in ritardo: ${advLate}`, `Avances avec reçus en retard : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });

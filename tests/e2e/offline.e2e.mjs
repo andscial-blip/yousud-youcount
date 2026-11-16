@@ -88,7 +88,7 @@ try {
     await page.selectOption('#category', { index: 1 });
     await page.selectOption('#project', { index: 1 });
     await page.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
-    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByRole('button', { name: 'Ritocca' }).click();
     await page.getByRole('radio', { name: 'Documento', checked: true }).waitFor();
     await page.locator('canvas').last().waitFor();
     await page.locator('.scan-busy').waitFor({ state: 'detached' });

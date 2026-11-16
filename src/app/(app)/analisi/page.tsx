@@ -1,3 +1,4 @@
+import { projectColorMap } from '@/lib/palette';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
@@ -141,10 +142,11 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
   const net = totIn - totOut;
   const mTip = (title: string, k: 'inc' | 'out') => `${title}\n${months.slice(0, Math.max(lastM, 1)).map((m, n) => `${MESI[lang][n]}: ${e0(m[k])}`).join('\n')}`;
+  const prjCols = projectColorMap((projects ?? []).map((p) => p.id as string));
   const top6 = (xs: { k: string; label: string; v: number; href?: string }[], rest: string) => {
     const all = xs.filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
     const r = all.length > 6 ? [...all.slice(0, 5), { k: 'rest', label: `${rest} (${all.length - 5})`, v: all.slice(5).reduce((a, x) => a + x.v, 0) }] : all;
-    const cols = fixedColors(r.map((x) => (x.k === 'rest' ? '' : x.label)), r.map((x) => x.k));
+    const cols = fixedColors(r.map((x) => (x.k === 'rest' ? '' : x.label)), r.map((x) => x.k), prjCols);
     return r.map((x, n) => ({ ...x, color: cols[n] })) as { k: string; label: string; v: number; href?: string; color: string }[];
   };
   const DonutCard = ({ title, eyebrow, rows: rs, center, tot, empty }: { title: string; eyebrow: string; rows: ReturnType<typeof top6>; center: string; tot: number; empty: string }) => (

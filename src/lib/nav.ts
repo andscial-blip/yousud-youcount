@@ -48,6 +48,8 @@ const can = (roles: Role[] | undefined, role: Role | undefined) => !roles || (!!
 export function navFor(role: Role | undefined): Section[] {
   return SECTIONS.filter((s) => can(s.roles, role))
     .map((s) => ({ ...s, subs: s.subs.filter((x) => can(x.roles, role)) }))
+    // chi non amministra vede in «Impostazioni» solo il proprio account: il sottotitolo lo dice (revisione operatore, 16/11)
+    .map((s) => (s.id === 'set' && !can(ADMIN, role) ? { ...s, hint: 'hint_set_me' as Key } : s))
     .filter((s) => s.subs.length > 0);
 }
 

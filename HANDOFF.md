@@ -227,3 +227,18 @@ Da fare (i più pesanti): colori delle voci che cambiano fra italiano e francese
   Stessi permessi: test:db 52/52. Locale: count(*) su 1.017 movimenti 154 ms → 2 ms. **In produzione solo dopo il via libera di Andrea.**
 - Registro: conteggio «da verificare» in parallelo. Scheda movimento: storno d'origine, traduzione e collegamenti dei file in parallelo.
 - e2e completo: 51/53, i due falliti (riconciliazione, documenti emessi) passano da soli o con le prove che li precedono (server di sviluppo riavviato per memoria).
+
+## 16/11 — revisione dei colori e dell'operatore (quarto giro: due esperti)
+- Rapporti: /tmp/yc-final/out (copiati in docs/revisione-finale-2026-11-15/quarto-giro). Colori: palette giusta ma coerenza 5,5–6; operatore 7/10.
+- Colori: colore fisso per progetto (`projectColorMap` in lib/palette.ts, ordine per id su tutti i progetti); IT cielo e MG lilla anche nelle pastiglie
+  (.cmark, .place); Registro: entrate blu notte, uscite gialle (icone e importi); icone dei tipi di progetto in tinte senza significato;
+  «Altri» in --c-soft; «Oggi» e rimborsi non più rossi; importanza nel calendario: critica corallo, alta rosa, normale cielo, promemoria lilla, fatta oliva; Cambi senza blu acceso.
+- Operatore: Dashboard propria (OperatorHome.tsx: Registra una spesa, Contanti in mano, Da rimborsare a te, In attesa di verifica, Bozze,
+  Le mie ultime spese, Da fare); Registro «I miei/Tutti» (parametro mie; per l'operatore «I miei» è la scelta iniziale);
+  messaggio dopo il salvataggio chiaro e stato «In attesa di rimborso»; spiegazione «Da firmare»; nota interna del Gestionale solo ai responsabili;
+  codici frequenti (6 pulsanti) e parole comuni IT/FR nella ricerca dei codici (lib/cat-keywords.ts); data controllata mentre si scrive;
+  errori senza «invalid:»; anticipo proprio scelto per primo (RefData.myAdvances) con «Hai in mano»; scansione con «Usa» in un tocco («Ritocca» per i bordi);
+  anteprima dell'immagine originale; Guida: «Ho sbagliato una spesa» per l'operatore, voci da responsabile nascoste; sottotitolo di Impostazioni «Il tuo account e la sincronizzazione»;
+  motivi rapidi senza giustificativo mostrati nella lingua di chi legge. loadRefData: letture tutte in parallelo.
+- Da fare ancora (non fatti): separatore delle migliaia con lo spazio nel campo importo in francese; «Registra» immediato con invio in sottofondo; conti del modulo ridotti per l'operatore.
+- Verifiche: unit 35/35, db 52/52, e2e 51/53 nel giro completo con i 2 falliti passati da soli (server riavviato), layout 0 problemi IT 375/768/1440 e FR 375.

@@ -47,3 +47,15 @@ export function num(value: number | string | null | undefined, lang: Lang = 'it'
     useGrouping: 'always', ...(decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : { maximumFractionDigits: 2 }),
   } as Intl.NumberFormatOptions).format(Number.isFinite(n) ? n : 0);
 }
+
+// Motivi rapidi «senza giustificativo»: si salvano nella lingua di chi scrive; chi legge nell'altra lingua li vede tradotti (16/11).
+const NODOC = {
+  it: ['Venditore senza ricevuta', 'Ricevuta persa', 'Trasporto locale senza biglietto', 'Mancia o piccola spesa'],
+  fr: ['Vendeur sans reçu', 'Reçu perdu', 'Transport local sans billet', 'Pourboire ou petite dépense'],
+};
+export function noDocReason(text: string | null | undefined, lang: Lang): string {
+  if (!text) return '';
+  const other = lang === 'fr' ? NODOC.it : NODOC.fr;
+  const i = other.indexOf(text.trim());
+  return i >= 0 ? NODOC[lang][i]! : text;
+}

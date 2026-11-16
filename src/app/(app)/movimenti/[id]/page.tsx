@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
 import { ADMIN, requireMe, RESP } from '@/lib/session';
-import { date, dateTime, money, nm, rate as fxRate } from '@/lib/format';
+import { date, dateTime, money, nm, rate as fxRate, noDocReason } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
@@ -74,8 +74,11 @@ export default async function MovementDetail({ params, searchParams }: {
     });
   const bucket = supabase.storage.from('documents');
   // i due collegamenti di ogni file insieme, non uno dopo l'altro
-  const signed = await Promise.all(docs.map(async (d) => { const [o, sv] = await Promise.all([bucket.createSignedUrl(d.path, 600), bucket.createSignedUrl(d.path, 600, { download: d.name })]);
-    return { open: o.data?.signedUrl, save: sv.data?.signedUrl }; }));
+  // foto: l'anteprima mostra l'immagine originale anche quando esiste il PDF (su telefono il PDF incorporato non si vede)
+  const signed = await Promise.all(docs.map(async (d) => { const isImg = /^image\//.test(d.mime);
+    const [o, sv, im] = await Promise.all([bucket.createSignedUrl(d.path, 600), bucket.createSignedUrl(d.path, 600, { download: d.name }),
+      isImg && d.pdf_path ? bucket.createSignedUrl(d.original_path, 600) : Promise.resolve({ data: null })]);
+    return { open: o.data?.signedUrl, save: sv.data?.signedUrl, img: isImg ? (im.data?.signedUrl ?? o.data?.signedUrl) : undefined }; }));
   const resp = me && RESP.includes(me.role);
   const strict = fe?.value !== false;
   // il super amministratore verifica anche i propri movimenti; per gli altri vale «quattro occhi»
@@ -104,11 +107,13 @@ export default async function MovementDetail({ params, searchParams }: {
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
         <h1>{m.ref ?? t('st_draft')} · {m.reverses_id ? L(`Storno di ${t(`k_${m.kind}`).toLowerCase()}`, `Extourne de ${t(`k_${m.kind}`).toLowerCase()}`) : t(`k_${m.kind}`)}</h1>
-        <StatusChip s={m.status} label={t(`st_${m.status}`)} />
+        {m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
       {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done')
-        : ok === 'new' ? `${m.status === 'draft' ? L('Bozza salvata', 'Brouillon enregistré') : L('Movimento registrato', 'Mouvement comptabilisé')}: ${m.ref ?? ''}.`
+        : ok === 'new' ? (m.reimb_status === 'due' ? L('Spesa salvata: la rimborserà un responsabile. La trovi in «Da rimborsare».', 'Dépense enregistrée : un responsable la remboursera. Vous la trouvez dans « À rembourser ».')
+          : m.status === 'draft' ? L('Bozza salvata: non conta ancora nei saldi. Completala e premi «Registra».', 'Brouillon enregistré : il ne compte pas encore dans les soldes. Complétez-le et appuyez sur « Comptabiliser ».')
+          : `${L('Movimento registrato', 'Mouvement comptabilisé')}: ${m.ref}. ${L('Ora lo controlla un responsabile.', 'Un responsable va maintenant le contrôler.')}`)
         : ok === 'saved' ? L('Modifiche salvate.', 'Modifications enregistrées.')
         : ok === 'reversed' ? L(`Storno registrato: ${m.ref} annulla ${origRef ?? 'il movimento originale'}. Va verificato da un'altra persona.`, `Extourne comptabilisée : ${m.ref} annule ${origRef ?? 'le mouvement d’origine'}. Elle doit être vérifiée par une autre personne.`) : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}
       {/* dopo lo storno: la copia corretta riparte da dati e allegati dell'originale (P2-15) */}
@@ -217,13 +222,13 @@ export default async function MovementDetail({ params, searchParams }: {
         <aside className="detail-side stack">
           {(m.kind !== 'transfer' || docs.length > 0) && (
             <Panel title={t('d_documents')} pad>
-              {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}: ${m.no_doc_reason}` : t('none')}</p> : (
+              {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}${lang === 'fr' ? '\u00a0' : ''}: ${noDocReason(m.no_doc_reason, lang)}` : t('none')}</p> : (
                 <ul className="docs">
                   {docs.map((d, i) => (
                     <li key={d.id}>
                       {/* anteprima dentro l'app: chi verifica guarda la ricevuta senza uscire (revisione 14/11) */}
-                      {signed[i]?.open && (/^image\//.test(d.mime) && !d.pdf_path
-                        ? <a className="doc-prev" href={signed[i].open} target="_blank" rel="noreferrer"><img src={signed[i].open} alt={`${t('f_doc')}: ${d.name}`} loading="lazy" /></a>
+                      {signed[i]?.open && (signed[i].img
+                        ? <a className="doc-prev" href={signed[i].open} target="_blank" rel="noreferrer"><img src={signed[i].img} alt={`${t('f_doc')}: ${d.name}`} loading="lazy" /></a>
                         : <object className="doc-prev pdf" data={`${signed[i].open}#toolbar=0&view=FitH`} type="application/pdf" aria-label={`${t('f_doc')}: ${d.name}`}><span className="muted small">{lang === 'fr' ? 'Aperçu non disponible : utilisez « Ouvrir ».' : 'Anteprima non disponibile: usa «Apri».'}</span></object>)}
                       <span className="num">{d.name}</span>
                       {signed[i]?.open ? <a className="btn" href={signed[i].open} target="_blank" rel="noreferrer">{t('d_open')}</a> : null}
@@ -241,13 +246,15 @@ export default async function MovementDetail({ params, searchParams }: {
                   <p style={{ margin: 0 }}>{aut.declarant}{aut.declarant_role ? ` · ${aut.declarant_role}` : ''}{' '}
                     <span className={`chip ${aut.signed_at ? 'ok' : 'warn'}`}>{aut.signed_at ? t('aut_signed') : t('aut_to_sign')}</span></p>
                   {aut.signed_at && <p className="muted" style={{ margin: 0 }}>{t('aut_signed_by')}: {name.get(aut.signed_by ?? '') ?? '–'} · {dateTime(aut.signed_at, lang)}</p>}
+                  {!aut.signed_at && !resp && <div className="note info" role="status">{L('Cosa fare ora: apri il PDF qui sotto, stampalo, fallo firmare a chi ha fatto la spesa e consegnalo al responsabile. La firma la registra lui in YouCount.',
+                    'Que faire maintenant : ouvrez le PDF ci-dessous, imprimez-le, faites-le signer par la personne qui a fait la dépense et remettez-le au responsable. C’est lui qui enregistre la signature dans YouCount.')}</div>}
                   {!aut.signed_at && resp && (
                     <form action={signSelfCertAction}>
                       <input type="hidden" name="id" value={m.id} /><input type="hidden" name="aut" value={aut.id} />
                       <button className="btn" type="submit"><Ico name="check" />{t('aut_sign_btn')}</button>
                     </form>
                   )}
-                  <p className="hint" style={{ margin: 0 }}>{t('aut_check')}</p>
+                  {resp && <p className="hint" style={{ margin: 0 }}>{t('aut_check')}</p>}
                 </div>
               ) : writer && m.status !== 'verified' ? (
                 <form action={selfCertAction} className="aut-box">

@@ -12,19 +12,17 @@ export const C_HYP = 'var(--vz-hyp)';
 export const C_NET = 'var(--green-soft)';
 export const C_OVER = 'var(--tax)';
 export const C_BUDGET = 'var(--band)';
-// Colori delle voci (gruppi di spesa, progetti): lilla, azzurro, corallo, oliva, rosa, grigio azzurro. Blu notte, giallo e verde
-// restano riservati a entrate, uscite e saldo: un colore, un significato.
-// Colori per voci, progetti, conti e finanziatori (16/11): lilla, cielo, oliva, rosa, blu ardesia, nebbia. Esclusi di proposito i colori
-// con un significato fisso: blu notte (entrate), giallo (uscite), verde acqua (saldo), blu (preventivo), corallo (oltre il limite).
-export const PAL = ['var(--pp2)', 'var(--pp4)', 'var(--pp6)', 'var(--pp7)', 'var(--pp8)', 'var(--dn6)'];
+import { PAL } from '@/lib/palette';
+export { PAL };
 
 /** Colore fisso per voce: lo stesso gruppo di voci (o progetto) ha lo stesso colore in tutte le pagine, qualunque sia
  *  la sua posizione in classifica. Chiave = codice del gruppo («01 · Risorse umane» → 01) o, senza codice, il nome.
  *  Dentro uno stesso grafico due voci non hanno mai lo stesso colore finché la tavolozza basta; '' = «Altre voci» (grigio). */
-export function fixedColors(labels: string[], ids?: string[]): string[] {
+export function fixedColors(labels: string[], ids?: string[], fixed?: Map<string, string>): string[] {
   const used = new Set<number>();
   return labels.map((label, n) => {
-    if (!label) return 'var(--line)';
+    if (!label) return 'var(--c-soft)';
+    const f = ids?.[n] ? fixed?.get(ids[n]!) : undefined; if (f) return f;
     // senza codice la chiave è l'identificativo (ids), non il nome: il nome cambia con la lingua e il colore cambiava con lui
     const key = label.includes(' · ') ? label.split(' · ')[0]! : (ids?.[n] || label);
     const num = /^[A-Za-z]?(\d+)$/.exec(key.trim());

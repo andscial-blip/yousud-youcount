@@ -141,11 +141,12 @@ try {
 
   const op = await login('operatore@test.local');
   await check('operatore: cruscotto con saldi reali', async () => {
-    // l'operatore vede le casse in contanti, non i conti bancari
-    await op.page.getByText('Casse in contanti').waitFor();
+    // dal 16/11 l'operatore ha una Dashboard sua: le proprie spese e le cose da fare, nessuna cifra di tutta l'associazione
+    await op.page.getByText('Le mie ultime spese').waitFor();
     const txt = await op.page.locator('main').innerText();
-    assert.doesNotMatch(txt, /Banca Italia/, 'i conti bancari non sono mostrati all\'operatore');
-    assert.match(txt, /-?1\.010\.000\s?MGA|MGA\s?-1\.010\.000/, 'saldo Cassa Missione');
+    assert.doesNotMatch(txt, /Banca Italia|Saldo dei conti|Entrate 20\d\d/, 'niente conti né totali dell\'associazione all\'operatore');
+    assert.match(txt, /Contanti in mano[\s\S]*Da rimborsare a te[\s\S]*In attesa di verifica[\s\S]*Bozze/);
+    assert.match(txt, /PROVA materiale scolastico[\s\S]*-?189,\d\d\s?€|PROVA materiale scolastico/, 'la propria spesa in elenco');
     assert.match(await op.page.locator('aside.side').innerText(), /Operatore di prova\s+Operatore/);
     await op.page.screenshot({ path: `${SHOTS}/op_cruscotto.png`, fullPage: true });
   });
@@ -234,7 +235,7 @@ try {
     await p.fill('#desc', 'Testo scritto prima del file');
     await p.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
     await p.getByText('Ritaglia e migliora').waitFor();
-    await p.getByRole('button', { name: 'Avanti' }).click();
+    await p.getByRole('button', { name: 'Ritocca' }).click();
     for (const m of ['Bianco e nero', 'Foto', 'Documento']) {
       await p.getByRole('radio', { name: m }).click();
       await p.getByRole('radio', { name: m, checked: true }).waitFor();

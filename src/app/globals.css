@@ -100,18 +100,18 @@ main:focus { outline: none; }
 
 /* tipo di movimento, giustificativo, paese */
 .kind { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; flex: none; }
-.kind-income { color: var(--green); background: var(--ok-bg); }
-.kind-expense { color: var(--slate-2); background: var(--band); }
+.kind-income { color: var(--navy); background: var(--band); }   /* entrate = blu notte, uscite = giallo, giroconti = lilla: come nei grafici (16/11) */
+.kind-expense { color: var(--navy); background: color-mix(in srgb, var(--vz-sp) 38%, var(--surface)); }
 .kind-transfer { color: var(--lilac-ink); background: var(--lilac-bg); }
-.amt-in { color: var(--green); }
+.amt-in { color: var(--navy); }
 .amt-tr { color: var(--muted); }
 .docind { display: inline-flex; align-items: center; gap: 2px; color: var(--faint); }
 .docind.miss { color: var(--amber); }
 .docind small { font-size: 12px; font-weight: 600; }
 .place { display: inline-block; font-family: var(--f-ui); font-weight: 600; font-size: 12px; padding: 1px 7px; border-radius: 8px; }
-.place.it { color: #fff; background: var(--navy); }
-.place.mg { color: #1F2A44; background: var(--green-soft); }
-:root[data-theme="dark"] .place.it { background: var(--vz-plan); color: #10151C; }
+.place.it { color: var(--navy); background: var(--pp4); }
+.place.mg { color: var(--navy); background: var(--pp2); }
+:root[data-theme="dark"] .place.it, :root[data-theme="dark"] .place.mg { color: #10151C; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .place.it { background: var(--vz-plan); color: #10151C; } }
 
 /* stato vuoto */
@@ -968,7 +968,7 @@ table.bal-fixed th.r, table.bal-fixed td.r { white-space: nowrap; }
 
 /* ---------- Ritocchi telefono (verifica su iPhone) ---------- */
 /* importi colorati anche dentro strisce e cifre */
-.sstrip b.amt-in, .figs b.amt-in, .rec-sum b.amt-in { color: var(--green); }
+.sstrip b.amt-in, .figs b.amt-in, .rec-sum b.amt-in { color: var(--navy); }
 .sstrip b.amt-out, .figs b.amt-out, .rec-sum b.amt-out { color: var(--red); }
 /* importi negativi sempre in rosso */
 .num.neg, .neg > .num, .neg > b, .sstrip b.neg, td.neg, td.neg b { color: var(--red); }
@@ -1072,10 +1072,10 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
 }
 /* Conti: sagoma del paese accanto al titolo (Italia in blu, Madagascar in verde acqua) */
 .cmark { display: inline-grid; place-items: center; border-radius: 50%; flex: none; font-family: var(--f-ui); font-weight: 700; line-height: 1; letter-spacing: .03em; }
-.cmark.it { background: var(--navy); color: #fff; }
-.cmark.mg { background: var(--green-soft); color: #1F2A44; }
-:root[data-theme="dark"] .cmark.it { background: var(--vz-plan); color: #10151C; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmark.it { background: var(--vz-plan); color: #10151C; } }
+.cmark.it { background: var(--pp4); color: var(--navy); }   /* Italia = cielo, Madagascar = lilla, come nelle barre (16/11) */
+.cmark.mg { background: var(--pp2); color: var(--navy); }
+:root[data-theme="dark"] .cmark.it, :root[data-theme="dark"] .cmark.mg { color: #10151C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmark.it, :root:not([data-theme="light"]) .cmark.mg { color: #10151C; } }
 .panel.country > .panel-h { gap: 10px; }
 /* conta di cassa: tabella compatta per tagli, banconote e monete separate */
 .cc-tab { border: 1px solid var(--line-2); border-radius: var(--r-sm, 10px); overflow: hidden; max-width: 460px; }
@@ -1197,7 +1197,7 @@ a.k4:hover { transform: translateY(-1px); }
 }
 
 /* ── Scadenze (scelta 4A): calendario per primo con colori per importanza, elenco allineato, righello delle soglie ── */
-:root { --imp-c: #E2917F; --imp-a: #E8BE5A; --imp-n: #8FAFD6; --imp-p: #A596E6; --imp-f: #5FB8A3; }
+:root { --imp-c: #E2917F; --imp-a: #E3A6C2; --imp-n: #8FAFD6; --imp-p: #A596E6; --imp-f: #B9C47A; }   /* importanza: critica corallo, alta rosa, normale cielo, promemoria lilla, fatta oliva (16/11: giallo e verde acqua restano a uscite e saldo) */
 .cal-i.i-c { background: color-mix(in srgb, var(--imp-c) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-c); }
 .cal-i.i-a { background: color-mix(in srgb, var(--imp-a) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-a); }
 .cal-i.i-n { background: color-mix(in srgb, var(--imp-n) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-n); }
@@ -2323,7 +2323,7 @@ table.bq-tab tr.bq-grp .bq-car { width: 14px; flex: none; color: var(--muted); }
 .draft-note .row-btns.eq { max-width: 360px; }
 /* motivi pronti sotto «Perché manca»: pulsanti della stessa altezza, due per riga su telefono */
 .chips-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.chip-btn { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line-input); border-radius: 8px; background: var(--surface); color: var(--ink); font: 500 13.5px/1.25 var(--f-ui); text-align: center; cursor: pointer; }
+.chip-btn { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line-input); border-radius: 8px; background: var(--surface); color: var(--ink); font: 500 13px/1.25 var(--f-ui); text-align: center; cursor: pointer; }
 .chip-btn[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
 @media (max-width: 900px) { .chips-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* Anticipi, operatore: contanti in mano */
@@ -2569,3 +2569,20 @@ details[open] > .rev-sum .btn { display: none; }
 
 /* telefono: le sotto-schede che non entrano sfumano sul bordo destro, segno che la riga scorre */
 @media (max-width: 760px) { .subrow .subnav { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 24px; } }
+.cat-quick { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 8px; }
+.cat-quick .chip-btn { text-align: left; overflow-wrap: normal; text-wrap: balance; }
+.cat-quick .chip-btn b { font-weight: 700; margin-right: 2px; }
+@media (max-width: 900px) { .cat-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mv-mine { margin: 0; }
+/* Dashboard dell'operatore */
+.op-new { display: flex; }
+.op-new .btn { min-height: 44px; flex: 0 0 auto; }
+@media (max-width: 760px) { .op-new .btn { flex: 1 1 100%; justify-content: center; } }
+.op-list { list-style: none; margin: 0; padding: 0; }
+.op-list li + li { border-top: 1px solid var(--line-2); }
+.op-list a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 18px; color: inherit; text-decoration: none; align-items: start; }
+.op-list a:hover { background: var(--surface-2); }
+.op-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .op-t b { font-weight: 600; font-size: 14px; } .op-t small { font-size: 13px; }
+.op-r { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; white-space: nowrap; }
+.op-r .two { display: grid; justify-items: end; } .op-r .two b { font-size: 14px; } .op-r .two small { font-size: 12px; color: var(--muted); }
+.op-home .h-left > .op-last { grid-column: 1 / -1; }
