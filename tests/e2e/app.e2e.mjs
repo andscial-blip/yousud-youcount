@@ -172,6 +172,7 @@ try {
     await p.selectOption('#project', { label: 'École Antanetibe' });
     await p.selectOption('#cp', { value: '__new' });
     await p.fill('input[aria-label="Nome del nuovo fornitore o donatore"]', 'Cartoleria di prova');
+    { const more = p.locator('details.op-more:not([open]) > summary'); if (await more.count()) await more.click(); }   // operatore: «Altri dettagli»
     await p.selectOption('#method', { label: 'Contanti' });
     await p.fill('#desc', 'PROVA quaderni');
     await p.locator('input[type=file]').nth(1).setInputFiles({ name: 'scontrino.png', mimeType: 'image/png', buffer: PNG });
@@ -218,6 +219,7 @@ try {
     await p.fill('#amount', '12.000');
     await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
     await p.selectOption('#category', { label: '401 · Materiali di consumo' });
+    { const more = p.locator('details.op-more:not([open]) > summary'); if (await more.count()) await more.click(); }   // operatore: «Altri dettagli»
     await p.selectOption('#method', { label: 'Contanti' });
     await p.fill('#desc', 'PROVA taxi senza ricevuta');
     await p.getByLabel('Il giustificativo non c’è').check();

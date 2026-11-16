@@ -38,7 +38,7 @@ export function SideNav({ secs, label, home }: { secs: NavSec[]; label: string; 
   );
 }
 
-type HeadLabels = { lang?: 'it' | 'fr'; search: string; year: string; newMov: string; subnav: string; brand: string; cmdPh: string; searchMov: string; goTo: string; none: string };
+type HeadLabels = { lang?: 'it' | 'fr'; op?: boolean; search: string; year: string; newMov: string; subnav: string; brand: string; cmdPh: string; searchMov: string; goTo: string; none: string };
 
 export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSync }: {
   secs: NavSec[]; labels: HeadLabels; canWrite: boolean; years: number[];
@@ -133,7 +133,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
             ))}
           </nav>
         )}
-        <InfoButton path={path} lang={labels.lang ?? 'it'} line />
+        <InfoButton path={path} lang={labels.lang ?? 'it'} line op={labels.op} />
       </div>
       {cmd && <CommandPalette secs={secs} onClose={() => setCmd(false)} labels={labels} />}
     </header>

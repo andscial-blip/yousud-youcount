@@ -19,6 +19,7 @@ export type RefData = {
   grants: { id: string; title: string; project_id: string | null }[];
   aiEnabled: boolean; requireDoc: boolean;
   myAdvances: string[];   // conti di anticipo di cui chi compila è beneficiario
+  userNames: string[];    // nomi degli utenti dell'app (l'operatore non usa l'anticipo di un altro utente)
 };
 
 export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang): Promise<RefData> {
@@ -75,6 +76,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     // regola «giustificativo obbligatorio» (attiva se non impostata): il modulo la segnala insieme agli altri campi mancanti
     requireDoc: (rd.data?.value ?? true) !== false,
     myAdvances: [...new Set(((myAdv.data ?? []) as { account_id: string }[]).map((r) => r.account_id))],
+    userNames: ((pf.data ?? []) as { full_name: string }[]).map((x) => (x.full_name ?? '').trim().toLowerCase()).filter(Boolean),
     recentCats: { income: recentCats('income'), expense: recentCats('expense') },
     lastMine: { income: lastOf('income'), expense: lastOf('expense') },
     lastRate: last.data?.fx_rate ? { rate: Number(last.data.fx_rate), date: last.data.op_date } : null,

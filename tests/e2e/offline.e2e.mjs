@@ -141,6 +141,75 @@ try {
     assert.equal(n, 1);
   });
 
+  await check('senza rete: le pagine principali si aprono subito dalla copia, con l\'avviso dei dati salvati', async () => {
+    await ctx.setOffline(true);
+    for (const path of ['/', '/movimenti', '/anticipi', '/conti', '/scadenze']) {
+      const t0 = Date.now();
+      await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
+      await page.locator('.stale-note', { hasText: 'Senza rete' }).waitFor({ timeout: 5000 });
+      const ms = Date.now() - t0;
+      assert.ok(ms < 2500, `${path} aperta in ${ms} ms`);
+      assert.ok(!(await page.locator('h1', { hasText: 'Sei senza rete' }).count()), `${path}: non la pagina di ripiego`);
+    }
+    // navigazione interna senza rete: dalla barra in basso si passa a un'altra pagina salvata
+    await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+    await page.locator('.stale-note').waitFor();
+    const t1 = Date.now();
+    await page.locator('nav a[href="/movimenti"]:visible').first().click();
+    await page.waitForURL(/\/movimenti$/, { timeout: 8000 });
+    await page.locator('.stale-note', { hasText: 'Senza rete' }).waitFor({ timeout: 5000 });
+    assert.ok(Date.now() - t1 < 4000, `navigazione interna in ${Date.now() - t1} ms`);
+    await ctx.setOffline(false);
+  });
+
+  await check('rete lenta: la copia salvata compare entro 4 secondi, poi «Dati nuovi · Aggiorna»', async () => {
+    const slow = async (route) => { await new Promise((r) => setTimeout(r, 7000)); await route.continue().catch(() => {}); };
+    const isMov = (u) => new URL(u).pathname === '/movimenti';
+    await ctx.route(isMov, slow);
+    try {
+      const t0 = Date.now();
+      await page.goto(`${base}/movimenti`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.locator('.stale-note', { hasText: 'Rete lenta' }).waitFor({ timeout: 5000 });
+      const ms = Date.now() - t0;
+      assert.ok(ms < 4500, `pagina mostrata in ${ms} ms`);
+      await page.getByRole('button', { name: 'Dati nuovi · Aggiorna' }).waitFor({ timeout: 15000 });
+    } finally { await ctx.unroute(isMov, slow); }
+  });
+
+  await check('rete lenta: Registra mette in coda dopo pochi secondi e arriva un solo movimento', async () => {
+    const D2 = `PROVA rete lenta ${randomUUID().slice(0, 6)}`;
+    const slow = async (route) => { await new Promise((r) => setTimeout(r, 10000)); await route.continue().catch(() => {}); };
+    await ctx.route('**/rpc/save_movement', slow);
+    try {
+      await page.goto(`${base}/nuovo`);
+      await page.locator('#amount').waitFor();
+      await page.fill('#amount', '12000');
+      await page.fill('#desc', D2);
+      await page.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
+      await page.selectOption('#category', { index: 1 });
+      await page.selectOption('#project', { index: 1 });
+      await page.locator('input[type=file]').nth(1).setInputFiles(new URL('./fixtures/scontrino.jpg', import.meta.url).pathname);
+      await page.getByRole('button', { name: 'Ritocca' }).click();
+      await page.locator('.scan-busy').waitFor({ state: 'detached' });
+      await page.getByRole('button', { name: 'Usa la scansione' }).click();
+      await page.waitForTimeout(3000);              // caricamento del giustificativo (non rallentato)
+      const t0 = Date.now();
+      await page.getByRole('button', { name: 'Registra' }).click();
+      await page.getByText('Salvato sul telefono', { exact: false }).waitFor({ timeout: 9000 });
+      const ms = Date.now() - t0;
+      assert.ok(ms < 8000, `messo in coda in ${ms} ms`);
+    } finally { await ctx.unroute('**/rpc/save_movement', slow); }
+    await page.goto(`${base}/sincronizzazione`);
+    for (let i = 0; i < 40; i++) {
+      if (!(await page.getByText(D2).count())) break;
+      if (await page.getByRole('button', { name: 'Invia ora' }).count()) await page.getByRole('button', { name: 'Invia ora' }).click().catch(() => {});
+      await page.waitForTimeout(1000);
+    }
+    await page.waitForTimeout(12000);               // anche il primo invio rallentato arriva al server
+    const n = (await pool.query('select count(*)::int n from movements where description = $1', [D2])).rows[0].n;
+    assert.equal(n, 1, 'un solo movimento, nessun doppione');
+  });
+
   await check('uscita con movimenti non inviati: chiede conferma', async () => {
     // un elemento in coda di un altro utente non viene mai inviato: resta lì e fa scattare l'avviso
     await page.evaluate(() => new Promise((res) => {

@@ -9,13 +9,14 @@ import type { HelpEntry } from '@/lib/help';
 // I testi della guida si caricano solo al primo clic (non pesano sull'apertura delle pagine).
 // Il pannello va in document.body: dentro l'intestazione (che ha backdrop-filter) un elemento fixed resterebbe chiuso nell'intestazione.
 // line: riga visibile sotto le schede («Come funziona questa scheda»), scelta del 12/11 al posto della sola icona nell'intestazione.
-export function InfoButton({ path, lang, line }: { path: string; lang: 'it' | 'fr'; line?: boolean }) {
+export function InfoButton({ path, lang, line, op }: { path: string; lang: 'it' | 'fr'; line?: boolean; op?: boolean }) {
   const [open, setOpen] = useState(false);
   const [h, setH] = useState<HelpEntry | null | undefined>(undefined);
+  const [brief, setBrief] = useState<string[] | null>(null);
   useEffect(() => { setH(undefined); }, [path]);
   useEffect(() => {
     if (!open || h !== undefined) return;
-    import('@/lib/help').then((m) => setH(m.helpFor(path)));
+    import('@/lib/help').then((m) => { setH(m.helpFor(path)); const o = op ? m.opHelpFor(path) : null; setBrief(o ? (lang === 'fr' ? o.fr : o.it) : null); });
   }, [open, h, path]);
   useEffect(() => {
     if (!open) return;
@@ -38,6 +39,8 @@ export function InfoButton({ path, lang, line }: { path: string; lang: 'it' | 'f
               <button className="btn ghost" type="button" onClick={() => setOpen(false)}>{L('Chiudi', 'Fermer')}</button></div>
             <div className="sheet-b help-b">
               {h === undefined ? <p className="muted">…</p> : h === null ? <p>{L('Per questa pagina non c\'è ancora una spiegazione specifica.', 'Pas encore d\'explication pour cette page.')}</p>
+                : brief ? <><ol className="help-brief">{brief.map((p, i) => <li key={i}>{p}</li>)}</ol>
+                    <details className="help-more"><summary>{L('Tutti i dettagli', 'Tous les détails')}</summary>{paras.map((p, i) => <p key={i}>{p}</p>)}</details></>
                 : paras.map((p, i) => <p key={i}>{p}</p>)}
               <p><Link href={`/guida${h ? `#${h.href.replace(/\W+/g, '-').replace(/^-|-$/g, '') || 'home'}` : ''}`} onClick={() => setOpen(false)}>{L('Apri la guida completa', 'Ouvrir le guide complet')} →</Link></p>
             </div>

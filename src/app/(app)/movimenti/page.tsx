@@ -191,7 +191,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       <ErrorNote prefix={t('error_load')} error={error} />
 
       {/* l'operatore: niente riquadri contabili, la lista subito sotto le schede con una riga di riepilogo (revisione operatore, 16/11) */}
-      {isOp && <p className="muted mv-oprow">{L(`${num(total, lang)} movimenti`, `${num(total, lang)} mouvements`)}{nRec > 0 && <> · <Link href={href({ stato: 'recorded' })}>{L(`${num(nRec, lang)} in attesa di verifica`, `${num(nRec, lang)} en vérification`)}</Link></>}</p>}
+      {isOp && <p className="muted mv-oprow">{total === 1 ? L('1 movimento', '1 mouvement') : L(`${num(total, lang)} movimenti`, `${num(total, lang)} mouvements`)}{nRec > 0 && <> · <Link href={href({ stato: 'recorded' })}>{L(`${num(nRec, lang)} in attesa di verifica`, `${num(nRec, lang)} en vérification`)}</Link></>}</p>}
       {isOp && <nav className="seg mv-mine" aria-label={L('Quali movimenti', 'Quels mouvements')}>
         <Link href={href({ mie: '' })} scroll={false} aria-current={mine ? 'true' : undefined}>{L('I miei', 'Les miens')}</Link>
         <Link href={href({ mie: '0' })} scroll={false} aria-current={!mine ? 'true' : undefined}>{L('Tutti', 'Tous')}</Link></nav>}
@@ -255,7 +255,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <td><KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} /></td>
                     <td className="num nw">{date(m.op_date)}<div className="muted small">{m.ref ?? L('bozza', 'brouillon')}</div></td>
                     <td className="mv-d"><Link className="rowlink" href={`/movimenti/${m.id}`}>{desc(m) || t(`k_${m.kind}`)}</Link>
-                      {m.demo && <span className="chip warn tiny">DEMO</span>}{m.reverses_id && <span className="chip tiny">{t('reversal')}</span>}
+                      {m.demo && <span className="chip demo tiny">DEMO</span>}{m.reverses_id && <span className="chip tiny">{t('reversal')}</span>}
                       {m.reimb_status === 'due' && <span className="chip warn tiny">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
                       {(m.counterparty || m.method) && <div className="muted small">{[m.counterparty?.name, m.method ? nm(lang, m.method) : null].filter(Boolean).join(' · ')}</div>}</td>
                     <td className="muted nw">{m.category?.code ?? '–'}</td>
@@ -283,7 +283,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
                   <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
-                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip warn tiny">DEMO</span>}
+                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip demo tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('motivo dichiarato', 'motif déclaré')}</span>}</span></div>
                   <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                     <b>{eur != null ? `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}` : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>

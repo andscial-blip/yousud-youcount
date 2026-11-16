@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { flushOutbox, listOutbox, OUTBOX_EVENT } from '@/lib/outbox';
 
@@ -15,14 +15,25 @@ const subs = new Set<() => void>();
 const set = (p: Partial<St>) => { st = { ...st, ...p }; subs.forEach((f) => f()); };
 const useSt = () => useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => st, () => st);
 
+// pagine principali salvate per l'uso senza rete (anche quelle mai aperte)
+const WARM = ['/', '/nuovo', '/movimenti', '/rimborsi', '/anticipi', '/conti', '/preventivo', '/progetti', '/analisi', '/scadenze', '/documenti', '/guida', '/altro', '/account', '/sincronizzazione', '/offline'];
+function postWarm(urls: string[], force = false) {
+  try {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+    navigator.serviceWorker.controller.postMessage({ type: 'warm', urls, force });
+  } catch { /* service worker non disponibile */ }
+}
+
 export function SyncEngine() {
+  const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const sync = useCallback(async () => {
     try {
       if (navigator.onLine) {
         const r = await flushOutbox(supabase);
-        if (r.sent > 0) router.refresh();
+        // dati cambiati: la pagina si aggiorna e le copie offline delle pagine principali si rinnovano
+        if (r.sent > 0) { router.refresh(); postWarm(['/', '/movimenti'], true); }
       }
       set({ pending: (await listOutbox()).length, at: navigator.onLine ? Date.now() : st.at });
     } catch { /* IndexedDB non disponibile (navigazione privata): l'app funziona solo in linea */ }
@@ -32,19 +43,19 @@ export function SyncEngine() {
     const upd = () => { set({ online: navigator.onLine }); if (navigator.onLine) sync(); };
     const count = () => listOutbox().then((l) => set({ pending: l.length })).catch(() => {});
     upd();
-    // una volta per sessione, con la rete: pagine principali salvate per l'uso offline
-    // al massimo ogni 12 ore e 10 secondi dopo l'apertura, per non rubare banda e server alla prima pagina
+    // con la rete: pagine principali salvate per l'uso offline, al massimo ogni 2 ore e 6 secondi dopo l'apertura,
+    // per non rubare banda e server alla prima pagina; niente con «risparmio dati» o rete 2G
     let warmT: ReturnType<typeof setTimeout> | undefined;
     try {
       const last = Number(localStorage.getItem('yc-warm-at') ?? 0);
       const slow = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-      if (navigator.onLine && 'serviceWorker' in navigator && Date.now() - last > 12 * 3600e3 && !slow?.saveData && slow?.effectiveType !== '2g') {
+      if (navigator.onLine && 'serviceWorker' in navigator && Date.now() - last > 2 * 3600e3 && !slow?.saveData && slow?.effectiveType !== '2g') {
         warmT = setTimeout(() => {
           navigator.serviceWorker.ready.then((reg) => {
-            reg.active?.postMessage({ type: 'warm', urls: ['/nuovo', '/movimenti', '/conti', '/preventivo', '/progetti', '/analisi', '/scadenze', '/documenti', '/guida', '/sincronizzazione', '/offline'] });
+            reg.active?.postMessage({ type: 'warm', urls: WARM, force: Date.now() - last > 12 * 3600e3 });
             localStorage.setItem('yc-warm-at', String(Date.now()));
           }).catch(() => {});
-        }, 10000);
+        }, 6000);
       }
     } catch { /* localStorage non disponibile */ }
     window.addEventListener('online', upd);
@@ -59,7 +70,48 @@ export function SyncEngine() {
       clearInterval(timer);
     };
   }, [sync]);
+  // pagina aperta con la navigazione interna: il service worker ne salva una copia (se quella che ha è più vecchia di 30 minuti)
+  useEffect(() => {
+    if (!navigator.onLine) return;
+    const t = setTimeout(() => postWarm([location.pathname + location.search]), 2500);
+    return () => clearTimeout(t);
+  }, [pathname]);
   return null;
+}
+
+// Avviso «stai vedendo dati salvati»: la pagina è arrivata dalla copia del service worker (senza rete o rete lenta).
+// Il commento <!--yc-cached-at:…--> in testa al documento lo aggiunge il service worker quando salva la copia.
+export function StaleNote({ lang = 'it' }: { lang?: string }) {
+  const pathname = usePathname();
+  const [at, setAt] = useState<number | null>(null);
+  const [fresh, setFresh] = useState(false);
+  const [first, setFirst] = useState<string | null>(null);
+  useEffect(() => {
+    const c = document.firstChild;
+    const m = c && c.nodeType === Node.COMMENT_NODE ? /yc-cached-at:(\d+)/.exec(c.nodeValue ?? '') : null;
+    if (m) setAt(Number(m[1]));
+    setFirst(location.pathname);
+    const onMsg = (e: MessageEvent) => { if (e.data?.type === 'fresh') setFresh(true); };
+    navigator.serviceWorker?.addEventListener('message', onMsg);
+    const onOnline = () => setFresh(true);
+    window.addEventListener('online', onOnline);
+    return () => { navigator.serviceWorker?.removeEventListener('message', onMsg); window.removeEventListener('online', onOnline); };
+  }, []);
+  // navigazione interna riuscita: la pagina nuova è arrivata dalla rete
+  useEffect(() => { if (first && pathname !== first) setAt(null); }, [pathname, first]);
+  const s = useSt();
+  if (!at) return null;
+  const d = new Date(at);
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  const when = `${p2(d.getDate())}/${p2(d.getMonth() + 1)} ${lang === 'fr' ? 'à' : 'alle'} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  const fr = lang === 'fr';
+  const head = !s.online ? (fr ? 'Hors ligne' : 'Senza rete') : (fr ? 'Réseau lent' : 'Rete lenta');
+  return (
+    <div className="stale-note" role="status">
+      <span><b>{head}</b> · {fr ? `données enregistrées le ${when}` : `dati salvati il ${when}`}</span>
+      {s.online && <button type="button" className="btn sm" onClick={() => location.reload()}>{fresh ? (fr ? 'Nouvelles données · Actualiser' : 'Dati nuovi · Aggiorna') : (fr ? 'Actualiser' : 'Aggiorna')}</button>}
+    </div>
+  );
 }
 
 const agoLabel = (at: number | null, now: number, lang: string) => {

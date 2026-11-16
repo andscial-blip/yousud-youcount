@@ -12,11 +12,11 @@ import { saveDeadline, setDeadlineStatus } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-type D = { id: string; rule_key: string | null; title: string; category: DlCat; due_date: string; amount: string | null; currency: string | null;
+type D = { id: string; movement_id?: string | null; rule_key: string | null; title: string; category: DlCat; due_date: string; amount: string | null; currency: string | null;
   project_id: string | null; owner_id: string | null; priority: 'low' | 'normal' | 'high'; status: 'open' | 'done' | 'cancelled'; repeat: string;
   notes: string | null; done_at: string | null };
 type Item = { key: string; id?: string; rule_key?: string; date: string; cat: DlCat; title: string; sub: string; amount?: number; currency?: string;
-  status: 'open' | 'done' | 'cancelled'; priority: 'low' | 'normal' | 'high'; applies: boolean; href?: string; auto?: boolean; owner?: string | null; project?: string | null };
+  status: 'open' | 'done' | 'cancelled'; priority: 'low' | 'normal' | 'high'; applies: boolean; href?: string; auto?: boolean; owner?: string | null; project?: string | null; movement_id?: string | null };
 
 const today = () => new Date().toISOString().slice(0, 10);
 const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
@@ -31,6 +31,8 @@ export default async function Deadlines({ searchParams }: {
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const staff = can(me, STAFF), writer = me?.role !== 'read_only';
+  // una segnalazione d'errore su un movimento la chiude solo chi corregge (responsabile), non chi l'ha inviata
+  const canClose = (i: { movement_id?: string | null }) => writer && (staff || !i.movement_id);
   const td = today(), Y = Number(td.slice(0, 4));
   const per = ['late', '14', '30', '90', 'all'].includes(sp.periodo ?? '') ? sp.periodo! : '90';
   const tipo = (Object.keys(DL_CAT) as DlCat[]).includes(sp.tipo as DlCat) ? sp.tipo as DlCat : '';
@@ -38,7 +40,7 @@ export default async function Deadlines({ searchParams }: {
   const month = /^\d{4}-\d{2}$/.test(sp.mese ?? '') ? sp.mese! : td.slice(0, 7);
 
   const [{ data: saved, error }, { data: projects }, { data: users }, inc0, inc1, inc2, drafts, due, unver, periods, rate, grants, adv, bud, areq] = await Promise.all([
-    supabase.from('deadlines').select('id, rule_key, title, category, due_date, amount, currency, project_id, owner_id, priority, status, repeat, notes, done_at')
+    supabase.from('deadlines').select('id, rule_key, title, category, due_date, amount, currency, project_id, owner_id, priority, status, repeat, notes, done_at, movement_id')
       .gte('due_date', `${Y - 1}-01-01`).order('due_date').returns<D[]>(),
     supabase.from('projects').select('id, name').eq('active', true).order('name'),
     supabase.rpc('user_directory'),
@@ -69,7 +71,7 @@ export default async function Deadlines({ searchParams }: {
       status: s?.status ?? 'open', priority: s?.priority ?? 'normal', applies: r.applies, owner: s?.owner_id ?? null };
   }) : [];
   // 2) scadenze inserite a mano
-  for (const d of sv.filter((x) => !x.rule_key)) items.push({ key: d.id, id: d.id, date: d.due_date, cat: d.category, title: d.title, sub: d.notes ?? '',
+  for (const d of sv.filter((x) => !x.rule_key)) items.push({ key: d.id, id: d.id, movement_id: d.movement_id ?? null, href: d.movement_id ? `/movimenti/${d.movement_id}` : undefined, date: d.due_date, cat: d.category, title: d.title, sub: d.notes ?? '',
     amount: d.amount ? Number(d.amount) : undefined, currency: d.currency ?? undefined, status: d.status, priority: d.priority, applies: true,
     owner: d.owner_id, project: d.project_id ? prjBy.get(d.project_id) ?? null : null });
   // 3) promemoria calcolati dai dati: non si segnano fatti, spariscono quando il dato è a posto
@@ -303,7 +305,7 @@ export default async function Deadlines({ searchParams }: {
                 <div className="dl-amt num">{i.amount ? money(i.amount, i.currency ?? 'EUR', lang) : ''}</div>
                 <div className="dl-tag">{tag(i)}</div>
                 <div className="dl-act">
-                  {!i.auto && writer && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
+                  {!i.auto && canClose(i) && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
                   {!i.auto && !i.rule_key && writer && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
                   {i.auto && <span className="chip">{L('automatica', 'automatique')}</span>}
                 </div>
@@ -369,7 +371,7 @@ export default async function Deadlines({ searchParams }: {
               {sel.sub && <p style={{ margin: 0 }}>{sel.sub}</p>}
               <div className="row-actions">
                 {sel.href && <Link className="btn primary" href={sel.href}>{L('Vai alla pagina', 'Aller à la page')} →</Link>}
-                {!sel.auto && writer && (sel.status === 'open' ? statusForm(sel, 'done') : statusForm(sel, 'open'))}
+                {!sel.auto && canClose(sel) && (sel.status === 'open' ? statusForm(sel, 'done') : statusForm(sel, 'open'))}
                 {!sel.auto && !sel.rule_key && writer && sel.id && <Link className="btn ghost" href={href({ edit: sel.id })}>{L('Modifica', 'Modifier')}</Link>}
               </div>
             </div>

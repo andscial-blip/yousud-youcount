@@ -18,7 +18,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const nb = lang === 'fr' ? ' ' : '';
   const now = new Date();
   const td = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const [{ data: bal }, { data: reqs }, { data: last }, { count: waiting }, { count: drafts }, { data: due }, { data: auts }, { data: fx }, { data: dls }, { data: notesRow }, { data: advAcc }] = await Promise.all([
+  const [{ data: bal }, { data: reqs }, { data: last }, { count: waiting }, { count: drafts }, { data: due }, { data: auts }, { data: fx }, { data: dls }, { data: notesRow }, { data: advAcc }, { data: noDoc }, { data: allAut }, { data: myReports }] = await Promise.all([
     supabase.rpc('account_balances'),
     supabase.from('advance_requests').select('account_id, report_by, status, authorized_amount, amount, currency').eq('beneficiary_id', me.id).in('status', ['authorized', 'delivered', 'reported']),
     supabase.from('movements').select('id, ref, op_date, kind, description, amount, currency, amount_eur, sign, status, reimb_status')
@@ -32,6 +32,11 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
     supabase.from('deadlines').select('id, title, due_date, status').eq('status', 'open').lte('due_date', `${now.getFullYear() + 1}-12-31`).order('due_date').limit(5),
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('accounts').select('id, holder').eq('kind', 'advance'),
+    // spese senza giustificativo: serve l'autocertificazione (anche prima che il PDF sia stato preparato)
+    supabase.from('movements').select('id, ref').eq('created_by', me.id).not('no_doc_reason', 'is', null).neq('status', 'draft').order('created_at', { ascending: false }).limit(20),
+    supabase.from('self_certs').select('movement_id'),
+    // errori segnalati dall'operatore e ancora aperti
+    supabase.from('deadlines').select('id, movement_id, title, created_at').eq('status', 'open').eq('created_by', me.id).not('movement_id', 'is', null).limit(10),
   ]);
   const rate = Number(fx?.rate ?? 0);
   const eurOf = (v: number, cur: string) => (cur === 'EUR' ? v : rate ? v / rate : 0);
@@ -54,6 +59,12 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
 
   type Todo = { lvl: 'warn' | 'do' | 'ok'; ic: string; title: string; sub?: string; href: string; act?: string };
   const todo: Todo[] = [];
+  const withAut = new Set(((allAut ?? []) as { movement_id: string }[]).map((r) => r.movement_id));
+  const toPrepare = ((noDoc ?? []) as { id: string; ref: string | null }[]).filter((m) => !withAut.has(m.id));
+  if (toPrepare.length) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da preparare: ${toPrepare.length}`, `Attestations à préparer${nb}: ${toPrepare.length}`),
+    sub: L('Spese senza giustificativo: apri la spesa e prepara il modulo', 'Dépenses sans justificatif : ouvrez la dépense et préparez le formulaire'), href: `/movimenti/${toPrepare[0]!.id}`, act: L('Apri', 'Ouvrir') });
+  const reps = (myReports ?? []) as { id: string; movement_id: string }[];
+  if (reps.length) todo.push({ lvl: 'do', ic: 'back', title: L(`Errori segnalati, in attesa del responsabile: ${reps.length}`, `Erreurs signalées, en attente du responsable${nb}: ${reps.length}`), href: `/movimenti/${reps[0]!.movement_id}` });
   if (autRows.length) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da far firmare: ${autRows.length}`, `Attestations à faire signer${nb}: ${autRows.length}`),
     sub: L('Stampa il PDF, falla firmare e consegnala al responsabile', 'Imprimez le PDF, faites-la signer et remettez-la au responsable'), href: `/movimenti/${autRows[0]!.movement_id}`, act: L('Apri', 'Ouvrir') });
   for (const r of toCollect) todo.push({ lvl: 'do', ic: 'wallet', title: L(`Anticipo autorizzato: ritira ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`, `Avance autorisée : retirez ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`),

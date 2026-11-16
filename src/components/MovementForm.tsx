@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -79,11 +80,15 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     : P?.amount ? fmt(P.amount) : '');
   // movimento nuovo senza dati precompilati: conto, progetto e modalità partono da quelli dell'ultimo movimento dello stesso
   // tipo inserito da questa persona (P2-21). Il conto di un anticipo non si propone: lì la scelta passa da «Come è stata pagata».
+  const isOp = R.role === 'operator';
+  // l'operatore lavora in Madagascar: vede solo i conti del Madagascar, se ce ne sono (revisione operatore, 16/11)
+  const opMG = isOp && R.accounts.some((a) => a.location === 'MG' && a.kind !== 'advance');
   const lastMine = !initial && !P ? R.lastMine.expense : null;
   const lmAccount = lastMine?.account_id && R.accounts.some((a) => a.id === lastMine.account_id && a.kind !== 'advance') ? lastMine.account_id : '';
   const lmProject = lastMine?.project_id && R.projects.some((x) => x.id === lastMine.project_id) ? lastMine.project_id : '';
   const lmMethod = lastMine?.payment_method_id && R.methods.some((x) => x.id === lastMine.payment_method_id) ? lastMine.payment_method_id : '';
-  const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? lmAccount);
+  const opDefault = opMG && !lmAccount ? (R.accounts.find((a) => a.location === 'MG' && a.kind === 'cash' && a.currency === 'MGA') ?? R.accounts.find((a) => a.location === 'MG' && a.kind !== 'advance'))?.id ?? '' : '';
+  const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? (lmAccount || opDefault));
   // chi ha speso materialmente (non chi registra) e spesa pagata di tasca propria, da rimborsare
   const [paidBy, setPaidBy] = useState(initial ? (initial.paid_by ?? '') : R.userName);
   // come è stata pagata una spesa: dall'ente (conto), di tasca propria (da rimborsare) o con l'anticipo di una persona
@@ -91,7 +96,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const isMineAdv = (a: { id: string; holder: string | null }) => (R.myAdvances ?? []).includes(a.id) || (a.holder ?? '').toLowerCase() === R.userName.toLowerCase();
   const advAll = R.accounts.filter((a) => a.kind === 'advance');
   const advMine = advAll.filter(isMineAdv);
-  const advances = R.role === 'operator' && advMine.length ? advMine : [...advMine, ...advAll.filter((a) => !isMineAdv(a))];
+  // l'operatore vede solo i propri anticipi (mai quelli degli altri)
+  // operatore: i propri anticipi e quelli di persone senza account (es. personale locale per cui registra le spese),
+  // mai l'anticipo di un altro utente dell'app
+  const otherUser = (a: { holder: string | null }) => (R.userNames ?? []).includes((a.holder ?? '').trim().toLowerCase());
+  const advances = R.role === 'operator' ? [...advMine, ...advAll.filter((a) => !isMineAdv(a) && !otherUser(a))] : [...advMine, ...advAll.filter((a) => !isMineAdv(a))];
   // dal portafoglio anticipi (conto anticipi già scelto) o da Rimborsi («di tasca propria») il modulo parte già impostato
   const [payMode, setPayMode] = useState<'org' | 'own' | 'adv'>(initial?.reimb_status === 'due' || (!initial && P?.own) ? 'own'
     : R.accounts.find((a) => a.id === (initial?.account_id ?? P?.account_id))?.kind === 'advance' ? 'adv' : 'org');
@@ -105,8 +114,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       setAccountId(mine.length === 1 ? mine[0]!.id : '');
     }
   };
-  const isOp = R.role === 'operator';
   const [otherKinds, setOtherKinds] = useState(false);
+  const [tried, setTried] = useState<'draft' | 'recorded'>('recorded');
   // di tasca propria: la valuta proposta è quella del conto usato di solito (sul campo l'ariary), non sempre l'euro
   const [dueCurrency, setDueCurrency] = useState<'EUR' | 'MGA'>(initial ? (initial.currency === 'MGA' ? 'MGA' : 'EUR')
     : R.accounts.find((a) => a.id === lmAccount)?.currency === 'MGA' || (isOp && R.accounts.some((a) => a.location === 'MG')) ? 'MGA' : 'EUR');
@@ -151,7 +160,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const [catQ, setCatQ] = useState('');
   const lang = t.lang_code === 'fr' ? 'fr' : 'it';
   const nq = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const catHits = catQ.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group} ${CAT_KEYWORDS[c.code] ?? ''}`).includes(nq(catQ.trim()))) : [];
+  // ordine dei risultati: codice, nome, parole chiave, e solo per ultimo il nome del gruppo («riso» non deve dare prima «Risorse umane»)
+  const catRank = (c: { code: string; name: string; group: string }, q: string) => { const w = (x: string) => new RegExp(`(^|[^a-z0-9])${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(nq(x));
+    return c.code.startsWith(q) ? 0 : w(c.name) ? 1 : w(CAT_KEYWORDS[c.code] ?? '') ? 2 : nq(c.name).includes(q) || nq(CAT_KEYWORDS[c.code] ?? '').includes(q) ? 3 : 4; };
+  const catHits = catQ.trim() ? cats.map((c) => [c, catRank(c, nq(catQ.trim()))] as const)
+    .filter(([c, r]) => r < 4 || nq(c.group).includes(nq(catQ.trim()))).sort((a, b) => a[1] - b[1]).map(([c]) => c) : [];
   const recentCats = R.recentCats[dir === 'in' ? 'income' : 'expense'].map((id) => cats.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
@@ -296,9 +309,12 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   };
 
   // riepilogo accanto ai pulsanti: quali campi mancano per registrare
+  // dopo un «Salva bozza» non riuscito si segnalano solo i campi che servono alla bozza (importo, conto, data)
+  const DRAFT_KEYS = ['opDate', 'amount', 'account', 'toAccount'];
+  const shown = (tried === 'draft' ? Object.fromEntries(Object.entries(missing).map(([k, v]) => [k, DRAFT_KEYS.includes(k) && v])) : missing) as typeof missing;
   const missingNames = ([['opDate', t.f_op_date], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
     ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.f_doc]] as const)
-    .filter(([k]) => missing[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
+    .filter(([k]) => shown[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
 
   function errorText(msg: string) {
     const code = msg.split(':')[0].trim();
@@ -312,6 +328,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
 
   async function save(status: 'draft' | 'recorded') {
     setError(null);
+    setTried(status);
     const needed = status === 'recorded'
       ? Object.values(missing).some(Boolean)
       : missing.amount || missing.account || (kind === 'transfer' && missing.toAccount);
@@ -366,6 +383,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       try { await queue(); } catch (e) { setError(errorText(String((e as Error)?.message ?? e))); setBusy(false); }
       return;
     }
+    // rete lenta (16/11): se il server non risponde entro 6 secondi, il movimento nuovo va nella coda e chi registra
+    // può andare avanti. Nessun doppione: la coda usa lo stesso client_uuid, e un secondo invio risponde «duplicate».
+    // Non vale con una controparte nuova (verrebbe creata due volte) né per le modifiche.
+    let slowQueued = false;
+    const slowT = !initial && cpId !== '__new' ? setTimeout(() => { slowQueued = true; void queue().catch(() => { slowQueued = false; }); }, 6000) : undefined;
     try {
       let counterparty = cpId || null;
       if (cpId === '__new' && cpNew.trim()) {
@@ -379,14 +401,18 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       if (initial) Object.assign(p, { id: initial.id, expected_version: initial.version, op_uuid: crypto.randomUUID() });
       else p.client_uuid = clientUuid.current;
       const { data, error } = await supabase.rpc('save_movement', { p });
+      clearTimeout(slowT);
+      if (slowQueued) return;                      // già in coda e pagina già cambiata: la coda vedrà «duplicate»
       if (error) throw error;
       if (data.outcome === 'conflict') { setError(t.f_conflict); setBusy(false); return; }
       if (!initial) { savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ } }
       // spesa registrata senza giustificativo, con la scelta «prepara l'autocertificazione»: la scheda si apre sul modulo
       const goAut = status === 'recorded' && kind === 'expense' && noDoc && wantAut && docs.length === 0;
-      router.push(`/movimenti/${data.id}?ok=${initial ? 'saved' : 'new'}${goAut ? '&aut=1' : ''}`);
+      router.push(`/movimenti/${data.id}?ok=${initial && !(initial.status === 'draft' && status === 'recorded') ? 'saved' : 'new'}${goAut ? '&aut=1' : ''}`);
       router.refresh();
     } catch (e) {
+      clearTimeout(slowT);
+      if (slowQueued) return;
       // la rete è caduta durante l'invio: il movimento nuovo va nella coda invece di andare perso
       if (!initial && isNetworkError(e)) { try { await queue(); return; } catch { /* sotto: errore mostrato */ } }
       setError(errorText((e as { message?: string }).message ?? String(e)));
@@ -419,9 +445,19 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       </span>
     );
   };
+  const methodField = (
+        <div className={aiCls('method')}>
+          <label htmlFor="method">{t.f_method}</label>
+          <select className="input" id="method" value={methodId} onChange={(e) => { setMethodId(e.target.value); confirm('method'); }}>
+            <option value="">{t.f_choose}</option>
+            {R.methods.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+          {aiTag('method')}
+        </div>
+  );
   const advMode = kind === 'expense' && payMode === 'adv';
   // gli anticipi non si scelgono come conto di una spesa dell'ente o di un'entrata (solo con «Con l'anticipo» o nei giroconti)
-  const accOptions = (exclude?: string, noAdvance = false) => (['IT', 'MG'] as const).map((loc) => (
+  const accOptions = (exclude?: string, noAdvance = false) => ((opMG && !initial ? ['MG'] : ['IT', 'MG']) as ('IT' | 'MG')[]).map((loc) => (
     <optgroup key={loc} label={loc === 'IT' ? t.italy : t.madagascar}>
       {R.accounts.filter((a) => a.location === loc && a.id !== exclude && !(noAdvance && a.kind === 'advance')).map((a) => (
         <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>
@@ -479,7 +515,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                     onDone={(r) => { setScanQueue((q) => q.slice(1)); upload(r); }}
                     onCancel={() => setScanQueue((q) => q.slice(1))} />
       )}
-      <section className="panel doc-first" id="giust"><div className="panel-h"><h2>{t.f_doc}</h2>{touched && missing.doc && <span className="ferr">{t.f_required}</span>}{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
+      <section className="panel doc-first" id="giust"><div className="panel-h"><h2>{t.f_doc}</h2>{touched && shown.doc && <span className="ferr">{t.f_required}</span>}{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
           <input type="file" accept="image/*" capture="environment" className="vh-file" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
@@ -527,8 +563,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       {kind !== 'transfer' && noDoc && (
         <div className="field">
           <label htmlFor="nodoc">{t.f_no_doc_reason}</label>
-          <input className="input" id="nodoc" aria-invalid={touched && missing.noDocReason ? true : undefined} value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
-          {req(missing.noDocReason)}
+          <input className="input" id="nodoc" aria-invalid={touched && shown.noDocReason ? true : undefined} value={noDocReason} onChange={(e) => setNoDocReason(e.target.value)} />
+          {req(shown.noDocReason)}
           <div className="chips-row" role="group" aria-label={t.f_no_doc_reason}>
             {t.f_no_doc_presets.split('|').map((r) => <button type="button" key={r} className="chip-btn" aria-pressed={noDocReason === r} onClick={() => setNoDocReason(r)}>{r}</button>)}
           </div>
@@ -540,6 +576,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       <div className={aiCls('docDate')}>
         <label htmlFor="docdate">{t.f_doc_date}</label>
         <input className="input" id="docdate" type="date" value={docDate} onChange={(e) => { setDocDate(e.target.value); confirm('docDate'); }} style={{ maxWidth: 220 }} />
+        {docDate && docDate > new Date().toISOString().slice(0, 10) && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date du justificatif est dans le futur : vérifiez-la.' : 'La data del giustificativo è nel futuro: controllala.'}</span>}
         {aiTag('docDate')}
       </div>
       </div></section>
@@ -560,12 +597,12 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       <section className="panel"><div className="panel-b fgrid">
         <div className={aiCls('amount')}>
           <label htmlFor="amount">{t.f_amount}{account || due ? ` (${currency})` : ''}</label>
-          <input className="input big num" id="amount" aria-invalid={touched && missing.amount ? true : undefined} inputMode="decimal" autoComplete="off" value={amountTxt}
+          <input className="input big num" id="amount" aria-invalid={touched && shown.amount ? true : undefined} inputMode="decimal" autoComplete="off" value={amountTxt}
                  onChange={(e) => { typed(e, setAmountTxt); confirm('amount'); }} onBlur={() => setAmountTxt((v) => settleAmount(v))} placeholder="0,00" />
           {aiTag('amount')}
           {aiCurrency && account && aiCurrency !== currency && <span className="ferr">{t.ai_currency_diff} {aiCurrency}</span>}
-          {req(missing.amount)}
-          {payMode === 'own' && currency === 'EUR' && amount != null && amount >= 1000 && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? `Ce sont vraiment ${money(amount, 'EUR', 'fr')} ? Si vous avez payé en ariary, choisissez MGA.` : `Sono davvero ${money(amount, 'EUR', 'it')}? Se hai pagato in ariary, scegli MGA.`}</span>}
+          {req(shown.amount)}
+          {(payMode === 'own' || isOp) && currency === 'EUR' && amount != null && amount >= 1000 && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? `Ce sont vraiment ${money(amount, 'EUR', 'fr')} ? Si vous avez payé en ariary, choisissez MGA.` : `Sono davvero ${money(amount, 'EUR', 'it')}? Se hai pagato in ariary, scegli MGA.`}</span>}
           {decCut === 'amount' && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'Deux décimales au maximum : le chiffre en plus n’a pas été écrit.' : 'Al massimo due decimali: la cifra in più non è stata scritta.'}</span>}
           {amount ? <span className="hint amt-echo">{t.f_amount_read}{t.lang_code === 'fr' ? '\u00a0' : ''}: <b>{money(amount, currency || 'EUR', t.lang_code as Lang)}</b>
             {currency === 'MGA' && rate ? <> · {t.f_eur_equiv}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(amount / rate, 'EUR', t.lang_code as Lang)}</> : null}
@@ -592,7 +629,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <input className="input" id="paidby" list="payers" maxLength={120} value={paidBy} onChange={(e) => setPaidBy(e.target.value)} />
             <datalist id="payers">{R.payers.map((n) => <option key={n} value={n} />)}</datalist>
             <span className="hint">{t.f_paid_by_hint}</span>
-            {req(missing.paidBy)}
+            {req(shown.paidBy)}
           </div>
           <div className="field">
             <span className="flabel" id="howpaid">{t.f_how_paid}</span>
@@ -604,7 +641,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
               )}
             </div>
             {due && <span className="hint">{t.f_due_hint}</span>}
-            {payMode === 'adv' && kind === 'expense' && <span className="hint">{t.f_adv_hint}</span>}
+            {payMode === 'adv' && kind === 'expense' && !advances.length ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'Vous n’avez pas d’avance ouverte. ' : 'Non hai anticipi aperti. '}<Link href="/anticipi">{t.lang_code === 'fr' ? 'Demander une avance' : 'Chiedi un anticipo'}</Link></span>
+              : payMode === 'adv' && kind === 'expense' && <span className="hint">{t.f_adv_hint}</span>}
             {payMode === 'adv' && kind === 'expense' && account?.kind === 'advance' && account.balance != null && (
               <span className="hint adv-left" role="status"><b>{t.lang_code === 'fr' ? 'Vous avez en main' : 'Hai in mano'}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance, account.currency, t.lang_code as Lang)}</b>
                 {amount ? <> · {t.lang_code === 'fr' ? 'après cette dépense' : 'dopo questa spesa'}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance - amount, account.currency, t.lang_code as Lang)}</> : null}</span>)}
@@ -622,7 +660,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         ) : (
           <div className="field">
             <label htmlFor="account">{kind === 'transfer' ? t.f_from_account : advMode ? t.f_adv_account : t.f_account}</label>
-            <select className="input" id="account" aria-invalid={touched && missing.account ? true : undefined} value={accountId ?? ''} onChange={(e) => {
+            <select className="input" id="account" aria-invalid={touched && shown.account ? true : undefined} value={accountId ?? ''} onChange={(e) => {
               setAccountId(e.target.value);
               const h = R.accounts.find((a) => a.id === e.target.value)?.holder;
               if (advMode && h) setPaidBy(h);
@@ -631,7 +669,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
               {advMode ? advances.map((a) => <option key={a.id} value={a.id}>{a.holder ?? a.name} · {a.currency}</option>) : accOptions(undefined, kind !== 'transfer')}
             </select>
             {lmAccount && accountId === lmAccount && !advMode && kind !== 'transfer' ? <span className="hint">{t.f_from_last}</span> : null}
-            {req(missing.account)}
+            {req(shown.account)}
           </div>
         )}
         {currency === 'MGA' && (
@@ -640,7 +678,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <input className="input num" id="rate" inputMode="decimal" value={rateTxt} readOnly={isOp && Boolean(suggested)}
                    onChange={(e) => { typed(e, setRateTxt); setRateTouched(true); }} onBlur={() => setRateTxt((v) => settleAmount(v))} />
             <span className="hint">{suggested ? (!rateTouched || rate === suggested ? (rateSugg?.src === 'last' ? t.f_rate_last : t.f_rate_auto) : '') : t.f_rate_missing}</span>
-            {req(missing.rate)}
+            {req(shown.rate)}
           </div>
         )}
         {kind === 'transfer' && (<>
@@ -649,14 +687,14 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <select className="input" id="toaccount" value={toAccountId} onChange={(e) => setToAccountId(e.target.value)}>
               <option value="">{t.f_choose}</option>{accOptions(accountId)}
             </select>
-            {req(missing.toAccount)}
+            {req(shown.toAccount)}
           </div>
           <div className="field">
             <label htmlFor="toamount">{t.f_to_amount}{toAccount ? ` (${toAccount.currency})` : ''}</label>
             <input className="input num" id="toamount" inputMode="decimal" value={toAmountTxt}
                    disabled={Boolean(account && toAccount && account.currency === toAccount.currency)}
                    onChange={(e) => typed(e, setToAmountTxt)} onBlur={() => setToAmountTxt((v) => settleAmount(v))} />
-            {req(missing.toAmount)}
+            {req(shown.toAmount)}
           </div>
         </>)}
         {kind !== 'transfer' && (<>
@@ -665,14 +703,14 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             {cats.length > 15 && (
               <input className="input cat-q" type="search" inputMode="search" value={catQ} onChange={(e) => { const q = e.target.value; setCatQ(q);
                 // un solo codice trovato: è già scelto, senza aprire l'elenco
-                const hits = q.trim() ? cats.filter((c) => nq(`${c.code} ${c.name} ${c.group} ${CAT_KEYWORDS[c.code] ?? ''}`).includes(nq(q.trim()))) : []; if (hits.length === 1) { setCategoryId(hits[0]!.id); confirm('category'); } }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
+                const hits = q.trim() ? cats.filter((c) => catRank(c, nq(q.trim())) < 4) : []; if (hits.length === 1) { setCategoryId(hits[0]!.id); confirm('category'); } }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
                 placeholder={lang === 'fr' ? 'Chercher un code…' : 'Cerca un codice…'} />)}
             {/* codici più usati: un tocco li sceglie (i propri recenti, altrimenti i sei più comuni sul campo) */}
             {dir === 'out' && !catQ.trim() && (() => { const quick = [...recentCats, ...['202', '203', '204', '307', '401', '606'].map((k) => cats.find((c) => c.code === k)).filter((c): c is NonNullable<typeof c> => Boolean(c))].filter((c, i, all) => all.findIndex((x) => x.id === c.id) === i).slice(0, 6);
               return quick.length > 1 ? <div className="chips-row cat-quick" role="group" aria-label={lang === 'fr' ? 'Codes fréquents' : 'Codici frequenti'}>
                 {quick.map((c) => <button key={`f-${c.id}`} type="button" className={`chip-btn${categoryId === c.id ? ' on' : ''}`} aria-pressed={categoryId === c.id} onClick={() => { setCategoryId(c.id); confirm('category'); }}>
                   <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}</div> : null; })()}
-            <select className="input" id="category" aria-invalid={touched && missing.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
+            <select className="input" id="category" aria-invalid={touched && shown.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
               <option value="">{catQ.trim() ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé' : `${catHits.length} codes trouvés`) : (catHits.length === 1 ? '1 codice trovato' : `${catHits.length} codici trovati`)) : t.f_choose}</option>
               {catQ.trim() ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}
               {!catQ.trim() && recentCats.length > 0 && (
@@ -686,11 +724,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
               ))}
             </select>
             {aiTag('category')}
-            {req(missing.category)}
+            {req(shown.category)}
           </div>
           <div className="field">
             <label htmlFor="project">{t.f_project}</label>
-            <select className="input" id="project" aria-invalid={touched && missing.project ? true : undefined} value={projectId} onChange={(e) => {
+            <select className="input" id="project" aria-invalid={touched && shown.project ? true : undefined} value={projectId} onChange={(e) => {
               const pid = e.target.value; setProjectId(pid);
               // se il progetto ha un solo finanziamento, lo propongo già scelto (si può togliere): partire da «Nessuno» sottostima il rendiconto
               const own = R.grants.filter((g) => g.project_id === pid);
@@ -700,7 +738,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
               {R.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             {kind === 'expense' && <span className="hint">{t.f_project_hint}</span>}
-            {req(missing.project)}
+            {req(shown.project)}
           </div>
           {grants.length > 0 && (
             <div className="field">
@@ -723,27 +761,29 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             {aiTag('cp')}
           </div>
         </>)}
-        <div className={aiCls('method')}>
-          <label htmlFor="method">{t.f_method}</label>
-          <select className="input" id="method" value={methodId} onChange={(e) => { setMethodId(e.target.value); confirm('method'); }}>
-            <option value="">{t.f_choose}</option>
-            {R.methods.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-          {aiTag('method')}
-        </div>
+        {!isOp && methodField}
         <div className={`${aiCls('description')} span2`}>
           <label htmlFor="desc">{t.f_description}</label>
-          <input className="input" id="desc" aria-invalid={touched && missing.desc ? true : undefined} maxLength={500} placeholder={t.f_description_ph} value={description}
+          <input className="input" id="desc" aria-invalid={touched && shown.desc ? true : undefined} maxLength={500} placeholder={t.f_description_ph} value={description}
                  onChange={(e) => { setDescription(e.target.value); confirm('description'); }} />
-          {req(missing.desc)}
+          {req(shown.desc)}
           {aiTag('description')}
         </div>
       </div></section>
 
+      {isOp ? (
+        // operatore: modalità di pagamento e note sono facoltative, chiuse sotto «Altri dettagli» (una schermata in meno)
+        <details className="panel op-more" open={Boolean(methodId || notes)}>
+          <summary className="panel-b">{t.lang_code === 'fr' ? 'Autres détails (mode de paiement, notes)' : 'Altri dettagli (modalità di pagamento, note)'}</summary>
+          <div className="panel-b fgrid">{methodField}
+            <div className="field span2"><label htmlFor="notes">{t.f_notes}</label>
+              <textarea className="input" id="notes" rows={2} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} /></div></div>
+        </details>
+      ) : (
       <section className="panel"><div className="panel-b field">
         <label htmlFor="notes">{t.f_notes}</label>
         <textarea className="input" id="notes" rows={2} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div></section>
+      </div></section>)}
 
       {dups.length > 0 && (
         <div className="note">
@@ -767,7 +807,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         )}
         <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy ? t.f_saving : due ? t.f_save_due : t.f_record}</button>
         <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint} {t.lang_code === 'fr' ? '* obligatoire pour comptabiliser.' : '* obbligatorio per registrare.'}</span>
-        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{t.f_missing_list}{t.lang_code === 'fr' ? '\u00a0' : ''}: {missingNames.join(', ')}</span>}
+        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{tried === 'draft' ? (t.lang_code === 'fr' ? 'Pour enregistrer le brouillon il manque' : 'Per salvare la bozza mancano') : t.f_missing_list}{t.lang_code === 'fr' ? '\u00a0' : ''}: {missingNames.join(', ')}</span>}
       </div>
     </form>
   );

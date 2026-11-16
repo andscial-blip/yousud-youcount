@@ -1,3 +1,4 @@
+import { loadProjectColors } from '@/lib/palette';
 import { fixedColors } from '@/components/Charts';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -29,7 +30,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const { data: p } = await supabase.from('projects').select('id, name, kind, start_date, end_date, demo, theme').eq('id', id).maybeSingle();
   if (!p) notFound();
   const staff = can(me, STAFF);
-  const [{ data: budget }, { data: moves, count: nMoves }, { data: grants }, { data: ledger }, { data: cats }, { data: docs }, { data: dls }] = await Promise.all([
+  const [{ data: budget }, { data: moves, count: nMoves }, { data: grants }, { data: ledger }, { data: cats }, { data: docs }, { data: dls }, prjColors] = await Promise.all([
     staff ? supabase.rpc('budget_vs_actual', { p_project: id, p_year: year, p_grant: null }) : Promise.resolve({ data: [] }),
     supabase.from('movements').select('id, ref, op_date, kind, description, amount, currency, sign, status, amount_eur', { count: 'exact' })
       .eq('project_id', id).gte('op_date', `${year}-01-01`).lte('op_date', `${year}-12-31`).order('op_date', { ascending: false }).limit(12),
@@ -38,6 +39,7 @@ export default async function ProjectDetail({ params, searchParams }: {
     supabase.from('categories').select('id, code, name_it, name_fr, group:category_groups(code, name_it, name_fr)'),
     supabase.from('issued_docs').select('id, type, number, status, doc_date, party_name').eq('project_id', id).order('doc_date', { ascending: false }).limit(8),
     supabase.from('deadlines').select('id, title, due_date, status').eq('project_id', id).eq('status', 'open').order('due_date').limit(6),
+    loadProjectColors(supabase),
   ]);
   const months = Array.from({ length: 12 }, () => ({ inc: 0, out: 0 }));
   const grp = new Map(((cats ?? []) as unknown as { id: string; group: { code: string; name_it: string; name_fr: string | null } | null }[]).map((c) => [c.id, c.group]));
@@ -61,7 +63,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const mTip = (title: string, f: (m: { inc: number; out: number }) => number) => `${title}\n${months.slice(0, Math.max(curM, 1)).map((m, k) => `${MESI_S[lang][k]}: ${e0(f(m))}`).join('\n')}`;
   return (
     <div className="stack prj prj-d">
-      <PageHead title={`${p.name} · ${year}`} lead={<ProjectIcon p={p} size={34} />}>
+      <PageHead title={`${p.name} · ${year}`} lead={<ProjectIcon p={p} size={34} color={prjColors.get(p.id)} />}>
         <div className="prj-act">
           <Link className="btn" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('Tutti i movimenti', 'Tous les mouvements')}</Link>
           <Link className="btn" href={`/documenti-emessi/nuovo?progetto=${id}`}>{L('Emetti documento', 'Émettre un document')}</Link>

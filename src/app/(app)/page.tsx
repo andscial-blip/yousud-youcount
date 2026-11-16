@@ -1,3 +1,4 @@
+import { loadProjectColors } from '@/lib/palette';
 import { OperatorHome } from './OperatorHome';
 import Link from 'next/link';
 import { advanceLate } from '@/lib/advance-late';
@@ -38,7 +39,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // storni e movimenti stornati non contano fra le «uscite senza giustificativo»: si annullano a vicenda
   const revIds = ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string);
   const [{ data: bal, error }, { count: toVerify }, { count: drafts }, { data: ledger }, { data: lastBackup }, { count: dueCount }, { data: advs },
-    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }, { data: advReqs }, { data: autOpen }] = await Promise.all([
+    { data: cats }, { data: fxRows }, { data: dls }, { data: incPrev }, { data: cmp }, { data: spent3 }, { data: dueRows }, { data: notesRow }, { count: noDoc }, { data: advReqs }, { data: autOpen }, prjColors] = await Promise.all([
     supabase.rpc('account_balances'),
     // chi non verifica vede i propri movimenti in attesa, non quelli di tutti (16/11: «Da verificare 40» sopra «Tutto in ordine»)
     (isResp ? supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded')
@@ -61,6 +62,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     supabase.from('advance_requests').select('account_id, status, report_by').in('status', ['requested', 'authorized', 'delivered', 'reported']),
     // autocertificazioni generate e non ancora firmate che l'utente può vedere (per l'operatore: le sue)
     supabase.from('self_certs').select('id, movement_id').is('signed_at', null).not('document_id', 'is', null).limit(50),
+    loadProjectColors(supabase),
   ]);
 
   // ---- anno in sintesi
@@ -140,7 +142,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/analisi?anno=${year}&vista=budget`, act: L('Vedi', 'Voir') });
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });
   if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
-  if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'warn', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
+  if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'do', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
     sub: L('Scaricalo e salvalo nel Drive condiviso di YouSud', 'Téléchargez-la et enregistrez-la dans le Drive partagé de YouSud'), href: '/admin/dati', act: L('Scarica', 'Télécharger') });
   for (const u of upcoming.slice(0, 5)) todo.push({ lvl: days(u.date) < 0 ? 'warn' : 'do', ic: 'cal', title: u.title, sub: date(u.date), chip: chipFor(u.date), href: '/scadenze' });
   // prima ciò che è in ritardo o blocca qualcuno (warn), poi il resto; a parità resta l'ordine di inserimento (P2-24)
@@ -283,7 +285,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <div className="panel-b">{projects.length ? (
               <ul className="hcat pbars">{projects.slice(0, 7).map((p) => (
                 <li key={p.href}><Link className="hc-n" href={p.href}>{p.label}</Link><b className="num">{e0(p.value)} <small>{pct(p.value, out)}</small></b>
-                  <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%` }} /></span></li>))}</ul>
+                  <span className="hc-b"><i style={{ width: `${((p.value / projects[0]!.value) * 100).toFixed(1)}%`, background: prjColors.get(p.href.split('/')[2]!.split('?')[0]!) }} /></span></li>))}</ul>
             ) : <p className="muted" style={{ margin: 0 }}>{t('none')}</p>}
               {projects.length > 7 && <div className="hcat-f"><span>{L(`e altri ${projects.length - 7}`, `et ${projects.length - 7} autres`)}</span><Link href={`/progetti?anno=${year}`}>{L('Tutti', 'Tous')} →</Link></div>}</div>
           </section>

@@ -1,3 +1,4 @@
+import { groupColor } from '@/lib/palette';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
 import { Ico } from '@/components/Ui';
@@ -7,7 +8,7 @@ import { BudgetNotes, BudgetTiles, C_EXP, C_INC, NoBudget, VersionBar, loadBudge
 
 export const dynamic = 'force-dynamic';
 
-type SumRow = { k: string; label: string; v: number; lvl: 1 | 2; share: number };
+type SumRow = { k: string; label: string; v: number; lvl: 1 | 2; share: number; g: string };
 
 // Riepilogo del preventivo (richiesta del 12/11): gli stessi riquadri della scheda principale, poi due tabelle gemelle
 // (uscite per voce, entrate per voce: stesse colonne, stessa griglia) e la tabella per progetto a tutta larghezza.
@@ -40,8 +41,8 @@ export default async function BudgetSummaryPage({ searchParams }: {
       const cs = c.cats.filter((k) => k.group_id === g.id).map((k) => ({ k, v: eur(fil.filter((i) => i.category_id === k.id)) })).filter((x) => x.v);
       if (!cs.length) return [];
       const gv = cs.reduce((s, x) => s + x.v, 0);
-      return [{ k: g.id, label: `${g.code} · ${CL(g)}`, v: gv, lvl: 1 as const, share: tot ? gv / tot : 0 },
-        ...cs.map((x) => ({ k: x.k.id, label: `${x.k.code} · ${CL(x.k)}`, v: x.v, lvl: 2 as const, share: tot ? x.v / tot : 0 }))];
+      return [{ k: g.id, label: `${g.code} · ${CL(g)}`, v: gv, lvl: 1 as const, share: tot ? gv / tot : 0, g: g.code },
+        ...cs.map((x) => ({ k: x.k.id, label: `${x.k.code} · ${CL(x.k)}`, v: x.v, lvl: 2 as const, share: tot ? x.v / tot : 0, g: g.code }))];
     }); };
   const byPrj = [...new Set(fil.map((i) => i.project_id ?? ''))].map((p) => { const xs = fil.filter((i) => (i.project_id ?? '') === p);
     return { k: p || 'gen', label: p ? prjBy.get(p) ?? '–' : L('Generale (struttura)', 'Général (structure)'), inc: eur(xs.filter((i) => dirOf(i) === 'in')), out: eur(xs.filter((i) => dirOf(i) === 'out')), n: xs.length }; })
@@ -59,7 +60,7 @@ export default async function BudgetSummaryPage({ searchParams }: {
             <tbody>{rows.map((r) => (
               <tr key={r.k} className={`lv${r.lvl}`}>
                 <td>{r.label}</td><td className="r num">{e0(r.v)}</td><td className="r num">{pct(r.share)}</td>
-                <td className="bqs-bc"><span className="bqs-bar"><i style={{ width: `${Math.min(r.share, 1) * 100}%`, background: color }} /></span></td>
+                <td className="bqs-bc"><span className="bqs-bar"><i style={{ width: `${Math.min(r.share, 1) * 100}%`, background: groupColor(r.g) ?? color }} /></span></td>
               </tr>))}</tbody>
             <tfoot><tr><td>{d === 'out' ? L('Totale uscite', 'Total des dépenses') : L('Totale entrate', 'Total des recettes')}</td><td className="r num">{e0(tot)}</td><td className="r num">{tot ? pct(1) : ''}</td><td className="bqs-bc" /></tr></tfoot>
           </table>

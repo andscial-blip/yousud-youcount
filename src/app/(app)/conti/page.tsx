@@ -35,7 +35,9 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   // a responsabili e amministratori. È una regola di visualizzazione: i permessi del database non cambiano.
   const myAdv = staff ? null : new Set((((await supabase.from('advance_requests').select('account_id, requested_by, beneficiary_id').limit(500)).data ?? []) as { account_id: string; requested_by: string; beneficiary_id: string | null }[])
     .filter((r) => r.requested_by === me?.id || r.beneficiary_id === me?.id).map((r) => r.account_id));
-  const rows = all.filter((r) => r.kind !== 'advance' && (staff || r.kind === 'cash'));
+  // l'operatore vede le casse del Madagascar (dove lavora), non quelle italiane (revisione operatore, 16/11)
+  const opMG = !staff && all.some((r) => r.kind === 'cash' && r.location === 'MG');
+  const rows = all.filter((r) => r.kind !== 'advance' && (staff || (r.kind === 'cash' && (!opMG || r.location === 'MG'))));
   const adv = all.filter((r) => r.kind === 'advance' && Number(r.balance) > 0 && (!myAdv || myAdv.has(r.account_id)));
   const cash = rows.filter((r) => r.kind === 'cash');
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
@@ -113,7 +115,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
               <h2>{loc === 'IT' ? t('italy') : t('madagascar')}</h2><div className="spacer" />
               {xs.length > 0 && <span className="eyebrow">{L('totale', 'total')} <b className={`num${n.v < 0 ? ' neg' : n.v > 0 ? ' pos' : ''}`}>{money(n.v, n.c, lang)}</b></span>}</div>
             {xs.length === 0 ? <Empty text={t('none')} /> :
-              <BalancesTable rows={xs} t={t} lang={lang} detail noPlace hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
+              <BalancesTable rows={xs} t={t} lang={lang} detail noPlace swatch={(r) => (eur(r) > 0 ? shade.get(r.account_id) : undefined)} hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
           </section>);
       })}
 

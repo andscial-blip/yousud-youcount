@@ -142,6 +142,8 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const perAcc = /^[0-9a-f-]{36}$/.test(sp.per ?? '') ? accBy.get(sp.per!) : undefined;
   const perDef = perAcc ? `acc:${pickReq.find((x) => x.label.toLowerCase() === accName(perAcc).toLowerCase())?.id ?? perAcc.id}` : undefined;
   // chi compila è il destinatario proposto quando è un operatore (prima era il primo nome dell'elenco, cioè un'altra persona)
+  // operatore: chiede per sé o per persone senza account (personale locale), mai a nome di un altro utente dell'app
+  const userNames = new Set((people ?? []).map((p) => String(p.full_name ?? '').trim().toLowerCase()).filter(Boolean));
   const meAcc = pickReq.find((x) => x.label.toLowerCase() === me.full_name.toLowerCase());
   const meDef = !resp ? (meAcc ? `acc:${meAcc.id}` : pickUsers.some((u) => u.id === me.id) ? `usr:${me.id}` : undefined) : undefined;
   const delBtn = (r: Req) => isSA ? (
@@ -438,13 +440,13 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               <Link className="btn ghost" href={href({ persona: persona || undefined })} scroll={false}>{LL('Chiudi', 'Fermer')}</Link></div>
             <div className="sheet-b">
               <form action={requestAdvance} className="fgrid" id="nuova-richiesta">
-                <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={pickReq} users={pickUsers} def={perDef ?? meDef} defCur={perAcc?.currency} />
+                <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={resp ? pickReq : pickReq.filter((x) => x.id === meAcc?.id || !userNames.has(x.label.toLowerCase()))} users={resp ? pickUsers : (meAcc ? [] : [{ id: me.id, name: me.full_name }])} def={resp ? (perDef ?? meDef) : meDef ?? `usr:${me.id}`} defCur={perAcc?.currency} />
                 <div className="field"><label htmlFor="rq-amt">{t('amount')}</label><AmountField id="rq-amt" name="amount" lang={lang} currency={perAcc?.currency} required /></div>
-                <div className="field span2"><label htmlFor="rq-p">{LL('Cosa devi comprare o pagare', 'Que dois-tu acheter ou payer')}</label>
+                <div className="field span2"><label htmlFor="rq-p">{LL('Cosa devi comprare o pagare', 'Que devez-vous acheter ou payer')}</label>
                   <input className="input" id="rq-p" name="purpose" required minLength={3} maxLength={500} placeholder={LL('Es. tessuti, filo e aghi per il laboratorio di cucito', 'Ex. tissus, fil et aiguilles pour l’atelier de couture')} /></div>
                 <div className="field"><label htmlFor="rq-prj">{t('project')}</label>
                   <select className="input" id="rq-prj" name="project" defaultValue=""><option value="">–</option>{(prj ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                <div className="field"><label htmlFor="rq-use">{LL('Quando servono', 'Quand en as-tu besoin')}</label><input className="input" id="rq-use" name="use_date" type="date" defaultValue={today} required /></div>
+                <div className="field"><label htmlFor="rq-use">{LL('Quando servono', 'Quand en avez-vous besoin')}</label><input className="input" id="rq-use" name="use_date" type="date" defaultValue={today} required /></div>
                 <div className="field span2"><span className="flabel">{LL('Preventivo o stima (foto o PDF)', 'Devis ou estimation (photo ou PDF)')}</span>
                   <AdvanceDoc orgId={me.org_id} kind="estimate" lang={lang} name="estimate_document_id" label={LL('Allega il preventivo', 'Joindre le devis')} /></div>
                 <div className="span2 aw-sub"><button className="btn primary" type="submit">{LL('Invia la richiesta', 'Envoyer la demande')}</button>

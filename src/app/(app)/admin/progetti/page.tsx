@@ -1,3 +1,4 @@
+import { loadProjectColors } from '@/lib/palette';
 import { ProjectIcon } from '@/components/ProjectIcon';
 import { THEMES } from '@/lib/project-theme';
 import { ADMIN, can, requireMe } from '@/lib/session';
@@ -15,8 +16,8 @@ export default async function AdminProjects({ searchParams }: { searchParams: Pr
   const { ok, err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
-  const { data, error } = await supabase.from('projects')
-    .select('id, name, code, kind, theme, active, start_date, end_date, legacy_name').order('kind').order('name').returns<P[]>();
+  const [{ data, error }, prjColors] = await Promise.all([supabase.from('projects')
+    .select('id, name, code, kind, theme, active, start_date, end_date, legacy_name').order('kind').order('name').returns<P[]>(), loadProjectColors(supabase)]);
   const fields = (p?: P) => (<>
     <F label={t('name')}><input className="input" name="name" defaultValue={p?.name} required maxLength={120} /></F>
     <F label={t('code')}><input className="input" name="code" defaultValue={p?.code ?? ''} maxLength={40} /></F>
@@ -42,7 +43,7 @@ export default async function AdminProjects({ searchParams }: { searchParams: Pr
         {(data ?? []).length === 0 ? <Empty text={t('none')} /> : data!.map((p) => (
           <EditRow key={p.id} inactive={!p.active} summary={<>
             <b className="grow">{p.name}</b>
-            <ProjectIcon p={p} size={28} /> {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}
+            <ProjectIcon p={p} size={28} color={prjColors.get(p.id)} /> {p.kind === 'structure' && <span className="chip">{t('prj_structure')}</span>}
             <span className="muted num">{p.start_date ? `${date(p.start_date)} – ${date(p.end_date)}` : ''}</span>
             {!p.active && <span className="chip">{t('inactive')}</span>}
           </>}>

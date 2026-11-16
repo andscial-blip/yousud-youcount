@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Logo, Splash, Wordmark } from '@/components/Logo';
-import { SyncBadge, SyncEngine } from '@/components/NetStatus';
+import { StaleNote, SyncBadge, SyncEngine } from '@/components/NetStatus';
 import { TableCards } from '@/components/TableCards';
 import { PerfBeacon } from '@/components/PerfBeacon';
 import { Prefetcher } from '@/components/Prefetcher';
@@ -52,11 +52,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="col">
           <Suspense fallback={<header className="phead"><div className="phead-row" /></header>}>
             <PageHeader secs={secs} canWrite={canWrite} years={years}
-              labels={{ lang, search: t('cmd_search'), year: t('year_label'), newMov: t('nav_new_long').replace('+ ', ''), subnav: t('nav_sections'), brand: 'YouCount', cmdPh: t('cmd_ph'), searchMov: t('cmd_mov'), goTo: t('cmd_go'), none: t('cmd_none') }}
+              labels={{ lang, op: me!.role === 'operator', search: t('cmd_search'), year: t('year_label'), newMov: t('nav_new_long').replace('+ ', ''), subnav: t('nav_sections'), brand: 'YouCount', cmdPh: t('cmd_ph'), searchMov: t('cmd_mov'), goTo: t('cmd_go'), none: t('cmd_none') }}
               phoneBrand={<><Logo size={32} /><b className="yc-wm pb-wm pb-stack" aria-label="YouCount"><span className="wm-you" aria-hidden="true">You</span><span className="wm-count" aria-hidden="true">Count</span></b></>} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
           </Suspense>
           <DialogKeys />
-          <main className="main" id="main" tabIndex={-1}><div id="app" className="view">{children}</div></main>
+          <main className="main" id="main" tabIndex={-1}><StaleNote lang={lang} /><div id="app" className="view">{children}</div></main>
         </div>
         <BottomNav secs={secs} canWrite={canWrite}
           labels={{ more: t('nav_more'), home: lang === 'fr' ? 'Accueil' : undefined, newMov: t('nav_new_long').replace('+ ', ''), other: t('nav_sections'), close: t('close'),

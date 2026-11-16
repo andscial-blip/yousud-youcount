@@ -1,4 +1,4 @@
-import { date, money, rate as fxRate } from './format';
+import { date, money, rate as fxRate, noDocReason } from './format';
 
 // Modelli dei documenti emessi da YouCount. Lo stesso modello produce l'anteprima nella pagina e il PDF,
 // così ciò che si controlla prima dell'emissione è ciò che viene stampato. Testi ripresi dal Gestionale YouSud
@@ -94,11 +94,11 @@ export function buildModel(d: DocData, org: Org): Model {
     const role = x.declarant_role ? `, ${x.declarant_role},` : ',';
     const where = `${v(x.supplier)}${x.place ? ` (${x.place})` : ''}`;
     P((l) => l === 'it'
-      ? `Il/La sottoscritto/a ${v(x.declarant)}${role} in nome e per conto di ${org.name}, consapevole delle conseguenze previste dalla legge in caso di dichiarazioni non veritiere, DICHIARA sotto la propria responsabilità di aver sostenuto in data ${date(String(x.exp_date ?? ''))} presso ${where} la spesa di ${m(d.amount, l)} per: ${v(x.description)}${x.category ? ` (codice ${x.category})` : ''}${prj(l)}, pagata con ${v(low(x.method as string))}.`
-      : `Je soussigné(e) ${v(x.declarant)}${role} agissant au nom et pour le compte de ${org.name}, conscient(e) des sanctions prévues en cas de fausse déclaration, ATTESTE SUR L'HONNEUR avoir engagé le ${date(String(x.exp_date ?? ''))} auprès de ${where} la dépense de ${m(d.amount, l)} pour : ${v(x.description)}${x.category_fr ?? x.category ? ` (code ${x.category_fr ?? x.category})` : ''}${prj(l)}, payée par ${v(low((x.method_fr ?? x.method) as string))}.`);
+      ? `Il/La sottoscritto/a ${v(x.declarant)}${role} in nome e per conto di ${org.name}, consapevole delle conseguenze previste dalla legge in caso di dichiarazioni non veritiere, DICHIARA sotto la propria responsabilità di aver sostenuto in data ${date(String(x.exp_date ?? ''))} presso ${where} la spesa di ${m(d.amount, l)} per: ${v(x.description)}${x.category ? ` (codice ${x.category})` : ''}${prj(l)}${x.method ? `, pagata con ${low(x.method as string)}` : ''}.`
+      : `Je soussigné(e) ${v(x.declarant)}${role} agissant au nom et pour le compte de ${org.name}, conscient(e) des sanctions prévues en cas de fausse déclaration, ATTESTE SUR L'HONNEUR avoir engagé le ${date(String(x.exp_date ?? ''))} auprès de ${where} la dépense de ${m(d.amount, l)} pour : ${v(x.description)}${x.category_fr ?? x.category ? ` (code ${x.category_fr ?? x.category})` : ''}${prj(l)}${x.method_fr ?? x.method ? `, payée par ${low((x.method_fr ?? x.method) as string)}` : ''}.`);
     P((l) => l === 'it'
-      ? `Motivo dell'assenza del giustificativo fiscale: ${v(x.reason)}. Si impegna a conservare ogni elemento utile a verificare la spesa.`
-      : `Motif d'absence de justificatif fiscal : ${v(x.reason)}. Le/la déclarant(e) s'engage à conserver tout élément permettant de vérifier la dépense.`);
+      ? `Motivo dell'assenza del giustificativo fiscale: ${v(noDocReason(x.reason as string, 'it'))}. Si impegna a conservare ogni elemento utile a verificare la spesa.`
+      : `Motif d'absence de justificatif fiscal : ${v(noDocReason(x.reason as string, 'fr'))}. Le/la déclarant(e) s'engage à conserver tout élément permettant de vérifier la dépense.`);
     blocks.push({ k: 'sig', labels: [`${J('Il dichiarante', 'Le/la déclarant(e)')} – ${v(x.declarant)}`, `${J('Visto per approvazione', 'Visa pour approbation')}${sign ? ` – ${sign}` : ''}`] });
   } else if (d.type === 'RIC') {
     title = J('Ricevuta', 'Reçu');

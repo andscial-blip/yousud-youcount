@@ -171,7 +171,7 @@ export function VersionBar({ c, base }: { c: Ctx; base: string }) {
     <section className="panel bv-bar">
       <div className="bv-l">
         <span className={`chip ${shown.status === 'approved' ? 'ok' : shown.status === 'draft' ? 'warn' : ''}`}>{stLabel(shown.status)}</span>
-        <b>{L('Preventivo', 'Budget')} {year} · {vLabel(shown)}</b>{shown.demo && <span className="chip warn">DEMO</span>}
+        <b>{L('Preventivo', 'Budget')} {year} · {vLabel(shown)}</b>{shown.demo && <span className="chip demo">DEMO</span>}
         <span className="muted bv-s">
           {shown.status === 'approved' ? (shown.approval_ref ?? '')
             : approved ? <>{L('in vigore', 'en vigueur')}: {vLabel(approved)}{approved.approval_ref ? ` · ${approved.approval_ref}` : ''}
@@ -203,7 +203,7 @@ export function VersionBar({ c, base }: { c: Ctx; base: string }) {
                 <li key={b.id} aria-current={b.id === shown.id ? 'true' : undefined}>
                   <Link href={href(b.id)}>
                     <span className="v-name"><b>{vLabel(b)}</b>{b.title && <span className="v-title">{b.title}</span>}</span>
-                    <span className="v-chips"><span className={`chip ${b.status === 'approved' ? 'ok' : b.status === 'draft' ? 'warn' : ''}`}>{stLabel(b.status)}</span>{b.demo && <span className="chip warn">DEMO</span>}</span>
+                    <span className="v-chips"><span className={`chip ${b.status === 'approved' ? 'ok' : b.status === 'draft' ? 'warn' : ''}`}>{stLabel(b.status)}</span>{b.demo && <span className="chip demo">DEMO</span>}</span>
                   </Link>
                   <span className="muted">{b.approved_at ? `${L('Approvato il', 'Approuvé le')} ${dateTime(b.approved_at, c.lang)} · ${b.approval_ref}` : `${L('Creato il', 'Créé le')} ${date(b.created_at)}`}</span>
                 </li>

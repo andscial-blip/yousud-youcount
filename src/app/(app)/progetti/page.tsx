@@ -132,7 +132,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
               : a.bOut && used > elapsed + 0.15 ? { c: 'mid', t: L('spesa veloce', 'dépense rapide') } : !a.bOut && a.out > 0 ? { c: 'mid', t: L('senza preventivo', 'sans budget') } : null;
             return (
               <Link key={p.id} className={`pring${over ? ' over' : ''}`} href={`/progetti/${p.id}?anno=${year}`}>
-                <div className="pr-h"><ProjectIcon p={p} />
+                <div className="pr-h"><ProjectIcon p={p} color={prjCols.get(p.id)} />
                   <div className="pr-n"><b>{p.name}</b><small>{L(THEMES[themeOf(p)].it, THEMES[themeOf(p)].fr)}{p.demo ? ' · DEMO' : ''}</small></div>
                   {note && <span className={`cdp ${note.c}`}>{note.t}</span>}</div>
                 <div className="pr-mid">

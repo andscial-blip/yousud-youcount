@@ -48,7 +48,7 @@ export default async function MovementDetail({ params, searchParams }: {
   if (!m) notFound();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   // velocità (16/11): tutte le letture che dipendono solo dal movimento partono insieme (prima tre erano in fila)
-  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }, { data: orig }, { data: tr }] = await Promise.all([
+  const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }, { data: orig }, { data: tr }, { data: reports }] = await Promise.all([
     supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
     supabase.rpc('user_directory'),
@@ -61,6 +61,7 @@ export default async function MovementDetail({ params, searchParams }: {
         reason: string; lang: string; document_id: string | null; signed_at: string | null; signed_by: string | null }>(),
     m.reverses_id ? supabase.from('movements').select('ref').eq('id', m.reverses_id).maybeSingle<{ ref: string }>() : Promise.resolve({ data: null }),
     supabase.from('movement_translations').select('source, it, fr').eq('movement_id', m.id).maybeSingle(),
+    supabase.from('deadlines').select('id, notes, status, created_at, done_at').eq('movement_id', m.id).order('created_at', { ascending: false }),
   ]);
   const origRef = (orig as { ref: string } | null)?.ref ?? null;
   const recDates = ((recs ?? []) as unknown as { side: string; rec: { statement_date: string } | null }[])
@@ -247,8 +248,8 @@ export default async function MovementDetail({ params, searchParams }: {
                   <p style={{ margin: 0 }}>{aut.declarant}{aut.declarant_role ? ` · ${aut.declarant_role}` : ''}{' '}
                     <span className={`chip ${aut.signed_at ? 'ok' : 'warn'}`}>{aut.signed_at ? t('aut_signed') : t('aut_to_sign')}</span></p>
                   {aut.signed_at && <p className="muted" style={{ margin: 0 }}>{t('aut_signed_by')}: {name.get(aut.signed_by ?? '') ?? '–'} · {dateTime(aut.signed_at, lang)}</p>}
-                  {!aut.signed_at && !resp && <div className="note info" role="status">{L('Cosa fare ora: apri il PDF qui sotto, stampalo, fallo firmare a chi ha fatto la spesa e consegnalo al responsabile. La firma la registra lui in YouCount.',
-                    'Que faire maintenant : ouvrez le PDF ci-dessous, imprimez-le, faites-le signer par la personne qui a fait la dépense et remettez-le au responsable. C’est lui qui enregistre la signature dans YouCount.')}</div>}
+                  {!aut.signed_at && !resp && <div className="note info" role="status">{L('Cosa fare ora: apri il PDF dell’autocertificazione, stampalo, fallo firmare a chi ha fatto la spesa e consegnalo al responsabile. La firma la registra lui in YouCount.',
+                    'Que faire maintenant : ouvrez le PDF de l’attestation, imprimez-le, faites-le signer par la personne qui a fait la dépense et remettez-le au responsable. C’est lui qui enregistre la signature dans YouCount.')}</div>}
                   {!aut.signed_at && resp && (
                     <form action={signSelfCertAction}>
                       <input type="hidden" name="id" value={m.id} /><input type="hidden" name="aut" value={aut.id} />
@@ -285,9 +286,16 @@ export default async function MovementDetail({ params, searchParams }: {
             </Panel>
           )}
 
+          {resp && ((reports ?? []) as { id: string; notes: string | null; status: string; created_at: string }[]).filter((r) => r.status === 'open').map((r) => (
+            <div key={r.id} className="note warn" role="status"><b>{L(`Errore segnalato il ${date(r.created_at.slice(0, 10))}`, `Erreur signalée le ${date(r.created_at.slice(0, 10))}`)}</b>
+              {r.notes && <div>«{r.notes}»</div>}<div className="hint">{L('Dopo la correzione, segna la scadenza «Fatta» in Scadenze.', 'Après la correction, marquez l’échéance « Faite » dans Échéances.')} <a href="/scadenze">{L('Apri Scadenze', 'Ouvrir Échéances')}</a></div></div>))}
           {/* chi non può correggere un movimento già registrato lo segnala a un responsabile */}
           {!resp && writer && m.status !== 'draft' && !rev && (
             <Panel title={L('Hai trovato un errore?', 'Vous avez trouvé une erreur ?')} pad>
+              {((reports ?? []) as { id: string; notes: string | null; status: string; created_at: string; done_at: string | null }[]).map((r) => (
+                <div key={r.id} className={`note ${r.status === 'done' ? 'ok' : 'info'}`} style={{ marginBottom: 10 }}>
+                  <b>{r.status === 'done' ? L(`Corretto il ${date((r.done_at ?? r.created_at).slice(0, 10))}`, `Corrigé le ${date((r.done_at ?? r.created_at).slice(0, 10))}`) : L(`Segnalato il ${date(r.created_at.slice(0, 10))}, in attesa del responsabile`, `Signalé le ${date(r.created_at.slice(0, 10))}, en attente du responsable`)}</b>
+                  {r.notes && <div>«{r.notes}»</div>}</div>))}
               <form action={reportErrorAction} className="stack" id="segnala" style={{ gap: 8 }}>
                 <input type="hidden" name="id" value={m.id} /><input type="hidden" name="ref" value={m.ref ?? ''} /><input type="hidden" name="lang" value={lang} />
                 <label className="field"><span className="flabel">{L('Cosa è sbagliato (importo, data, codice…)', 'Ce qui ne va pas (montant, date, code…)')}</span>
