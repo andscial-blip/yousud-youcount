@@ -2625,3 +2625,7 @@ details[open] > .rev-sum .btn { display: none; }
 .pst.o { background: #E9EDF3; color: #4C5A6E; }
 .pst-leg i.pst.o { background: #8497B0; }
 .over-t { color: var(--red); }   /* sforamento scritto anche nel numero, non solo nel colore della barra */
+/* la barra in alto resta fissa: quando la pagina scorre fino a un campo (fuoco, errore, ancora) il campo si ferma sotto la barra,
+   non dietro (19/11: un tocco su un pulsante nascosto dietro la barra andava perso) */
+html { scroll-padding-top: 135px; }
+@media (max-width: 760px) { html { scroll-padding-top: 114px; } }
