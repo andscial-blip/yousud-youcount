@@ -76,23 +76,23 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
       <div className="kpis dk">
         <div className="kpi"><div className="l">{L('Tasso corrente', 'Taux courant')}</div>
           <div className="v num long">{current ? mga(Number(current.rate)) : '–'}</div>
-          {last12.length > 1 && <><Viz.Cols vals={spark(last12.map((r) => Number(r.rate)))} colors={last12.map((r) => (r === current ? 'var(--vz-plan)' : 'var(--c-soft)'))} tip={last12.map((r) => `${M[r.month - 1]} ${r.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(r.rate))}`).join('\n')} />
+          {last12.length > 1 && <><Viz.Cols vals={spark(last12.map((r) => Number(r.rate)))} colors={last12.map((r) => (r === current ? 'var(--navy)' : 'var(--c-soft)'))} tip={last12.map((r) => `${M[r.month - 1]} ${r.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(r.rate))}`).join('\n')} />
             <div className="vzl"><span>{M[last12[0]!.month - 1]!.slice(0, 3).toLowerCase()} {last12[0]!.year}</span><span>{short3(M[current!.month - 1]!).toLowerCase()} {current!.year}</span></div></>}
           <div className="s" title={current?.source ?? undefined}>{current ? `${L('inserito il', 'saisi le')} ${dmy(current.updated_at)}${current.source ? ` · ${current.source}` : ''}` : L('Nessun tasso inserito', 'Aucun taux saisi')}</div></div>
         <div className="kpi"><div className="l">{L('Sul mese prima', 'Sur un mois')}</div>
           <div className="v num">{current && prev ? chg(Number(current.rate), Number(prev.rate)) : '–'}</div>
-          {current && prev && <><Viz.Cols vals={spark([Number(prev.rate), Number(current.rate)])} colors={['var(--c-soft)', 'var(--vz-plan)']} tip={`${M[prev.month - 1]} ${prev.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(prev.rate))}\n${M[current.month - 1]} ${current.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(current.rate))}`} />
+          {current && prev && <><Viz.Cols vals={spark([Number(prev.rate), Number(current.rate)])} colors={['var(--c-soft)', 'var(--navy)']} tip={`${M[prev.month - 1]} ${prev.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(prev.rate))}\n${M[current.month - 1]} ${current.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(current.rate))}`} />
             <div className="vzl"><span>{M[prev.month - 1]!.toLowerCase()}</span><span>{M[current.month - 1]!.toLowerCase()}</span></div></>}
           <div className="s">{current && prev ? `${M[prev.month - 1]}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(prev.rate))}` : L('Manca il tasso del mese prima', 'Taux du mois précédent manquant')}</div></div>
         <div className="kpi"><div className="l">{L('Su un anno prima', 'Sur un an')}</div>
           <div className="v num">{current && cur12 ? chg(Number(current.rate), Number(cur12.rate)) : '–'}</div>
-          {current && cur12 && <><Viz.Cols vals={spark([Number(cur12.rate), Number(current.rate)])} colors={['var(--c-soft)', 'var(--vz-plan)']} tip={`${M[cur12.month - 1]} ${cur12.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(cur12.rate))}\n${M[current.month - 1]} ${current.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(current.rate))}`} />
+          {current && cur12 && <><Viz.Cols vals={spark([Number(cur12.rate), Number(current.rate)])} colors={['var(--c-soft)', 'var(--navy)']} tip={`${M[cur12.month - 1]} ${cur12.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(cur12.rate))}\n${M[current.month - 1]} ${current.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(current.rate))}`} />
             <div className="vzl"><span>{cur12.year}</span><span>{current.year}</span></div></>}
           <div className="s">{cur12 ? `${M[cur12.month - 1]} ${cur12.year}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(cur12.rate))}` : L('Manca il tasso di un anno prima', 'Taux d\'il y a un an manquant')}</div></div>
         <div className="kpi"><div className="l">{L(`Media ${year}`, `Moyenne ${year}`)}</div>
           <div className="v num long">{vals.length ? mga(Math.round(avg)) : '–'}</div>
           {vals.length > 1 && <><Viz.Cols vals={spark(M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : 0; }))}
-            colors={M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return !r ? 'var(--band)' : r === hi || r === lo ? 'var(--slate-2)' : 'var(--vz-plan)'; })}
+            colors={M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return !r ? 'var(--band)' : r === current ? 'var(--navy)' : 'var(--c-soft)'; })}   // come nelle altre schede: il mese in corso in blu notte
             tip={yr.map((r) => `${M[r.month - 1]}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(r.rate))}`).join('\n')} />
             <div className="vzl"><span>{short3(M[0]!).toLowerCase()}</span><span>{short3(M[11]!).toLowerCase()}</span></div></>}
           <div className="s">{lo && hi ? `min ${n(Math.round(Number(lo.rate)))} (${short3(M[lo.month - 1]!).toLowerCase()}) · max ${n(Math.round(Number(hi.rate)))} (${short3(M[hi.month - 1]!).toLowerCase()})` : `${vals.length} ${L('mesi', 'mois')}`}</div></div>
@@ -105,12 +105,12 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
               <Lines lang={lang} zoom unit="MGA" label={L('Tasso del mese e tasso applicato ai movimenti', 'Taux du mois et taux appliqué aux mouvements')}
                 cats={M.map((m) => short3(m))}
                 series={[
-                  { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--vz-plan)', w: 3, vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
+                  { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--navy)', w: 3, vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
                   { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--vz-hyp)', dash: '5 4', w: 2,
                     vals: M.map((_, i) => { const a = ap.get(i + 1); return a && a.w ? Math.round(a.s / a.w) : null; }) as number[] },
                 ]} />
             )}
-            <div className="legend"><span><i style={{ background: 'var(--vz-plan)' }} />{L('Tasso del mese', 'Taux du mois')}</span>
+            <div className="legend"><span><i style={{ background: 'var(--navy)' }} />{L('Tasso del mese', 'Taux du mois')}</span>
               <span><i style={{ background: 'none', height: 0, width: 16, borderRadius: 0, borderTop: '2px dashed var(--vz-hyp)', verticalAlign: 3 }} />{L('Applicato ai movimenti (media pesata)', 'Appliqué aux mouvements (moyenne pondérée)')}</span></div>
           </div>
         </Panel>

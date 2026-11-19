@@ -15,7 +15,7 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, 
   // swatch: il colore del conto nella barra della scheda Italia/Madagascar, così la barra ha la sua legenda (D9)
   const dot = (r: Balance) => { const c = swatch?.(r); return c ? <i className="bal-sw" style={{ background: c }} aria-hidden="true" /> : null; };
   const nameOf = (r: Balance) => (hrefFor ? <Link className="bal-a" href={hrefFor(r)} scroll={false}>{dot(r)}{nm(lang, r)}</Link> : <>{dot(r)}{nm(lang, r)}</>);
-  const ver = (r: Balance, tiny = false) => { const c = `chip warn${tiny ? ' tiny' : ''}`, tx = tiny ? `${r.unverified} ${t('nav_verify').toLowerCase()}` : String(r.unverified);
+  const ver = (r: Balance, tiny = false) => { const c = `chip pend${tiny ? ' tiny' : ''}`, tx = tiny ? `${r.unverified} ${t('nav_verify').toLowerCase()}` : String(r.unverified);
     return verHref ? <Link className={c} href={verHref(r)} title={t('nav_verify')}>{tx}</Link> : <span className={c}>{tx}</span>; };
   return (
     <>

@@ -522,6 +522,11 @@ try {
     await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('');
     // cassa vuota: basta scrivere 0 in un taglio
     await p.getByLabel('Quantità del taglio 500', { exact: true }).fill('0');
+    // differenza grande: prima di registrare si chiede di ricontare
+    if (await p.locator('.cc-sure').count()) {
+      assert.ok(await p.getByRole('button', { name: 'Registra la conta' }).isDisabled());
+      await p.locator('.cc-sure input').check();
+    }
     await p.getByRole('button', { name: 'Registra la conta' }).click();
     await p.waitForURL(/ok=cash/);
     const row = await p.locator('table.t').last().innerText();
@@ -817,10 +822,11 @@ try {
     // avviso in Scadenze per le ricevute
     await o.goto(`${base}/scadenze?periodo=30`);
     await o.locator('ul.dl').getByRole('link', { name: 'Giustificare l’anticipo: Hery' }).waitFor();
-    // chi ha chiesto l'anticipo vede quanto resta in mano e entro quando portare le ricevute
+    // chi ha chiesto l'anticipo per un'altra persona lo vede a parte, con il nome, non tra i propri contanti (revisione 19/11)
     await o.goto(`${base}/anticipi`);
-    await o.getByRole('heading', { name: 'Contanti che ho in mano' }).waitFor();
-    assert.match(await o.locator('.aw-hand').innerText(), /230\.000\sMGA[\s\S]*ricevute entro il \d{2}\/\d{2}\/\d{4}/);
+    await o.getByRole('heading', { name: 'Contanti consegnati ad altre persone' }).waitFor();
+    const other = o.locator('section', { has: o.getByRole('heading', { name: 'Contanti consegnati ad altre persone' }) }).locator('.aw-hand');
+    assert.match(await other.innerText(), /230\.000\sMGA[\s\S]*Hery[\s\S]*ricevute entro il \d{2}\/\d{2}\/\d{4}/);
     // portafoglio di Hery: ricevuta di consegna firmata caricata, poi restituzione del resto → saldo a zero e chiusura automatica
     const [{ acc }] = (await pool.query(`select id acc from accounts where kind = 'advance' and holder = 'Hery'`)).rows;
     await p.goto(`${base}/anticipi?persona=${acc}`);

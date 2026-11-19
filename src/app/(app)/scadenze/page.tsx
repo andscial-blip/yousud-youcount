@@ -1,3 +1,4 @@
+import { deadlineTitle } from '@/lib/format';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import AmountField from '@/components/AmountField';
@@ -71,7 +72,7 @@ export default async function Deadlines({ searchParams }: {
       status: s?.status ?? 'open', priority: s?.priority ?? 'normal', applies: r.applies, owner: s?.owner_id ?? null };
   }) : [];
   // 2) scadenze inserite a mano
-  for (const d of sv.filter((x) => !x.rule_key)) items.push({ key: d.id, id: d.id, movement_id: d.movement_id ?? null, href: d.movement_id ? `/movimenti/${d.movement_id}` : undefined, date: d.due_date, cat: d.category, title: d.title, sub: d.notes ?? '',
+  for (const d of sv.filter((x) => !x.rule_key)) items.push({ key: d.id, id: d.id, movement_id: d.movement_id ?? null, href: d.movement_id ? `/movimenti/${d.movement_id}` : undefined, date: d.due_date, cat: d.category, title: deadlineTitle(d.title, lang), sub: d.notes ?? '',
     amount: d.amount ? Number(d.amount) : undefined, currency: d.currency ?? undefined, status: d.status, priority: d.priority, applies: true,
     owner: d.owner_id, project: d.project_id ? prjBy.get(d.project_id) ?? null : null });
   // 3) promemoria calcolati dai dati: non si segnano fatti, spariscono quando il dato è a posto

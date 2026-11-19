@@ -38,7 +38,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
   const writer = me?.role !== 'read_only';
   const editing = d.status === 'draft' && writer && sp.edit === '1';
   const T = DOC_TYPES[d.type as keyof typeof DOC_TYPES];
-  const st = d.status === 'draft' ? <span className="chip warn">{L('Bozza', 'Brouillon')}</span> : d.status === 'issued' ? <span className="chip ok">{L('Emesso', 'Émis')}</span>
+  const st = d.status === 'draft' ? <span className="chip">{L('Bozza', 'Brouillon')}</span> : d.status === 'issued' ? <span className="chip ok">{L('Emesso', 'Émis')}</span>
     : <span className="chip bad">{L('Annullato', 'Annulé')}</span>;
   const okText = { saved: L('Bozza salvata: controlla l\'anteprima, poi emetti.', 'Brouillon enregistré : vérifiez l\'aperçu, puis émettez.'),
     issued: L('Documento emesso: numero assegnato e PDF archiviato.', 'Document émis : numéro attribué et PDF archivé.'),

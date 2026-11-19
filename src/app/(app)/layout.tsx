@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { Logo, Splash, Wordmark } from '@/components/Logo';
 import { StaleNote, SyncBadge, SyncEngine } from '@/components/NetStatus';
+import { FormValidation } from '@/components/FormValidation';
 import { TableCards } from '@/components/TableCards';
 import { PerfBeacon } from '@/components/PerfBeacon';
 import { Prefetcher } from '@/components/Prefetcher';
@@ -28,7 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }));
   const canWrite = me.role !== 'read_only';
   const cy = new Date().getFullYear();
-  const years = Array.from({ length: cy + 2 - 2022 }, (_, i) => cy + 1 - i);
+  // l'anno prossimo serve a chi prepara il preventivo; all'operatore no (revisione 19/11)
+  const years = Array.from({ length: cy + 2 - 2022 }, (_, i) => cy + 1 - i).filter((y) => y <= cy || me!.role !== 'operator');
   const syncL = { ok: t('sync_ok'), offline: t('sync_off'), pending: t('sync_wait') };
   const warn = t('q_signout_warn');
   // prima le schede della barra in basso, poi le altre sezioni
@@ -56,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               phoneBrand={<><Logo size={32} /><b className="yc-wm pb-wm pb-stack" aria-label="YouCount"><span className="wm-you" aria-hidden="true">You</span><span className="wm-count" aria-hidden="true">Count</span></b></>} phoneSync={<SyncBadge labels={syncL} compact lang={lang} />} />
           </Suspense>
           <DialogKeys />
-          <main className="main" id="main" tabIndex={-1}><StaleNote lang={lang} /><div id="app" className="view">{children}</div></main>
+          <main className="main" id="main" tabIndex={-1}><StaleNote lang={lang} /><FormValidation /><div id="app" className="view">{children}</div></main>
         </div>
         <BottomNav secs={secs} canWrite={canWrite}
           labels={{ more: t('nav_more'), home: lang === 'fr' ? 'Accueil' : undefined, newMov: t('nav_new_long').replace('+ ', ''), other: t('nav_sections'), close: t('close'),

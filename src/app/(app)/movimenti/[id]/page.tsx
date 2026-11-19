@@ -108,8 +108,8 @@ export default async function MovementDetail({ params, searchParams }: {
     <div className="stack">
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
-        <h1>{m.ref ?? t('st_draft')} · {m.reverses_id ? L(`Storno di ${t(`k_${m.kind}`).toLowerCase()}`, `Extourne de ${t(`k_${m.kind}`).toLowerCase()}`) : t(`k_${m.kind}`)}</h1>
-        {m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}
+        <h1>{m.ref ?? (m.reimb_status === 'due' ? L('Da rimborsare', 'À rembourser') : t('st_draft'))} · {m.reverses_id ? L(`Storno di ${t(`k_${m.kind}`).toLowerCase()}`, `Extourne de ${t(`k_${m.kind}`).toLowerCase()}`) : t(`k_${m.kind}`)}</h1>
+        {m.reimb_status === 'due' ? <span className="chip pend">{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
       {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done')
@@ -139,7 +139,7 @@ export default async function MovementDetail({ params, searchParams }: {
                 {row(t('description'), m.description || null)}
                 {tr && tr.source === m.description && (lang === 'fr' ? tr.fr : tr.it) !== m.description &&
                   row(lang === 'fr' ? 'Traduction (IA)' : 'Traduzione (AI)', lang === 'fr' ? tr.fr : tr.it)}
-                {m.reimb_status === 'due' ? row(t('account'), <span className="chip warn">{t('reimb_due_chip')}</span>)
+                {m.reimb_status === 'due' ? row(t('account'), <span className="chip pend">{t('reimb_due_chip')}</span>)
                 : row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
                 {m.paid_by && row(t('f_paid_by'), m.paid_by)}
                 {m.reimb_status === 'paid' && m.reimbursed_at && row(t('reimb_done_row'), `${date(m.op_date)} · ${name.get(m.reimbursed_by ?? '') ?? '–'}`)}
@@ -184,7 +184,7 @@ export default async function MovementDetail({ params, searchParams }: {
               {m.status === 'draft' && canEdit && (
                 <form action={discardAction}>
                   <input type="hidden" name="id" value={m.id} />
-                  <button className="btn ghost" type="submit" style={{ color: 'var(--red)' }}>{t('d_discard')}</button>
+                  <button className="btn ghost" type="submit" style={{ color: 'var(--red)' }}>{m.reimb_status === 'due' ? L('Elimina la spesa', 'Supprimer la dépense') : t('d_discard')}</button>
                 </form>
               )}
             </div>
@@ -250,6 +250,8 @@ export default async function MovementDetail({ params, searchParams }: {
                   {aut.signed_at && <p className="muted" style={{ margin: 0 }}>{t('aut_signed_by')}: {name.get(aut.signed_by ?? '') ?? '–'} · {dateTime(aut.signed_at, lang)}</p>}
                   {!aut.signed_at && !resp && <div className="note info" role="status">{L('Cosa fare ora: apri il PDF dell’autocertificazione, stampalo, fallo firmare a chi ha fatto la spesa e consegnalo al responsabile. La firma la registra lui in YouCount.',
                     'Que faire maintenant : ouvrez le PDF de l’attestation, imprimez-le, faites-le signer par la personne qui a fait la dépense et remettez-le au responsable. C’est lui qui enregistre la signature dans YouCount.')}</div>}
+                  {(() => { const k = docs.findIndex((d) => d.id === aut.document_id); return k >= 0 && signed[k]?.open
+                    ? <div className="row-btns"><a className="btn primary" href={signed[k]!.open!} target="_blank" rel="noreferrer"><Ico name="print" />{L('Apri il PDF da stampare', 'Ouvrir le PDF à imprimer')}</a></div> : null; })()}
                   {!aut.signed_at && resp && (
                     <form action={signSelfCertAction}>
                       <input type="hidden" name="id" value={m.id} /><input type="hidden" name="aut" value={aut.id} />

@@ -23,7 +23,7 @@ export function KindIcon({ kind, label, faded = false }: { kind: Kind; label: st
 }
 
 const STATUS_ICON = { draft: 'draft', recorded: 'clock', verified: 'verified', reversed: 'reversed' } as const;
-const STATUS_CLS = { draft: '', recorded: 'warn', verified: 'ok', reversed: 'err' } as const;
+const STATUS_CLS = { draft: '', recorded: 'pend', verified: 'ok', reversed: 'err' } as const;   // «Da verificare» è uno stato normale: neutro, non rosa (19/11)
 export function StatusChip({ s, label }: { s: keyof typeof STATUS_ICON; label: string }) {
   return <span className={`chip ichip ${STATUS_CLS[s]}`}><Ico name={STATUS_ICON[s]} size={14} />{label}</span>;
 }

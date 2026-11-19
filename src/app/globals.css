@@ -2612,9 +2612,16 @@ details[open] > .rev-sum .btn { display: none; }
 .kind-income { color: #fff; background: var(--navy); }               /* entrata = blu notte pieno */
 .kind-transfer { color: #2F5557; background: color-mix(in srgb, var(--xfer) 26%, var(--surface)); }  /* giroconto = petrolio, il lilla resta al Madagascar */
 .chip.demo { background: var(--surface-2); color: var(--ink-2, #4C5A6E); border: 1px dashed var(--line); }
-td.neg-n { color: var(--ink); }   /* saldi negativi del report: segno meno, non allarme */
 .cb-bar { background: color-mix(in srgb, var(--vz-plan) 22%, var(--surface)); }   /* il previsto è blu chiaro, come nelle altre barre del preventivo (D11) */
 .bal-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(30,43,60,.18); }
 .stale-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px;
   background: var(--band); color: var(--navy); font-size: 13px; }
 .stale-note .btn { min-height: 32px; }
+.aw-hand-who { display: block; font-size: 13px; color: var(--ink); font-weight: 600; }
+/* stati normali in attesa («Da verificare», «Da rimborsare»): neutri; il rosa resta a errori, scadenze e sforamenti (19/11) */
+.chip.pend { background: #E9EDF3; color: #34445A; }
+.dot.do { background: #E9EDF3; color: #4C5A6E; }
+/* anticipi «da seguire»: blu ardesia, non giallo (il giallo resta alle uscite) — 19/11 */
+.pst.o { background: #E9EDF3; color: #4C5A6E; }
+.pst-leg i.pst.o { background: #8497B0; }
+.over-t { color: var(--red); }   /* sforamento scritto anche nel numero, non solo nel colore della barra */

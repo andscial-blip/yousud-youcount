@@ -1,3 +1,4 @@
+import { deadlineTitle } from '@/lib/format';
 import { loadProjectColors } from '@/lib/palette';
 import { OperatorHome } from './OperatorHome';
 import Link from 'next/link';
@@ -119,7 +120,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const backupDays = backupAt ? Math.floor((Date.now() - new Date(backupAt).getTime()) / 86400000) : null;
   const savedBy = new Map((dls ?? []).filter((d) => d.rule_key).map((d) => [d.rule_key as string, d]));
   const upcoming = [
-    ...(dls ?? []).filter((d) => !d.rule_key && d.status === 'open' && d.due_date >= ago45).map((d) => ({ k: d.id as string, date: d.due_date as string, title: d.title as string })),
+    ...(dls ?? []).filter((d) => !d.rule_key && d.status === 'open' && d.due_date >= ago45).map((d) => ({ k: d.id as string, date: d.due_date as string, title: deadlineTitle(d.title as string, lang) })),
     ...(staff ? ruleItems([cy], () => Number(incPrev ?? 0)) : []).filter((r) => r.applies && r.date <= in30)
       .map((r) => ({ r, s: savedBy.get(r.rule_key) })).filter(({ r, s }) => (s ? s.status === 'open' : true) && (s?.due_date ?? r.date) >= ago45)
       .map(({ r, s }) => ({ k: r.rule_key, date: (s?.due_date ?? r.date) as string, title: lang === 'fr' ? r.fr : r.it })),

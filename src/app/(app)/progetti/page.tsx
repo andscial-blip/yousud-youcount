@@ -115,7 +115,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                   <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link>
                   <span className="bq-pb"><i className={a.bOut > 0 ? '' : 'z'} style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%`, background: C_PLAN }} />
                     <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((a.out / maxPair) * 100).toFixed(1)}%`, background: a.bOut > 0 && a.out > a.bOut ? 'var(--tax)' : C_SP }} /></span>
-                  <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b>{e0(a.out)}</b></span>
+                  <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b className={a.bOut > 0 && a.out > a.bOut ? 'over-t' : undefined} title={a.bOut > 0 && a.out > a.bOut ? L('oltre il preventivo', 'au-delà du budget') : undefined}>{e0(a.out)}{a.bOut > 0 && a.out > a.bOut ? ' ▲' : ''}</b></span>
                 </li>); })}</ul>
             </div>
           </section>

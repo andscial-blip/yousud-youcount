@@ -18,6 +18,10 @@ export default async function Guide() {
   const { lang, me } = await requireMe();
   const staff = can(me, STAFF);
   const tasks = GUIDE_TASKS.filter((g) => (staff ? !g.op : !g.staff));
+  // operatore: solo le pagine che può usare (revisione 19/11: Preventivo, Utenti, Riconciliazione… non lo riguardano)
+  const OP_HREFS = new Set(['/nuovo', '/guida', '/', '/scadenze', '/movimenti', '/rimborsi', '/documenti', '/conti', '/anticipi', '/progetti', '/altro', '/account', '/sincronizzazione']);
+  const HELPV = staff ? HELP : HELP.filter((h) => OP_HREFS.has(h.href));
+  const SECV = HELP_SECTIONS.filter((x) => HELPV.some((h) => h.sec === x.id));
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   return (
     <div className="stack guide">
@@ -47,14 +51,14 @@ export default async function Guide() {
 
       <h2 className="g-ref-h">{L('Tutte le pagine, una per una', 'Toutes les pages, une par une')}</h2>
       <nav className="g-idx no-print" aria-label={L('Sezioni', 'Sections')}>
-        {HELP_SECTIONS.map((s) => (
+        {SECV.map((s) => (
           <a key={s.id} href={`#sec-${s.id}`}><CIcon name={SEC_IC[s.id] ?? 'info'} size={16} /><span>{lang === 'fr' ? s.fr : s.it}</span>
-            <small>{HELP.filter((h) => h.sec === s.id).length}</small></a>
+            <small>{HELPV.filter((h) => h.sec === s.id).length}</small></a>
         ))}
       </nav>
 
-      {HELP_SECTIONS.map((s) => {
-        const items = HELP.filter((h) => h.sec === s.id);
+      {SECV.map((s) => {
+        const items = HELPV.filter((h) => h.sec === s.id);
         if (!items.length) return null;
         return (
           <section key={s.id} className="panel g-sec" id={`sec-${s.id}`}>

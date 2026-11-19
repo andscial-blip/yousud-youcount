@@ -51,6 +51,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q = q0 as any;
     if (stato === 'storni') q = q.not('reverses_id', 'is', null);
+    else if (stato === 'draft') q = q.eq('status', 'draft').is('reimb_status', null);   // le spese di tasca propria non sono bozze: stanno in «Da rimborsare»
     else if (stato) q = q.eq('status', stato);
     if (term) q = q.or(`description.ilike.%${term}%,ref.ilike.%${term}%`);
     if (f.prj) q = q.eq('project_id', f.prj);
@@ -256,7 +257,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <td className="num nw">{date(m.op_date)}<div className="muted small">{m.ref ?? L('bozza', 'brouillon')}</div></td>
                     <td className="mv-d"><Link className="rowlink" href={`/movimenti/${m.id}`}>{desc(m) || t(`k_${m.kind}`)}</Link>
                       {m.demo && <span className="chip demo tiny">DEMO</span>}{m.reverses_id && <span className="chip tiny">{t('reversal')}</span>}
-                      {m.reimb_status === 'due' && <span className="chip warn tiny">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
+                      {m.reimb_status === 'due' && <span className="chip pend tiny">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
                       {(m.counterparty || m.method) && <div className="muted small">{[m.counterparty?.name, m.method ? nm(lang, m.method) : null].filter(Boolean).join(' · ')}</div>}</td>
                     <td className="muted nw">{m.category?.code ?? '–'}</td>
                     <td>{m.project?.name ?? '–'}<div className="muted small">{nm(lang, m.account)}</div></td>
@@ -267,7 +268,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                         return <span className="two"><b>{eur != null ? `${eur > 0 ? '+' : ''}${money(m.kind === 'transfer' ? Math.abs(eur) : eur, 'EUR', lang)}` : orig}</b>{eur != null && <small>{orig}</small>}</span>; })()}</td>
                     <td>{m.kind !== 'transfer' && <DocIndicator count={m.docs?.[0]?.count ?? 0} noDocReason={m.no_doc_reason}
                       labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
-                    <td>{m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}</td>
+                    <td>{m.reimb_status === 'due' ? <span className="chip pend">{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}</td>
                   </tr>
                 );
               })}
@@ -283,7 +284,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
                   <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
-                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip warn">{L('In attesa di rimborso', 'En attente de remboursement')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip demo tiny">DEMO</span>}
+                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip pend">{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip demo tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('motivo dichiarato', 'motif déclaré')}</span>}</span></div>
                   <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                     <b>{eur != null ? `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}` : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>

@@ -110,12 +110,14 @@ export default async function Advances({ searchParams }: { searchParams: Promise
   const mine = reqs.filter((r) => r.requested_by === me.id || r.beneficiary_id === me.id);
   // operatore: saldo dei conti di anticipo che gli sono stati consegnati (i saldi li dà la stessa funzione usata dai Conti)
   const myAcc = [...new Set(mine.filter((r) => r.status === 'delivered' || r.status === 'reported').map((r) => r.account_id))];
+  // contanti miei (sono io il beneficiario o il titolare) separati da quelli che ho chiesto per altre persone (revisione 19/11)
+  const isSelfAcc = (id: string) => mine.some((r) => r.account_id === id && r.beneficiary_id === me.id) || accName(accBy.get(id)).toLowerCase() === me.full_name.toLowerCase();
   const myBal = !staff && myAcc.length ? ((await supabase.rpc('account_balances')).data ?? []) as { account_id: string; balance: string; currency?: string }[] : [];
   const myHand = myAcc.map((id) => {
     const bal = Number(myBal.find((b) => b.account_id === id)?.balance ?? NaN);
     const open = mine.filter((r) => r.account_id === id && r.status === 'delivered');
     const first = open.slice().sort((x, y) => x.report_by.localeCompare(y.report_by))[0];
-    return { account_id: id, balance: bal, currency: accBy.get(id)?.currency ?? first?.currency ?? 'MGA', by: first?.report_by ?? null, project_id: first?.project_id ?? null };
+    return { account_id: id, balance: bal, currency: accBy.get(id)?.currency ?? first?.currency ?? 'MGA', by: first?.report_by ?? null, project_id: first?.project_id ?? null, holder: accName(accBy.get(id)), self: isSelfAcc(id) };
   }).filter((h) => Number.isFinite(h.balance) && h.balance > 0);
   const href = (q: Record<string, string | undefined>) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(q)) if (v) u.set(k, v); const s = u.toString(); return `/anticipi${s ? `?${s}` : ''}`; };
 
@@ -301,18 +303,19 @@ export default async function Advances({ searchParams }: { searchParams: Promise
       )}
 
       {/* chi ha i contanti in tasca vede subito quanto gli resta e entro quando portare le ricevute (P2-9) */}
-      {!staff && myHand.length > 0 && (
-        <Panel title={LL('Contanti che ho in mano', 'Espèces que j’ai en main')}>
+      {!staff && [true, false].map((self) => { const hs = myHand.filter((h) => h.self === self); return hs.length > 0 && (
+        <Panel key={String(self)} title={self ? LL('Contanti che ho in mano', 'Espèces que j’ai en main') : LL('Contanti consegnati ad altre persone', 'Espèces remises à d’autres personnes')}>
           <ul className="aw-hand">
-            {myHand.map((h) => (
+            {hs.map((h) => (
               <li key={h.account_id}>
                 <span className="aw-hand-m"><b className="num">{money(h.balance, h.currency, lang)}</b>
+                  {!self && <span className="aw-hand-who">{h.holder}</span>}
                   <small className={h.by && h.by < today ? 'neg' : 'muted'}>{h.by ? `${LL('ricevute entro il', 'reçus avant le')} ${date(h.by)}` : LL('nessuna scadenza per le ricevute', 'pas d’échéance pour les reçus')}</small></span>
                 {writer && <Link className="btn" href={`/nuovo?tipo=expense&conto=${h.account_id}${h.project_id ? `&progetto=${h.project_id}` : ''}`}>+ {LL('Ricevuta', 'Reçu')}</Link>}
               </li>))}
           </ul>
         </Panel>
-      )}
+      ); })}
 
       {!staff && (
         <Panel title={LL('Le mie richieste', 'Mes demandes')} className="rb-panel"
@@ -440,7 +443,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               <Link className="btn ghost" href={href({ persona: persona || undefined })} scroll={false}>{LL('Chiudi', 'Fermer')}</Link></div>
             <div className="sheet-b">
               <form action={requestAdvance} className="fgrid" id="nuova-richiesta">
-                <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={resp ? pickReq : pickReq.filter((x) => x.id === meAcc?.id || !userNames.has(x.label.toLowerCase()))} users={resp ? pickUsers : (meAcc ? [] : [{ id: me.id, name: me.full_name }])} def={resp ? (perDef ?? meDef) : meDef ?? `usr:${me.id}`} defCur={perAcc?.currency} />
+                <PersonPicker id="rq-acc" label={LL('Chi riceve i contanti', 'Qui reçoit les espèces')} lang={lang} accounts={resp ? pickReq : pickReq.filter((x) => x.id === meAcc?.id || (!userNames.has(x.label.toLowerCase()) && Boolean(accBy.get(x.id)?.holder)))} users={resp ? pickUsers : (meAcc ? [] : [{ id: me.id, name: me.full_name }])} def={resp ? (perDef ?? meDef) : meDef ?? `usr:${me.id}`} defCur={perAcc?.currency} />
                 <div className="field"><label htmlFor="rq-amt">{t('amount')}</label><AmountField id="rq-amt" name="amount" lang={lang} currency={perAcc?.currency} required /></div>
                 <div className="field span2"><label htmlFor="rq-p">{LL('Cosa devi comprare o pagare', 'Que devez-vous acheter ou payer')}</label>
                   <input className="input" id="rq-p" name="purpose" required minLength={3} maxLength={500} placeholder={LL('Es. tessuti, filo e aghi per il laboratorio di cucito', 'Ex. tissus, fil et aiguilles pour l’atelier de couture')} /></div>

@@ -14,7 +14,7 @@ export const CAT_KEYWORDS: Record<string, string> = {
   '303': 'quaderni penne libri scuola cahier stylo livre école kit',
   '304': 'semi sementi piantine concime fertilizzante graines semences plants engrais',
   '305': 'artigiano muratore falegname operaio manodopera artisan maçon menuisier ouvrier main-d-œuvre',
-  '307': 'riso cibo alimentari mensa farina olio zucchero fagioli riz nourriture cantine farine huile sucre haricots repas',
+  '307': 'riso cibo alimentari mensa farina olio zucchero fagioli pane pasto pasti merenda verdura frutta carne pesce latte uova pain légumes fruits viande poisson lait oeufs riz nourriture cantine farine huile sucre haricots repas',
   '308': 'medicine farmacia ospedale medico médicament pharmacie hôpital',
   '401': 'sapone igiene detersivo pulizia candeggina carta igienica savon hygiène détergent nettoyage javel consumabili',
   '402': 'carta penne cancelleria fotocopie stampa papier stylo fournitures photocopie impression',

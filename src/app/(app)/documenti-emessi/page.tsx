@@ -54,8 +54,8 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
     .sort((a, b) => b.date.localeCompare(a.date) || String(b.number).localeCompare(String(a.number)));
   const count = (k?: string) => all.filter((r) => !r.archived && (!k || DOC_GROUPS.find((g) => g.k === k)!.types.includes(r.type as never))).length;
   function name(k: string) { return k === 'AUT' ? L('Autocertificazione', 'Attestation') : L(DOC_TYPES[k as keyof typeof DOC_TYPES].it, DOC_TYPES[k as keyof typeof DOC_TYPES].fr); }
-  const chip = (s: Status) => ({ draft: <span className="chip warn">{L('Bozza', 'Brouillon')}</span>, issued: <span className="chip ok">{L('Emesso', 'Émis')}</span>,
-    cancelled: <span className="chip bad">{L('Annullato', 'Annulé')}</span>, tosign: <span className="chip warn">{L('Da firmare', 'À signer')}</span>,
+  const chip = (s: Status) => ({ draft: <span className="chip">{L('Bozza', 'Brouillon')}</span>, issued: <span className="chip ok">{L('Emesso', 'Émis')}</span>,
+    cancelled: <span className="chip bad">{L('Annullato', 'Annulé')}</span>, tosign: <span className="chip pend">{L('Da firmare', 'À signer')}</span>,
     signed: <span className="chip ok">{L('Firmata', 'Signée')}</span> })[s];
   const href = (o: Record<string, string | number | undefined>) => {
     const p = { anno: String(year), sez: sez?.k, q: sp.q, stato, arch: arch ? '1' : undefined, ...o };

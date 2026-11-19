@@ -100,7 +100,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // operatore: i propri anticipi e quelli di persone senza account (es. personale locale per cui registra le spese),
   // mai l'anticipo di un altro utente dell'app
   const otherUser = (a: { holder: string | null }) => (R.userNames ?? []).includes((a.holder ?? '').trim().toLowerCase());
-  const advances = R.role === 'operator' ? [...advMine, ...advAll.filter((a) => !isMineAdv(a) && !otherUser(a))] : [...advMine, ...advAll.filter((a) => !isMineAdv(a))];
+  const advances = R.role === 'operator' ? [...advMine, ...advAll.filter((a) => !isMineAdv(a) && !otherUser(a) && Boolean(a.holder))] : [...advMine, ...advAll.filter((a) => !isMineAdv(a))];
   // dal portafoglio anticipi (conto anticipi già scelto) o da Rimborsi («di tasca propria») il modulo parte già impostato
   const [payMode, setPayMode] = useState<'org' | 'own' | 'adv'>(initial?.reimb_status === 'due' || (!initial && P?.own) ? 'own'
     : R.accounts.find((a) => a.id === (initial?.account_id ?? P?.account_id))?.kind === 'advance' ? 'adv' : 'org');
@@ -163,8 +163,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // ordine dei risultati: codice, nome, parole chiave, e solo per ultimo il nome del gruppo («riso» non deve dare prima «Risorse umane»)
   const catRank = (c: { code: string; name: string; group: string }, q: string) => { const w = (x: string) => new RegExp(`(^|[^a-z0-9])${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(nq(x));
     return c.code.startsWith(q) ? 0 : w(c.name) ? 1 : w(CAT_KEYWORDS[c.code] ?? '') ? 2 : nq(c.name).includes(q) || nq(CAT_KEYWORDS[c.code] ?? '').includes(q) ? 3 : 4; };
-  const catHits = catQ.trim() ? cats.map((c) => [c, catRank(c, nq(catQ.trim()))] as const)
-    .filter(([c, r]) => r < 4 || nq(c.group).includes(nq(catQ.trim()))).sort((a, b) => a[1] - b[1]).map(([c]) => c) : [];
+  // risultati: codice, nome e parole comuni; il nome del gruppo solo se non c'è altro («riso» non deve dare i codici di «Risorse umane»)
+  const hitsFor = (q0: string) => { const q = nq(q0.trim()); if (!q) return [];
+    const r = cats.map((c) => [c, catRank(c, q)] as const).filter(([, k]) => k < 4).sort((a, b) => a[1] - b[1]).map(([c]) => c);
+    return r.length ? r : cats.filter((c) => nq(c.group).includes(q)); };
+  const catHits = hitsFor(catQ);
   const recentCats = R.recentCats[dir === 'in' ? 'income' : 'expense'].map((id) => cats.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
@@ -456,10 +459,16 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         </div>
   );
   const advMode = kind === 'expense' && payMode === 'adv';
+  // spesa con un anticipo: «Pagato da» è sempre il titolare dell'anticipo, comunque il conto sia stato scelto
+  // (a mano, proposto, o da «+ Ricevuta») — revisione 19/11, MOV con l'anticipo di un'altra persona
+  const advHolder = advMode ? R.accounts.find((a) => a.id === accountId)?.holder ?? null : null;
+  useEffect(() => { if (advHolder) setPaidBy(advHolder); }, [advHolder]);
   // gli anticipi non si scelgono come conto di una spesa dell'ente o di un'entrata (solo con «Con l'anticipo» o nei giroconti)
-  const accOptions = (exclude?: string, noAdvance = false) => ((opMG && !initial ? ['MG'] : ['IT', 'MG']) as ('IT' | 'MG')[]).map((loc) => (
+  // operatore: solo i conti del Madagascar, anche in modifica (resta visibile il conto già scelto, se fosse italiano)
+  const accVisible = (a: { id: string; location: string | null }) => !opMG || a.location === 'MG' || a.id === accountId || a.id === toAccountId;
+  const accOptions = (exclude?: string, noAdvance = false) => (['IT', 'MG'] as ('IT' | 'MG')[]).filter((loc) => R.accounts.some((a) => a.location === loc && accVisible(a))).map((loc) => (
     <optgroup key={loc} label={loc === 'IT' ? t.italy : t.madagascar}>
-      {R.accounts.filter((a) => a.location === loc && a.id !== exclude && !(noAdvance && a.kind === 'advance')).map((a) => (
+      {R.accounts.filter((a) => a.location === loc && accVisible(a) && a.id !== exclude && !(noAdvance && a.kind === 'advance')).map((a) => (
         <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>
       ))}
     </optgroup>
@@ -702,9 +711,16 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             <label htmlFor="category">{t.f_category}</label>
             {cats.length > 15 && (
               <input className="input cat-q" type="search" inputMode="search" value={catQ} onChange={(e) => { const q = e.target.value; setCatQ(q);
-                // un solo codice trovato: è già scelto, senza aprire l'elenco
-                const hits = q.trim() ? cats.filter((c) => catRank(c, nq(q.trim())) < 4) : []; if (hits.length === 1) { setCategoryId(hits[0]!.id); confirm('category'); } }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
+                // revisione 19/11: nessuna scelta automatica; un codice scelto prima che non è tra i risultati si toglie,
+                // così non resta selezionato un codice che chi cerca non vede
+                const hits = hitsFor(q); if (q.trim() && categoryId && !hits.some((c) => c.id === categoryId)) setCategoryId(''); }} aria-label={lang === 'fr' ? 'Chercher un code comptable par numéro ou par nom' : 'Cerca un codice contabile per numero o per nome'}
                 placeholder={lang === 'fr' ? 'Chercher un code…' : 'Cerca un codice…'} />)}
+            {catQ.trim() && (catHits.length
+              ? <div className="chips-row cat-quick" role="group" aria-label={lang === 'fr' ? 'Codes trouvés' : 'Codici trovati'}>
+                  {catHits.slice(0, 8).map((c) => <button key={`h-${c.id}`} type="button" className={`chip-btn${categoryId === c.id ? ' on' : ''}`} aria-pressed={categoryId === c.id} onClick={() => { setCategoryId(c.id); confirm('category'); }}>
+                    <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}
+                  {catHits.length > 8 && <span className="hint">{lang === 'fr' ? `+ ${catHits.length - 8} dans la liste` : `+ altri ${catHits.length - 8} nell’elenco`}</span>}</div>
+              : <p className="hint warn-txt cat-none" role="status">{lang === 'fr' ? `Aucun code pour « ${catQ.trim()} ». Essayez un mot plus général (« nourriture », « transport ») ou choisissez dans la liste.` : `Nessun codice per «${catQ.trim()}». Prova una parola più generale («cibo», «trasporto») o scegli dall’elenco.`}</p>)}
             {/* codici più usati: un tocco li sceglie (i propri recenti, altrimenti i sei più comuni sul campo) */}
             {dir === 'out' && !catQ.trim() && (() => { const quick = [...recentCats, ...['202', '203', '204', '307', '401', '606'].map((k) => cats.find((c) => c.code === k)).filter((c): c is NonNullable<typeof c> => Boolean(c))].filter((c, i, all) => all.findIndex((x) => x.id === c.id) === i).slice(0, 6);
               return quick.length > 1 ? <div className="chips-row cat-quick" role="group" aria-label={lang === 'fr' ? 'Codes fréquents' : 'Codici frequenti'}>

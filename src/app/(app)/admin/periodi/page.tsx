@@ -63,7 +63,7 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
                     <tr key={key} className={key === next ? 'row-next' : undefined}>
                       <td>{fmt.format(new Date(y, m - 1, 1))}</td>
                       <td>{closed ? <span className="chip ok">{t('closed')}</span>
-                        : open > 0 ? <Link className="chip warn" href="/verifica">{open} {t('to_verify_short')}</Link>
+                        : open > 0 ? <Link className="chip pend" href="/verifica">{open} {t('to_verify_short')}</Link>
                         : current ? <span className="chip">{t('period_current')}</span>
                         : <span className="chip">{t('open')}</span>}</td>
                       <td className="num hm">{closed ? `${dateTime(p!.closed_at, lang)} · ${name.get(p!.closed_by) ?? '–'}` : '–'}</td>

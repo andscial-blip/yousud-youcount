@@ -53,7 +53,11 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const it = byLoc('IT'), mg = byLoc('MG'), itEur = sumEur(it), mgEur = sumEur(mg), tot = itEur + mgEur;
   // ogni conto ha una sfumatura del colore del suo paese (Italia cielo, Madagascar lilla), fissa: ordine per codice fra i conti del paese (16/11)
   const shade = new Map<string, string>();
-  for (const loc of ['IT', 'MG'] as const) [...all].filter((r) => r.location === loc).sort((a, b) => String(a.code).localeCompare(String(b.code))).forEach((r, i) => shade.set(r.account_id, COUNTRY_SHADES[loc][i % COUNTRY_SHADES[loc].length]!));
+  // conti di cassa e banca: sfumature del paese, il primo (il più grande) nel colore esatto del paese; anticipi: grigio ardesia,
+  // perché sono contanti in mano alle persone, non un conto del paese (revisione 19/11)
+  const ADV_SHADES = ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8'];
+  for (const loc of ['IT', 'MG'] as const) [...all].filter((r) => r.location === loc && r.kind !== 'advance').sort((a, b) => eur(b) - eur(a) || String(a.code).localeCompare(String(b.code))).forEach((r, i) => shade.set(r.account_id, COUNTRY_SHADES[loc][i % COUNTRY_SHADES[loc].length]!));
+  [...all].filter((r) => r.kind === 'advance').sort((a, b) => eur(b) - eur(a)).forEach((r, i) => shade.set(r.account_id, ADV_SHADES[i % ADV_SHADES.length]!));
   const seg = (xs: Balance[]) => [...xs].filter((r) => eur(r) > 0).sort((a, b) => eur(b) - eur(a)).slice(0, 6).map((r) => ({ v: eur(r), c: shade.get(r.account_id) ?? '#E3E8EF', n: nm(lang, r), r }));   // conti: colori delle voci, non quelli di entrate/uscite/saldo
   const tipOf = (xs: Balance[]) => xs.map((r) => `${nm(lang, r)}: ${money(r.balance, r.currency, lang)}`).join('\n');
   const advEur = sumEur(adv), advN = native(adv);
@@ -115,7 +119,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
               <h2>{loc === 'IT' ? t('italy') : t('madagascar')}</h2><div className="spacer" />
               {xs.length > 0 && <span className="eyebrow">{L('totale', 'total')} <b className={`num${n.v < 0 ? ' neg' : n.v > 0 ? ' pos' : ''}`}>{money(n.v, n.c, lang)}</b></span>}</div>
             {xs.length === 0 ? <Empty text={t('none')} /> :
-              <BalancesTable rows={xs} t={t} lang={lang} detail noPlace swatch={(r) => (eur(r) > 0 ? shade.get(r.account_id) : undefined)} hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
+              <BalancesTable rows={xs} t={t} lang={lang} detail noPlace swatch={(r) => shade.get(r.account_id)} hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
           </section>);
       })}
 

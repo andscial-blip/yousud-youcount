@@ -20,8 +20,12 @@ export function CashCounter({ accounts, lang, L }: { accounts: { id: string; lab
   const byDen = useMemo(() => den.reduce((s, v) => s + v * (Number(q[String(v)]) || 0), 0), [den, q]);
   const total = Math.round(byDen * 100) / 100;
   const counted = total;
-  const diff = total > 0 ? Math.round((total - (a?.balance ?? 0)) * 100) / 100 : null;
+  const filled = total > 0 || Object.values(q).some((v) => v !== '');   // anche «0» scritto in un taglio è una conta (cassa vuota)
+  const diff = filled ? Math.round((total - (a?.balance ?? 0)) * 100) / 100 : null;
   const fmt = (v: number) => money(v, a?.currency ?? 'EUR', lang);
+  // differenza grande (oltre il 5% del saldo, e oltre 50.000 MGA o 10 €): si chiede di ricontare prima di registrare (revisione 19/11)
+  const big = diff !== null && Math.abs(diff) > Math.max(Math.abs(a?.balance ?? 0) * 0.05, (a?.currency ?? 'EUR') === 'MGA' ? 50000 : 10);
+  const [sure, setSure] = useState(false);
   const nf = (v: number) => v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'it-IT', { minimumFractionDigits: v < 1 ? 2 : 0, useGrouping: 'always' } as Intl.NumberFormatOptions);
   return (
     <form action={recordCashCount} className="stack" style={{ gap: 14 }}>
@@ -76,9 +80,15 @@ export function CashCounter({ accounts, lang, L }: { accounts: { id: string; lab
         );
       })()}
       <p className="hint" style={{ margin: 0 }}>{L.hint}</p>
+      {big && (
+        <label className="note warn cc-sure">
+          <input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} />
+          <span>{lang === 'fr' ? `Grand écart (${fmt(Math.abs(diff!))}). Recomptez les billets : si l’écart est juste, cochez ici et écrivez la raison dans les notes.`
+            : `Differenza grande (${fmt(Math.abs(diff!))}). Riconta le banconote: se la differenza è giusta, spunta qui e scrivi il motivo nelle note.`}</span>
+        </label>)}
       <div className="cc-foot">
         <div className="field"><label htmlFor="cc-notes">{L.notes}</label><input className="input" id="cc-notes" name="notes" maxLength={1000} /></div>
-        <button className="btn primary" type="submit" disabled={!(total > 0 || Object.values(q).some((v) => v !== ''))}>{L.save}</button>
+        <button className="btn primary" type="submit" disabled={!(total > 0 || Object.values(q).some((v) => v !== '')) || (big && !sure)}>{L.save}</button>
       </div>
     </form>
   );

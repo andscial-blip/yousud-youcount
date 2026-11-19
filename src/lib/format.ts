@@ -59,3 +59,9 @@ export function noDocReason(text: string | null | undefined, lang: Lang): string
   const i = other.indexOf(text.trim());
   return i >= 0 ? NODOC[lang][i]! : text;
 }
+
+/** Titolo di una scadenza nella lingua di chi legge: le segnalazioni d'errore nascono con un titolo fisso in italiano. */
+export function deadlineTitle(title: string, lang: string): string {
+  if (lang === 'fr' && title.startsWith('Errore segnalato: ')) return `Erreur signalée : ${title.slice('Errore segnalato: '.length)}`;
+  return title;
+}

@@ -263,3 +263,30 @@ Rapporti in `docs/revisione-finale-2026-11-15/sesto-giro/`.
 - Prove: `npm run test:offline` 9/9 (nuove: pagine principali senza rete < 2,5 s con avviso, navigazione interna senza rete, rete lenta con copia entro 4,5 s e «Dati nuovi · Aggiorna», Registra lento in coda < 8 s e un solo movimento).
 - Anticipi dell'operatore (corretto dopo l'e2e): nel modulo e nella richiesta vede i propri anticipi e quelli di persone **senza account** (personale locale per cui registra o chiede), mai quelli di un altro utente dell'app (`userNames` in `movement-ref.ts`; filtro in `anticipi/page.tsx`).
 - Verifiche 16/11 sera: unit 35/35, db 52/52, e2e 53/53 (in tre gruppi: i fallimenti del giro intero erano lentezza del server di sviluppo e due test da aggiornare: «Altri dettagli» chiuso per l'operatore, anticipi di persone senza account), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok.
+
+## 19/11 — settimo giro (colori 8,5/6,5/8,5/7,5/7,5 · operatore 7,5) e nuovo metodo contro i voti che scendono
+Rapporti in `docs/revisione-finale-2026-11-15/settimo-giro/`. Due voti erano scesi per regressioni introdotte nel giro prima
+(gruppi di spesa con gli stessi colori dei progetti; stati dell'operatore incoerenti). Metodo da qui in avanti:
+1. prima di ogni giro si riverificano tutti i difetti dei giri precedenti (`/tmp/yc-final/regr.mjs`, elenco in `DIFETTI_PRECEDENTI.md`);
+2. ogni revisore riceve quell'elenco (CHIUSO/APERTO/PEGGIORATO) e una griglia di voto fissa (`GRIGLIA.md`: definizione di 7, 8, 9, 10
+   per numero e gravità dei difetti, stessi compiti in ogni giro);
+3. un'area che scende non si chiude: si corregge e si fa riverificare.
+Guardia permanente: `tests/unit/palette.test.ts` (progetti e gruppi non condividono colori, nessun colore di progetto con significato fisso,
+12 progetti senza doppioni, gruppi tutti diversi).
+- **Colori**: progetti = 12 tinte fredde e rosate (`ITEM_PAL`); gruppi di spesa = gialli e ocra (`EXPENSE_SHADES`); entrate = blu notte;
+  «Da verificare», «Da rimborsare», «da seguire» e il pallino «da fare» neutri grigio-azzurri (`.chip.pend`, `.dot.do`), il rosa resta ad allarmi
+  e scadenze; Madagascar: il conto più grande nel lilla esatto del paese, anticipi in ardesia (`ADV_SHADES` in Conti); quadratino anche
+  per i conti in negativo; Cambi senza il blu del previsto (tasso del mese in blu notte); negativi del Report di nuovo rossi come altrove;
+  sforamento in «Previsto e speso» scritto anche nel numero (▲, rosso).
+- **Operatore**: ricerca codici con risultati come pulsanti, avviso visibile se non trova nulla, nessuna scelta automatica e codice
+  precedente tolto se non è tra i risultati, gruppo solo se nient'altro («riso» non dà più 101–108), «pane» e altri cibi; «Pagato da» =
+  titolare dell'anticipo in ogni modo di scelta; spesa di tasca propria = «Da rimborsare» ovunque (titolo, etichetta, fuori dal filtro
+  Bozze, «Elimina la spesa»); Anticipi: «Contanti che ho in mano» solo propri, a parte «Contanti consegnati ad altre persone» con il nome;
+  Dashboard senza «anticipo ricevuto» a zero; conta di cassa con differenza grande (> 5% e > 50.000 MGA o 10 €) da confermare;
+  aiuto con gli stati veri; errori dei moduli nello stile dell'app (`FormValidation`, nessun fumetto del browser); in modifica solo conti
+  del Madagascar; nessun doppione della segnalazione nel «Da fare»; titolo «Errore segnalato» tradotto in FR; niente anno futuro
+  per l'operatore; Guida filtrata per ruolo; «Apri il PDF da stampare» nel riquadro dell'autocertificazione; niente conti tecnici
+  senza titolare tra le persone.
+- La differenza di 11 € segnalata tra Report e Analisi non è un errore: le due schermate erano state fatte prima e dopo la spesa di prova
+  MOV-2026-006 (10,67 €) registrata dall'altro revisore.
+- Verifiche 19/11: unit 39/39, db 52/52, e2e tutti superati (in tre gruppi; un solo fallimento per lentezza del server, ripetuto e superato), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok; ripasso dei difetti dei giri 6 e 7: 21/21.

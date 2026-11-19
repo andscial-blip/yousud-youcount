@@ -29,7 +29,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
     supabase.from('self_certs').select('id, movement_id').is('signed_at', null).not('document_id', 'is', null).limit(20),
     // stesso tasso di Anticipi (quello del mese di oggi), così lo stesso importo vale gli stessi euro in tutte le pagine
     supabase.rpc('fx_rate_for', { p_date: td }).then((r) => ({ data: r.data != null ? { rate: r.data as number } : null })),
-    supabase.from('deadlines').select('id, title, due_date, status').eq('status', 'open').lte('due_date', `${now.getFullYear() + 1}-12-31`).order('due_date').limit(5),
+    supabase.from('deadlines').select('id, title, due_date, status').eq('status', 'open').is('movement_id', null).lte('due_date', `${now.getFullYear() + 1}-12-31`).order('due_date').limit(5),
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('accounts').select('id, holder').eq('kind', 'advance'),
     // spese senza giustificativo: serve l'autocertificazione (anche prima che il PDF sia stato preparato)
@@ -64,7 +64,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   if (toPrepare.length) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da preparare: ${toPrepare.length}`, `Attestations à préparer${nb}: ${toPrepare.length}`),
     sub: L('Spese senza giustificativo: apri la spesa e prepara il modulo', 'Dépenses sans justificatif : ouvrez la dépense et préparez le formulaire'), href: `/movimenti/${toPrepare[0]!.id}`, act: L('Apri', 'Ouvrir') });
   const reps = (myReports ?? []) as { id: string; movement_id: string }[];
-  if (reps.length) todo.push({ lvl: 'do', ic: 'back', title: L(`Errori segnalati, in attesa del responsabile: ${reps.length}`, `Erreurs signalées, en attente du responsable${nb}: ${reps.length}`), href: `/movimenti/${reps[0]!.movement_id}` });
+  if (reps.length) todo.push({ lvl: 'do', ic: 'info', title: L(`Errori segnalati, in attesa del responsabile: ${reps.length}`, `Erreurs signalées, en attente du responsable${nb}: ${reps.length}`), href: `/movimenti/${reps[0]!.movement_id}` });
   if (autRows.length) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da far firmare: ${autRows.length}`, `Attestations à faire signer${nb}: ${autRows.length}`),
     sub: L('Stampa il PDF, falla firmare e consegnala al responsabile', 'Imprimez le PDF, faites-la signer et remettez-la au responsable'), href: `/movimenti/${autRows[0]!.movement_id}`, act: L('Apri', 'Ouvrir') });
   for (const r of toCollect) todo.push({ lvl: 'do', ic: 'wallet', title: L(`Anticipo autorizzato: ritira ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`, `Avance autorisée : retirez ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`),
@@ -78,8 +78,8 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
     todo.push({ lvl: d.due_date < td ? 'warn' : 'do', ic: 'cal', title: d.title, sub: date(d.due_date), href: '/scadenze' });
   if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: L('Niente da completare, firmare o giustificare', 'Rien à compléter, signer ou justifier'), href: '/movimenti' });
 
-  const stLabel = (m: Mov) => m.reimb_status === 'due' ? <span className="chip warn tiny">{L('In attesa di rimborso', 'En attente de remboursement')}</span>
-    : <span className={`chip tiny ${m.status === 'verified' ? 'ok' : m.status === 'recorded' ? 'warn' : ''}`}>{t(`st_${m.status}` as 'st_draft')}</span>;
+  const stLabel = (m: Mov) => m.reimb_status === 'due' ? <span className="chip pend tiny">{L('Da rimborsare', 'À rembourser')}</span>
+    : <span className={`chip tiny ${m.status === 'verified' ? 'ok' : m.status === 'recorded' ? 'pend' : ''}`}>{t(`st_${m.status}` as 'st_draft')}</span>;
   const amt = (m: Mov) => { const s = m.kind === 'income' ? 1 : -1;
     return m.currency !== 'EUR' && m.amount_eur ? <span className="two"><b>{money(Number(m.amount_eur) * s * m.sign, 'EUR', lang)}</b><small>{money(Number(m.amount) * s * m.sign, m.currency, lang)}</small></span>
       : <span className="two"><b>{money(Number(m.amount) * s * m.sign, m.currency, lang)}</b></span>; };
@@ -90,7 +90,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
       <div className="kpis dk">
         <Link className="kpi" href="/anticipi"><div className="l">{L('Contanti in mano', 'Espèces en main')}</div>
           {myAdv.length ? big(eurOf(inHand, handCur), { v: inHand, cur: handCur }) : <div className="v num">–</div>}
-          <div className="s">{myAdv.length ? (reportBy ? L(`ricevute entro il ${date(reportBy)}`, `reçus avant le ${date(reportBy)}`) : L('anticipo ricevuto', 'avance reçue')) : toCollect.length ? L('anticipo autorizzato: da ritirare', 'avance autorisée : à retirer') : L('nessun anticipo aperto', 'aucune avance ouverte')}</div></Link>
+          <div className="s">{myAdv.length && inHand > 0 ? (reportBy ? L(`ricevute entro il ${date(reportBy)}`, `reçus avant le ${date(reportBy)}`) : L('contanti dell’anticipo', 'espèces de l’avance')) : toCollect.length ? L('anticipo autorizzato: da ritirare', 'avance autorisée : à retirer') : (myAdv.length ? L('nessun contante in mano', 'aucune espèce en main') : L('nessun anticipo aperto', 'aucune avance ouverte'))}</div></Link>
         <Link className="kpi" href="/rimborsi"><div className="l">{L('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className="v num">{money(dueEur, 'EUR', lang)}</div>
           <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de votre poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de votre poche`)}</div></Link>
