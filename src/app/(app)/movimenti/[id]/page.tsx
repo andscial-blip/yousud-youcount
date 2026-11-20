@@ -114,7 +114,8 @@ export default async function MovementDetail({ params, searchParams }: {
       </div>
       {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done')
         : ok === 'new' ? (m.reimb_status === 'due' ? L('Spesa salvata: la rimborserà un responsabile. La trovi in «Da rimborsare».', 'Dépense enregistrée : un responsable la remboursera. Vous la trouvez dans « À rembourser ».')
-          : m.status === 'draft' ? L('Bozza salvata: non conta ancora nei saldi. Completala e premi «Registra».', 'Brouillon enregistré : il ne compte pas encore dans les soldes. Complétez-le et appuyez sur « Comptabiliser ».')
+          : m.status === 'draft' ? <>{L('Bozza salvata: non conta ancora nei saldi. Per completarla tocca «Modifica», poi «Registra».', 'Brouillon enregistré : il ne compte pas encore dans les soldes. Pour le compléter, touchez « Modifier », puis « Comptabiliser ».')}
+              {canEdit && <> <Link className="btn sm" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link></>}</>
           : `${L('Movimento registrato', 'Mouvement comptabilisé')}: ${m.ref}. ${L('Ora lo controlla un responsabile.', 'Un responsable va maintenant le contrôler.')}`)
         : ok === 'saved' ? L('Modifiche salvate.', 'Modifications enregistrées.')
         : ok === 'reversed' ? L(`Storno registrato: ${m.ref} annulla ${origRef ?? 'il movimento originale'}. Va verificato da un'altra persona.`, `Extourne comptabilisée : ${m.ref} annule ${origRef ?? 'le mouvement d’origine'}. Elle doit être vérifiée par une autre personne.`) : ok === 'reported' ? L('Segnalazione inviata ai responsabili.', 'Signalement envoyé aux responsables.') : ok === 'aut' ? t('aut_done') : ok === 'aut_signed' ? t('aut_signed_done') : ok === 'reopened' ? (lang === 'fr' ? 'Vérification rouverte : vous pouvez corriger le mouvement.' : 'Verifica riaperta: ora puoi correggere il movimento.') : ''}</div>}

@@ -1196,7 +1196,7 @@ a.k4:hover { transform: translateY(-1px); }
 }
 
 /* ── Scadenze (scelta 4A): calendario per primo con colori per importanza, elenco allineato, righello delle soglie ── */
-:root { --imp-c: #E2917F; --imp-a: #9C8AA5; --imp-n: #8497B0; --imp-p: #C9D6EA; --imp-f: #A8C3A1; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
+:root { --imp-c: #E2917F; --imp-a: #E8B4A8; --imp-n: #8497B0; --imp-p: #C9D6EA; --imp-f: #A8C3A1; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
 .cal-i.i-c { background: color-mix(in srgb, var(--imp-c) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-c); }
 .cal-i.i-a { background: color-mix(in srgb, var(--imp-a) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-a); }
 .cal-i.i-n { background: color-mix(in srgb, var(--imp-n) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-n); }
@@ -2591,7 +2591,7 @@ details[open] > .rev-sum .btn { display: none; }
 .stack:has(> .mv-oprow) > .mv-mine { margin-top: -4px; }
 /* scansione su telefono: pulsanti tutti alti uguali, due per riga, «Usa» a tutta riga in fondo */
 @media (max-width: 760px) {
-  .scan-acts { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .scan-acts { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 8px; }   /* tutte le righe alte uguali (20/11) */
   .scan-acts > .spacer { display: none; }
   .scan-acts > .btn { min-height: 44px; justify-content: center; white-space: normal; text-align: center; }
   .scan-acts > .btn.primary { grid-column: 1 / -1; }
@@ -2606,7 +2606,7 @@ details[open] > .rev-sum .btn { display: none; }
 .op-more[open] > summary::after { content: '▴'; }
 
 /* colori semantici (16/11, sesto giro esperti D2–D13) */
-:root { --warn-bg: #FBE7E0; --attn-ink: #8A3B2C; --xfer: #7FA5A8; }   /* attenzione = corallo chiaro, non più giallo (il giallo resta solo alle uscite) */
+:root { --warn-bg: #EEF1F5; --attn-ink: #8A3B2C; --xfer: #7FA5A8; }   /* attenzione («oggi», «tra N gg», «vicino al limite») = fondo neutro con testo corallo scuro: distinta dallo scaduto rosa (20/11) */
 .tlist li.warn::before { background: var(--tax); }                    /* corallo, non rosso mattone */
 .tlist li.do::before { background: var(--slate-2, #8497B0); }        /* «da fare» neutro: non è un'uscita */
 .kind-income { color: #fff; background: var(--navy); }               /* entrata = blu notte pieno */
@@ -2629,3 +2629,16 @@ details[open] > .rev-sum .btn { display: none; }
    non dietro (19/11: un tocco su un pulsante nascosto dietro la barra andava perso) */
 html { scroll-padding-top: 135px; }
 @media (max-width: 760px) { html { scroll-padding-top: 114px; } }
+/* invio in corso: pulsante spento con rotellina, niente secondo invio (20/11) */
+form[data-busy] button[type=submit], form[data-busy] button:not([type]) { pointer-events: none; opacity: .65; position: relative; }
+form[data-busy] button[type=submit]::after, form[data-busy] button:not([type])::after { content: ''; display: inline-block; width: 12px; height: 12px; margin-left: 8px; vertical-align: -1px;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: yc-spin .7s linear infinite; }
+@keyframes yc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { form[data-busy] button::after { animation-duration: 2s; } }
+.scan-stage { padding: 16px 22px; }   /* spazio per le maniglie degli angoli, che ora possono uscire dall'immagine */
+/* previsto (20/11): sempre blu, in tutte le forme — barra piena dove si confronta con lo speso, traccia blu chiara dove lo speso la riempie */
+:root { --plan-soft: color-mix(in srgb, var(--vz-plan) 24%, var(--surface)); }
+.chip.warn, .cdp.soon, .cd.soon, .sync.soon, .pill.open { color: var(--attn-ink); box-shadow: inset 0 0 0 1px #D9C3BD; }
+/* soglie ETS (20/11): le entrate in blu notte come ovunque; la stima di fine anno con tratteggio blu notte, ben visibile */
+.ru-track i { background: var(--vz-real); }
+.ru-est { background: repeating-linear-gradient(180deg, var(--vz-real) 0 3px, transparent 3px 6px); box-shadow: 0 0 0 1px var(--surface); }

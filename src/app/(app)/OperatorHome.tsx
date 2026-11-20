@@ -20,7 +20,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const td = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [{ data: bal }, { data: reqs }, { data: last }, { count: waiting }, { count: drafts }, { data: due }, { data: auts }, { data: fx }, { data: dls }, { data: notesRow }, { data: advAcc }, { data: noDoc }, { data: allAut }, { data: myReports }] = await Promise.all([
     supabase.rpc('account_balances'),
-    supabase.from('advance_requests').select('account_id, report_by, status, authorized_amount, amount, currency').eq('beneficiary_id', me.id).in('status', ['authorized', 'delivered', 'reported']),
+    supabase.from('advance_requests').select('account_id, report_by, status, authorized_amount, amount, currency, beneficiary_id').or(`beneficiary_id.eq.${me.id},requested_by.eq.${me.id}`).in('status', ['requested', 'authorized', 'delivered', 'reported']),
     supabase.from('movements').select('id, ref, op_date, kind, description, amount, currency, amount_eur, sign, status, reimb_status')
       .eq('created_by', me.id).order('created_at', { ascending: false }).limit(5).returns<Mov[]>(),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('created_by', me.id).eq('status', 'recorded'),
@@ -41,9 +41,11 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const rate = Number(fx?.rate ?? 0);
   const eurOf = (v: number, cur: string) => (cur === 'EUR' ? v : rate ? v / rate : 0);
   type B = { account_id: string; name_it: string; name_fr: string | null; kind: string; currency: string; balance: string };
-  type Rq = { account_id: string | null; report_by: string | null; status: string; authorized_amount: string | null; amount: string; currency: string };
-  const rqs = (reqs ?? []) as Rq[];
+  type Rq = { account_id: string | null; report_by: string | null; status: string; authorized_amount: string | null; amount: string; currency: string; beneficiary_id: string };
+  const allRq = (reqs ?? []) as Rq[];
+  const rqs = allRq.filter((r) => r.beneficiary_id === me.id);   // contanti propri: solo dove sono io il beneficiario
   const toCollect = rqs.filter((r) => r.status === 'authorized');
+  const waitReq = allRq.filter((r) => r.status === 'requested');   // revisione 20/11: le richieste in attesa si vedono anche qui
   const advIds = new Set([...rqs.filter((r) => r.status !== 'authorized' && r.account_id).map((r) => r.account_id!),
     ...((advAcc ?? []) as { id: string; holder: string | null }[]).filter((a) => (a.holder ?? '').toLowerCase() === me.full_name.toLowerCase()).map((a) => a.id)]);
   const myAdv = ((bal ?? []) as B[]).filter((b) => b.kind === 'advance' && advIds.has(b.account_id));
@@ -67,6 +69,8 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   if (reps.length) todo.push({ lvl: 'do', ic: 'info', title: L(`Errori segnalati, in attesa del responsabile: ${reps.length}`, `Erreurs signalées, en attente du responsable${nb}: ${reps.length}`), href: `/movimenti/${reps[0]!.movement_id}` });
   if (autRows.length) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da far firmare: ${autRows.length}`, `Attestations à faire signer${nb}: ${autRows.length}`),
     sub: L('Stampa il PDF, falla firmare e consegnala al responsabile', 'Imprimez le PDF, faites-la signer et remettez-la au responsable'), href: `/movimenti/${autRows[0]!.movement_id}`, act: L('Apri', 'Ouvrir') });
+  if (waitReq.length) todo.push({ lvl: 'do', ic: 'wallet', title: waitReq.length === 1 ? L(`Richiesta di anticipo in attesa: ${money(Number(waitReq[0]!.amount), waitReq[0]!.currency, lang)}`, `Demande d’avance en attente : ${money(Number(waitReq[0]!.amount), waitReq[0]!.currency, lang)}`) : L(`Richieste di anticipo in attesa: ${waitReq.length}`, `Demandes d’avance en attente${nb}: ${waitReq.length}`),
+    sub: L('La deve autorizzare un responsabile', 'Un responsable doit l’autoriser'), href: '/anticipi' });
   for (const r of toCollect) todo.push({ lvl: 'do', ic: 'wallet', title: L(`Anticipo autorizzato: ritira ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`, `Avance autorisée : retirez ${money(Number(r.authorized_amount ?? r.amount), r.currency, lang)}`),
     sub: L('I contanti te li consegna il responsabile della cassa', 'Le responsable de la caisse vous remet les espèces'), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (myAdv.length && inHand > 0) todo.push({ lvl: reportBy && reportBy < td ? 'warn' : 'do', ic: 'wallet',

@@ -75,7 +75,7 @@ export default async function ProjectDetail({ params, searchParams }: {
         <div className="kpi">
           <div className="l">{L('Preventivo uscite', 'Budget dépenses')}</div>
           <div className="v num">{bOut ? e0(bOut) : '–'}</div>
-          {bOut > 0 && <><Viz.Stack segs={[{ v: Math.min(out, bOut), c: 'var(--vz-sp)' }, { v: Math.max(0, bOut - out), c: 'var(--band)' }, { v: Math.max(0, out - bOut), c: 'var(--tax)' }]} max={Math.max(bOut, out)}
+          {bOut > 0 && <><Viz.Stack segs={[{ v: Math.min(out, bOut), c: 'var(--vz-sp)' }, { v: Math.max(0, bOut - out), c: 'var(--plan-soft)' }, { v: Math.max(0, out - bOut), c: 'var(--tax)' }]} max={Math.max(bOut, out)}
             marks={year === now.getFullYear() ? [{ v: elapsed * bOut, c: 'var(--c-in)', dash: true }] : undefined}
             tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}\n${L('Anno trascorso', 'Année écoulée')}: ${Math.round(elapsed * 100)} %`} />
             <div className="vzl"><span>{L('usato', 'utilisé')}</span><span>{pc(out, bOut)}</span></div></>}
@@ -99,7 +99,7 @@ export default async function ProjectDetail({ params, searchParams }: {
           {bOut > 0 && <Viz.Ring p={Math.min(used, 1)} color={out > bOut ? 'var(--tax)' : 'var(--vz-sp)'} tip={`${L('Usato', 'Utilisé')}: ${pc(out, bOut)}`} />}
           <div className="l">{L('Residuo', 'Reste')}</div>
           <div className={`v num ${bOut ? (bOut - out < 0 ? 'neg' : 'pos') : ''}`}>{bOut ? e0(bOut - out) : '–'}</div>
-          {bOut > 0 && <><Viz.Stack segs={out > bOut ? [{ v: bOut, c: 'var(--band)' }, { v: out - bOut, c: 'var(--tax)' }] : [{ v: bOut - out, c: 'var(--green-soft)' }, { v: out, c: 'var(--band)' }]} max={Math.max(bOut, out)}
+          {bOut > 0 && <><Viz.Stack segs={out > bOut ? [{ v: bOut, c: 'var(--plan-soft)' }, { v: out - bOut, c: 'var(--tax)' }] : [{ v: bOut - out, c: 'var(--green-soft)' }, { v: out, c: 'var(--band)' }]} max={Math.max(bOut, out)}
             tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}`} />
             <div className="vzl"><span>{out > bOut ? L('oltre il preventivo', 'au-delà du budget') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(bOut - out), bOut)}</span></div></>}
           <div className="s">{bOut ? L('preventivo meno speso', 'budget moins dépensé') : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>

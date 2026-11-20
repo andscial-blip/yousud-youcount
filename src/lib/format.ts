@@ -62,6 +62,7 @@ export function noDocReason(text: string | null | undefined, lang: Lang): string
 
 /** Titolo di una scadenza nella lingua di chi legge: le segnalazioni d'errore nascono con un titolo fisso in italiano. */
 export function deadlineTitle(title: string, lang: string): string {
-  if (lang === 'fr' && title.startsWith('Errore segnalato: ')) return `Erreur signalée : ${title.slice('Errore segnalato: '.length)}`;
-  return title;
+  const t = title.replace(/\b(MOV|AUT)-(\d{4})-(\d+)/g, '$1\u2011$2\u2011$3');   // il numero non va a capo al trattino
+  if (lang === 'fr' && t.startsWith('Errore segnalato: ')) return `Erreur signalée : ${t.slice('Errore segnalato: '.length)}`;
+  return t;
 }

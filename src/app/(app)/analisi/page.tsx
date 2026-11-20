@@ -217,7 +217,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           {totBudget > 0 && <Viz.Ring p={Math.min(totOut / totBudget, 1)} color={totOut > totBudget ? 'var(--tax)' : 'var(--vz-sp)'} tip={`${lg('Speso', 'Dépensé')}: ${e0(totOut)}\n${lg('Previsto', 'Prévu')}: ${e0(totBudget)}`} />}
           <div className="l">{t('an_budget_used')}</div>
           <div className={`v num ${totBudget && totOut > totBudget ? 'neg' : ''}`}>{totBudget ? pc(totOut, totBudget) : '–'}</div>
-          {totBudget > 0 && <><Viz.Stack segs={[{ v: Math.min(totOut, totBudget), c: 'var(--vz-sp)' }, { v: Math.max(0, totBudget - totOut), c: 'var(--band)' }, { v: Math.max(0, totOut - totBudget), c: 'var(--tax)' }]} max={Math.max(totBudget, totOut)}
+          {totBudget > 0 && <><Viz.Stack segs={[{ v: Math.min(totOut, totBudget), c: 'var(--vz-sp)' }, { v: Math.max(0, totBudget - totOut), c: 'var(--plan-soft)' }, { v: Math.max(0, totOut - totBudget), c: 'var(--tax)' }]} max={Math.max(totBudget, totOut)}
             marks={year === now.getFullYear() ? [{ v: elapsed * totBudget, c: 'var(--c-in)', dash: true }] : undefined} tip={`${lg('Previsto', 'Prévu')}: ${e0(totBudget)}\n${lg('Speso', 'Dépensé')}: ${e0(totOut)}`} />
             <div className="vzl"><span>{lg('anno trascorso', 'année écoulée')}</span><span>{Math.round(elapsed * 100)}{' '}%</span></div></>}
           <div className="s">{totBudget ? `${lg('su', 'sur')} ${e0(totBudget)} ${lg('previsti', 'prévus')}` : t('an_no_budget')}</div>

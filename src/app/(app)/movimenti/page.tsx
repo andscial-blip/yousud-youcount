@@ -31,7 +31,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const { supabase, t, lang, me } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const stato = ['draft', 'recorded', 'verified', 'storni'].includes(sp.stato ?? '') ? sp.stato! : '';
+  const stato = ['draft', 'recorded', 'verified', 'storni', 'rimborso'].includes(sp.stato ?? '') ? sp.stato! : '';
   const term = (sp.q ?? '').replace(/[%,()*\\]/g, ' ').trim().slice(0, 60);
   const f = {
     prj: isId(sp.progetto ?? '') ? sp.progetto! : '', acc: isId(sp.conto ?? '') ? sp.conto! : '', cat: isId(sp.codice ?? '') ? sp.codice! : '',
@@ -51,6 +51,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q = q0 as any;
     if (stato === 'storni') q = q.not('reverses_id', 'is', null);
+    else if (stato === 'rimborso') q = q.eq('reimb_status', 'due');
     else if (stato === 'draft') q = q.eq('status', 'draft').is('reimb_status', null);   // le spese di tasca propria non sono bozze: stanno in «Da rimborsare»
     else if (stato) q = q.eq('status', stato);
     if (term) q = q.or(`description.ilike.%${term}%,ref.ilike.%${term}%`);
@@ -80,7 +81,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       .range((page - 1) * PAGE, page * PAGE - 1).returns<Row[]>(),
     apply(supabase.from('movements').select('kind, sign, amount_eur, status, op_date')).neq('status', 'draft').neq('kind', 'transfer').limit(20000),
     supabase.from('projects').select('id, name').order('name'),
-    supabase.from('accounts').select('id, name_it, name_fr').order('sort'),
+    // operatore: nei filtri solo i conti che usa (casse e anticipi del Madagascar), non banche italiane né conti tecnici (revisione 20/11)
+    supabase.from('accounts').select('id, name_it, name_fr, location, kind, holder').order('sort'),
     supabase.from('categories').select('id, code, name_it, name_fr, direction').eq('active', true).order('code'),
     supabase.from('counterparties').select('id, name').order('name').limit(1000),
     supabase.from('payment_methods').select('id, name_it, name_fr').order('sort'),
@@ -138,7 +140,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   // l'esportazione riguarda sempre l'anno intero (scelta del 14/11): il nome del pulsante lo dice
   const expYear = (f.from || f.to || String(y)).slice(0, 4);
   const expLabel = L(`Esporta tutto il ${expYear}`, `Exporter tout ${expYear}`);
-  const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['storni', L('Storni', 'Extournes')]];
+  const stati: [string, string][] = [['', L('Tutti', 'Tous')], ['draft', L('Bozze', 'Brouillons')], ['recorded', L('Da verificare', 'À vérifier')], ['verified', L('Verificati', 'Vérifiés')], ['rimborso', L('Da rimborsare', 'À rembourser')], ['storni', L('Storni', 'Extournes')]];
   const demoCount = can(me, ['super_admin', 'admin']) && f.demo === 'si' ? total : 0;
 
   // descrizione nella lingua di chi legge (traduzione AI); le mancanti si chiedono in sottofondo
@@ -227,15 +229,15 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   {(pms ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
               <label className="field"><span className="flabel">{L('Conto o cassa', 'Compte ou caisse')}</span>
                 <select className="input" name="conto" defaultValue={f.acc}><option value="">{t('all')}</option>
-                  {(accounts ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
+                  {(accounts ?? []).filter((x) => !isOp || (x.location === 'MG' && (x.kind !== 'advance' || Boolean(x.holder)))).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
               <label className="field"><span className="flabel">{L('Valuta', 'Devise')}</span>
                 <select className="input" name="valuta" defaultValue={f.cur}><option value="">{t('all')}</option><option>EUR</option><option>MGA</option></select></label>
               <label className="field"><span className="flabel">{t('f_doc')}</span>
                 <select className="input" name="doc" defaultValue={f.doc}><option value="">{t('all')}</option>
                   <option value="si">{L('Con giustificativo', 'Avec justificatif')}</option><option value="no">{L('Senza giustificativo (motivo indicato)', 'Sans justificatif (motif indiqué)')}</option></select></label>
-              <label className="field"><span className="flabel">{L('Dati', 'Données')}</span>
+              {!isOp && <label className="field"><span className="flabel">{L('Dati', 'Données')}</span>
                 <select className="input" name="demo" defaultValue={f.demo}><option value="">{L('Reali e dimostrativi', 'Réelles et de démonstration')}</option>
-                  <option value="no">{L('Solo reali', 'Seulement réelles')}</option><option value="si">{L('Solo dimostrativi (DEMO)', 'Seulement DEMO')}</option></select></label>
+                  <option value="no">{L('Solo reali', 'Seulement réelles')}</option><option value="si">{L('Solo dimostrativi (DEMO)', 'Seulement DEMO')}</option></select></label>}
         </FilterBar>
         <SavedFilters current={qs({})} lang={lang} />
         {demoCount > 0 && <div className="note" style={{ margin: '0 18px 14px' }}>{L(`Stai vedendo ${demoCount} movimenti dimostrativi. Per eliminarli tutti, con conferma del numero, vai a `, `Vous voyez ${demoCount} mouvements de démonstration. Pour tous les supprimer, avec confirmation du nombre, allez à `)}

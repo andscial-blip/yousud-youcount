@@ -87,7 +87,7 @@ export function CashCounter({ accounts, lang, L }: { accounts: { id: string; lab
             : `Differenza grande (${fmt(Math.abs(diff!))}). Riconta le banconote: se la differenza è giusta, spunta qui e scrivi il motivo nelle note.`}</span>
         </label>)}
       <div className="cc-foot">
-        <div className="field"><label htmlFor="cc-notes">{L.notes}</label><input className="input" id="cc-notes" name="notes" maxLength={1000} /></div>
+        <div className="field"><label htmlFor="cc-notes">{L.notes}</label><input className="input" id="cc-notes" name="notes" maxLength={1000} required={big} minLength={big ? 3 : undefined} placeholder={big ? (lang === 'fr' ? 'Raison de l’écart (obligatoire)' : 'Motivo della differenza (obbligatorio)') : undefined} /></div>
         <button className="btn primary" type="submit" disabled={!(total > 0 || Object.values(q).some((v) => v !== '')) || (big && !sure)}>{L.save}</button>
       </div>
     </form>

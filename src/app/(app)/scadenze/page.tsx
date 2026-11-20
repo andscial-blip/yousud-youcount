@@ -34,6 +34,9 @@ export default async function Deadlines({ searchParams }: {
   const staff = can(me, STAFF), writer = me?.role !== 'read_only';
   // una segnalazione d'errore su un movimento la chiude solo chi corregge (responsabile), non chi l'ha inviata
   const canClose = (i: { movement_id?: string | null }) => writer && (staff || !i.movement_id);
+  // operatore (revisione 20/11): niente nuove scadenze né modifica delle segnalazioni d'errore; vede le sue segnalazioni e le scadenze aperte
+  const canNew = writer && staff;
+  const canEditD = (_i: { movement_id?: string | null }) => canNew;
   const td = today(), Y = Number(td.slice(0, 4));
   const per = ['late', '14', '30', '90', 'all'].includes(sp.periodo ?? '') ? sp.periodo! : '90';
   const tipo = (Object.keys(DL_CAT) as DlCat[]).includes(sp.tipo as DlCat) ? sp.tipo as DlCat : '';
@@ -90,8 +93,8 @@ export default async function Deadlines({ searchParams }: {
   const closedKey = lastClosed ? `${lastClosed.year}-${String(lastClosed.month).padStart(2, '0')}` : '';
   if (staff && closedKey < prevMonth) auto('a-close', `${td.slice(0, 7)}-15`, 'int', L(`Chiudere il mese ${prevMonth.split('-').reverse().join('/')}`, `Clôturer le mois ${prevMonth.split('-').reverse().join('/')}`),
     L('Dopo giustificativi, verifica di cassa e tasso del mese.', 'Après justificatifs, contrôle de caisse et taux du mois.'), '/admin/periodi');
-  if (!rate.data) auto('a-rate', td, 'int', L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), L('Serve per le spese in ariary.', 'Nécessaire pour les dépenses en ariary.'), '/cambi');
-  for (const g of grants.data ?? []) if (g.end_date && daysTo(g.end_date) <= 90 && daysTo(g.end_date) >= -30)
+  if (staff && !rate.data) auto('a-rate', td, 'int', L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), L('Serve per le spese in ariary.', 'Nécessaire pour les dépenses en ariary.'), '/cambi');
+  for (const g of (staff ? grants.data : []) ?? []) if (g.end_date && daysTo(g.end_date) <= 90 && daysTo(g.end_date) >= -30)
     auto(`a-g-${g.id}`, g.end_date, 'prj', L(`Fine del finanziamento: ${g.title}`, `Fin du financement : ${g.title}`),
       L('Verifica che tutte le spese siano registrate e giustificate; prepara il rendiconto.', 'Vérifiez que toutes les dépenses sont saisies et justifiées ; préparez le rapport.'), `/finanziamenti/${g.id}`);
   const areqRows = (areq.data ?? []) as unknown as { account_id: string; status: string; report_by: string }[];
@@ -160,7 +163,7 @@ export default async function Deadlines({ searchParams }: {
   const href = (q: Record<string, string>) => { const u = new URLSearchParams({ periodo: per, ...(tipo ? { tipo } : {}), ...(month !== td.slice(0, 7) ? { mese: month } : {}), ...q });
     for (const [k, v] of [...u.entries()]) if (!v) u.delete(k); return `/scadenze?${u}`; };
   const edit = sv.find((d) => d.id === sp.edit && !d.rule_key);
-  const showForm = writer && (Boolean(edit) || sp.nuovo === '1');
+  const showForm = canNew && (Boolean(edit) || sp.nuovo === '1');
   const statusForm = (i: Item, st: 'done' | 'open') => (
     <form action={setDeadlineStatus} style={{ display: 'inline' }}>
       {i.id && <input type="hidden" name="id" value={i.id} />}
@@ -202,7 +205,7 @@ export default async function Deadlines({ searchParams }: {
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 14))}</span></div></>}
           <div className="s">{soonL[0] ? (soonL[0].date === td ? L('la prima oggi', 'la première aujourd\'hui') : L(`la prima il ${dm(soonL[0].date)}`, `la première le ${dm(soonL[0].date)}`)) : L('niente in arrivo', 'rien à venir')}</div>
         </Link>
-        <Link className="kpi" href={`${href({ periodo: '30', tipo: 'pay' })}#elenco`}>
+        {staff && <><Link className="kpi" href={`${href({ periodo: '30', tipo: 'pay' })}#elenco`}>
           <div className="l">{L('Da pagare in 30 gg', 'À payer sous 30 j')}</div>
           <div className="v num">{eur0(toPayEur)}</div>
           {toPayEur > 0 && <><Viz.Cols vals={payDays} colors={payDays.map((v) => (v ? 'var(--vz-sp)' : 'var(--band)'))} tip={tipOf(toPay, true)} />
@@ -215,7 +218,7 @@ export default async function Deadlines({ searchParams }: {
           {toGetEur > 0 && <><Viz.Cols vals={getDays} colors={getDays.map((v) => (v ? 'var(--c-in)' : 'var(--band)'))} tip={tipOf(toGet, true)} />
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 30))}</span></div></>}
           <div className="s">{toGet.length === 0 ? L('nessun incasso atteso', 'aucun encaissement attendu') : toGet.length === 1 ? L('1 incasso atteso', '1 encaissement attendu') : L(`${toGet.length} incassi attesi`, `${toGet.length} encaissements attendus`)}</div>
-        </Link>
+        </Link></>}
       </div>
 
       {showForm && (
@@ -261,9 +264,9 @@ export default async function Deadlines({ searchParams }: {
             <h2 style={{ textTransform: 'capitalize' }}>{monthName}</h2>
             <Link className="btn small ghost" href={href({ mese: nextM })} aria-label={L('Mese successivo', 'Mois suivant')}>›</Link>
           </div>
-          <div className={`cal-act${writer ? '' : ' one'}`}>
+          <div className={`cal-act${canNew ? '' : ' one'}`}>
             <a className="btn" href="/api/v1/scadenze.ics"><Ico name="download" />{L('Calendario (.ics)', 'Agenda (.ics)')}</a>
-            {writer && <Link className="btn primary" href={href({ nuovo: '1' })}><Ico name="plus" />{L('Nuova scadenza', 'Nouvelle échéance')}</Link>}
+            {canNew && <Link className="btn primary" href={href({ nuovo: '1' })}><Ico name="plus" />{L('Nuova scadenza', 'Nouvelle échéance')}</Link>}
           </div>
         </div>
         <div className="cal">
@@ -307,7 +310,7 @@ export default async function Deadlines({ searchParams }: {
                 <div className="dl-tag">{tag(i)}</div>
                 <div className="dl-act">
                   {!i.auto && canClose(i) && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
-                  {!i.auto && !i.rule_key && writer && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
+                  {!i.auto && !i.rule_key && canEditD(i) && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
                   {i.auto && <span className="chip">{L('automatica', 'automatique')}</span>}
                 </div>
               </li>
@@ -331,8 +334,8 @@ export default async function Deadlines({ searchParams }: {
               <li key={th.v} className={past ? 'past' : ''}><b className="num">{k(th.v)}</b><span>{L(th.it, th.fr)}</span>
                 <span className={`cdp ${past ? 'mid' : 'ok'}`}>{past ? L('superata', 'dépassée') : `${Math.round((v / th.v) * 100)} %`}</span></li>); })}
           </ul>
-          <p className="muted small" style={{ marginBottom: 0 }}>{L('Scala logaritmica: le soglie sono molto distanti fra loro. La tacca lilla è la stima di fine anno al ritmo di oggi. La lettura delle soglie la conferma il commercialista.',
-            'Échelle logarithmique : les seuils sont très éloignés. Le repère lilas est l’estimation de fin d’année au rythme actuel. La lecture des seuils est confirmée par l’expert-comptable.')}</p>
+          <p className="muted small" style={{ marginBottom: 0 }}>{L('Scala logaritmica: le soglie sono molto distanti fra loro. La tacca tratteggiata è la stima di fine anno al ritmo di oggi. La lettura delle soglie la conferma il commercialista.',
+            'Échelle logarithmique : les seuils sont très éloignés. Le repère en pointillé est l’estimation de fin d’année au rythme actuel. La lecture des seuils est confirmée par l’expert-comptable.')}</p>
         </Panel>
       )}
       {selDay && (
@@ -373,7 +376,7 @@ export default async function Deadlines({ searchParams }: {
               <div className="row-actions">
                 {sel.href && <Link className="btn primary" href={sel.href}>{L('Vai alla pagina', 'Aller à la page')} →</Link>}
                 {!sel.auto && canClose(sel) && (sel.status === 'open' ? statusForm(sel, 'done') : statusForm(sel, 'open'))}
-                {!sel.auto && !sel.rule_key && writer && sel.id && <Link className="btn ghost" href={href({ edit: sel.id })}>{L('Modifica', 'Modifier')}</Link>}
+                {!sel.auto && !sel.rule_key && canEditD(sel) && sel.id && <Link className="btn ghost" href={href({ edit: sel.id })}>{L('Modifica', 'Modifier')}</Link>}
               </div>
             </div>
           </aside>

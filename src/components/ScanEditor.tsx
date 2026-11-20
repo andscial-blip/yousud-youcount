@@ -132,8 +132,8 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
             {!img ? <p className="muted">{t.scan_working}</p> : (
               <div style={{ position: 'relative', width: '100%', aspectRatio: `${img.width} / ${img.height}`, maxHeight: '62vh' }}>
                 <canvas ref={preview} style={{ width: '100%', height: '100%', display: 'block', borderRadius: 8 }} />
-                <svg ref={svg} viewBox={`0 0 ${img.width} ${img.height}`} preserveAspectRatio="none"
-                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}
+                <svg ref={svg} viewBox={`0 0 ${img.width} ${img.height}`} preserveAspectRatio="none" overflow="visible"
+                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none', overflow: 'visible' }}
                      onPointerMove={(e) => { if (drag !== null) setCorners((cs) => cs.map((p, i) => (i === drag ? point(e) : p))); }}
                      onPointerUp={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
                   <polygon points={corners.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgba(232,190,90,.18)" stroke="#E8BE5A" strokeWidth={r / 4} />

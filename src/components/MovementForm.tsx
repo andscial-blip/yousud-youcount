@@ -197,6 +197,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // possibili doppioni (stesso importo e valuta, ±3 giorni, stesso conto o controparte)
   useEffect(() => {
     if (!amount || !accountId || !opDate || due) { setDups([]); return; }
+    if (busy) return;   // durante il salvataggio non si cerca: troverebbe il movimento appena salvato (revisione 20/11)
     const h = setTimeout(async () => {
       const { data } = await supabase.rpc('find_duplicates', {
         p: { amount, currency, op_date: opDate, account_id: accountId, counterparty_id: cpId || null, exclude_id: initial?.id ?? null },
@@ -204,7 +205,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       setDups((data ?? []) as Dup[]);
     }, 500);
     return () => clearTimeout(h);
-  }, [amount, currency, opDate, accountId, cpId, initial?.id, supabase, due]);
+  }, [amount, currency, opDate, accountId, cpId, initial?.id, supabase, due, busy]);
 
   // immagini → ritaglio e miglioramento prima del caricamento; PDF → caricati così come sono
   function addFiles(files: FileList | null) {
@@ -302,6 +303,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const missing = {
     amount: !amount, account: !accountId && !due, opDate: !!opDate && (Date.parse(opDate) - Date.now() > (R.role === 'operator' ? 0.5 : 61) * 864e5 || (R.role === 'operator' && Number(opDate.slice(0, 4)) < new Date().getFullYear())), toAccount: kind === 'transfer' && !toAccountId,
     paidBy: kind === 'expense' && !paidBy.trim(),
+    // operatore: la data del documento non può essere nel futuro (revisione 20/11: l'avviso restava fuori schermo e si registrava lo stesso)
+    docDate: R.role === 'operator' && !!docDate && Date.parse(docDate) - Date.now() > 0.5 * 864e5,
     toAmount: kind === 'transfer' && !parseAmount(toAmountTxt),
     category: kind !== 'transfer' && !categoryId, project: kind === 'expense' && !projectId,
     rate: currency === 'MGA' && !rate, noDocReason: kind !== 'transfer' && noDoc && noDocReason.trim().length < 5,
@@ -313,9 +316,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
 
   // riepilogo accanto ai pulsanti: quali campi mancano per registrare
   // dopo un «Salva bozza» non riuscito si segnalano solo i campi che servono alla bozza (importo, conto, data)
-  const DRAFT_KEYS = ['opDate', 'amount', 'account', 'toAccount'];
+  const DRAFT_KEYS = ['opDate', 'docDate', 'amount', 'account', 'toAccount'];
   const shown = (tried === 'draft' ? Object.fromEntries(Object.entries(missing).map(([k, v]) => [k, DRAFT_KEYS.includes(k) && v])) : missing) as typeof missing;
-  const missingNames = ([['opDate', t.f_op_date], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
+  const missingNames = ([['opDate', t.f_op_date], ['docDate', t.f_doc_date], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
     ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.f_doc]] as const)
     .filter(([k]) => shown[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
 
@@ -584,7 +587,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       )}
       <div className={aiCls('docDate')}>
         <label htmlFor="docdate">{t.f_doc_date}</label>
-        <input className="input" id="docdate" type="date" value={docDate} onChange={(e) => { setDocDate(e.target.value); confirm('docDate'); }} style={{ maxWidth: 220 }} />
+        <input className="input" id="docdate" type="date" aria-invalid={touched && shown.docDate ? true : undefined} value={docDate} onChange={(e) => { setDocDate(e.target.value); confirm('docDate'); }} style={{ maxWidth: 220 }} />
         {docDate && docDate > new Date().toISOString().slice(0, 10) && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date du justificatif est dans le futur : vérifiez-la.' : 'La data del giustificativo è nel futuro: controllala.'}</span>}
         {aiTag('docDate')}
       </div>
@@ -653,7 +656,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
             {payMode === 'adv' && kind === 'expense' && !advances.length ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'Vous n’avez pas d’avance ouverte. ' : 'Non hai anticipi aperti. '}<Link href="/anticipi">{t.lang_code === 'fr' ? 'Demander une avance' : 'Chiedi un anticipo'}</Link></span>
               : payMode === 'adv' && kind === 'expense' && <span className="hint">{t.f_adv_hint}</span>}
             {payMode === 'adv' && kind === 'expense' && account?.kind === 'advance' && account.balance != null && (
-              <span className="hint adv-left" role="status"><b>{t.lang_code === 'fr' ? 'Vous avez en main' : 'Hai in mano'}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance, account.currency, t.lang_code as Lang)}</b>
+              <span className="hint adv-left" role="status"><b>{(R.myAdvances ?? []).includes(account.id) ? (t.lang_code === 'fr' ? 'Vous avez en main' : 'Hai in mano') : (t.lang_code === 'fr' ? `${account.holder ?? 'La personne'} a en main` : `${account.holder ?? 'La persona'} ha in mano`)}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance, account.currency, t.lang_code as Lang)}</b>
                 {amount ? <> · {t.lang_code === 'fr' ? 'après cette dépense' : 'dopo questa spesa'}{t.lang_code === 'fr' ? '\u00a0' : ''}: {money(account.balance - amount, account.currency, t.lang_code as Lang)}</> : null}</span>)}
           </div>
         </>)}
@@ -801,7 +804,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <textarea className="input" id="notes" rows={2} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div></section>)}
 
-      {dups.length > 0 && (
+      {dups.length > 0 && !busy && (
         <div className="note">
           <b>{t.f_dups_title}.</b> {t.f_dups_text}
           <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>

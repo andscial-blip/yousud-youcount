@@ -62,7 +62,10 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const tipOf = (xs: Balance[]) => xs.map((r) => `${nm(lang, r)}: ${money(r.balance, r.currency, lang)}`).join('\n');
   const advEur = sumEur(adv), advN = native(adv);
   const holder = (r: Balance) => nm(lang, r).replace(/^(Anticipi|Avances)\s*[–-]\s*/i, '');
-  const unver = rows.reduce((a, r) => a + r.unverified, 0);
+  // operatore: solo i propri movimenti da verificare, non quelli di tutto l'ente (revisione 20/11)
+  const unver = staff ? rows.reduce((a, r) => a + r.unverified, 0)
+    : ((await supabase.from('movements').select('id', { count: 'exact', head: true }).eq('status', 'recorded').eq('created_by', me!.id)).count ?? 0);
+  const LOCS = (opMG ? ['MG'] : ['IT', 'MG']) as ('IT' | 'MG')[];
   const locTile = (loc: 'IT' | 'MG', xs: Balance[], totEur: number) => {
     const n = native(xs), sg = seg(xs), top = sg[0];
     return (
@@ -94,13 +97,13 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
           <div className={`v num${tot < 0 ? ' neg' : ''}`}>{e0(tot)}</div>
-          {tot > 0 && <><Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
+          {tot > 0 && !opMG && <><Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />
             <div className="vzl"><span>IT {pc(Math.max(0, itEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span><span>MG {pc(Math.max(0, mgEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span></div></>}
-          <div className="s">{unver > 0 ? <Link href="/movimenti?stato=recorded">{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>
+          <div className="s">{unver > 0 ? <Link href={staff ? '/movimenti?stato=recorded' : '/movimenti?stato=recorded&mie=1'}>{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>
             : (rows.length === 1 ? L('1 conto, tutto verificato', '1 compte, tout vérifié') : L(`${rows.length} conti, tutto verificato`, `${rows.length} comptes, tout vérifié`))}</div>
         </div>
-        {locTile('IT', it, itEur)}
+        {!opMG && locTile('IT', it, itEur)}
         {locTile('MG', mg, mgEur)}
         <Link className="kpi" href="/anticipi">
           <div className="l">{L('Anticipi aperti', 'Avances en cours')}</div>
@@ -111,13 +114,13 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         </Link>
       </div>
 
-      {(['IT', 'MG'] as const).map((loc) => {
+      {LOCS.map((loc) => {
         const xs = byLoc(loc), n = native(xs);
         return (
           <section key={loc} className="panel country" id={`conti-${loc.toLowerCase()}`}>
             <div className="panel-h"><CountryMark loc={loc} label={loc === 'IT' ? t('italy') : t('madagascar')} />
               <h2>{loc === 'IT' ? t('italy') : t('madagascar')}</h2><div className="spacer" />
-              {xs.length > 0 && <span className="eyebrow">{L('totale', 'total')} <b className={`num${n.v < 0 ? ' neg' : n.v > 0 ? ' pos' : ''}`}>{money(n.v, n.c, lang)}</b></span>}</div>
+              {xs.length > 0 && <span className="eyebrow">{L('totale', 'total')} <b className={`num${n.v < 0 ? ' neg' : ''}`}>{money(n.v, n.c, lang)}</b></span>}</div>
             {xs.length === 0 ? <Empty text={t('none')} /> :
               <BalancesTable rows={xs} t={t} lang={lang} detail noPlace swatch={(r) => shade.get(r.account_id)} hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
           </section>);
@@ -164,7 +167,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
             <div className="sheet-h"><CountryMark loc={sel.location} label={sel.location === 'IT' ? t('italy') : t('madagascar')} size={30} /><h2>{nm(lang, sel)}</h2><div className="spacer" /><Link className="btn ghost" href="/conti" scroll={false}>{L('Chiudi', 'Fermer')}</Link></div>
             <div className="sheet-b">
               <div className="aw-top"><span className="muted">{L('Saldo di oggi', 'Solde du jour')}</span>
-                <b className={`num${Number(sel.balance) < 0 ? ' neg' : Number(sel.balance) > 0 ? ' pos' : ''}`}>{money(sel.balance, sel.currency, lang)}</b>
+                <b className={`num${Number(sel.balance) < 0 ? ' neg' : ''}`}>{money(sel.balance, sel.currency, lang)}</b>
                 <small className="muted">{L(...(KIND[sel.kind] ?? ['Conto', 'Compte']))} · {sel.currency}{sel.currency !== 'EUR' && fx > 0 ? ` · ≈ ${e0(eur(sel))}` : ''}</small></div>
               <dl className="acc-3">
                 <div><dt title={t('acc_opening')}>{L('Iniziale', 'Initial')}</dt><dd className="num">{money(sel.opening_balance, sel.currency, lang)}</dd></div>

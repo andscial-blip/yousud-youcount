@@ -32,8 +32,9 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
     supabase.from('accounts').select('id, name_it, name_fr, currency, kind').eq('active', true).neq('kind', 'advance').order('sort'),
     supabase.from('payment_methods').select('id, name_it, name_fr').eq('active', true).order('sort'),
     supabase.from('movements').select('id, ref, op_date, amount, currency, paid_by, reimb_batch, account:accounts!movements_account_id_fkey(name_it, name_fr)')
-      .eq('reimb_status', 'paid').order('reimbursed_at', { ascending: false }).limit(60).returns<Paid[]>(),
-    supabase.from('movements').select('amount, currency, amount_eur, fx_rate, op_date, reimb_batch').eq('reimb_status', 'paid')
+      .eq('reimb_status', 'paid').or(resp ? 'id.not.is.null' : `created_by.eq.${me!.id}`).order('reimbursed_at', { ascending: false }).limit(60).returns<Paid[]>(),
+    // operatore (revisione 20/11): solo i rimborsi delle proprie spese, non quelli di tutto l'ente
+    supabase.from('movements').select('amount, currency, amount_eur, fx_rate, op_date, reimb_batch').eq('reimb_status', 'paid').or(resp ? 'id.not.is.null' : `created_by.eq.${me!.id}`)
       .gte('op_date', `${Y}-01-01`).lte('op_date', `${Y}-12-31`).limit(5000),
     supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
@@ -131,7 +132,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile} con documento, ${declared} con motivo dichiarato`, `${withFile} avec justificatif, ${declared} avec motif déclaré`) : LL('tutte con documento', 'toutes avec justificatif')) : LL('niente da completare', 'rien à compléter')}</div>
         </div>
         <div className="kpi">
-          <div className="l">{LL(`Rimborsato nel ${Y}`, `Remboursé en ${Y}`)}</div>
+          <div className="l">{resp ? LL(`Rimborsato nel ${Y}`, `Remboursé en ${Y}`) : LL(`Rimborsato a te nel ${Y}`, `Remboursé à vous en ${Y}`)}</div>
           <div className="v num">{e2(paidTot)}</div>
           {paidTot > 0 && <><Viz.Cols vals={paidM} colors={paidM.map((v) => (v ? 'var(--c-out)' : 'var(--band)'))} tip={`${LL('Rimborsato', 'Remboursé')} ${Y}\n${paidM.map((v, i) => (v ? `${MESI[lang][i]}: ${e2(v)}` : '')).filter(Boolean).join('\n')}`} />
             <div className="vzl"><span>{MESI[lang][0]!.toLowerCase()}</span><span>{MESI[lang][11]!.toLowerCase()}</span></div></>}

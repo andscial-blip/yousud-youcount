@@ -290,3 +290,23 @@ Guardia permanente: `tests/unit/palette.test.ts` (progetti e gruppi non condivid
 - La differenza di 11 € segnalata tra Report e Analisi non è un errore: le due schermate erano state fatte prima e dopo la spesa di prova
   MOV-2026-006 (10,67 €) registrata dall'altro revisore.
 - Verifiche 19/11: unit 39/39, db 52/52, e2e tutti superati (in tre gruppi; un solo fallimento per lentezza del server, ripetuto e superato), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok; ripasso dei difetti dei giri 6 e 7: 21/21.
+
+## 20/11 — ottavo giro (colori 9/7/9/8/8 · operatore 8, nessun voto sceso) e correzioni
+Rapporti in `docs/revisione-finale-2026-11-15/ottavo-giro/`; riverifica: colori 15 chiusi/11 aperti, operatore 26 chiusi/6 aperti, 0 peggiorati.
+- **Doppio invio**: `FormValidation` intercetta le azioni del server (POST con intestazione Next-Action): il modulo diventa `data-busy`,
+  il pulsante si spegne con la rotellina e un secondo invio è ignorato (anche entro 700 ms). Vale per tutti i moduli. Verificato: una sola richiesta.
+- **Operatore**: Conti senza riquadro e sezione Italia, «da verificare» solo dei propri movimenti; data del documento futura blocca «Registra»;
+  Scadenze senza «Nuova scadenza», modifica, «Da pagare/incassare», fine finanziamenti e tasso mancante; Da rimborsare con i soli rimborsi propri
+  («Rimborsato a te»); messaggio della bozza con il pulsante «Modifica»; Guida con domande proprie («Ho pagato di tasca mia», «Chiedere contanti
+  in anticipo») e frasi corrette; filtri di Movimenti senza conti italiani, conti tecnici e «Dati», con «Da rimborsare» nello stato;
+  richieste di anticipo in attesa nel «Da fare» (contanti in mano solo come beneficiario); «Hery ha in mano» per l'anticipo di un altro;
+  conta con differenza grande: motivo obbligatorio; niente doppione del movimento appena salvato; «Ritaglia» con righe alte uguali e maniglie
+  non tagliate; numeri MOV senza a capo al trattino.
+- **Colori**: gruppi di spesa in due famiglie alternate (gialli-albicocca e salvia, ΔE minimo 9 contro 6); progetti senza verdi né #8497B0
+  (ardesia, usato da priorità e anticipi), 12 tinte, distanza minima 8,2 (prima 7,7); priorità «alta» corallo chiaro; anticipi in ardesia
+  anche in /anticipi; resto del preventivo sempre blu chiaro (`--plan-soft`); «oggi/tra N gg/vicino al limite» su fondo neutro con testo
+  corallo scuro, distinto dallo scaduto rosa; icone di progetto più sature; conti italiani più distinti; saldi positivi in nero ovunque;
+  soglie ETS in blu notte con stima tratteggiata; legenda senza «Previsto» se non c'è preventivo; spiegazione della barra blu notte in Cambi.
+- Verifiche 20/11: unit 39/39, db 52/52, e2e tutti superati (in gruppi; i fallimenti del primo giro erano dipendenze tra test e due test da
+  aggiornare: tre riquadri in Conti per l'operatore, motivo obbligatorio nella conta), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT,
+  build ok; ripasso difetti giri 6–8: 24/24.

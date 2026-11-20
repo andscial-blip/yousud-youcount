@@ -108,7 +108,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
           </section>
           <section className="panel">
             <div className="panel-h"><H2 text={L('Previsto e speso', 'Prévu et dépensé')} icon={null} /><div className="spacer" />
-              <Legend items={[{ label: L('Previsto', 'Prévu'), color: C_PLAN }, { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
+              <Legend items={[...(bud ? [{ label: L('Previsto', 'Prévu'), color: C_PLAN }] : []), { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
             <div className="panel-b">
               <ul className="bq-pairs prj-pairs">{pairs.map((p) => { const a = A(p.id); return (
                 <li key={p.id}>

@@ -497,9 +497,10 @@ try {
   await check('operatore: conta di cassa con differenza rispetto al saldo', async () => {
     const p = op.page;
     await p.goto(`${base}/conti`);
-    // in alto 4 riquadri (liquidità, Italia, Madagascar, anticipi); i conti di anticipo non sono tra i conti
-    assert.equal(await p.locator('.kpis.dk .kpi').count(), 4);
-    assert.match(await p.locator('.kpis.dk').innerText(), /Contanti nelle casse[\s\S]*Italia[\s\S]*Madagascar[\s\S]*Anticipi aperti/);
+    // operatore in Madagascar: 3 riquadri (contanti, Madagascar, anticipi), niente Italia (revisione 20/11); gli anticipi non sono tra i conti
+    assert.equal(await p.locator('.kpis.dk .kpi').count(), 3);
+    assert.match(await p.locator('.kpis.dk').innerText(), /Contanti nelle casse[\s\S]*Madagascar[\s\S]*Anticipi aperti/);
+    assert.equal(await p.locator('#conti-it').count(), 0);
     assert.equal(await p.locator('.bal-t tbody tr', { hasText: /Anticipi/ }).count(), 0);
     // il nome del conto apre il suo dettaglio, con il collegamento a tutti i suoi movimenti
     await p.locator('.bal-t a.bal-a', { hasText: 'Cassa Madagascar' }).click();
@@ -526,6 +527,7 @@ try {
     if (await p.locator('.cc-sure').count()) {
       assert.ok(await p.getByRole('button', { name: 'Registra la conta' }).isDisabled());
       await p.locator('.cc-sure input').check();
+      await p.locator('#cc-notes').fill('PROVA cassa vuota: contanti consegnati in banca');   // con differenza grande il motivo è obbligatorio
     }
     await p.getByRole('button', { name: 'Registra la conta' }).click();
     await p.waitForURL(/ok=cash/);
