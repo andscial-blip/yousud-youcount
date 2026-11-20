@@ -108,13 +108,16 @@ export default async function Projects({ searchParams }: { searchParams: Promise
           </section>
           <section className="panel">
             <div className="panel-h"><H2 text={L('Previsto e speso', 'Prévu et dépensé')} icon={null} /><div className="spacer" />
-              <Legend items={[...(bud ? [{ label: L('Previsto', 'Prévu'), color: C_PLAN }] : []), { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
+              <Legend items={[...(bud ? [{ label: L('Previsto', 'Prévu'), color: 'var(--plan-soft)' }] : []), { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
             <div className="panel-b">
               <ul className="bq-pairs prj-pairs">{pairs.map((p) => { const a = A(p.id); return (
                 <li key={p.id}>
                   <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link>
-                  <span className="bq-pb"><i className={a.bOut > 0 ? '' : 'z'} style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%`, background: C_PLAN }} />
-                    <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((a.out / maxPair) * 100).toFixed(1)}%`, background: a.bOut > 0 && a.out > a.bOut ? 'var(--tax)' : C_SP }} /></span>
+                  {/* previsto come in tutta l'app (20/11): traccia blu chiara lunga quanto il preventivo, riempita dallo speso; oltre, corallo */}
+                  <span className="bq-pb one" aria-hidden="true">
+                    {a.bOut > 0 && <span className="pt" style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%` }} />}
+                    <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((Math.min(a.out, a.bOut || a.out) / maxPair) * 100).toFixed(1)}%`, background: C_SP }} />
+                    {a.bOut > 0 && a.out > a.bOut && <i className="ov" style={{ left: `${((a.bOut / maxPair) * 100).toFixed(1)}%`, width: `${(((a.out - a.bOut) / maxPair) * 100).toFixed(1)}%` }} />}</span>
                   <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b className={a.bOut > 0 && a.out > a.bOut ? 'over-t' : undefined} title={a.bOut > 0 && a.out > a.bOut ? L('oltre il preventivo', 'au-delà du budget') : undefined}>{e0(a.out)}{a.bOut > 0 && a.out > a.bOut ? ' ▲' : ''}</b></span>
                 </li>); })}</ul>
             </div>

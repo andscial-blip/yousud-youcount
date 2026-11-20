@@ -149,10 +149,10 @@ export function BudgetTiles({ c }: { c: Ctx }) {
         <div className="s">{net < -0.005 ? L('disavanzo da coprire', 'déficit à couvrir') : net > 0.005 ? L('avanzo previsto', 'excédent prévu') : L('entrate e uscite in pareggio', 'recettes et dépenses à l\'équilibre')}</div>
       </div>
       <div className="kpi">
-        {totOut > 0 && <Viz.Ring p={prjOut / totOut} color={C_INC} tip={`${L('Progetti', 'Projets')}: ${e0(prjOut)}\n${L('Struttura generale', 'Structure générale')}: ${e0(totOut - prjOut)}`} />}
+        {totOut > 0 && <Viz.Ring p={prjOut / totOut} color={C_EXP} tip={`${L('Progetti', 'Projets')}: ${e0(prjOut)}\n${L('Struttura generale', 'Structure générale')}: ${e0(totOut - prjOut)}`} />}
         <div className="l">{L('Destinato ai progetti', 'Affecté aux projets')}</div>
         <div className="v num">{e0(prjOut)}</div>
-        {totOut > 0 && <><Viz.Stack segs={[{ v: prjOut, c: C_INC }, { v: totOut - prjOut, c: 'var(--band)' }]} max={totOut}
+        {totOut > 0 && <><Viz.Stack segs={[{ v: prjOut, c: C_EXP }, { v: totOut - prjOut, c: 'var(--band)' }]} max={totOut}
           tip={`${L('Progetti', 'Projets')}: ${e0(prjOut)}\n${L('Struttura generale', 'Structure générale')}: ${e0(totOut - prjOut)}`} />
           <div className="vzl"><span>{L('delle uscite', 'des dépenses')}</span><span>{pc(prjOut, totOut)}</span></div></>}
         <div className="s">{nPrj === 1 ? L('1 progetto', '1 projet') : L(`${nPrj} progetti`, `${nPrj} projets`)} · {L('struttura', 'structure')} {e0(totOut - prjOut)}</div>

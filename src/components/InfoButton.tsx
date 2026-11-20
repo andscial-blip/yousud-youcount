@@ -14,6 +14,8 @@ export function InfoButton({ path, lang, line, op }: { path: string; lang: 'it' 
   const [h, setH] = useState<HelpEntry | null | undefined>(undefined);
   const [brief, setBrief] = useState<string[] | null>(null);
   useEffect(() => { setH(undefined); }, [path]);
+  // l'aiuto si scarica in anticipo, a pagina ferma: all'apertura compare subito, senza «…» (revisione 20/11)
+  useEffect(() => { const id = setTimeout(() => { void import('@/lib/help'); }, 2500); return () => clearTimeout(id); }, []);
   useEffect(() => {
     if (!open || h !== undefined) return;
     import('@/lib/help').then((m) => { setH(m.helpFor(path)); const o = op ? m.opHelpFor(path) : null; setBrief(o ? (lang === 'fr' ? o.fr : o.it) : null); });

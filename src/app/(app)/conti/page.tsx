@@ -92,7 +92,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       <ErrorNote prefix={t('error_load')} error={error} />
       {ok === 'cash' && <div className="note ok" role="status">{t('cc_ok')}</div>}
       {err && <div className="note err">{err}</div>}
-      {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
+      {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. La cassa è comune: il saldo comprende le spese di tutte le persone che la usano. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. La caisse est commune : son solde comprend les dépenses de toutes les personnes qui l’utilisent. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
       <div className="kpis dk">
         <div className="kpi">
           <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
@@ -109,7 +109,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           <div className="l">{L('Anticipi aperti', 'Avances en cours')}</div>
           <div className={`v num${adv.length ? lg(advN.c !== 'EUR' ? e0(advEur) : money(advN.v, advN.c, lang)) : ''}`}>{adv.length ? (advN.c !== 'EUR' ? e0(advEur) : money(advN.v, advN.c, lang)) : e0(0)}</div>
           {advEur > 0 && <><Viz.Stack segs={seg(adv)} max={advEur} tip={adv.map((r) => `${holder(r)}: ${money(r.balance, r.currency, lang)}`).join('\n')} />
-            <div className="vzl"><span>{holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></>}
+            <div className="vzl"><span>{adv.length > 1 ? L(`più grande: ${holder(seg(adv)[0]!.r)}`, `le plus grand : ${holder(seg(adv)[0]!.r)}`) : holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></>}
           <div className="s">{adv.length ? (advN.c !== 'EUR' ? `${money(advN.v, advN.c, lang)} · ` : '') + L('contanti in mano alle persone', 'espèces confiées aux personnes') : L('nessun anticipo da giustificare', 'aucune avance à justifier')}</div>
         </Link>
       </div>
@@ -122,7 +122,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
               <h2>{loc === 'IT' ? t('italy') : t('madagascar')}</h2><div className="spacer" />
               {xs.length > 0 && <span className="eyebrow">{L('totale', 'total')} <b className={`num${n.v < 0 ? ' neg' : ''}`}>{money(n.v, n.c, lang)}</b></span>}</div>
             {xs.length === 0 ? <Empty text={t('none')} /> :
-              <BalancesTable rows={xs} t={t} lang={lang} detail noPlace swatch={(r) => shade.get(r.account_id)} hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
+              <BalancesTable rows={xs} t={t} lang={lang} detail noPlace noVer={!staff} swatch={(r) => shade.get(r.account_id)} hrefFor={(r) => `/conti?conto=${r.account_id}`} verHref={(r) => `/movimenti?conto=${r.account_id}&stato=recorded`} />}
           </section>);
       })}
 
@@ -136,7 +136,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
                 expected: t('cc_expected'), diff: t('cc_diff'), notes: t('f_notes'), save: t('cc_save'), hint: t('cc_hint'), pieces: L('Pezzi', 'Nombre'), notes_bank: L('Banconote', 'Billets'), coins: L('Monete', 'Pièces de monnaie'), notes_small: L('Banconote, tagli piccoli', 'Billets, petites coupures') }} />
           )}
           {(counts ?? []).length > 0 && (
-            <table className="t">
+            <table className="t cc-hist">
               <thead><tr><th>{t('date')}</th><th>{t('account')}</th><th className="r">{t('cc_counted')}</th>
                 <th className="r hm">{t('cc_system')}</th><th className="r">{t('cc_diff')}</th><th className="hm">{t('cc_by')}</th></tr></thead>
               <tbody>

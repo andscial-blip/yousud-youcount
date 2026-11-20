@@ -45,6 +45,9 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const isOp = me!.role === 'operator';
   const mine = isOp ? sp.mie !== '0' : sp.mie === '1';
   const page = Math.max(1, Math.min(1000, Number(sp.p) || 1));
+  // operatore, vista «Tutti» (revisione 20/11): i movimenti delle casse e degli anticipi del Madagascar, più i propri;
+  // non i movimenti dei conti bancari e italiani, che vedono responsabili e amministratori
+  const opAcc = isOp ? (((await supabase.from('accounts').select('id').eq('location', 'MG').neq('kind', 'bank')).data ?? []) as { id: string }[]).map((a) => a.id) : [];
   const revIds = f.doc === 'no' ? ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string) : [];
   // gli stessi filtri valgono per l'elenco e per i totali
   const apply = <Q,>(q0: Q): Q => {
@@ -69,6 +72,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     if (f.doc === 'si') q = q.is('no_doc_reason', null).neq('kind', 'transfer');
     if (f.demo) q = q.eq('demo', f.demo === 'si');
     if (mine) q = q.eq('created_by', me!.id);
+    else if (isOp) q = q.or(`created_by.eq.${me!.id},and(account_id.in.(${opAcc.join(',') || '00000000-0000-0000-0000-000000000000'}),or(to_account_id.is.null,to_account_id.in.(${opAcc.join(',') || '00000000-0000-0000-0000-000000000000'})))`);
     return q as Q;
   };
   const admin = can(me, ['super_admin', 'admin']);

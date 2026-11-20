@@ -8,7 +8,7 @@ export type Balance = {
   opening_balance: string; movements_in: string; movements_out: string; balance: string; unverified: number;
 };
 
-export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, hrefFor, verHref, swatch }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean; noPlace?: boolean; swatch?: (r: Balance) => string | undefined;
+export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, hrefFor, verHref, swatch, noVer = false }: { rows: Balance[]; t: T; lang: Lang; detail?: boolean; noPlace?: boolean; noVer?: boolean; swatch?: (r: Balance) => string | undefined;
   hrefFor?: (r: Balance) => string; verHref?: (r: Balance) => string }) {
   // saldo: verde se positivo, rosso se negativo
   const tone = (r: Balance) => (Number(r.balance) < 0 ? ' neg' : '')   // positivi in nero come in Dashboard e altrove; solo i negativi in rosso (20/11);
@@ -30,7 +30,7 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, 
             <div><dt>{t('acc_in')}</dt><dd className="num">{money(r.movements_in, r.currency, lang)}</dd></div>
             <div><dt>{lang === 'fr' ? 'Sorties' : 'Uscite'}</dt><dd className="num">{money(r.movements_out, r.currency, lang)}</dd></div>
           </dl>}
-          {r.unverified > 0 && ver(r, true)}
+          {!noVer && r.unverified > 0 && ver(r, true)}
         </li>
       ))}
     </ul>
@@ -44,7 +44,7 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, 
         <tr>
           <th>{t('account')}</th>{!noPlace && <th>{t('place')}</th>}
           {detail && <><th className="r">{t('acc_opening')}</th><th className="r">{t('acc_in')}</th><th className="r">{t('acc_out')}</th></>}
-          <th className="r">{t('balance')}</th><th className="r">{t('nav_verify')}</th>
+          <th className="r">{t('balance')}</th>{!noVer && <th className="r">{t('nav_verify')}</th>}
         </tr>
       </thead>
       <tbody>
@@ -58,7 +58,7 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, 
               <td className="r num">{money(r.movements_out, r.currency, lang)}</td>
             </>}
             <td className={`r num bal-v${tone(r)}`}>{money(r.balance, r.currency, lang)}</td>
-            <td className="r num">{r.unverified > 0 ? ver(r) : '–'}</td>
+            {!noVer && <td className="r num">{r.unverified > 0 ? ver(r) : '–'}</td>}
           </tr>
         ))}
       </tbody>

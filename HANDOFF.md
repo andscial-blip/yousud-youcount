@@ -310,3 +310,18 @@ Rapporti in `docs/revisione-finale-2026-11-15/ottavo-giro/`; riverifica: colori 
 - Verifiche 20/11: unit 39/39, db 52/52, e2e tutti superati (in gruppi; i fallimenti del primo giro erano dipendenze tra test e due test da
   aggiornare: tre riquadri in Conti per l'operatore, motivo obbligatorio nella conta), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT,
   build ok; ripasso difetti giri 6–8: 24/24.
+
+## 20–21/11 — nono giro (colori 8,5/7/9/8/8,5 · operatore 8) e correzioni
+Rapporti in `docs/revisione-finale-2026-11-15/nono-giro/`. Due aree scese: «Scelta delle tinte» (9 → 8,5, peggioramento reale: senape, terracotta
+e testo ruggine introdotti da me) e «Facilità» dell'operatore (8 → 7, difetti già presenti ma non visti). Corretti:
+- **Colori**: progetti con 12 tinte tenui scelte per distanza anche in deuteranopia (min ΔE 10,6 / deut 6,4; prima 8,2 / 1,5); «oggi», «tra N gg»,
+  «da autorizzare» neutri grigio-azzurri (niente ruggine); «anticipo da autorizzare» neutro in Dashboard e Anticipi; priorità «alta» malva
+  (#D9A6C9, distinta da «fatta» anche in deuteranopia); previsto in /progetti come traccia blu chiara riempita dallo speso (come altrove);
+  «Destinato ai progetti» in giallo uscite; importi delle persone negli Anticipi in nero; «Applicato ai movimenti» in Cambi in ardesia;
+  filo sottile sulle barre chiare. Gruppi di spesa invariati (min ΔE 9,2): le alternative senza senape e terracotta scendevano a ΔE 4–6.
+- **Operatore**: «Tutti» in Movimenti mostra solo i movimenti delle casse/mobile del Madagascar e i propri (niente banche e Italia);
+  Conti senza colonna «da verificare» e con la nota «la cassa è comune»; avviso della foto doppia intero e «spesa da rimborsare»;
+  «data del documento (nel futuro)»; storico conte compatto su telefono e tablet; testi FR («payées de sa poche», spazio prima dei due punti);
+  aiuto in pagina scaricato in anticipo; «più grande: …» negli anticipi aperti; pulsanti del ritaglio alti uguali; Guida «Vedere cosa scade» per l'operatore.
+- Verifiche: unit 39/39, db 52/52, e2e tutti superati (un test del rendiconto fallito per lentezza, ripetuto e superato), offline 9/9,
+  layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok.

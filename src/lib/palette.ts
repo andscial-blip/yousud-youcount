@@ -4,7 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // blu (preventivo), corallo (oltre il limite), cielo (Italia) e lilla (Madagascar). Ogni gruppo di voci e ogni progetto ha il suo colore.
 // revisione 19/11 (settimo giro): progetti e gruppi di spesa non condividono più nessun colore.
 // Progetti: dodici tinte fredde e rosate (nessun giallo, ocra o oliva, che restano alle uscite); nessun doppione fino a dodici progetti.
-export const ITEM_PAL = ['#5B6F8C', '#E3A6C2', '#7FA5A8', '#7D6E93', '#53A1C8', '#B86F8E', '#A7D3DE', '#4F7F86', '#D6B8D9', '#7A4E6E', '#2F7C99', '#9C8AA5'];
+// 20/11 (nono giro): tinte tenui scelte per restare distinte anche con il daltonismo rosso-verde (min ΔE 10,6 normale, 6,4 deuteranopia; prima 8,2 e 1,5)
+export const ITEM_PAL = ['#2F869F', '#FFBAC4', '#B7D3FE', '#90757C', '#85BABB', '#CC8990', '#348983', '#8488B8', '#CDAEB3', '#C8BCDC', '#789790', '#95779C'];
 export const PAL = ITEM_PAL;
 // Gruppi di spesa (01…09): la famiglia del giallo delle uscite, dall'ocra al crema; codici vicini lontani di chiarezza.
 // gruppi di spesa: gialli e albicocca alternati a toni salvia, ben distinti tra loro e dai progetti (freddi e rosati)

@@ -83,7 +83,7 @@ export default async function Deadlines({ searchParams }: {
     items.push({ key, date: dt, cat, title, sub, href, status: 'open', priority: 'high', applies: true, auto: true, amount, currency: amount ? 'EUR' : undefined });
   const dueList = due.data ?? [];
   if (dueList.length) auto('a-reimb', td, 'pay', L(`Rimborsi da pagare: ${dueList.length}`, `Remboursements à payer : ${dueList.length}`),
-    L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses avancées sur fonds propres à rembourser.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
+    L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées de sa poche, à rembourser.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
   if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare: ${drafts.count}`, `Mouvements à compléter : ${drafts.count}`),
     L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas enregistrés.'), '/movimenti?stato=draft');
   if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),

@@ -192,7 +192,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             <div className="kpi">
               <div className="l">{LL('Da autorizzare', 'À autoriser')}</div>
               <div className={`v num${toAuth.length ? ' amb' : ''}`}>{toAuth.length}</div>
-              {toAuth.length > 0 && <><Viz.Stack segs={segReq(toAuth, 'var(--amber-soft)')} max={segReq(toAuth, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toAuth)} />
+              {toAuth.length > 0 && <><Viz.Stack segs={segReq(toAuth, '#B7C2D1')} max={segReq(toAuth, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toAuth)} />
                 <div className="vzl"><span>{toAuth.length === 1 ? LL('1 richiesta', '1 demande') : LL(`${toAuth.length} richieste`, `${toAuth.length} demandes`)}</span><span>{sumTxt(toAuth)}</span></div></>}
               <div className="s">{toAuth.length ? LL('richieste in attesa di autorizzazione', 'demandes en attente d’autorisation') : LL('nessuna richiesta in attesa', 'aucune demande en attente')}</div>
             </div>
@@ -289,7 +289,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                       <span className="aw-n"><b>{accName(w)}</b><small className="muted">{late ? <span className="neg">{LL(`ricevute in ritardo dal ${date(late.report_by)}`, `reçus en retard depuis le ${date(late.report_by)}`)}</span>
                         : due ? LL(`ricevute entro il ${date(due)}`, `reçus avant le ${date(due)}`) : bal < 0 ? LL('da rimborsare alla persona', 'à rembourser à la personne') : LL('nessuna scadenza', 'aucune échéance')}
                         {w.spent_no_doc > 0 ? ` · ${LL(`${w.spent_no_doc} senza ricevuta`, `${w.spent_no_doc} sans reçu`)}` : ''}{pend ? ` · ${LL(`${pend} richiesta in corso`, `${pend} demande en cours`)}` : ''}</small></span>
-                      <span className={`aw-b num ${bal < 0 ? 'neg' : bal > 0 ? 'pos' : ''}`}>{w.currency !== 'EUR' && fxNow > 0 ? money(bal / fxNow, 'EUR', lang) : money(bal, w.currency, lang)}<small>{w.currency !== 'EUR' && fxNow > 0 ? `${money(bal, w.currency, lang)} · ` : ''}{bal < 0 ? LL('anticipato dalla persona', 'avancé par la personne') : LL('in mano', 'en main')}</small></span>
+                      <span className={`aw-b num ${bal < 0 ? 'neg' : ''}`}>{w.currency !== 'EUR' && fxNow > 0 ? money(bal / fxNow, 'EUR', lang) : money(bal, w.currency, lang)}<small>{w.currency !== 'EUR' && fxNow > 0 ? `${money(bal, w.currency, lang)} · ` : ''}{bal < 0 ? LL('anticipato dalla persona', 'avancé par la personne') : LL('in mano', 'en main')}</small></span>
                     </Link>
                   </li>
                 );
@@ -376,7 +376,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
               {errText && <div className="note err" style={{ marginBottom: 10 }}>{errText}</div>}
               <div className="aw-top">
                 <span className="muted">{wBal < 0 ? LL('Anticipato dalla persona, da rimborsare', 'Avancé par la personne, à rembourser') : LL('In mano', 'En main')}</span>
-                <b className={`num ${wBal < 0 ? 'neg' : wBal > 0 ? 'pos' : ''}`}>{money(Math.abs(wBal), wCur, lang)}</b>
+                <b className={`num ${wBal < 0 ? 'neg' : ''}`}>{money(Math.abs(wBal), wCur, lang)}</b>
                 {W && <small className="muted">{LL('consegnato', 'remis')} {money(W.given, wCur, lang)} · {LL('speso', 'dépensé')} {money(W.spent, wCur, lang)} · {LL('restituito', 'restitué')} {money(W.returned, wCur, lang)}</small>}
               </div>
               <div className="aw-btns">

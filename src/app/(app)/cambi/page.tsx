@@ -106,12 +106,12 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
                 cats={M.map((m) => short3(m))}
                 series={[
                   { name: L('Tasso del mese', 'Taux du mois'), color: 'var(--navy)', w: 3, vals: M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : null; }) as number[] },
-                  { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--vz-hyp)', dash: '5 4', w: 2,
+                  { name: L('Applicato ai movimenti', 'Appliqué aux mouvements'), color: 'var(--slate-2)', dash: '5 4', w: 2,
                     vals: M.map((_, i) => { const a = ap.get(i + 1); return a && a.w ? Math.round(a.s / a.w) : null; }) as number[] },
                 ]} />
             )}
             <div className="legend"><span><i style={{ background: 'var(--navy)' }} />{L('Tasso del mese', 'Taux du mois')}</span>
-              <span><i style={{ background: 'none', height: 0, width: 16, borderRadius: 0, borderTop: '2px dashed var(--vz-hyp)', verticalAlign: 3 }} />{L('Applicato ai movimenti (media pesata)', 'Appliqué aux mouvements (moyenne pondérée)')}</span></div>
+              <span><i style={{ background: 'none', height: 0, width: 16, borderRadius: 0, borderTop: '2px dashed var(--slate-2)', verticalAlign: 3 }} />{L('Applicato ai movimenti (media pesata)', 'Appliqué aux mouvements (moyenne pondérée)')}</span></div>
           </div>
         </Panel>
         {writer && (

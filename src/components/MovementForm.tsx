@@ -235,10 +235,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, id: data.id, state: data.outcome === 'duplicate_file' ? 'dup' : 'ok' } : x)));
       // file già in archivio: si dice a quale movimento è allegato, perché di solito è la stessa spesa inserita due volte (P2-16)
       if (data.outcome === 'duplicate_file') {
-        const { data: lk } = await supabase.from('movement_documents').select('movement:movements(id, ref, op_date)').eq('document_id', data.id).limit(3);
-        const refs = ((lk ?? []) as unknown as { movement: { id: string; ref: string | null; op_date: string } | null }[])
+        const { data: lk } = await supabase.from('movement_documents').select('movement:movements(id, ref, op_date, reimb_status)').eq('document_id', data.id).limit(3);
+        const refs = ((lk ?? []) as unknown as { movement: { id: string; ref: string | null; op_date: string; reimb_status: string | null } | null }[])
           .map((l) => l.movement).filter((m): m is NonNullable<typeof m> => Boolean(m) && m!.id !== initial?.id)
-          .map((m) => `${m.ref ?? t.st_draft} ${t.f_doc_dup_of} ${m.op_date.slice(8, 10)}/${m.op_date.slice(5, 7)}`);
+          .map((m) => `${m.ref ?? (m.reimb_status === 'due' ? (t.lang_code === 'fr' ? 'dépense à rembourser' : 'spesa da rimborsare') : t.st_draft.toLowerCase())} ${t.f_doc_dup_of} ${m.op_date.slice(8, 10)}/${m.op_date.slice(5, 7)}`);
         if (refs.length) setDocs((d) => d.map((x) => (x.key === key ? { ...x, dupOf: refs.join(', ') } : x)));
       }
       if (R.aiEnabled && !initial && !autoRead.current) { autoRead.current = true; readWithAi(data.id, true); }
@@ -318,7 +318,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // dopo un «Salva bozza» non riuscito si segnalano solo i campi che servono alla bozza (importo, conto, data)
   const DRAFT_KEYS = ['opDate', 'docDate', 'amount', 'account', 'toAccount'];
   const shown = (tried === 'draft' ? Object.fromEntries(Object.entries(missing).map(([k, v]) => [k, DRAFT_KEYS.includes(k) && v])) : missing) as typeof missing;
-  const missingNames = ([['opDate', t.f_op_date], ['docDate', t.f_doc_date], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
+  const missingNames = ([['opDate', t.f_op_date], ['docDate', `${t.f_doc_date} ${t.lang_code === 'fr' ? '(dans le futur)' : '(nel futuro)'}`], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
     ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.f_doc]] as const)
     .filter(([k]) => shown[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
 
@@ -546,7 +546,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           {docs.map((d) => (
             <li key={d.key}>
               <span>{d.label}</span>
-              <span className={`chip ${d.state === 'ok' ? 'ok' : d.state === 'err' ? 'err' : 'warn'}`}>
+              {/* avviso lungo (foto già allegata a un altro movimento): testo che va a capo, non un'etichetta tagliata (20/11) */}
+              <span className={d.state === 'dup' && d.dupOf ? 'hint warn-txt doc-dup' : `chip ${d.state === 'ok' ? 'ok' : d.state === 'err' ? 'err' : 'warn'}`}>
                 {d.state === 'uploading' ? t.f_doc_uploading : d.state === 'ok' ? t.f_doc_ok : d.state === 'dup' ? (d.dupOf ? t.f_doc_dup_mov.replace('{m}', d.dupOf) : t.f_doc_dup) : d.state === 'local' ? t.f_doc_local : t.f_doc_err}
               </span>
               {R.aiEnabled && d.id && (d.state === 'ok' || d.state === 'dup') && (
