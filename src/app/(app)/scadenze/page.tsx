@@ -1,4 +1,5 @@
 import { todayYmd } from '@/lib/today';
+import { prjName } from '@/lib/project-theme';
 import { deadlineTitle, eurShort } from '@/lib/format';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
@@ -60,7 +61,7 @@ export default async function Deadlines({ searchParams }: {
     supabase.from('grants').select('id, title, end_date').eq('status', 'active').not('end_date', 'is', null),
     staff ? supabase.rpc('advance_summary') : Promise.resolve({ data: [] }),
     staff ? supabase.from('budgets').select('id, status').eq('year', Y + 1) : Promise.resolve({ data: [] }),
-    supabase.from('advance_requests').select('id, account_id, status, report_by, use_date, accounts(holder)').in('status', ['requested', 'authorized', 'delivered']),
+    supabase.from('advance_requests').select('id, account_id, status, report_by, use_date, amount, authorized_amount, currency, accounts(holder)').in('status', ['requested', 'authorized', 'delivered']),
   ]);
   const inc = (y: number) => Number((y === Y - 2 ? inc0.data : y === Y - 1 ? inc1.data : inc2.data) ?? 0);
   const prjBy = new Map((projects ?? []).map((p) => [p.id, p.name]));
@@ -87,7 +88,7 @@ export default async function Deadlines({ searchParams }: {
   if (dueList.length) auto('a-reimb', td, 'pay', staff ? L(`Rimborsi da pagare:\u00a0${dueList.length}`, `Remboursements à payer\u00a0:\u00a0${dueList.length}`) : L(`Rimborso che ti spetta:\u00a0${dueList.length}`, `Remboursement qui vous revient\u00a0:\u00a0${dueList.length}`),
     staff ? L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées personnellement, à rembourser.') : L('Spese che hai pagato di tasca tua: te le rimborsa un responsabile.', 'Dépenses que vous avez payées personnellement : un responsable vous les rembourse.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
   if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Bozze da completare:\u00a0${drafts.count}`, `Brouillons à compléter\u00a0:\u00a0${drafts.count}`),
-    L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas enregistrés.'), '/movimenti?stato=draft');
+    L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas comptabilisés.'), '/movimenti?stato=draft');
   if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),
     L('Controllo a quattro occhi prima della chiusura del mese.', 'Contrôle à quatre yeux avant la clôture du mois.'), '/verifica');
   const lastClosed = (periods.data ?? [])[0];
@@ -101,11 +102,13 @@ export default async function Deadlines({ searchParams }: {
       L('Verifica che tutte le spese siano registrate e giustificate; prepara il rendiconto.', 'Vérifiez que toutes les dépenses sont saisies et justifiées ; préparez le rapport.'), `/finanziamenti/${g.id}`);
   const areqRows = (areq.data ?? []) as unknown as { account_id: string; status: string; report_by: string }[];
   // anticipi della procedura: da autorizzare, da consegnare, da giustificare (regola unica in lib/advance-late)
-  for (const q of (areq.data ?? []) as unknown as { id: string; status: string; report_by: string; use_date: string; accounts: { holder: string | null } | null }[]) {
-    const h = q.accounts?.holder ?? '';
-    if (q.status === 'requested') auto(`a-areq-${q.id}`, q.use_date < td ? td : q.use_date, 'int', L(`Anticipo da autorizzare: ${h}`, `Avance à autoriser : ${h}`), L('Richiesta in attesa di un responsabile o amministratore.', 'Demande en attente d’un responsable ou administrateur.'), '/anticipi');
-    else if (q.status === 'authorized') auto(`a-areq-${q.id}`, q.use_date < td ? td : q.use_date, 'int', L(`Anticipo da consegnare: ${h}`, `Avance à remettre : ${h}`), L('Autorizzato, manca la consegna dalla cassa.', 'Autorisée, remise depuis la caisse à faire.'), '/anticipi');
-    else auto(`a-areq-${q.id}`, q.report_by, 'doc', L(`Giustificare l’anticipo: ${h}`, `Justifier l’avance : ${h}`), L('Spese e giustificativi entro questa data, poi la chiusura.', 'Dépenses et justificatifs avant cette date, puis la clôture.'), '/anticipi');
+  for (const q of (areq.data ?? []) as unknown as { id: string; status: string; report_by: string; use_date: string; amount: string | null; authorized_amount: string | null; currency: string | null; accounts: { holder: string | null } | null }[]) {
+    // U4 (giro 17): l'operatore legge le sue richieste con l'importo, come in Dashboard; i responsabili con il nome della persona
+    const own = !staff && (q.accounts?.holder ?? '').trim().toLowerCase() === (me?.full_name ?? '').trim().toLowerCase();
+    const h = !own ? (q.accounts?.holder ?? '') : money(Number(q.authorized_amount ?? q.amount ?? 0), q.currency ?? 'MGA', lang);
+    if (q.status === 'requested') auto(`a-areq-${q.id}`, q.use_date < td ? td : q.use_date, 'int', !own ? L(`Anticipo da autorizzare: ${h}`, `Avance à autoriser : ${h}`) : L(`Richiesta di anticipo in attesa: ${h}`, `Demande d’avance en attente : ${h}`), L('Richiesta in attesa di un responsabile o amministratore.', 'Demande en attente d’un responsable ou administrateur.'), '/anticipi');
+    else if (q.status === 'authorized') auto(`a-areq-${q.id}`, q.use_date < td ? td : q.use_date, 'int', !own ? L(`Anticipo da consegnare: ${h}`, `Avance à remettre : ${h}`) : L(`Anticipo autorizzato da ritirare: ${h}`, `Avance autorisée à retirer : ${h}`), L('Autorizzato, manca la consegna dalla cassa.', 'Autorisée, remise depuis la caisse à faire.'), '/anticipi');
+    else auto(`a-areq-${q.id}`, q.report_by, 'doc', !own ? L(`Giustificare l’anticipo: ${h}`, `Justifier l’avance : ${h}`) : L(`Porta le ricevute dell’anticipo: ${h}`, `Apportez les reçus de l’avance : ${h}`), L('Spese e giustificativi entro questa data, poi la chiusura.', 'Dépenses et justificatifs avant cette date, puis la clôture.'), '/anticipi');
   }
   for (const a of (adv.data ?? []) as { account_id: string; holder: string; balance: string; open_since: string | null; aut_to_sign: number }[]) {
     if (advanceLate(a, areqRows, td) && !areqRows.some((q) => q.account_id === a.account_id && q.status === 'delivered')) auto(`a-adv-${a.account_id}`, td, 'doc', L(`Anticipo da giustificare: ${a.holder}`, `Avance à justifier : ${a.holder}`),
@@ -200,6 +203,7 @@ export default async function Deadlines({ searchParams }: {
           <div className={`v num${late ? ' neg' : ''}`}>{late}</div>
           {late > 0 && <><Viz.Stack segs={(['c', 'a', 'n', 'p'] as const).map((c) => ({ v: lateBy[c], c: `var(--imp-${c})` }))} max={late} tip={tipOf(lateL)} />
             <div className="vzl"><span>{lateMix}</span><span>{L(`da ${lateMax} gg`, `depuis ${lateMax} j`)}</span></div></>}
+          {!(late > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s" title={lateL[0] ? `${lateL[0].title}, ${dm(lateL[0].date)}` : undefined}>{lateL[0] ? `${lateL[0].title}, ${dm(lateL[0].date)}` : L('nessuna in ritardo', 'aucune en retard')}</div>
         </Link>
         <Link className="kpi" href={`${href({ periodo: '14', tipo: '' })}#elenco`}>
@@ -207,6 +211,7 @@ export default async function Deadlines({ searchParams }: {
           <div className="v num">{soon}</div>
           {soon > 0 && <><Viz.Cols vals={soonDays} colors={soonDays.map((v) => (v ? 'var(--slate-2)' : 'var(--band)'))} tip={tipOf(soonL)} />
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 14))}</span></div></>}
+          {!(soon > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{soonL[0] ? (soonL[0].date === td ? L('la prima oggi', 'la première aujourd\'hui') : L(`la prima il ${dm(soonL[0].date)}`, `la première le ${dm(soonL[0].date)}`)) : L('niente in arrivo', 'rien à venir')}</div>
         </Link>
         {staff && <><Link className="kpi" href={`${href({ periodo: '30', tipo: 'pay' })}#elenco`}>
@@ -214,6 +219,7 @@ export default async function Deadlines({ searchParams }: {
           <div className="v num">{eur0(toPayEur)}</div>
           {toPayEur > 0 && <><Viz.Cols vals={payDays} colors={payDays.map((v) => (v ? 'var(--vz-sp)' : 'var(--band)'))} tip={tipOf(toPay, true)} />
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 30))}</span></div></>}
+          {!(toPayEur > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{toPay.length === 0 ? L('nessun pagamento', 'aucun paiement') : toPay.length === 1 ? L('1 pagamento', '1 paiement') : L(`${toPay.length} pagamenti`, `${toPay.length} paiements`)}</div>
         </Link>
         <Link className="kpi" href={`${href({ periodo: '30', tipo: 'inc' })}#elenco`}>
@@ -221,6 +227,7 @@ export default async function Deadlines({ searchParams }: {
           <div className="v num">{eur0(toGetEur)}</div>
           {toGetEur > 0 && <><Viz.Cols vals={getDays} colors={getDays.map((v) => (v ? 'var(--c-in)' : 'var(--band)'))} tip={tipOf(toGet, true)} />
             <div className="vzl"><span>{L('oggi', 'aujourd\'hui')}</span><span>{dm(addDays(td, 30))}</span></div></>}
+          {toGetEur <= 0 && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{toGet.length === 0 ? L('nessun incasso atteso', 'aucun encaissement attendu') : toGet.length === 1 ? L('1 incasso atteso', '1 encaissement attendu') : L(`${toGet.length} incassi attesi`, `${toGet.length} encaissements attendus`)}</div>
         </Link></>}
       </div>
@@ -243,7 +250,7 @@ export default async function Deadlines({ searchParams }: {
               <select className="input" id="dl-cur" name="currency" defaultValue={edit?.currency ?? 'EUR'}><option>EUR</option><option>MGA</option></select></div>
             <div className="field"><label htmlFor="dl-p">{L('Progetto', 'Projet')}</label>
               <select className="input" id="dl-p" name="project_id" defaultValue={edit?.project_id ?? ''}><option value="">–</option>
-                {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+                {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{prjName(p.name, lang)}</option>)}</select></div>
             <div className="field"><label htmlFor="dl-o">{L('Responsabile', 'Responsable')}</label>
               <select className="input" id="dl-o" name="owner_id" defaultValue={edit?.owner_id ?? me?.id ?? ''}><option value="">–</option>
                 {((users ?? []) as { id: string; full_name: string | null; active: boolean }[]).filter((u) => u.active).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}</select></div>
@@ -315,7 +322,7 @@ export default async function Deadlines({ searchParams }: {
                 <div className="dl-act">
                   {!i.auto && canClose(i) && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
                   {!i.auto && !i.rule_key && canEditD(i) && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}><Ico name="edit" size={16} /></Link>}
-                  {i.auto && <span className="chip">{L('automatica', 'automatique')}</span>}
+                  {i.auto && staff && <span className="chip">{L('automatica', 'automatique')}</span>}
                 </div>
               </li>
             ))}

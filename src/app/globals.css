@@ -2860,3 +2860,64 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 }
 /* M10 (giro 16): righe di «Ultimi movimenti» allineate al titolo della scheda */
 @media (max-width: 760px) { .prj-d table.recent td:first-child { padding-left: 18px; } }
+/* ===== Giro 17 (grafica) ===== */
+/* L9: nome del conto intero su una riga; se non c'è spazio, è il saldo ad andare sotto, allineato a destra */
+.bal-cards .bc-top { flex-wrap: wrap; row-gap: 2px; }
+.bal-cards .bc-top b { text-wrap: pretty; }
+.bal-cards .bc-top .bc-bal { margin-left: auto; }
+/* N1: sul telefono, dove «Come funziona» sale nella riga del titolo, il titolo lascia il posto al pulsante e va a capo bilanciato invece di finirci sotto */
+@media (max-width: 760px) {
+  body:has(.subrow:not(:has(> .subnav))) .phead-row .ptitle h1,
+  body:has(.subrow:has(> .subnav[data-sec="set"])) .phead-row .ptitle h1 { padding-right: 50px; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.2; }
+}
+/* M7c: titolo del finanziamento su più righe, mai troncato (la regola di .gcard vinceva per specificità) */
+.gcard .pr-n b { display: block; -webkit-line-clamp: unset; overflow: visible; }
+/* N3: didascalie e legende senza parole sole a capo */
+.kpi .s, .vzl, .bq-dl li span, .muted.small, small.muted { text-wrap: pretty; }
+/* G16/N4: nella scheda Preventivo, i due codici più oltre il previsto */
+.h-over { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.h-over li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: baseline; }
+.h-over .ho-n { color: var(--fg); text-wrap: pretty; }
+.h-over .ho-n .num { color: var(--muted); margin-right: 2px; }
+.h-over b { font-weight: 600; white-space: nowrap; }
+/* N4 (giro 17, rivisto dopo il controllo automatico): nelle coppie di schede la ciambella sta sopra e la legenda sotto, a tutta
+   larghezza; le due schede hanno la stessa altezza e lo spazio in più va attorno alla ciambella, mai in un vuoto in fondo o in mezzo */
+@media (min-width: 1100px) {
+  .prj-two { align-items: stretch; }
+  .prj-two > .panel { display: flex; flex-direction: column; }
+  .prj-two > .panel > .panel-b { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .prj-two > .panel > .panel-b > .bq-donut { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; gap: 20px; }
+  .prj-two .bq-donut svg.donut { width: 210px; height: 210px; flex: none; }
+  .prj-two .bq-donut .bq-dl { width: 100%; }
+  .prj-two > .panel > .panel-b > .fin-note { margin-top: auto; padding-top: 12px; }
+}
+/* N4 (giro 17): Dashboard su tablet, schede affiancate con i fondi allineati; il grafico Entrate e uscite si centra nello spazio */
+@media (min-width: 761px) and (max-width: 1099px) {
+  .home.v2.yc .h-card { align-self: stretch; display: flex; flex-direction: column; }
+  .home.v2.yc .h-card .panel-b { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .home.v2.yc .h-flow .panel-b { justify-content: center; }
+}
+/* M5 (giro 17): riquadro «Correzioni» con Storna e Correggi, pulsanti larghi uguali */
+.corr-p .corr-d > summary { list-style: none; width: 100%; justify-content: center; min-height: 38px; color: var(--navy); }
+.corr-p .corr-d > summary::-webkit-details-marker { display: none; }
+.corr-p .corr-d[open] > summary { background: var(--mist); }
+/* Scheda finanziamento: a destra «Periodo e scadenze» e «Rendiconto al finanziatore» uno sotto l'altro, alti quanto «Qualità» a sinistra */
+.g-col { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+.g-col > .panel { margin: 0; }
+.g-col > .panel:first-child { flex: 1 1 auto; display: flex; flex-direction: column; }
+.g-col > .panel:first-child > .panel-b { flex: 1 1 auto; display: flex; flex-direction: column; }
+.g-col > .panel:first-child > .panel-b > .fin-note { margin-top: auto; padding-top: 12px; }
+.g-col .gr-form .btn { grid-column: 1 / -1; justify-content: center; }
+/* Riepilogo del preventivo: le tabelle Uscite ed Entrate hanno lunghezze molto diverse; una sotto l'altra a tutta larghezza, niente colonna vuota */
+.bqs-pair { grid-template-columns: minmax(0, 1fr) !important; }
+/* Controllo automatico 21/11 sera: nelle coppie di schede l'elenco a barre più corto distribuisce le righe su tutta l'altezza (nessun vuoto in fondo) */
+@media (min-width: 1100px) {
+  .prj-two > .panel > .panel-b > .hcat.pbars:only-child, .prj-two > .panel > .panel-b > ul.prj-pairs { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; }
+}
+/* Dashboard tablet: il grafico Entrate e uscite resta attaccato alla sua legenda, lo spazio si divide sopra e sotto */
+@media (min-width: 761px) and (max-width: 1099px) { .home.v2.yc .h-flow .panel-b > .legend { margin-top: 12px; } }
+/* Schede affiancate con un grafico (es. Andamento mensile accanto alle Voci di spesa): il grafico si centra nell'altezza della riga, niente vuoto sotto la legenda */
+@media (min-width: 1100px) {
+  .grid > .panel:has(> .panel-b > .chart-wrap) { display: flex; flex-direction: column; }
+  .grid > .panel > .panel-b:has(> .chart-wrap) { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+}

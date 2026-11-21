@@ -111,7 +111,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
       </section>
 
       {shown.length === 0 ? <section className="panel"><Empty text={all.length ? L('Nessun finanziamento in questo elenco.', 'Aucun financement dans cette liste.') : L('Nessun finanziamento: si aggiunge con «Nuovo finanziamento».', 'Aucun financement : il s\'ajoute avec « Nouveau financement ».')} /></section> : (<>
-        <div className="prj-two">
+        {shown.length > 1 && <div className="prj-two">   {/* con un solo finanziamento i due grafici ripeterebbero la sua scheda: niente riquadri mezzi vuoti */}
           <section className="panel">
             <div className="panel-h"><H2 text={L('Da chi arrivano i fondi', 'D\'où viennent les fonds')} icon={null} /><div className="spacer" /><span className="eyebrow">{L('concesso', 'accordé')}</span></div>
             <div className="panel-b">{dnTop.length === 0 ? <p className="muted bq-none">{L('Nessun importo concesso indicato.', 'Aucun montant accordé indiqué.')}</p> : (
@@ -135,7 +135,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
               <p className="muted small fin-note">{L('La tacca indica l\'importo concesso.', 'Le repère indique le montant accordé.')}</p>
             </div>
           </section>
-        </div>
+        </div>}
 
         <div className="pring-grid">
           {shown.map((g) => {

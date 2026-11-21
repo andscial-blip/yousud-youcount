@@ -172,10 +172,7 @@ export default async function MovementDetail({ params, searchParams }: {
             </form>
           )}
           {/* chi ha inserito il movimento ma non può più toccarlo sa a chi rivolgersi (revisione finale del 15/11) */}
-          {!resp && me!.role !== 'read_only' && m.status !== 'draft' && !rev && !m.reverses_id && (m.created_by === me!.id || m.recorded_by === me!.id) && (
-            <p className="note" style={{ margin: 0 }}>{FR
-              ? 'Une erreur dans ce mouvement ? Une fois comptabilisé, vous ne pouvez plus le modifier : demandez à un responsable de le corriger ou de l’extourner, en lui indiquant le numéro ci-dessus.'
-              : 'C’è un errore in questo movimento? Dopo la registrazione non puoi più modificarlo: chiedi a un responsabile di correggerlo o stornarlo, indicandogli il numero qui sopra.'}</p>)}
+          {/* U1 (giro 17): l'avviso «chiedi a un responsabile» non serve più: lo fa il modulo «Segnala al responsabile» qui sotto */}
           {(canEdit || canVerify || canReverse || m.status === 'draft') && (
             <div className="factions">
               {canEdit && <Link className="btn" href={`/movimenti/${m.id}/modifica`}>{t('d_edit')}</Link>}
@@ -192,20 +189,6 @@ export default async function MovementDetail({ params, searchParams }: {
                 </form>
               )}
             </div>
-          )}
-          {canReopen && (
-            <details className="danger-zone reopen" id="riapri">
-              <summary className="btn">{FR ? 'Corriger ce mouvement…' : 'Correggi questo movimento…'}</summary>
-              <form action={unverifyAction} className="stack" style={{ gap: 8, marginTop: 10 }}>
-                <input type="hidden" name="id" value={m.id} />
-                <p className="muted" style={{ margin: 0 }}>{FR
-                  ? 'Le mouvement est vérifié : pour le corriger, sa vérification est rouverte (il redevient « enregistré »), puis il faudra le vérifier à nouveau. Le motif reste dans les notes et l\'historique.'
-                  : 'Il movimento è verificato: per correggerlo se ne riapre la verifica (torna «registrato»), poi andrà verificato di nuovo. Il motivo resta nelle note e nello storico.'}</p>
-                <label className="field"><span>{FR ? 'Motif' : 'Motivo'}</span>
-                  <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={FR ? 'Ex. code comptable erroné' : 'Es. codice contabile sbagliato'} /></label>
-                <div><button className="btn" type="submit">{FR ? 'Rouvrir et corriger' : 'Riapri e correggi'}</button></div>
-              </form>
-            </details>
           )}
           {superAdmin && !m.demo && m.status !== 'draft' && (
             <details className="danger-zone" id="elimina">
@@ -325,10 +308,14 @@ export default async function MovementDetail({ params, searchParams }: {
             </Panel>
           )}
 
-          {canReverse && (
-            <details className="panel">
-              <summary className="panel-h rev-sum" style={{ cursor: 'pointer' }}><H2 text={t('d_reverse')} /><span className="spacer" /><span className="btn small">{FR ? 'Extourner ce mouvement…' : 'Storna questo movimento…'}</span></summary>
-              <form action={reverseAction} className="panel-b stack" style={{ gap: 10 }}>
+          {(canReverse || canReopen) && (   /* M5 (giro 17): Storna e Correggi nello stesso riquadro «Correzioni» */
+            <section className="panel corr-p">
+              <div className="panel-h"><H2 text={L('Correzioni', 'Corrections')} /></div>
+              <div className="panel-b stack" style={{ gap: 10 }}>
+                {canReverse && (
+                  <details className="corr-d" id="storna">
+                    <summary className="btn small">{FR ? 'Extourner ce mouvement…' : 'Storna questo movimento…'}</summary>
+                    <form action={reverseAction} className="stack" style={{ gap: 10, marginTop: 10 }}>
                 <input type="hidden" name="id" value={m.id} />
                 <input type="hidden" name="client_uuid" value={randomUUID()} />
                 <div className="field">
@@ -337,7 +324,24 @@ export default async function MovementDetail({ params, searchParams }: {
                 </div>
                 <div><button className="btn primary" type="submit">{t('d_reverse_btn')}</button></div>
               </form>
-            </details>
+                  </details>
+                )}
+                {canReopen && (
+                  <details className="danger-zone reopen corr-d" id="riapri">
+                    <summary className="btn small">{FR ? 'Corriger ce mouvement…' : 'Correggi questo movimento…'}</summary>
+                    <form action={unverifyAction} className="stack" style={{ gap: 8, marginTop: 10 }}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <p className="muted" style={{ margin: 0 }}>{FR
+                        ? 'Le mouvement est vérifié : pour le corriger, sa vérification est rouverte (il redevient « enregistré »), puis il faudra le vérifier à nouveau. Le motif reste dans les notes et l\'historique.'
+                        : 'Il movimento è verificato: per correggerlo se ne riapre la verifica (torna «registrato»), poi andrà verificato di nuovo. Il motivo resta nelle note e nello storico.'}</p>
+                      <label className="field"><span>{FR ? 'Motif' : 'Motivo'}</span>
+                        <input className="input" name="reason" required minLength={5} maxLength={300} placeholder={FR ? 'Ex. code comptable erroné' : 'Es. codice contabile sbagliato'} /></label>
+                      <div><button className="btn" type="submit">{FR ? 'Rouvrir et corriger' : 'Riapri e correggi'}</button></div>
+                    </form>
+                  </details>
+                )}
+              </div>
+            </section>
           )}
 
           <Panel title={t('d_history')}>

@@ -52,7 +52,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     isAdmin ? supabase.from('settings').select('value').eq('key', 'last_backup').maybeSingle() : Promise.resolve({ data: null }),
     supabase.from('movements').select('id', { count: 'exact', head: true }).eq('reimb_status', 'due'),
     supabase.rpc('advance_summary'),
-    supabase.from('categories').select('id, group:category_groups(code, name_it, name_fr)'),
+    supabase.from('categories').select('id, code, name_it, name_fr, group:category_groups(code, name_it, name_fr)'),
     supabase.from('fx_rates').select('year, month, rate, source').order('year', { ascending: false }).order('month', { ascending: false }).limit(14),
     supabase.from('deadlines').select('id, rule_key, title, due_date, status').gte('due_date', `${cy - 1}-01-01`).lte('due_date', in30),
     staff ? supabase.rpc('income_of_year', { p_year: cy - 1 }) : Promise.resolve({ data: 0 }),
@@ -103,9 +103,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const tot = (dir: string, k: 'budget_eur' | 'actual_eur') => cm.filter((r) => r.direction === dir).reduce((x, r) => x + Number(r[k]), 0);
   const bOut = tot('out', 'budget_eur'), aOut = tot('out', 'actual_eur'), bIn = tot('in', 'budget_eur'), aIn = tot('in', 'actual_eur');
   const over = new Set<string>();
+  const overList: { k: string; d: number }[] = [];
   { const agg = new Map<string, { b: number; a: number }>();
     for (const r of cm.filter((x) => x.direction === 'out')) { const g = agg.get(r.category_id) ?? { b: 0, a: 0 }; g.b += Number(r.budget_eur); g.a += Number(r.actual_eur); agg.set(r.category_id, g); }
-    for (const [k, g] of agg) if (g.a > g.b + 0.005) over.add(k); }
+    for (const [k, g] of agg) if (g.a > g.b + 0.005) { over.add(k); overList.push({ k, d: g.a - g.b }); } }
+  overList.sort((a, b) => b.d - a.d);
+  const catInfo = new Map(((cats ?? []) as unknown as { id: string; code: string; name_it: string; name_fr: string | null }[]).map((c) => [c.id, c]));
   // tempo trascorso dell'anno: serve a leggere il preventivo (a ottobre è normale aver speso circa l'80%)
   const elapsed = year < cy ? 1 : year > cy ? 0 : (now.getTime() - new Date(cy, 0, 1).getTime()) / (new Date(cy + 1, 0, 1).getTime() - new Date(cy, 0, 1).getTime());
 
@@ -256,6 +259,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                     <div className="meter m-out" role="img" aria-label={`${L('Uscite', 'Dépenses')} ${pct(aOut, bOut)}`}><i style={{ width: `${outW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div></div>
                   {bIn > 0 && <div className="cov"><div className="cov-l"><span>{L('Entrate', 'Recettes')}</span><span><b className="num">{e0(aIn)}</b> {L('su', 'sur')} {e0(bIn)} · {pct(aIn, bIn)}</span></div>
                     <div className="meter m-in" role="img" aria-label={`${L('Entrate', 'Recettes')} ${pct(aIn, bIn)}`}><i style={{ width: `${inW}%` }} /><span className="mk" style={{ left: `${Math.min(99.5, elapsed * 100)}%` }} /></div></div>}
+                  {overList.length > 0 && <ul className="h-over">{overList.slice(0, 2).map((o) => { const c = catInfo.get(o.k); return (   /* G16/N4 (giro 17): i codici oltre il previsto, al posto del vuoto */
+                    <li key={o.k}><span className="ho-n"><span className="num">{c?.code ?? '–'}</span> {c ? (lang === 'fr' ? c.name_fr || c.name_it : c.name_it) : ''}</span><b className="num neg">+{e0(o.d)}</b></li>); })}</ul>}
                   <div className="hcat-f"><span>{L('tacca = anno trascorso', 'repère = année écoulée')}</span><Link href={`/analisi?anno=${year}&vista=budget`}>{L('Confronto', 'Comparaison')} →</Link></div>
                 </> : <>
                   <p className="muted" style={{ margin: 0 }}>{L(`Nessun preventivo approvato per il ${year}: qui vedrai quanto è stato speso e incassato rispetto al previsto.`, `Aucun budget approuvé pour ${year} : vous verrez ici les dépenses et recettes par rapport au prévu.`)}</p>

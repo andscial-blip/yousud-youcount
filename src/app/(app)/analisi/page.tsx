@@ -1,3 +1,4 @@
+import { prjName as prjLabel } from '@/lib/project-theme';
 import { orgYear, orgNow } from '@/lib/today';
 import { loadProjectColors } from '@/lib/palette';
 import { redirect } from 'next/navigation';
@@ -192,7 +193,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
         <FilterBar className="bare" action="/analisi" lang={lang} hidden={{ anno: String(year), vista: view }}
           inline={<select className="input" name="progetto" defaultValue={prj} aria-label={t('project')}>
             <option value="">{t('an_all_projects')}</option>
-            {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{prjLabel(p.name, lang)}</option>)}
           </select>} />
       </section>
 
@@ -216,7 +217,8 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           <div className={`v num ${net < -0.005 ? 'neg' : 'pos'}`}>{e0(net)}</div>
           {(totIn > 0 || totOut > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: totOut, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: totIn, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, totIn, totOut)}
             tip={`${t('legend_in')}: ${e0(totIn)}\n${t('legend_out')}: ${e0(totOut)}`} />
-            <div className="vzl"><span>{lg('entrate meno uscite', 'recettes moins dépenses')}</span><span>{net >= 0 ? pc(net, totIn) : ''}</span></div></>}
+            <div className="vzl"><span>{lg('entrate meno uscite', 'recettes − dépenses')}</span><span>{net >= 0 ? pc(net, totIn) : ''}</span></div></>}
+          {!((totIn > 0 || totOut > 0)) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{net >= 0 ? lg('le entrate coprono le uscite', 'les recettes couvrent les dépenses') : lg('le uscite superano le entrate', 'les dépenses dépassent les recettes')}</div>
         </div>
         <div className="kpi">
@@ -225,6 +227,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
           {totBudget > 0 && <><Viz.Stack segs={[{ v: Math.min(totOut, totBudget), c: 'var(--vz-sp)' }, { v: Math.max(0, totBudget - totOut), c: 'var(--plan-soft)' }, { v: Math.max(0, totOut - totBudget), c: 'var(--tax)' }]} max={Math.max(totBudget, totOut)}
             marks={year === now.getFullYear() ? [{ v: elapsed * totBudget, c: 'var(--c-in)', dash: true }] : undefined} tip={`${lg('Previsto', 'Prévu')}: ${e0(totBudget)}\n${lg('Speso', 'Dépensé')}: ${e0(totOut)}`} />
             <div className="vzl"><span>{lg('anno trascorso', 'année écoulée')}</span><span>{Math.round(elapsed * 100)}{' '}%</span></div></>}
+          {!(totBudget > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{totBudget ? `${lg('su', 'sur')} ${e0(totBudget)} ${lg('previsti', 'prévus')}` : t('an_no_budget')}</div>
         </div>
       </div>

@@ -4,7 +4,8 @@ import { fixedColors } from '@/components/Charts';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, STAFF } from '@/lib/session';
-import { date, money, signedMoney, eurShort } from '@/lib/format';
+import { date, money, signedMoney, eurShort, nbText } from '@/lib/format';
+import { prjName } from '@/lib/project-theme';
 import { Empty, PageHead, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
 import { MonthBars, Viz } from '@/components/Charts';
@@ -64,7 +65,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const mTip = (title: string, f: (m: { inc: number; out: number }) => number) => `${title}\n${months.slice(0, Math.max(curM, 1)).map((m, k) => `${MESI_S[lang][k]}: ${e0(f(m))}`).join('\n')}`;
   return (
     <div className="stack prj prj-d">
-      <PageHead title={`${p.name} · ${year}`} lead={<ProjectIcon p={p} size={34} color={prjColors.get(p.id)} />}>
+      <PageHead title={`${prjName(p.name, lang)} · ${year}`} lead={<ProjectIcon p={p} size={34} color={prjColors.get(p.id)} />}>
         <div className="prj-act pair2">
           <Link className="btn" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('Tutti i movimenti', 'Tous les mouvements')}</Link>
           <Link className="btn" href={`/documenti-emessi/nuovo?progetto=${id}`}>{L('Emetti documento', 'Émettre un document')}</Link>
@@ -80,6 +81,7 @@ export default async function ProjectDetail({ params, searchParams }: {
             marks={year === now.getFullYear() ? [{ v: elapsed * bOut, c: 'var(--c-in)', dash: true }] : undefined}
             tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}\n${L('Anno trascorso', 'Année écoulée')}: ${Math.round(elapsed * 100)} %`} />
             <div className="vzl"><span>{L('usato', 'utilisé')}</span><span>{pc(out, bOut)}</span></div></>}
+          {!(bOut > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{bOut ? L(`anno trascorso ${Math.round(elapsed * 100)} %`, `année écoulée ${Math.round(elapsed * 100)} %`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>
         <div className="kpi">
@@ -102,6 +104,7 @@ export default async function ProjectDetail({ params, searchParams }: {
           {bOut > 0 && <><Viz.Stack segs={out > bOut ? [{ v: bOut, c: 'var(--plan-soft)' }, { v: out - bOut, c: 'var(--tax)' }] : [{ v: bOut - out, c: 'var(--green-soft)' }, { v: out, c: 'var(--band)' }]} max={Math.max(bOut, out)}
             tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}`} />
             <div className="vzl"><span>{out > bOut ? L('oltre il previsto', 'au-delà du prévu') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(bOut - out), bOut)}</span></div></>}
+          {!(bOut > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{bOut ? L('preventivo meno speso', 'budget moins dépensé') : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>
       </div>
@@ -133,7 +136,7 @@ export default async function ProjectDetail({ params, searchParams }: {
                 const eur = m.currency !== 'EUR' && m.amount_eur ? Number(m.amount_eur) * sg : null;
                 return (
                   <tr key={m.id}>
-                    <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind as 'income'}`)}</Link>
+                    <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description ? nbText(m.description) : t(`k_${m.kind as 'income'}`)}</Link>
                       <small className="muted num rc-d">{date(m.op_date)}</small></td>
                     <td className="r num nw"><span className="two"><b>{eur != null ? signedMoney(eur, 'EUR', lang) : signedMoney(Number(m.amount) * sg, m.currency, lang)}</b>
                       {eur != null && <small>{signedMoney(Number(m.amount) * sg, m.currency, lang)}</small>}</span></td>

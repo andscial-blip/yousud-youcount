@@ -1,3 +1,4 @@
+import { prjName as prjLabel } from '@/lib/project-theme';
 import { orgYear } from '@/lib/today';
 import { Fragment } from 'react';
 import Link from 'next/link';
@@ -228,7 +229,7 @@ export default async function BudgetPage({ searchParams }: {
           <label className="field"><span className="flabel">{L('Progetto', 'Projet')}</span>
             <select className="input" name="progetto" defaultValue={prj}><option value="">{L('Tutti i progetti', 'Tous les projets')}</option>
               <option value="gen">{L('Generale (struttura)', 'Général (structure)')}</option>
-              {c.projects.filter((p) => its.some((i) => i.project_id === p.id)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+              {c.projects.filter((p) => its.some((i) => i.project_id === p.id)).map((p) => <option key={p.id} value={p.id}>{prjLabel(p.name, lang)}</option>)}</select></label>
           {anyCp && <label className="field"><span className="flabel">{L('Donatore o fornitore', 'Donateur ou fournisseur')}</span>
             <select className="input" name="cp" defaultValue={cp}><option value="">{L('Tutti', 'Tous')}</option>
               {c.cps.filter((k) => its.some((i) => i.counterparty_id === k.id)).map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}</select></label>}

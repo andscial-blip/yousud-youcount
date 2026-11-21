@@ -135,6 +135,7 @@ export function BudgetTiles({ c }: { c: Ctx }) {
       <div className="v num">{e0(tot)}</div>
       {gs.length > 0 && <><Viz.Cols vals={gs.map((x) => x.v)} colors={gs.map(() => color)} tip={gs.map((x) => `${x.g.code} · ${CL(x.g)}: ${e0(x.v)}`).join('\n')} />
         <div className="vzl"><span>{top(gs)!.g.code} · {CL(top(gs)!.g)}</span><span>{pc(top(gs)!.v, tot)}</span></div></>}
+      {!(gs.length > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
       <div className="s">{n ? `${rows(n)} · ${gs.length === 1 ? L('1\u00a0gruppo di\u00a0voci', '1\u00a0groupe de\u00a0postes') : L(`${gs.length}\u00a0gruppi di\u00a0voci`, `${gs.length}\u00a0groupes de\u00a0postes`)}` : L('nessuna riga', 'aucune ligne')}</div>
     </div>);
   return (
@@ -147,6 +148,7 @@ export function BudgetTiles({ c }: { c: Ctx }) {
         {totOut > 0 && <><Viz.Stack segs={[{ v: Math.min(totIn, totOut), c: C_NET }, { v: Math.max(0, totOut - totIn), c: 'var(--tax)' }]} max={totOut}
           tip={`${L('Entrate', 'Recettes')}: ${e0(totIn)}\n${L('Uscite', 'Dépenses')}: ${e0(totOut)}`} />
           <div className="vzl"><span>{L('uscite coperte', 'dépenses couvertes')}</span><span>{pc(Math.min(totIn, totOut), totOut)}</span></div></>}
+        {!(totOut > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
         <div className="s">{net < -0.005 ? L('disavanzo da coprire', 'déficit à couvrir') : net > 0.005 ? L('avanzo previsto', 'excédent prévu') : L('entrate e uscite in pareggio', 'recettes et dépenses à l\'équilibre')}</div>
       </div>
       <div className="kpi">
@@ -155,6 +157,7 @@ export function BudgetTiles({ c }: { c: Ctx }) {
         {totOut > 0 && <><Viz.Stack segs={[{ v: prjOut, c: C_EXP }, { v: totOut - prjOut, c: 'var(--band)' }]} max={totOut}
           tip={`${L('Progetti', 'Projets')}: ${e0(prjOut)}\n${L('Struttura generale', 'Structure générale')}: ${e0(totOut - prjOut)}`} />
           <div className="vzl"><span>{L('delle uscite', 'des dépenses')}</span><span>{pc(prjOut, totOut)}</span></div></>}
+        {!(totOut > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
         <div className="s">{nPrj === 1 ? L('1 progetto', '1 projet') : L(`${nPrj} progetti`, `${nPrj} projets`)} · {L('struttura', 'structure')} {e0(totOut - prjOut)}</div>
       </div>
     </div>

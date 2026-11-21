@@ -136,7 +136,7 @@ export function svgLines(cats: string[], series: (Series & { area?: boolean; das
     out += `<rect class="hov" x="${Math.max(L, x(i) - w / 2)}" y="${T}" width="${w}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
   });
   const every = ph && n > 8 ? 2 : 1;
-  cats.forEach((c, i) => { if ((n - 1 - i) % every) return; const a = i === n - 1 && n > 1 ? 'end' : 'middle'; out += `<text x="${i === n - 1 && n > 1 ? x(i) + 4 : x(i)}" y="${H - 9}" text-anchor="${a}" font-size="13" fill="var(--muted)">${esc(c)}</text>`; });
+  cats.forEach((c, i) => { if (i % every) return;   /* N5 (giro 17): stessi mesi alterni dei grafici a barre (Gen, Mar, …, Nov) */ const a = i === n - 1 && n > 1 ? 'end' : 'middle'; out += `<text x="${i === n - 1 && n > 1 ? x(i) + 4 : x(i)}" y="${H - 9}" text-anchor="${a}" font-size="13" fill="var(--muted)">${esc(c)}</text>`; });
   return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(opt.label ?? '')}" tabindex="0" data-kbd="1">${out}</svg>`;
 }
 

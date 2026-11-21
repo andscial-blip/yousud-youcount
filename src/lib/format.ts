@@ -63,12 +63,16 @@ export function noDocReason(text: string | null | undefined, lang: Lang): string
 /** Titolo di una scadenza nella lingua di chi legge: le segnalazioni d'errore nascono con un titolo fisso in italiano. */
 export function deadlineTitle(title: string, lang: string): string {
   const t = title.replace(/\b(MOV|AUT|DEMO|DOC|ANT)-(\d{4})-(\d+)/g, '$1\u2011$2\u2011$3');   // il numero non va a capo al trattino
-  if (lang === 'fr' && t.startsWith('Errore segnalato: ')) return `Erreur signalée : ${t.slice('Errore segnalato: '.length)}`;
+  if (lang === 'fr' && t.startsWith('Errore segnalato: ')) return `Erreur signalée\u00a0: ${t.slice('Errore segnalato: '.length)}`;
+  if (t.startsWith('Erreur signalée: ')) return lang === 'fr' ? `Erreur signalée\u00a0: ${t.slice('Erreur signalée: '.length)}` : `Errore segnalato: ${t.slice('Erreur signalée: '.length)}`;   // U3 (giro 17)
   return t;
 }
 
 /** Riferimento (MOV-2026-012, DEMO-2026-1010…) con trattini non separabili: non va mai a capo a metà. */
 export function nbRef(ref: string): string { return ref.replace(/-/g, '‑'); }
+
+/** N3 (giro 17): un « · » o un numero non restano soli a capo; « €» e « %» restano attaccati alla cifra. */
+export function nbText(s: string): string { return s.replace(/ · /g, '\u00a0· ').replace(/(\d) (€|%|MGA)/g, '$1\u00a0$2'); }
 
 /** Importo con segno esplicito: «+» sulle entrate, «−» sulle uscite (come nel registro). */
 export function signedMoney(value: number, currency: string, lang: Lang = 'it'): string {

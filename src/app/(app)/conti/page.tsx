@@ -76,6 +76,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         <div className={`v num${n.v < 0 ? ' neg' : ''}${lg(n.c !== 'EUR' ? e0(totEur) : e0(n.v))}`}>{n.c !== 'EUR' ? e0(totEur) : e0(n.v)}</div>
         {sg.length > 0 && <><Viz.Stack segs={sg} max={sg.reduce((a, x) => a + x.v, 0)} tip={tipOf(xs)} />
           <div className="vzl"><span>{top!.n}</span><span>{xs.length === 1 ? L('1 conto', '1 compte') : L(`${xs.length} conti`, `${xs.length} comptes`)}</span></div></>}
+        {!(sg.length > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
         <div className="s">{n.c !== 'EUR' ? `${money(n.v, n.c, lang)} · ${L('cambio', 'taux')} ${fxRate(fx, lang)}` : top ? `${top.n}${lang === 'fr' ? '\u00a0' : ''}: ${pc(top.v, sg.reduce((a, x) => a + x.v, 0))}` : L('nessun conto', 'aucun compte')}</div>
       </a>);
   };
@@ -102,6 +103,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           {tot > 0 && !opMG && <><Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />
             <div className="vzl"><span>IT {pc(Math.max(0, itEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span><span>MG {pc(Math.max(0, mgEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span></div></>}
+          {!(tot > 0 && !opMG) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{unver > 0 ? <Link href={staff ? '/movimenti?stato=recorded' : '/movimenti?stato=recorded&mie=1'}>{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>
             : !staff ? L('nessuna tua spesa da verificare', 'aucune de vos dépenses à vérifier') : (rows.length === 1 ? L('1 conto, tutto verificato', '1 compte, tout vérifié') : L(`${rows.length} conti, tutto verificato`, `${rows.length} comptes, tout vérifié`))}</div>
         </div>

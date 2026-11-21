@@ -66,7 +66,8 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     orgId: me.org_id, userId: me.id, userName: me.full_name, role: me.role,
     payers: [...new Set([...((pf.data ?? []) as { full_name: string; active: boolean }[]).filter((x) => x.active).map((x) => x.full_name), ...(pb.data ?? []).map((x) => x.paid_by)]
       .filter((n): n is string => Boolean(n && n.trim())))].sort((a, b) => a.localeCompare(b)),
-    accounts: (acc.data ?? []).map((a) => ({ id: a.id, name: L(a), currency: a.currency, location: a.location, kind: a.kind, holder: a.holder ?? null, balance: balOf.has(a.id) ? balOf.get(a.id)! : null })),
+    // U2 (giro 17): l'operatore non vede i conti bancari (come in Conti): registra su casse, anticipi o di tasca propria
+    accounts: (acc.data ?? []).filter((a) => me.role !== 'operator' || a.kind !== 'bank').map((a) => ({ id: a.id, name: L(a), currency: a.currency, location: a.location, kind: a.kind, holder: a.holder ?? null, balance: balOf.has(a.id) ? balOf.get(a.id)! : null })),
     categories: (cat.data ?? []).map((c) => {
       const g = c.group as unknown as G;
       return { id: c.id, code: c.code, name: L(c), direction: c.direction, group: g ? `${g.code} · ${L(g)}` : '' };

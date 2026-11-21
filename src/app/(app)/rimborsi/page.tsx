@@ -122,6 +122,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className={`v num${maxDays > 60 ? ' neg' : ''}`}>{!oldest ? '–' : maxDays === 0 ? LL('oggi', 'aujourd’hui') : maxDays === 1 ? LL('1 giorno', '1 jour') : LL(`${maxDays} giorni`, `${maxDays} jours`)}</div>
           {dueEur > 0 && <><Viz.Cols vals={ageBuckets} colors={ageBuckets.map((v, i) => (v ? AGE_C[i]! : 'var(--band)'))} tip={ageBuckets.map((v, i) => `${AGE_L[i]}: ${e2(v)}`).join('\n')} />
             <div className="vzl"><span>{LL('≤ 7 gg', '≤ 7 j')}</span><span>{LL('oltre 60 gg', 'plus de 60 j')}</span></div></>}
+          {dueEur <= 0 && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>   /* N6 (giro 17): traccia vuota come negli altri riquadri */}
           <div className="s">{oldest ? (resp ? LL(`la più vecchia: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`, `la plus ancienne\u00a0: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`) : LL(`la più vecchia è del ${dm(since(oldest))}`, `la plus ancienne date du ${dm(since(oldest))}`)) : LL('nessuna spesa in attesa', 'aucune dépense en attente')}</div>
         </div>
         {resp && (
@@ -130,7 +131,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className={`v num${missing ? ' amb' : ''}`}>{missing}</div>
           {due.length > 0 ? <><Viz.Stack segs={[{ v: missing, c: 'var(--gold-d)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />
             <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec justificatif ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
-          <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile} con documento, ${declared} con motivo dichiarato`, `${withFile} avec justificatif, ${declared} avec motif déclaré`) : LL('tutte con documento', 'toutes avec justificatif')) : LL('niente da completare', 'rien à compléter')}</div>
+          <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile}\u00a0con documento, ${declared}\u00a0con motivo dichiarato`, `${withFile}\u00a0avec justificatif, ${declared}\u00a0avec motif déclaré`) : LL('tutte con documento', 'toutes avec justificatif')) : LL('niente da completare', 'rien à compléter')}</div>
         </div>
         )}
         <div className="kpi">

@@ -1,4 +1,5 @@
 import { groupColor } from '@/lib/palette';
+import { prjName } from '@/lib/project-theme';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
 import { Ico } from '@/components/Ui';
@@ -78,7 +79,7 @@ export default async function BudgetSummaryPage({ searchParams }: {
           inline={<select className="input" name="progetto" defaultValue={prj} aria-label={L('Progetto', 'Projet')}>
             <option value="">{L('Tutti i progetti', 'Tous les projets')}</option>
             <option value="gen">{L('Generale (struttura)', 'Général (structure)')}</option>
-            {usedPrj.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {usedPrj.map((p) => <option key={p.id} value={p.id}>{prjName(p.name, lang)}</option>)}
           </select>}
           after={<a className="btn fb-exp" href={`/api/v1/export/budget?anno=${year}&v=${shown.id}`} aria-label={c.t('exp_xlsx')}><Ico name="download" /><span>{c.t('exp_xlsx')}</span></a>} />
       </section>

@@ -1,4 +1,5 @@
 import { todayYmd } from '@/lib/today';
+import { prjName } from '@/lib/project-theme';
 import AmountField from '@/components/AmountField';
 import { advanceLate } from '@/lib/advance-late';
 import { PersonPicker } from '@/components/PersonPicker';
@@ -449,7 +450,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                 <div className="field span2"><label htmlFor="rq-p">{LL('Cosa devi comprare o pagare', 'Que devez-vous acheter ou payer')}</label>
                   <input className="input" id="rq-p" name="purpose" required minLength={3} maxLength={500} placeholder={LL('Es. tessuti, filo e aghi per il laboratorio di cucito', 'Ex. tissus, fil et aiguilles pour l’atelier de couture')} /></div>
                 <div className="field"><label htmlFor="rq-prj">{t('project')}</label>
-                  <select className="input" id="rq-prj" name="project" defaultValue=""><option value="">–</option>{(prj ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+                  <select className="input" id="rq-prj" name="project" defaultValue=""><option value="">–</option>{(prj ?? []).map((p) => <option key={p.id} value={p.id}>{prjName(p.name, lang)}</option>)}</select></div>
                 <div className="field"><label htmlFor="rq-use">{LL('Quando servono', 'Quand en avez-vous besoin')}</label><input className="input" id="rq-use" name="use_date" type="date" defaultValue={today} required /></div>
                 <div className="field span2"><span className="flabel">{LL('Preventivo o stima (foto o PDF)', 'Devis ou estimation (photo ou PDF)')}</span>
                   <AdvanceDoc orgId={me.org_id} kind="estimate" lang={lang} name="estimate_document_id" label={LL('Allega il preventivo', 'Joindre le devis')} /></div>

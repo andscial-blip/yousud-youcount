@@ -2,7 +2,7 @@ import { todayYmd } from '@/lib/today';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, RESP, STAFF } from '@/lib/session';
-import { date, money, eurShort } from '@/lib/format';
+import { date, money, eurShort, nbText } from '@/lib/format';
 import { Empty, H2, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
 import { Legend, Lines, Viz } from '@/components/Charts';
@@ -166,7 +166,7 @@ export default async function GrantDetail({ params, searchParams }: {
         </section>
       </div>
 
-      <div className="prj-two">
+      <div className={staff ? 'prj-two' : 'stack'}>   {/* senza il riquadro Rendiconto (solo staff) le due schede vanno una sotto l'altra: niente colonna mezza vuota */}
         <section className="panel">
           <div className="panel-h"><H2 text={L('Qualità della rendicontazione', 'Qualité du rapport')} icon={null} /></div>
           <div className="panel-b">
@@ -184,6 +184,7 @@ export default async function GrantDetail({ params, searchParams }: {
             <p className="muted small fin-note">{L('Si contano le spese registrate o verificate. «Con documento»: almeno un file allegato. «Senza documento, motivo dichiarato»: nessun file, ma il motivo è scritto. «Da documentare»: né file né motivo.', 'On compte les dépenses enregistrées ou vérifiées. « Avec justificatif » : au moins un fichier joint. « Sans justificatif, motif déclaré » : aucun fichier, mais le motif est écrit. « À documenter » : ni fichier ni motif.')}</p>
           </div>
         </section>
+        <div className="g-col">   {/* colonna destra: periodo e rendiconto, così le due colonne finiscono alla stessa altezza senza vuoti */}
         <section className="panel">
           <div className="panel-h"><H2 text={L('Periodo e scadenze', 'Période et échéances')} icon={null} /><div className="spacer" /><Link className="eyebrow" href="/scadenze">{L('scadenziario', 'échéancier')} →</Link></div>
           <div className="panel-b">
@@ -196,18 +197,19 @@ export default async function GrantDetail({ params, searchParams }: {
               <ul className="acclist g-dl">{dls!.map((d) => <li key={d.id}><span className={`cdp ${d.due_date < today ? 'late' : 'mid'}`}>{date(d.due_date)}</span><span className="an">{d.title}</span><span /></li>)}</ul>)}
           </div>
         </section>
+        {staff && (
+          <Panel title={t('gr_title')} icon={null} pad>
+            <form className="gr-form" method="get" action="/api/v1/export/finanziamento">
+              <input type="hidden" name="id" value={g.id} />
+              <label className="field"><span className="flabel">{t('gr_from')}</span><input className="input" type="date" name="dal" defaultValue={g.start_date ?? ''} /></label>
+              <label className="field"><span className="flabel">{t('gr_to')}</span><input className="input" type="date" name="al" defaultValue={g.end_date ?? ''} /></label>
+              <button className="btn primary" type="submit">{t('gr_download')}</button>
+            </form>
+          </Panel>
+        )}
+        </div>
       </div>
 
-      {staff && (
-        <Panel title={t('gr_title')} icon={null} pad>
-          <form className="gr-form" method="get" action="/api/v1/export/finanziamento">
-            <input type="hidden" name="id" value={g.id} />
-            <label className="field"><span className="flabel">{t('gr_from')}</span><input className="input" type="date" name="dal" defaultValue={g.start_date ?? ''} /></label>
-            <label className="field"><span className="flabel">{t('gr_to')}</span><input className="input" type="date" name="al" defaultValue={g.end_date ?? ''} /></label>
-            <button className="btn primary" type="submit">{t('gr_download')}</button>
-          </form>
-        </Panel>
-      )}
       {staff && (
         <Panel title={t('b_title')} icon={null} pad>
           <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang} edit={resp ? { scope: 'grant', id, back } : undefined} />
@@ -220,7 +222,7 @@ export default async function GrantDetail({ params, searchParams }: {
               const sg = m.sign * (m.kind === 'income' ? 1 : -1), eur = m.currency !== 'EUR' && m.amount_eur ? Number(m.amount_eur) * sg : null;
               return (
                 <tr key={m.id}>
-                  <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind as 'income'}`)}</Link>
+                  <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description ? nbText(m.description) : t(`k_${m.kind as 'income'}`)}</Link>
                     <small className="muted rc-d"><span className="num">{date(m.op_date)}</span>{m.category?.code ? ` · ${m.category.code}` : ''}{missingDoc(m) ? ` · ${L('da documentare', 'à documenter')}` : !(m.docs?.[0]?.count) && m.no_doc_reason && m.kind === 'expense' ? ` · ${L('motivo dichiarato', 'motif déclaré')}` : ''}</small></td>
                   <td className="r num nw"><span className="two"><b>{eur != null ? money(eur, 'EUR', lang) : money(Number(m.amount) * sg, m.currency, lang)}</b>
                     {eur != null && <small>{money(Number(m.amount) * sg, m.currency, lang)}</small>}</span></td>

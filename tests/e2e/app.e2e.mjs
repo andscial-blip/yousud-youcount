@@ -424,7 +424,7 @@ try {
     await p.getByRole('button', { name: 'Verifica' }).click();
     await p.waitForURL(/ok=verified/);
     assert.match(await p.locator('main').innerText(), /Verificato/);
-    await p.getByText('Storna', { exact: true }).click();
+    await p.getByText('Storna questo movimento…', { exact: true }).click();
     await p.fill('#reason', 'quaderni restituiti al fornitore');
     await p.getByRole('button', { name: 'Conferma lo storno' }).click();
     await p.waitForURL(/ok=reversed/);

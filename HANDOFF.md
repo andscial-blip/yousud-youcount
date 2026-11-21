@@ -432,3 +432,22 @@ Rapporti in `docs/revisione-finale-2026-11-15/sedicesimo-giro/`. Un P2 (M1), il 
 - Operatore: la Guida mostra all'operatore i testi scritti per lui (T1); «Bozze da completare» anche in Scadenze, senza categorie da
   amministratore (T2); scheda della bozza senza scontrino con «tocca Modifica e fotografa lo scontrino» (T3); Rimborsi dell'operatore con
   l'elenco delle sue spese al posto della vista per persona (T4).
+
+## 21/11 — diciassettesimo giro (grafica 9,5/9/9/9,5/9,5/9/8,5 · operatore aree ≥ 9, complessivo 8)
+Rapporti in `docs/revisione-finale-2026-11-15/diciassettesimo-giro/`. Solo P3 (più N-2 dell'operatore, verificabile solo 00–03 EAT).
+- Grafica: spazi e trattini non separabili nelle soglie ETS e nei testi con numeri, helper `nbText` per « · » e cifre (N2/N3); titolo di pagina
+  che lascia posto alla «i» sul telefono (N1); titoli dei finanziamenti mai troncati (M7c); percentuale FR in riga in Analisi (M9); nome del
+  conto intero, saldo sotto se serve (L9); legenda della ciambella più larga (N3); schede affiancate con fondi allineati e Dashboard tablet
+  allineata; nella scheda Preventivo della Dashboard i due codici più oltre il previsto al posto del vuoto (N4/G16); «Correzioni» unico nel
+  dettaglio del movimento con Storna e Correggi (M5); traccia vuota anche in «In attesa da» (N6); stessi mesi alterni in tutti i grafici (N5);
+  gruppo 01 delle uscite in #F4E3A1, più lontano dal giallo «Uscite» (L8). J6 (Piccolino vicino al corallo) resta: è un colore salvato,
+  si cambia da Impostazioni › Progetti.
+- Operatore: niente paragrafo doppio «chiedi a un responsabile» (U1); l'operatore non vede i conti bancari nel riepilogo del movimento (U2);
+  «comptabilisés» e «Erreur signalée :» in francese (U3); titoli degli anticipi propri con importo, «automatica» solo per lo staff (U4).
+- Dopo la segnalazione del committente (21/11 sera: riquadri vuoti e schede non allineate) controllo automatico su tutte le pagine a 1440,
+  768 e 375, super_admin, FR e operatore (`/tmp/aud/audit.mjs`: differenze di altezza nelle righe di schede e vuoti interni > 56 px).
+  Corretti: nelle coppie la ciambella sta sopra e la legenda sotto, le liste a barre più corte distribuiscono le righe; grafici a fianco di
+  elenchi centrati; Riepilogo del preventivo con Uscite ed Entrate una sotto l'altra; finanziamenti con un solo elemento senza i due grafici
+  ridondanti; scheda finanziamento con Periodo e Rendiconto nella colonna destra (operatore: in colonna unica); traccia vuota uguale in tutti
+  i riquadri senza dati; nome dei progetti tradotto (Frais généraux) in titoli e menu. Esito finale: nessuna riga sfalsata; restano solo i
+  giorni vuoti del calendario (normali) e 56 px sopra il grafico Entrate e uscite della Dashboard a 768.

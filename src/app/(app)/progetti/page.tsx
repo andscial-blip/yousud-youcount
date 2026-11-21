@@ -69,8 +69,9 @@ export default async function Projects({ searchParams }: { searchParams: Promise
         <div className="kpi">
           <div className="l">{L('Previsto', 'Prévu')}</div>
           <div className="v num">{tot.b ? e0(tot.b) : '–'}</div>
-          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: prjCols.get(p.id) ?? '#E3E8EF' }))} max={tot.b} tip={withB.map((p) => `${p.name}: ${e0(A(p.id).bOut)}`).join('\n')} />
+          {withB.length > 0 && <><Viz.Stack segs={withB.slice(0, 6).map((p, n) => ({ v: A(p.id).bOut, c: prjCols.get(p.id) ?? '#E3E8EF' }))} max={tot.b} tip={withB.map((p) => `${prjName(p.name, lang)}: ${e0(A(p.id).bOut)}`).join('\n')} />
             <div className="vzl"><span>{withB[0]!.name}</span><span>{pc(A(withB[0]!.id).bOut, tot.b)}</span></div></>}
+          {!(withB.length > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{tot.b ? L(`uscite ${year} · ${withB.length === 1 ? '1 progetto' : `${withB.length} progetti`}`, `dépenses ${year} · ${withB.length === 1 ? '1 projet' : `${withB.length} projets`}`) : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>
         <div className="kpi">
@@ -86,6 +87,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
           {tot.b > 0 && <><Viz.Stack segs={[{ v: Math.min(tot.out, tot.b), c: C_SP }, { v: Math.max(0, tot.b - tot.out), c: 'var(--green-soft)' }, { v: Math.max(0, tot.out - tot.b), c: 'var(--tax)' }]} max={Math.max(tot.b, tot.out)}
             tip={`${L('Previsto', 'Prévu')}: ${e0(tot.b)}\n${L('Speso', 'Dépensé')}: ${e0(tot.out)}`} />
             <div className="vzl"><span>{tot.out > tot.b ? L('oltre il previsto', 'au-delà du prévu') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(tot.b - tot.out), tot.b)}</span></div></>}
+          {!(tot.b > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{!tot.b ? L('nessun preventivo in vigore', 'aucun budget en vigueur') : over ? (over === 1 ? L('1 progetto oltre il previsto', '1 projet au-delà du prévu') : L(`${over} progetti oltre il previsto`, `${over} projets au-delà du prévu`)) : L('tutti i progetti nei limiti', 'tous les projets dans les limites')}</div>
         </div>
         <div className="kpi">
@@ -116,7 +118,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                 <li className="pv2-h" aria-hidden="true"><span className="bq-pn" /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
                 {pairs.map((p) => { const a = A(p.id); return (
                 <li key={p.id}>
-                  <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link>
+                  <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{prjName(p.name, lang)}</Link>
                   {/* previsto come in tutta l'app (20/11): traccia blu chiara lunga quanto il preventivo, riempita dallo speso; oltre, corallo */}
                   <span className="bq-pb one" aria-hidden="true">
                     {a.bOut > 0 && <span className="pt" style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%` }} />}
@@ -140,7 +142,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
             return (
               <Link key={p.id} className={`pring${over ? ' over' : ''}`} href={`/progetti/${p.id}?anno=${year}`}>
                 <div className="pr-h"><ProjectIcon p={p} color={prjCols.get(p.id)} />
-                  <div className="pr-n"><b>{p.name}</b><small>{L(THEMES[themeOf(p)].it, THEMES[themeOf(p)].fr)}{p.demo ? ' · DEMO' : ''}</small></div>
+                  <div className="pr-n"><b>{prjName(p.name, lang)}</b><small>{L(THEMES[themeOf(p)].it, THEMES[themeOf(p)].fr)}{p.demo ? ' · DEMO' : ''}</small></div>
                   {note && <span className={`cdp ${note.c}`}>{note.t}</span>}</div>
                 <div className="pr-mid">
                   <svg className="pr-ring" viewBox="0 0 100 100" role="img" aria-label={a.bOut ? `${Math.round(used * 100)} %` : L('senza preventivo', 'sans budget')}>
