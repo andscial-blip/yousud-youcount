@@ -366,3 +366,5 @@ Rapporto in `docs/revisione-finale-2026-11-15/undicesimo-giro/grafica.md` (area 
   didascalia della tacca; importo prima della percentuale; «+» sulle entrate nella scheda progetto; stesso arrotondamento ovunque (`eurShort`:
   centesimi sotto 1.000 €); filo più scuro su barre, fette e quadratini chiari (`lightEdge`); report mensile con «Uscite per paese».
 - Stati vuoti con la stessa illustrazione (`EmptyArt`, piccola nei pannelli); icona portafoglio su «Da rimborsare».
+- 21/11 07:55: migrazione `project_color` approvata da Andrea e applicata in produzione: 10 progetti con il colore che avevano già
+  (ordine di creazione). La scelta del colore in Impostazioni › Progetti ora compare anche online. Nessun errore di runtime nelle 2 ore precedenti.
