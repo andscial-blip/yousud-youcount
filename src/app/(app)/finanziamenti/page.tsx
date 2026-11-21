@@ -4,7 +4,8 @@ import { can, requireMe, RESP } from '@/lib/session';
 import { date, money, eurShort } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
 import { CIcon } from '@/components/CIcon';
-import { Donut, Legend, Viz, fixedColors } from '@/components/Charts';
+import { Donut, Legend, Viz } from '@/components/Charts';
+import { INCOME_SHADES, REST } from '@/lib/palette';
 import { DonorMark } from '@/components/DonorMark';
 import { createGrant } from './actions';
 import { COUNTED, GrantFields, eurOf, timeOf, totals, type GrantRow, type Mv } from './shared';
@@ -56,7 +57,8 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   for (const g of shown) { const k = g.donor?.id ?? ''; const x = byDonor.get(k) ?? { label: g.donor?.name ?? L('Finanziatore da indicare', 'Bailleur à préciser'), v: 0 }; x.v += granted(g); byDonor.set(k, x); }
   const dn = [...byDonor.entries()].map(([k, x]) => ({ k: k || 'none', ...x })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
   const dnTop0 = (dn.length > 6 ? [...dn.slice(0, 5), { k: 'rest', label: L(`Altri (${dn.length - 5})`, `Autres (${dn.length - 5})`), v: dn.slice(5).reduce((s, x) => s + x.v, 0) }] : dn);
-  const dnCols = fixedColors(dnTop0.map((x) => (x.k === 'rest' ? '' : x.label)), dnTop0.map((x) => x.k));
+  // H9 (giro 12): i finanziatori sono entrate: blu notte e suoi grigi, mai i colori dei progetti
+  const dnCols = dnTop0.map((x, n) => (x.k === 'rest' ? REST : INCOME_SHADES[n % INCOME_SHADES.length]!));
   const dnTop = dnTop0.map((x, n) => ({ ...x, color: dnCols[n]! }));
   const maxPair = Math.max(1, ...shown.flatMap((g) => [granted(g), T(g).rec, T(g).sp]));
   const net = sum.rec - sum.sp;
@@ -150,7 +152,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
                   <svg className="pr-ring" viewBox="0 0 100 100" role="img" aria-label={gr ? L(`Speso ${Math.round(used * 100)} % del concesso`, `Dépensé ${Math.round(used * 100)} % de l'accordé`) : L('importo concesso non indicato', 'montant accordé non indiqué')}>
                     <circle cx="50" cy="50" r={R} className="rg-t" />
                     {gr > 0 && x.sp > 0 && <circle cx="50" cy="50" r={R} className="rg-a" strokeDasharray={`${arc.toFixed(1)} ${C.toFixed(1)}`} transform="rotate(-90 50 50)" style={over ? { stroke: 'var(--tax)' } : undefined} />}
-                    <text x="50" y="55" textAnchor="middle" className="rg-v">{gr ? `${Math.round(used * 100)}%` : '–'}</text>
+                    <text x="50" y="55" textAnchor="middle" className="rg-v">{gr ? `${Math.round(used * 100)}\u00a0%` : '–'}</text>
                   </svg>
                   <dl className="pr-nums">
                     <div><dt>{L('Concesso', 'Accordé')}</dt><dd className="num">{g.amount ? money(Math.round(Number(g.amount)), g.currency, lang).replace(/,00(?=\s?€)/, '') : '–'}</dd></div>

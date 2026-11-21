@@ -175,7 +175,7 @@ export function VersionBar({ c, base }: { c: Ctx; base: string }) {
         <span className="muted bv-s">
           {shown.status === 'approved' ? (shown.approval_ref ?? '')
             : approved ? <>{L('in vigore', 'en vigueur')}: {vLabel(approved)}{approved.approval_ref ? ` · ${approved.approval_ref}` : ''}
-              {shown.status === 'draft' && c.hasBase && Math.abs(draftOut - c.baseOut) > 0.5 ? <> · {L('uscite', 'dépenses')} <b className="num">{draftOut - c.baseOut > 0 ? '+' : '−'}{e0(Math.abs(draftOut - c.baseOut))}</b></> : null}</> : L('non ancora approvato', 'pas encore approuvé')}
+              {shown.status === 'draft' && c.hasBase && Math.abs(draftOut - c.baseOut) > 0.5 ? <> · {L('uscite', 'dépenses')} <b className="num">{draftOut - c.baseOut > 0 ? '+' : '-'}{e0(Math.abs(draftOut - c.baseOut))}</b></> : null}</> : L('non ancora approvato', 'pas encore approuvé')}
         </span>
       </div>
       <div className="bv-r">

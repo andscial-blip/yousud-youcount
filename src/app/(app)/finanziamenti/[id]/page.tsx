@@ -110,7 +110,7 @@ export default async function GrantDetail({ params, searchParams }: {
         <div className="kpi">
           <div className="l">{L('Concesso', 'Accordé')}</div>
           <div className={`v num${g.currency === 'MGA' ? ' long' : ''}`}>{g.amount ? money(Math.round(Number(g.amount)), g.currency, lang).replace(/,00(?=\s?€)/, '') : '–'}</div>
-          {tm && <><Viz.Stack segs={[{ v: tm.p, c: 'var(--vz-plan)' }, { v: 1 - tm.p, c: 'var(--band)' }]} max={1} tip={`${date(g.start_date!)} – ${date(g.end_date!)}`} />
+          {tm && <><Viz.Stack segs={[{ v: tm.p, c: 'var(--slate-2)' }, { v: 1 - tm.p, c: 'var(--band)' }]} max={1} tip={`${date(g.start_date!)} – ${date(g.end_date!)}`} />
             <div className="vzl"><span>{L('tempo trascorso', 'temps écoulé')}</span><span>{Math.round(tm.p * 100)}{' '}%</span></div></>}
           <div className="s">{g.currency === 'MGA' && granted ? L(`circa ${e0(granted)} al tasso di oggi`, `environ ${e0(granted)} au taux du jour`)
             : !tm ? L('periodo da indicare', 'période à préciser') : tm.days < 0 ? L(`concluso da ${-tm.days} giorni`, `terminé depuis ${-tm.days} jours`) : tm.days === 0 ? L('termina oggi', 'se termine aujourd\'hui') : L(`${tm.days} giorni alla fine`, `${tm.days} jours avant la fin`)}</div>
@@ -145,19 +145,24 @@ export default async function GrantDetail({ params, searchParams }: {
           <div className="panel-b">{moves.length === 0 ? <p className="muted bq-none">{L('Nessun movimento collegato: il grafico compare con il primo incasso o la prima spesa.', 'Aucun mouvement lié : le graphique apparaît avec le premier encaissement ou la première dépense.')}</p> : (<>
             <Lines cats={axis} lang={lang} label={L('Ricevuto e speso cumulati', 'Reçu et dépensé cumulés')}
               series={[{ name: L('Ricevuto', 'Reçu'), vals: cum(mRec) as number[], color: 'var(--c-in)', w: 2.4 }, { name: L('Speso', 'Dépensé'), vals: cum(mSp) as number[], color: 'var(--vz-sp)', w: 2.4 }]}
-              refs={granted ? [{ v: granted, color: 'var(--vz-plan)', label: L('concesso', 'accordé') }] : undefined} />
+              refs={granted ? [{ v: granted, color: 'var(--slate-2)', label: L('concesso', 'accordé') }] : undefined} />
             <Legend className="under" items={[{ label: L('Ricevuto', 'Reçu'), color: 'var(--c-in)', value: e0(x.rec) }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)', value: e0(x.sp) },
-              ...(granted ? [{ label: L('Concesso', 'Accordé'), color: 'var(--vz-plan)', value: e0(granted) }] : [])]} /></>)}</div>
+              ...(granted ? [{ label: L('Concesso', 'Accordé'), color: 'var(--slate-2)', dashed: true, value: e0(granted) }] : [])]} /></>)}</div>
         </section>
         <section className="panel">
           <div className="panel-h"><H2 text={L('Previsto e speso per gruppo', 'Prévu et dépensé par groupe')} icon={null} /><div className="spacer" />
-            <Legend items={[{ label: L('Previsto', 'Prévu'), color: 'var(--vz-plan)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
-          <div className="panel-b">{bRows.length === 0 ? <p className="muted bq-none">{staff ? L('Nessun budget e nessuna spesa: il budget per gruppo si imposta nella tabella qui sotto.', 'Aucun budget ni dépense : le budget par groupe se règle dans le tableau ci-dessous.') : L('Nessuna spesa collegata.', 'Aucune dépense liée.')}</p> : (
-            <ul className="bq-pairs prj-pairs">{bRows.map((r) => (
+            <Legend items={[{ label: L('Previsto', 'Prévu'), color: 'var(--plan-soft)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
+          <div className="panel-b">{bRows.length === 0 ? <p className="muted bq-none">{staff ? L('Nessun previsto e nessuna spesa: il previsto per gruppo si imposta nella tabella qui sotto («Imposta il previsto»).', 'Aucun prévu ni dépense : le prévu par groupe se règle dans le tableau ci-dessous (« Définir le prévu »).') : L('Nessuna spesa collegata.', 'Aucune dépense liée.')}</p> : (
+            <ul className="bq-pairs prj-pairs pv2">
+              <li className="pv2-h" aria-hidden="true"><span /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
+              {bRows.map((r) => (
               <li key={r.k}><span className="bq-pn">{r.label}</span>
-                <span className="bq-pb"><i className={r.b > 0 ? '' : 'z'} style={{ width: `${((r.b / bMax) * 100).toFixed(1)}%`, background: 'var(--vz-plan)' }} />
-                  <i className={r.s > 0 ? '' : 'z'} style={{ width: `${((r.s / bMax) * 100).toFixed(1)}%`, background: r.b > 0 && r.s > r.b ? 'var(--tax)' : 'var(--vz-sp)' }} /></span>
-                <span className="bq-pv num"><b>{r.b ? e0(r.b) : '–'}</b><b>{e0(r.s)}</b></span></li>))}</ul>)}</div>
+                {/* 6-D11/7-2 (giro 12): stessa barra di Progetti: traccia celeste = previsto, giallo = speso, corallo = oltre */}
+                <span className="bq-pb one" aria-hidden="true">
+                  {r.b > 0 && <span className="pt" style={{ width: `${((r.b / bMax) * 100).toFixed(1)}%` }} />}
+                  <i className={r.s > 0 ? '' : 'z'} style={{ width: `${((Math.min(r.s, r.b || r.s) / bMax) * 100).toFixed(1)}%`, background: 'var(--vz-sp)' }} />
+                  {r.b > 0 && r.s > r.b && <i className="ov" style={{ left: `${((r.b / bMax) * 100).toFixed(1)}%`, width: `${(((r.s - r.b) / bMax) * 100).toFixed(1)}%` }} />}</span>
+                <span className="bq-pv num"><b>{r.b ? e0(r.b) : '–'}</b><b className={r.b > 0 && r.s > r.b ? 'over-t' : undefined}>{e0(r.s)}{r.b > 0 && r.s > r.b ? ' ▲' : ''}</b></span></li>))}</ul>)}</div>
         </section>
       </div>
 

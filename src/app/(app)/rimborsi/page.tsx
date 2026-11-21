@@ -111,7 +111,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
         <div className="kpi">
           <div className="l">{LL('Da rimborsare', 'À rembourser')}</div>
           <div className={`v num${due.length && e2(dueEur).length > 11 ? ' long' : ''}`}>{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 && curs[0] === 'EUR' ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
-          {dueEur > 0 && <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: `var(--pp${[2, 4, 5, 6, 7, 2][i]})` }))} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
+          {dueEur > 0 && <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'][i]! }))   /* H8 (giro 12): persone in ardesia, come negli Anticipi */} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
             <div className="vzl"><span>{people[0]!.n.split(' ')[0]}</span><span>{people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></>}
           <div className="s">{due.length === 0 ? LL('non dobbiamo niente a nessuno', 'nous ne devons rien à personne')
             : curs.length === 1 ? (curs[0] === 'EUR' ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : money(totals.get(curs[0]!)!, curs[0]!, lang))
@@ -125,7 +125,6 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="s">{oldest ? LL(`la più vecchia: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`, `la plus ancienne : ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`) : LL('nessuna spesa in attesa', 'aucune dépense en attente')}</div>
         </div>
         <div className="kpi">
-          {due.length > 0 && <Viz.Ring p={ready / due.length} color={missing ? 'var(--gold-d)' : 'var(--green-soft)'} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />}
           <div className="l">{LL('Da documentare', 'À documenter')}</div>
           <div className={`v num${missing ? ' amb' : ''}`}>{missing}</div>
           {due.length > 0 && <><Viz.Stack segs={[{ v: ready, c: 'var(--green-soft)' }, { v: missing, c: 'var(--gold-d)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />

@@ -85,7 +85,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   const byLoc = sumBy(out, (r) => (r.account_id ? loc.get(r.account_id) ?? null : null));
   const byPrj = [...sumBy(out, (r) => r.project_id)].filter(([k]) => k !== '-').sort((a, b) => b[1] - a[1]);
   const prjName = new Map(rows.map((r) => [r.project_id, r.project_name]));
-  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}${lang === 'fr' ? '\u00a0' : ''}%` : '–');
+  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}\u00a0%` : '–');
   const q = (o: Record<string, string>) => { const u = new URLSearchParams({ anno: String(year), ...(prj ? { progetto: prj } : {}), ...o }); return `/analisi?${u}`; };
   const mov = (o: Record<string, string>) => `/movimenti?${new URLSearchParams({ dal: `${year}-01-01`, al: `${year}-12-31`, ...(prj ? { progetto: prj } : {}), ...o })}`;
   const state = (spent: number, bud: number) => (!bud ? '' : spent > bud ? 'over' : spent > bud * elapsed * 1.1 ? 'ahead' : 'ok');
@@ -110,7 +110,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
   // etichette delle schede per il telefono (data-label) già scritte dal server: TableCards non tocca la tabella, niente differenze all'idratazione
   const groupTable = (
     <Panel title={t('an_by_group')} icon={null}>
-      <p className="panel-b muted" style={{ margin: 0 }}>{t('an_by_group_note').replace('{p}', `${Math.round(elapsed * 100)}%`)}</p>
+      <p className="panel-b muted" style={{ margin: 0 }}>{t('an_by_group_note').replace('{p}', `${Math.round(elapsed * 100)}\u00a0%`)}</p>
       {outGroups.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('none')}</p> : (
         <div className="tscroll"><table className="t" data-cards="">
           <thead><tr><th>{t('an_group')}</th><th className="r">{lg('Previsto', 'Prévu')}</th><th className="r">{t('prj_spent')}</th><th className="r">%</th><th style={{ width: '30%' }} /></tr></thead>
@@ -273,7 +273,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
                 series={[{ name: String(year), color: 'var(--vz-sp)', w: 2.4, vals: cum(months.map((m) => m.out), lastM) as number[] },
                   ...(prevOut ? [{ name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.out)) as number[] }] : [])]} />
               <Legend className="under" items={[{ label: String(year), color: 'var(--vz-sp)', value: e0(totOut) }, ...(prevOut ? [{ label: String(year - 1), color: 'var(--vz-hyp)', value: e0(prevOut) }] : []),
-                ...(totBudget ? [{ label: lg('Preventivo', 'Budget'), color: 'var(--vz-plan)', value: e0(totBudget) }] : [])]} />
+                ...(totBudget ? [{ label: lg('Previsto', 'Prévu'), color: 'var(--vz-plan)', dashed: true, value: e0(totBudget) }] : [])]} />
             </div>
           </section>
           <section className="panel">

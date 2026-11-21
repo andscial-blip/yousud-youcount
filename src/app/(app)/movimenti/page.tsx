@@ -48,7 +48,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const page = Math.max(1, Math.min(1000, Number(sp.p) || 1));
   // operatore, vista «Tutti» (revisione 20/11): i movimenti delle casse e degli anticipi del Madagascar, più i propri;
   // non i movimenti dei conti bancari e italiani, che vedono responsabili e amministratori
-  const opAcc = isOp ? (((await supabase.from('accounts').select('id').eq('location', 'MG').neq('kind', 'bank')).data ?? []) as { id: string }[]).map((a) => a.id) : [];
+  // operatore: casse del Madagascar, senza i movimenti del personale (stipendi e compensi, codici 1xx) degli altri (N9-1, giro 12)
+  const [opAcc, hrCats] = isOp ? await Promise.all([
+    supabase.from('accounts').select('id').eq('location', 'MG').neq('kind', 'bank').then((r) => ((r.data ?? []) as { id: string }[]).map((a) => a.id)),
+    supabase.from('categories').select('id').like('code', '1%').eq('direction', 'out').then((r) => ((r.data ?? []) as { id: string }[]).map((c) => c.id)),
+  ]) : [[] as string[], [] as string[]];
   const revIds = f.doc === 'no' ? ((await supabase.from('movements').select('reverses_id').not('reverses_id', 'is', null).limit(5000)).data ?? []).map((r) => r.reverses_id as string) : [];
   // gli stessi filtri valgono per l'elenco e per i totali
   const apply = <Q,>(q0: Q): Q => {
@@ -73,7 +77,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     if (f.doc === 'si') q = q.is('no_doc_reason', null).neq('kind', 'transfer');
     if (f.demo) q = q.eq('demo', f.demo === 'si');
     if (mine) q = q.eq('created_by', me!.id);
-    else if (isOp) q = q.or(`created_by.eq.${me!.id},and(account_id.in.(${opAcc.join(',') || '00000000-0000-0000-0000-000000000000'}),or(to_account_id.is.null,to_account_id.in.(${opAcc.join(',') || '00000000-0000-0000-0000-000000000000'})))`);
+    else if (isOp) q = q.or(`created_by.eq.${me!.id},and(account_id.in.(${opAcc.join(',') || '00000000-0000-0000-0000-000000000000'}),or(to_account_id.is.null,to_account_id.in.(${opAcc.join(',') || '00000000-0000-0000-0000-000000000000'})),or(category_id.is.null,category_id.not.in.(${hrCats.join(',') || '00000000-0000-0000-0000-000000000000'})))`);
     return q as Q;
   };
   const admin = can(me, ['super_admin', 'admin']);
@@ -84,7 +88,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
              method:payment_methods(name_it, name_fr), tr:movement_translations(source, it, fr)`, { count: 'exact' }))
       .order('op_date', { ascending: false }).order('created_at', { ascending: false })
       .range((page - 1) * PAGE, page * PAGE - 1).returns<Row[]>(),
-    apply(supabase.from('movements').select('kind, sign, amount_eur, status, op_date')).neq('status', 'draft').neq('kind', 'transfer').limit(20000),
+    // i totali servono solo a chi vede i riquadri contabili: l'operatore non li ha (velocità, N9-1)
+    isOp ? Promise.resolve({ data: [] as { kind: string; sign: number; amount_eur: string | null; status: string; op_date: string }[] }) : apply(supabase.from('movements').select('kind, sign, amount_eur, status, op_date')).neq('status', 'draft').neq('kind', 'transfer').limit(20000),
     supabase.from('projects').select('id, name').order('name'),
     // operatore: nei filtri solo i conti che usa (casse e anticipi del Madagascar), non banche italiane né conti tecnici (revisione 20/11)
     supabase.from('accounts').select('id, name_it, name_fr, location, kind, holder').order('sort'),
@@ -275,7 +280,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                         return <span className="two"><b>{eur != null ? `${eur > 0 ? '+' : ''}${money(m.kind === 'transfer' ? Math.abs(eur) : eur, 'EUR', lang)}` : orig}</b>{eur != null && <small>{orig}</small>}</span>; })()}</td>
                     <td>{m.kind !== 'transfer' && <DocIndicator count={m.docs?.[0]?.count ?? 0} noDocReason={m.no_doc_reason}
                       labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
-                    <td>{m.reimb_status === 'due' ? <span className="chip pend">{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}</td>
+                    <td>{m.reimb_status === 'due' ? <span className="chip ichip pend"><Ico name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}</td>
                   </tr>
                 );
               })}
@@ -291,11 +296,11 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
                   <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
                     <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
-                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip pend">{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip demo tiny">DEMO</span>}
+                    <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip ichip pend"><Ico name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip demo tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('motivo dichiarato', 'motif déclaré')}</span>}</span></div>
                   <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
-                    <b>{eur != null ? `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}` : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>
-                    {eur != null && <small>{money(m.kind === 'transfer' ? Number(m.amount) : signed, m.currency, lang)}</small>}</span>
+                    <b>{eur != null ? (m.kind === 'transfer' ? money(Math.abs(eur), 'EUR', lang) : `${eur > 0 ? '+' : ''}${money(eur, 'EUR', lang)}`) : m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</b>
+                    {eur != null && <small>{m.kind === 'transfer' ? money(Number(m.amount), m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`}</small>}   {/* H18: stesso segno in euro e in valuta */}</span>
                 </Link></li>
               );
             })}

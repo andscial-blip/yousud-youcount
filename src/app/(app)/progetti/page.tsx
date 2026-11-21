@@ -148,7 +148,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                     {a.bOut > 0 && <circle cx="50" cy="50" r={R} className="rg-a" strokeDasharray={`${arc.toFixed(1)} ${C.toFixed(1)}`} transform="rotate(-90 50 50)" />}
                     {ex > 0 && <circle cx="50" cy="50" r={R - 9} className="rg-x" strokeDasharray={`${((ex / C) * 2 * Math.PI * (R - 9)).toFixed(1)} ${(2 * Math.PI * (R - 9)).toFixed(1)}`} transform="rotate(-90 50 50)" />}
                     {a.bOut > 0 && <line x1={50 + Math.cos(tick) * (R - 7)} y1={50 + Math.sin(tick) * (R - 7)} x2={50 + Math.cos(tick) * (R + 7)} y2={50 + Math.sin(tick) * (R + 7)} className="rg-k" />}
-                    <text x="50" y="55" textAnchor="middle" className="rg-v">{a.bOut ? `${Math.round(used * 100)}%` : '–'}</text>
+                    <text x="50" y="55" textAnchor="middle" className="rg-v">{a.bOut ? `${Math.round(used * 100)}\u00a0%` : '–'}</text>
                   </svg>
                   <dl className="pr-nums">
                     <div><dt>{L('Speso', 'Dépensé')}</dt><dd className="num">{e0(a.out)}</dd></div>

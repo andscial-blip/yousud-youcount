@@ -99,7 +99,7 @@ export default async function MovementDetail({ params, searchParams }: {
   const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
   const autNow = autQ === '1';   // arrivo da «Registra» con la scelta «prepara l'autocertificazione»
   // il modulo si prepara su una spesa registrata, da chi l'ha inserita o da un responsabile (revisione 21/11: non sulle bozze né sulle spese altrui)
-  const canAut = writer && m.status === 'recorded' && (resp || m.created_by === me!.id);
+  const canAut = writer && (m.status === 'recorded' || (m.status === 'draft' && m.reimb_status === 'due')) && (resp || m.created_by === me!.id);   // O2 (giro 12): anche la spesa di tasca propria da rimborsare
   const showAut = autPossible && (Boolean(aut) || (canAut && docs.length === 0));
   const autDefaultLang = aut?.lang ?? (m.account?.location === 'MG' || m.currency === 'MGA' ? 'both' : 'it');
   const signedAmount = m.kind === 'transfer' ? Number(m.amount) : Number(m.amount) * (m.reverses_id ? -1 : 1) * (m.kind === 'income' ? 1 : -1);
@@ -111,7 +111,7 @@ export default async function MovementDetail({ params, searchParams }: {
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
         <h1>{m.ref ?? (m.reimb_status === 'due' ? L('Da rimborsare', 'À rembourser') : t('st_draft'))} · {m.reverses_id ? L(`Storno di ${t(`k_${m.kind}`).toLowerCase()}`, `Extourne de ${t(`k_${m.kind}`).toLowerCase()}`) : t(`k_${m.kind}`)}</h1>
-        {m.reimb_status === 'due' ? <span className="chip pend">{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}
+        {m.reimb_status === 'due' ? <span className="chip ichip pend"><Ico name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}
         {rev && <Link className="chip ichip err" href={`/movimenti/${rev.id}`}><Ico name="reversed" size={14} />{t('d_reversed_by')} {rev.ref}</Link>}
       </div>
       {ok && <div className="note ok" role="status"><Ico name="verified" />{ok === 'verified' ? t('verify_done')

@@ -25,9 +25,10 @@ export function BudgetTable({ rows, t, lang, edit }: {
             const b = Number(r.budget_eur), sp = Number(r.spent_eur);
             return (
               <tr key={r.group_id}>
-                <td>{r.group_code} · {nm(r)}</td>
+                <td><span className="nw">{r.group_code}&nbsp;·</span> {nm(r)}</td>
                 <td className="r num">{b ? money(b, 'EUR', lang) : '–'}</td>
-                <td className="r num">{money(sp, 'EUR', lang)}</td>
+                {/* H2 (giro 12): lo sforamento si vede anche sul telefono, dove residuo e barra non ci stanno */}
+                <td className={`r num${b && sp > b ? ' over-t' : ''}`}>{money(sp, 'EUR', lang)}{b && sp > b ? <span aria-label={lang === 'fr' ? 'au-delà du prévu' : 'oltre il previsto'}> ▲</span> : null}</td>
                 <td className="r num hm" style={b && sp > b ? { color: 'var(--red)', fontWeight: 600 } : undefined}>{b ? money(b - sp, 'EUR', lang) : '–'}</td>
                 <td className="hm"><BudgetBar budget={b} spent={sp} /></td>
               </tr>

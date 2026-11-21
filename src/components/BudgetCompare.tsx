@@ -31,7 +31,7 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
     : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
   // stessi colori del resto dell'app: giallo = uscite, blu notte = entrate; sforamento (solo per le uscite) come nella tabella per gruppo
   const Bar = ({ b, a, dir = 'out' }: { b: number; a: number; dir?: 'in' | 'out' }) => <BudgetBar budget={b} spent={a} dir={dir} elapsed={year === now.getFullYear() ? elapsed : undefined} />;
-  const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}${lang === 'fr' ? '\u00a0' : ''}%` : '');
+  const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}\u00a0%` : '');
   const section = (d: 'in' | 'out') => groups.filter((g) => g.direction === d && all.some((x) => x.r.group_id === g.id)).map((g) => {
     const cs = all.filter((x) => x.r.group_id === g.id).sort((a, b) => a.r.category_code.localeCompare(b.r.category_code, 'it', { numeric: true }));
     const gb = cs.reduce((s, x) => s + x.b, 0), ga = cs.reduce((s, x) => s + x.a, 0);

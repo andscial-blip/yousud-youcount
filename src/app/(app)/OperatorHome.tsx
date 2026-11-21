@@ -1,3 +1,4 @@
+import { Ico, StatusChip } from '@/components/Ui';
 import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -34,7 +35,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
     supabase.from('settings').select('value').eq('key', 'dashboard_notes').maybeSingle(),
     supabase.from('accounts').select('id, holder').eq('kind', 'advance'),
     // spese senza giustificativo: serve l'autocertificazione (anche prima che il PDF sia stato preparato)
-    supabase.from('movements').select('id, ref').eq('created_by', me.id).not('no_doc_reason', 'is', null).neq('status', 'draft').order('created_at', { ascending: false }).limit(20),
+    supabase.from('movements').select('id, ref').eq('created_by', me.id).not('no_doc_reason', 'is', null).or('status.neq.draft,reimb_status.eq.due').order('created_at', { ascending: false }).limit(20),
     supabase.from('self_certs').select('movement_id'),
     // errori segnalati dall'operatore e ancora aperti
     supabase.from('deadlines').select('id, movement_id, title, created_at').eq('status', 'open').eq('created_by', me.id).not('movement_id', 'is', null).limit(10),
@@ -52,7 +53,9 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   const myAdv = ((bal ?? []) as B[]).filter((b) => b.kind === 'advance' && advIds.has(b.account_id));
   const inHand = myAdv.reduce((s, b) => s + Number(b.balance), 0);
   const handCur = myAdv[0]?.currency ?? 'MGA';
-  const reportBy = rqs.filter((r) => r.status === 'delivered').map((r) => r.report_by).filter(Boolean).sort()[0] ?? null;
+  // O5 (giro 12): la data delle ricevute dalle stesse richieste consegnate che usa /anticipi (sui conti di anticipo che ho in mano)
+  const myAdvIds = new Set(myAdv.map((b) => b.account_id));
+  const reportBy = allRq.filter((r) => r.status === 'delivered' && r.account_id && myAdvIds.has(r.account_id)).map((r) => r.report_by).filter(Boolean).sort()[0] ?? null;
   const dueRows = (due ?? []) as { amount: string; currency: string; amount_eur: string | null }[];
   const dueEur = dueRows.reduce((s, r) => s + (r.currency === 'EUR' ? Number(r.amount) : Number(r.amount_eur ?? 0) || eurOf(Number(r.amount), r.currency)), 0);
   const autRows = (auts ?? []) as { id: string; movement_id: string }[];
@@ -83,8 +86,9 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
     todo.push({ lvl: d.due_date < td ? 'warn' : 'do', ic: 'cal', title: d.title, sub: date(d.due_date), href: '/scadenze' });
   if (!todo.length) todo.push({ lvl: 'ok', ic: 'check', title: L('Tutto in ordine', 'Tout est en ordre'), sub: L('Niente da completare, firmare o giustificare', 'Rien à compléter, signer ou justifier'), href: '/movimenti' });
 
-  const stLabel = (m: Mov) => m.reimb_status === 'due' ? <span className="chip pend tiny">{L('Da rimborsare', 'À rembourser')}</span>
-    : <span className={`chip tiny ${m.status === 'verified' ? 'ok' : m.status === 'recorded' ? 'pend' : ''}`}>{t(`st_${m.status}` as 'st_draft')}</span>;
+  // H19 (giro 12): stesse pastiglie con icona di Movimenti
+  const stLabel = (m: Mov) => m.reimb_status === 'due' ? <span className="chip ichip pend tiny"><Ico name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span>
+    : <StatusChip s={m.status as 'draft'} label={t(`st_${m.status}` as 'st_draft')} />;
   const amt = (m: Mov) => { const s = m.kind === 'income' ? 1 : -1;
     return m.currency !== 'EUR' && m.amount_eur ? <span className="two"><b>{money(Number(m.amount_eur) * s * m.sign, 'EUR', lang)}</b><small>{money(Number(m.amount) * s * m.sign, m.currency, lang)}</small></span>
       : <span className="two"><b>{money(Number(m.amount) * s * m.sign, m.currency, lang)}</b></span>; };
@@ -98,7 +102,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
           <div className="s">{myAdv.length && inHand > 0 ? (reportBy ? L(`ricevute entro il ${date(reportBy)}`, `reçus avant le ${date(reportBy)}`) : L('contanti dell’anticipo', 'espèces de l’avance')) : toCollect.length ? L('anticipo autorizzato: da ritirare', 'avance autorisée : à retirer') : (myAdv.length ? L('nessun contante in mano', 'aucune espèce en main') : L('nessun anticipo aperto', 'aucune avance ouverte'))}</div></Link>
         <Link className="kpi" href="/rimborsi"><div className="l">{L('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className="v num">{money(dueEur, 'EUR', lang)}</div>
-          <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de sa poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de sa poche`)}</div></Link>
+          <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de votre poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de votre poche`)}</div></Link>
         <Link className="kpi" href="/movimenti?stato=recorded"><div className="l">{L('In attesa di verifica', 'En vérification')}</div>
           <div className="v num">{waiting ?? 0}</div><div className="s">{L('le controlla un responsabile', 'un responsable les contrôle')}</div></Link>
         <Link className="kpi" href="/movimenti?stato=draft"><div className="l">{L('Bozze', 'Brouillons')}</div>

@@ -709,7 +709,7 @@ try {
     // nel modulo: «Con l'anticipo» propone solo i conti anticipi e mette la persona in «Pagato da»
     const o = op.page;
     await o.goto(`${base}/nuovo`);
-    await o.locator('#account').waitFor();
+    await o.locator('#amount').waitFor();   // con un anticipo in mano il modulo parte già da «Anticipo» (giro 12): il conto può essere già scelto
     if (!(await o.getByRole('radio', { name: 'Anticipo', exact: true }).count())) await o.reload();
     await o.getByRole('radio', { name: 'Anticipo', exact: true }).click();
     await o.locator('#account').selectOption({ label: 'Hery · MGA' });

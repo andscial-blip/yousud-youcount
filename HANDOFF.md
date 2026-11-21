@@ -368,3 +368,19 @@ Rapporto in `docs/revisione-finale-2026-11-15/undicesimo-giro/grafica.md` (area 
 - Stati vuoti con la stessa illustrazione (`EmptyArt`, piccola nei pannelli); icona portafoglio su «Da rimborsare».
 - 21/11 07:55: migrazione `project_color` approvata da Andrea e applicata in produzione: 10 progetti con il colore che avevano già
   (ordine di creazione). La scelta del colore in Impostazioni › Progetti ora compare anche online. Nessun errore di runtime nelle 2 ore precedenti.
+
+## 21/11 — dodicesimo giro (grafica 9/8,5/8/8,5/9/8,5/8 · operatore 8) e correzioni
+Rapporti in `docs/revisione-finale-2026-11-15/dodicesimo-giro/`. Riverifica: grafica 19 chiusi/16 aperti (tutti P3), operatore quasi tutti chiusi.
+- Operatore: chi ha in mano i contanti di un solo anticipo parte da «Anticipo» (O1); il progetto preso dall'anticipo torna da scegliere se si
+  cambia modo di pagamento (O4); autocertificazione anche dopo «Salva da rimborsare» e conteggio in Dashboard (O2); «Codice suggerito» subito
+  sotto la descrizione, senza parole vuote, al massimo due proposte e mai doppie (O3); tessuti/filo/aghi su 401 (O6); «Salvataggio…» sul pulsante
+  premuto (O8); data delle ricevute in Dashboard dalla stessa fonte di /anticipi (O5); Guida con le parole dei pulsanti (O7); «Frais généraux» nel
+  PDF francese (N-6); «de votre poche» (N9-5); «Tutti» senza stipendi e compensi altrui e senza la query dei totali (N9-1).
+- Grafica: tabella per codice con ▲ e numero rosso anche sul telefono (H2); un solo segno meno (H4); «77 %» con lo spazio (H5); una sola icona nel
+  titolo (H7); rimborsi in ardesia (H8); finanziatori nei blu delle entrate (H9); sotto-schede in griglia 2 × 2 sul telefono (H10/G5); segnaposti
+  corti (H12); codici di gruppo non separati (H13); righe della Guida ≤ 75 caratteri (H14); promemoria e fatta più distinti (H16); niente anello
+  doppio nei rimborsi (H17); stesso segno in euro e valuta (H18); stati con icona in Dashboard operatore (H19); «Filtri» ed «Esporta» larghi uguali
+  (G3); stesso arrotondamento nei Conti (G10); «previsto» nel finanziamento (G12, 6-D11/7-2: stessa barra di Progetti); pastiglie di Scadenze
+  larghe uguali (G19); traccia vuota e piede in fondo nei riquadri (G20); riferimenti indivisibili nei Report (G23); filo sotto contrasto 1,8 (G25);
+  gruppo 03 albicocca lontano dal corallo (9-N3); nuova tavolozza dei progetti (7-7, migrazione `20261121000300_project_palette_v2.sql` che
+  cambia solo i colori ancora automatici: **da approvare per la produzione**); colori stabili anche con i dati dimostrativi ricaricati.

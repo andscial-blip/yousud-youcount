@@ -72,8 +72,8 @@ export function nbRef(ref: string): string { return ref.replace(/-/g, '‑'); }
 
 /** Importo con segno esplicito: «+» sulle entrate, «−» sulle uscite (come nel registro). */
 export function signedMoney(value: number, currency: string, lang: Lang = 'it'): string {
-  const s = money(Math.abs(value), currency, lang);
-  return value > 0 ? `+${s}` : value < 0 ? `−${s}` : s;
+  // H4 (giro 12): lo stesso segno meno di tutte le altre cifre (quello di money), «+» solo davanti alle entrate
+  return value > 0 ? `+${money(value, currency, lang)}` : money(value, currency, lang);
 }
 
 /** Euro per riquadri e grafici, stessa regola ovunque (G10, 21/11): centesimi sotto 1.000 €, interi da 1.000 € in su; mai «,00». */

@@ -5,13 +5,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // revisione 19/11 (settimo giro): progetti e gruppi di spesa non condividono più nessun colore.
 // Progetti: dodici tinte fredde e rosate (nessun giallo, ocra o oliva, che restano alle uscite); nessun doppione fino a dodici progetti.
 // 20/11 (nono giro): tinte tenui scelte per restare distinte anche con il daltonismo rosso-verde (min ΔE 10,6 normale, 6,4 deuteranopia; prima 8,2 e 1,5)
-export const ITEM_PAL = ['#2F869F', '#FFBAC4', '#6B5B8E', '#4A6F9C', '#85BABB', '#CC8990', '#348983', '#8488B8', '#9C5B78', '#C8BCDC', '#789790', '#95779C'];   // 21/11: niente talpa né celeste simile al previsto; min ΔE 11 tra progetti
+export const ITEM_PAL = ['#8A739D', '#658552', '#79D1F9', '#FFB0BB', '#A45C73', '#BA9DBB', '#427B78', '#2279A5', '#BE8088', '#3AA8C5', '#789790', '#95779C'];   // giro 12: i primi 10 scelti per distanza (ΔE ≥ 12,6, deuteranopia ≥ 9), tenui, niente oliva scura né marrone
 export const PAL = ITEM_PAL;
 // Gruppi di spesa (01…09): la famiglia del giallo delle uscite, dall'ocra al crema; codici vicini lontani di chiarezza.
 // gruppi di spesa: gialli e albicocca alternati a toni salvia, ben distinti tra loro e dai progetti (freddi e rosati)
 // due famiglie alternate (gialli-albicocca e salvia): distanza minima ΔE 9 (prima 6), nessun colore uguale alle uscite (20/11)
 // 21/11 (undicesimo giro): senza senape, terracotta e crema invisibile; gialli, albicocca e salvia tenui, min ΔE 8,3 tra gruppi
-export const EXPENSE_SHADES = ['#F2D16A', '#90C39C', '#F0A273', '#D6E8BE', '#F7E5A4', '#5D9883', '#F8C3A3', '#B9B27A', '#B3D58C'];
+export const EXPENSE_SHADES = ['#F2D16A', '#90C39C', '#F5B86B', '#D6E8BE', '#F7E5A4', '#5D9883', '#F8C3A3', '#B9B27A', '#B3D58C'];
 export const REST = '#E3E8EF';
 export const INCOME_SHADES = ['#1E2B3C', '#4C5A6E', '#8A94A3', '#C2C8D1'];   // entrate: blu notte e suoi grigi   // «Altri», più chiaro di ogni tinta
 
@@ -36,7 +36,7 @@ export function projectColorMap(idsInCreationOrder: string[]): Map<string, strin
 
 /** Colori di tutti i progetti dell'organizzazione: il colore salvato con il progetto (21/11); per i progetti senza colore, l'ordine di creazione. */
 export async function loadProjectColors(supabase: SupabaseClient): Promise<Map<string, string>> {
-  const { data } = await supabase.from('projects').select('*').order('created_at').order('id');
+  const { data } = await supabase.from('projects').select('*').order('created_at').order('name').order('id');   // a parità di data, per nome: stabile anche quando i dati dimostrativi si ricaricano
   return colorsOf((data ?? []) as { id: string; color?: string | null }[]);
 }
 

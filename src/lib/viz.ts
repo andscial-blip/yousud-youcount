@@ -200,7 +200,7 @@ export function flowMini(rows: { inc: number; out: number }[], curM: number, lan
     if (b > 0) o += `<rect x="${(x - bw / 2).toFixed(1)}" y="${z.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y(-b) - z).toFixed(1)}" rx="3" fill="var(--c-out)"/>`;
     if (any) dots += `<circle cx="${x.toFixed(1)}" cy="${y(net).toFixed(1)}" r="3.4" fill="var(--c-net)" stroke="var(--surface)" stroke-width="1.6"/>`;
     o += `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="13" fill="${i + 1 === curM ? 'var(--fg)' : 'var(--muted)'}"${i + 1 === curM ? ' font-weight="600"' : ''}>${MESI[lang][i]!.slice(0, 1)}</text>`;
-    const tl = [MESI_L[lang][i]!, `${names[0]}: ${eur0(a, lang)}`, `${names[1]}: ${eur0(b, lang)}`, `${names[2]}: ${net < 0 ? '−' : ''}${eur0(Math.abs(net), lang)}`];
+    const tl = [MESI_L[lang][i]!, `${names[0]}: ${eur0(a, lang)}`, `${names[1]}: ${eur0(b, lang)}`, `${names[2]}: ${net < 0 ? '-' : ''}${eur0(Math.abs(net), lang)}`];
     const hov = `<rect class="hov" x="${(L + sx * i).toFixed(1)}" y="${T}" width="${sx.toFixed(1)}" height="${H - T - B}" data-tip="${esc(tl.join('\n'))}"></rect>`;
     const href = hrefs?.[i];
     dots += href && any ? `<a href="${esc(href)}" aria-label="${esc(tl.join(', '))}">${hov}</a>` : hov;
@@ -208,7 +208,7 @@ export function flowMini(rows: { inc: number; out: number }[], curM: number, lan
   return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(`${names[0]} / ${names[1]}`)}" tabindex="0" data-kbd="1">${o}${dots}</svg>`;
 }
 
-// G25 (21/11): le tinte chiare sulla traccia chiara ricevono un filo più scuro del 25 %, così la barra si vede (contrasto < 1,6).
+// G25 (21/11): le tinte chiare sulla traccia chiara ricevono un filo più scuro del 25 %, così la barra si vede (contrasto < 1,8).
 function lum(hex: string): number {
   const n = parseInt(hex.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
   return 0.2126 * ch[0]! + 0.7152 * ch[1]! + 0.0722 * ch[2]!;
@@ -216,7 +216,7 @@ function lum(hex: string): number {
 export function lightEdge(c: string): string {
   if (!/^#[0-9A-Fa-f]{6}$/.test(c)) return '';
   const track = lum('#F2F5F9'), l = lum(c);
-  if ((track + 0.05) / (l + 0.05) >= 1.6) return '';
+  if ((track + 0.05) / (l + 0.05) >= 1.8) return '';   // G25/9-N5 (giro 12): soglia 1,8 sulla traccia
   const n = parseInt(c.slice(1), 16), d = (v: number) => Math.round(v * 0.75).toString(16).padStart(2, '0');
   return ` stroke="#${d((n >> 16) & 255)}${d((n >> 8) & 255)}${d(n & 255)}" stroke-width="1" vector-effect="non-scaling-stroke"`;
 }

@@ -1198,7 +1198,7 @@ a.k4:hover { transform: translateY(-1px); }
 }
 
 /* ── Scadenze (scelta 4A): calendario per primo con colori per importanza, elenco allineato, righello delle soglie ── */
-:root { --imp-c: #E2917F; --imp-a: #D9A6C9; --imp-n: #8497B0; --imp-p: #C9D6EA; --imp-f: #CFE0C8; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia chiara, 21/11 ΔE deut 15 dal corallo (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
+:root { --imp-c: #E2917F; --imp-a: #D9A6C9; --imp-n: #8497B0; --imp-p: #A9BDE0; --imp-f: #E3EDDF; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia chiara, 21/11 ΔE deut 15 dal corallo (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
 .cal-i.i-c { background: color-mix(in srgb, var(--imp-c) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-c); }
 .cal-i.i-a { background: color-mix(in srgb, var(--imp-a) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-a); }
 .cal-i.i-n { background: color-mix(in srgb, var(--imp-n) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-n); }
@@ -2693,7 +2693,7 @@ a:not([class]) { color: var(--navy); text-decoration-thickness: 1px; text-underl
 .pair2 > .btn, .pair2 > form > .btn, .pair2 > * > .btn { width: 100%; justify-content: center; }
 .pair2 > form { display: contents; }
 @media (max-width: 560px) { .pair2 { display: grid; width: 100%; grid-auto-columns: 1fr; } .pair2 > .btn { min-width: 0; } }
-.fbar .fb-exp, .fbar .fb-btn { min-width: 140px; justify-content: center; }
+.fbar .fb-exp, .fbar .fb-btn { min-width: 184px; justify-content: center; }   /* G3: «Filtri» largo come «Esporta tutto il 2026» */
 @media (max-width: 560px) { .fbar .fb-exp, .fbar .fb-btn { min-width: 0; } }
 .bv-r .btn.small, .bv-r summary.btn { min-width: 132px; justify-content: center; }
 .aw-act > details > summary.btn { min-width: 112px; justify-content: center; }
@@ -2743,10 +2743,15 @@ table.cbudget tr.cb-grp > th, table.cbudget tr.cb-grp > td { background: var(--s
   .bv-pop[open] > .bv-menu { position: static; margin-top: 8px; width: auto; box-shadow: none; }
 }
 .empty-art.sm { width: 48px; height: 48px; }
-/* G5 (21/11): sul telefono le sotto-schede vanno a capo invece di scorrere sotto la «i»: nessuna etichetta tagliata */
+/* G5/H10 (giro 12): sul telefono le sotto-schede sono una griglia regolare di colonne uguali (4 schede = 2 × 2), nessuna etichetta
+   tagliata dalla «i» e nessuna riga zoppa; la «i» resta allineata alla prima riga */
 @media (max-width: 760px) {
   .subrow { align-items: flex-start; }
-  .subrow .subnav { flex-wrap: wrap !important; overflow: visible; column-gap: 16px; row-gap: 0; -webkit-mask-image: none; mask-image: none; padding-right: 0; }
+  .subrow .subnav { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; row-gap: 0; overflow: visible;
+    -webkit-mask-image: none; mask-image: none; padding-right: 0; }
+  .subrow .subnav:has(> a:nth-child(3)):not(:has(> a:nth-child(4))) { grid-template-columns: repeat(3, auto); justify-content: space-between; column-gap: 6px; }
+  .subrow .subnav:has(> a:nth-child(3)):not(:has(> a:nth-child(4))) > a { white-space: nowrap; font-size: 13px; }
+  .subrow .subnav > a { justify-content: center; text-align: center; white-space: normal; line-height: 1.2; text-wrap: balance; min-width: 0; padding: 0 2px; }
   .subrow > .helpline, .subrow > .helpline:first-child { margin-top: 4px; }
 }
 /* 6-D11 / 7-2 (21/11): il previsto ha un solo aspetto in tutta l'app: traccia celeste (--plan-soft) riempita dallo speso,
@@ -2757,3 +2762,17 @@ table.cbudget tr.cb-grp > th, table.cbudget tr.cb-grp > td { background: var(--s
 .cb-bar em { border-left-style: dashed; }
 .vzl .vz-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--navy); margin-right: 5px; vertical-align: 0; }
 .r-country { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--line-2); } .r-cap { font-size: 13px; font-weight: 600; color: var(--slate-2); margin-bottom: 6px; }
+/* H14 (giro 12): righe della Guida di lunghezza leggibile (al massimo circa 75 caratteri) */
+.guide .g-body p, .guide .g-body li, .guide .g-body ol, .guide .g-body ul, .guide-task li, .gt-steps li { max-width: 75ch; }
+.guide .gt-b, .guide .gt-b li, .guide .gt-b p, .guide .g-topic p, .guide .g-topic li { max-width: 75ch; }
+@media (min-width: 761px) { .fbar > a.btn, .fbar > .fb-btn { min-width: 184px; justify-content: center; } }
+/* G19 (giro 12): tutte le pastiglie di stato larghe uguali nella loro colonna; azioni larghe uguali */
+@media (min-width: 761px) {
+  ul.dl.dl2 .dl-tag .chip { width: 118px; min-width: 0; justify-content: center; white-space: nowrap; }
+  ul.dl.dl2 .dl-act > form > .btn.small, ul.dl.dl2 .dl-act > .chip, ul.dl.dl2 .dl-act > .btn.small:not(.ghost) { min-width: 96px; justify-content: center; }
+}
+.kpis .kpi > .s:last-child { margin-top: auto; padding-top: 4px; }   /* G20: piede sempre in fondo in tutte le file di riquadri */
+/* H1/G16 (giro 12): pannelli affiancati all'altezza del loro contenuto, contenuto in alto (niente grandi bianchi) */
+.bqs-pair { align-items: start; }
+.prj-two > .panel > .panel-b { justify-content: flex-start; }
+@media (max-width: 760px) { .subrow .subnav[data-sec="set"] { display: none !important; } }   /* Impostazioni: sul telefono si naviga dal menu «Altro» */

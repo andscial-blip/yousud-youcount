@@ -10,7 +10,7 @@ export function PageHead({ title, lead, children }: { title: string; lead?: Reac
   return (
     <PageHeadRow>
       {lead}
-      <H2 text={title} />
+      <H2 text={title} icon={lead ? null : undefined} />   {/* H7 (giro 12): con l'icona del progetto, nessuna seconda icona dal titolo */}
       <div className="spacer" />
       {children}
     </PageHeadRow>

@@ -193,15 +193,15 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             <div className="kpi">
               <div className="l">{LL('Da autorizzare', 'À autoriser')}</div>
               <div className={`v num${toAuth.length ? ' amb' : ''}`}>{toAuth.length}</div>
-              {toAuth.length > 0 && <><Viz.Stack segs={segReq(toAuth, '#B7C2D1')} max={segReq(toAuth, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toAuth)} />
-                <div className="vzl"><span>{toAuth.length === 1 ? LL('1 richiesta', '1 demande') : LL(`${toAuth.length} richieste`, `${toAuth.length} demandes`)}</span><span>{sumTxt(toAuth)}</span></div></>}
+              {toAuth.length > 0 ? <><Viz.Stack segs={segReq(toAuth, '#B7C2D1')} max={segReq(toAuth, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toAuth)} />
+                <div className="vzl"><span>{toAuth.length === 1 ? LL('1 richiesta', '1 demande') : LL(`${toAuth.length} richieste`, `${toAuth.length} demandes`)}</span><span>{sumTxt(toAuth)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>{LL('nessuna', 'aucune')}</span><span>0</span></div></>}
               <div className="s">{toAuth.length ? LL('richieste in attesa di autorizzazione', 'demandes en attente d’autorisation') : LL('nessuna richiesta in attesa', 'aucune demande en attente')}</div>
             </div>
             <div className="kpi">
               <div className="l">{LL('Da consegnare', 'À remettre')}</div>
               <div className={`v num${toGive.length ? ' amb' : ''}`}>{toGive.length}</div>
-              {toGive.length > 0 && <><Viz.Stack segs={segReq(toGive, 'var(--slate-2)')} max={segReq(toGive, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toGive)} />
-                <div className="vzl"><span>{toGive.length === 1 ? LL('1 autorizzata', '1 autorisée') : LL(`${toGive.length} autorizzate`, `${toGive.length} autorisées`)}</span><span>{sumTxt(toGive)}</span></div></>}
+              {toGive.length > 0 ? <><Viz.Stack segs={segReq(toGive, 'var(--slate-2)')} max={segReq(toGive, '').reduce((a, x) => a + x.v, 0)} tip={tipReq(toGive)} />
+                <div className="vzl"><span>{toGive.length === 1 ? LL('1 autorizzata', '1 autorisée') : LL(`${toGive.length} autorizzate`, `${toGive.length} autorisées`)}</span><span>{sumTxt(toGive)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>{LL('nessuna', 'aucune')}</span><span>0</span></div></>}
               <div className="s">{toGive.length ? LL('contanti da consegnare alla persona', 'espèces à remettre à la personne') : LL('niente da consegnare', 'rien à remettre')}</div>
             </div>
             <div className="kpi">
@@ -424,7 +424,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                                   <AdvanceDoc orgId={me.org_id} kind="delivery" lang={lang} reqId={rq.id} compact label={LL('o carica la copia firmata', 'ou charger la copie signée')} /></>
                                 : <span className="neg"> · {LL('da firmare', 'à signer')}</span>}</span>}
                         </span>
-                        <b className={`num ${v > 0 ? 'pos' : ''}`}>{v > 0 ? '+' : '−'}{money(Math.abs(v), wCur, lang)}</b>
+                        <b className={`num ${v > 0 ? 'pos' : ''}`}>{v > 0 ? '+' : ''}{money(v, wCur, lang)}</b>
                       </li>
                     );
                   })}

@@ -26,7 +26,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
   let tables: Table[] = [], err = '';
   try { tables = await buildReport(supabase, kind, year, lang); } catch (e) { err = e instanceof Error ? e.message : String(e); }
   const fmt = (c: Cell) => c.v == null || c.v === '' ? '' : c.t === 'eur' ? money(c.v, 'EUR', lang) : c.t === 'cur' ? money(c.v, c.cur ?? 'EUR', lang)
-    : c.t === 'int' ? num(Number(c.v), lang) : c.t === 'date' ? date(String(c.v)) : String(c.v);
+    : c.t === 'int' ? num(Number(c.v), lang) : c.t === 'date' ? date(String(c.v)) : String(c.v).replace(/\b(MOV|DEMO|AUT|DOC|ANT)-(\d{4})-(\d+)\b/g, '$1\u2011$2\u2011$3');   // G23: i riferimenti non vanno a capo
   const cls = (c: Cell, num?: boolean) => [num ? 'r num' : '', typeof c.v === 'number' && c.v < 0 && (c.t === 'eur' || c.t === 'cur') ? 'neg' : ''].join(' ').trim();
   const q = (k: string, y: number) => `/report?tipo=${k}&anno=${y}`;
   // tabelle lunghe: a schermo le prime 60 righe, con «Mostra tutte» (il totale in fondo e l'Excel le comprendono sempre tutte)

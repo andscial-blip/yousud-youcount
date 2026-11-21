@@ -196,7 +196,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
         <div className="kpi">
           <div className="l">{net >= 0 ? L('Avanzo', 'Excédent') : L('Disavanzo', 'Déficit')} {year}</div>
-          <div className={`v num ${net < 0 ? 'neg' : 'pos'}`}>{net < 0 ? '−' : ''}{e0(Math.abs(net))}</div>
+          <div className={`v num ${net < 0 ? 'neg' : 'pos'}`}>{e0(net)}</div>
           {inc > 0 || out > 0 ? (net >= 0
             ? <><Viz.Stack segs={[{ v: out, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }]} max={Math.max(1, inc)} tip={`${L('Entrate', 'Recettes')}: ${e0(inc)}\n${L('Uscite', 'Dépenses')}: ${e0(out)}\n${L('Avanzo', 'Excédent')}: ${e0(net)}`} />
               <div className="vzl"><span>{L('uscite', 'dépenses')}</span><span>{L('avanzo', 'excédent')}</span></div></>

@@ -86,7 +86,9 @@ export function buildModel(d: DocData, org: Org): Model {
   const P = (fn: (l: 'it' | 'fr') => string) => ls.forEach((l, i) => blocks.push({ k: 'p', text: fn(l), soft: i > 0 }));
   const sign = [d.signer_name, d.signer_role].filter(Boolean).join(', ');
   const party = (l: 'it' | 'fr') => `${v(d.party_name)}${d.party_address ? `, ${d.party_address}` : ''}${d.party_tax_id ? ` (${l === 'it' ? 'C.F./ID' : 'ID'} ${d.party_tax_id})` : ''}`;
-  const prj = (l: 'it' | 'fr') => (d.project_name ? (l === 'it' ? `, relativa al progetto «${d.project_name}»` : `, relative au projet « ${d.project_name} »`) : '');
+  // N-6 (giro 12): il nome italiano della struttura si traduce nel testo francese
+  const prjFr = (n: string) => ({ 'spese generali': 'Frais généraux', 'struttura e spese generali': 'Structure et frais généraux', 'struttura': 'Structure' } as Record<string, string>)[n.trim().toLowerCase()] ?? n;
+  const prj = (l: 'it' | 'fr') => (d.project_name ? (l === 'it' ? `, relativa al progetto «${d.project_name}»` : `, relative au projet « ${prjFr(d.project_name)} »`) : '');
   let title = '';
 
   if (d.type === 'AUT') {
