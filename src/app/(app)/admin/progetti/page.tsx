@@ -41,7 +41,7 @@ export default async function AdminProjects({ searchParams }: { searchParams: Pr
         const others = [...prjColors.entries()].filter(([id, v]) => v === c && id !== p?.id).length;
         return (<label key={c} className="sw" title={c}>
           <input type="radio" name="color" value={c} defaultChecked={cur === c} required />
-          <span style={{ background: c }} aria-hidden="true" />
+          <i className="sw-dot" style={{ background: c }} aria-hidden="true" />
           <span className="sr-only">{c}{others ? (lang === 'fr' ? ' (déjà utilisée)' : ' (già usato)') : ''}</span>
           {others > 0 && <i className="sw-used" aria-hidden="true" />}
         </label>);
