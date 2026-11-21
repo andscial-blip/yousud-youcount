@@ -113,7 +113,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
               <Legend items={[...(bud ? [{ label: L('Previsto', 'Prévu'), color: 'var(--plan-soft)' }] : []), { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
             <div className="panel-b">
               <ul className="bq-pairs prj-pairs pv2">
-                <li className="pv2-h" aria-hidden="true"><span /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
+                <li className="pv2-h" aria-hidden="true"><span className="bq-pn" /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
                 {pairs.map((p) => { const a = A(p.id); return (
                 <li key={p.id}>
                   <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link>

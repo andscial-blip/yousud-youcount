@@ -228,7 +228,7 @@ export default async function MovementDetail({ params, searchParams }: {
         <aside className="detail-side stack">
           {(m.kind !== 'transfer' || docs.length > 0) && (
             <Panel title={t('d_documents')} pad>
-              {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}${lang === 'fr' ? '\u00a0' : ''}: ${noDocReason(m.no_doc_reason, lang)}` : t('none')}</p> : (
+              {docs.length === 0 ? <p className="muted" style={{ margin: 0 }}>{m.no_doc_reason ? `${t('d_no_reason')}${lang === 'fr' ? '\u00a0' : ''}: ${noDocReason(m.no_doc_reason, lang)}` : canEdit ? <>{L('Nessun giustificativo. Per aggiungerlo tocca «Modifica» e fotografa lo scontrino.', 'Aucun justificatif. Pour l’ajouter, touchez « Modifier » et photographiez le ticket.')} <Link href={`/movimenti/${m.id}/modifica`}>{L('Modifica', 'Modifier')}</Link></> : L('Nessun giustificativo.', 'Aucun justificatif.')}</p> : (
                 <ul className="docs">
                   {docs.map((d, i) => (
                     <li key={d.id}>

@@ -86,7 +86,7 @@ export default async function Deadlines({ searchParams }: {
   // R4 (giro 14): per l'operatore è un rimborso da ricevere, non da pagare
   if (dueList.length) auto('a-reimb', td, 'pay', staff ? L(`Rimborsi da pagare:\u00a0${dueList.length}`, `Remboursements à payer\u00a0:\u00a0${dueList.length}`) : L(`Rimborso che ti spetta:\u00a0${dueList.length}`, `Remboursement qui vous revient\u00a0:\u00a0${dueList.length}`),
     staff ? L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées personnellement, à rembourser.') : L('Spese che hai pagato di tasca tua: te le rimborsa un responsabile.', 'Dépenses que vous avez payées personnellement : un responsable vous les rembourse.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
-  if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare:\u00a0${drafts.count}`, `Mouvements à compléter\u00a0:\u00a0${drafts.count}`),
+  if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Bozze da completare:\u00a0${drafts.count}`, `Brouillons à compléter\u00a0:\u00a0${drafts.count}`),
     L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas enregistrés.'), '/movimenti?stato=draft');
   if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),
     L('Controllo a quattro occhi prima della chiusura del mese.', 'Contrôle à quatre yeux avant la clôture du mois.'), '/verifica');
@@ -308,7 +308,7 @@ export default async function Deadlines({ searchParams }: {
                 <div className="dl-day"><b>{i.date.slice(8)}</b><span>{MS[Number(i.date.slice(5, 7)) - 1]}</span></div>
                 <div className="dl-body">
                   <div className="dl-t"><Link href={href({ apri: i.key })} scroll={false}>{i.title}</Link></div>
-                  <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
+                  <div className="muted dl-s">{[staff ? L(...DL_CAT[i.cat]) : null, i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
                 </div>
                 <div className="dl-amt num">{!i.amount ? '' : i.currency === 'MGA' && fxr ? <span className="two"><b>{eurShort(inEur(i), lang)}</b><small>{money(i.amount, 'MGA', lang)}</small></span> : (i.currency ?? 'EUR') === 'EUR' ? eurShort(i.amount, lang) : money(i.amount, i.currency ?? 'EUR', lang)}</div>
                 <div className="dl-tag">{tag(i)}</div>

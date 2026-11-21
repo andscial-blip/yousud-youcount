@@ -2703,10 +2703,11 @@ a:not([class]) { color: var(--navy); text-decoration-thickness: 1px; text-underl
 .prj-pairs.pv2 .bq-pv { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; column-gap: 10px; }
 .prj-pairs.pv2 .pv2-h { margin-bottom: -6px; }
 .prj-pairs.pv2 .pv2-h small { font-size: 12px; color: var(--muted); font-weight: 600; }
-@media (max-width: 760px) {
+@media (max-width: 1099px) {
+  /* M1 (giro 16): fino a 1099 px il nome sta sopra la barra; l'intestazione segue la stessa griglia (nome vuoto nascosto) */
   .prj-pairs.pv2 li { grid-template-columns: minmax(0, 1fr) 176px; }
-  .prj-pairs.pv2 .pv2-h > span:first-child { display: none; }
-  .prj-pairs.pv2 .pv2-h { grid-template-columns: minmax(0, 1fr) 176px; }
+  .prj-pairs.pv2 .bq-pn { grid-column: 1 / -1; }
+  .prj-pairs.pv2 .pv2-h > .bq-pn { display: none; }
 }
 .pring-cap { margin: -4px 0 0; display: flex; align-items: center; gap: 8px; }
 .pring-cap .tick-k { width: 3px; height: 12px; border-radius: 1px; background: var(--navy); display: inline-block; }
@@ -2797,7 +2798,7 @@ table.t thead tr > th { border-bottom: 1px solid var(--line-2); }
 }
 .imp-leg .i-f { box-shadow: inset 0 0 0 1px #9DBF94; }   /* J11 (giro 13): il pallino «fatta» si vede anche sul bianco */
 /* J7 (giro 13): «tempo trascorso» e «concesso» blu notte anche nella scheda in elenco dei finanziamenti, come nei riquadri */
-.fin-pb em { background: #2E3D52; }
+.fin-pb em { background: #5F6F85; }   /* M4: concesso in ardesia scuro *
 .g-tb i { background: #2E3D52; }
 .home.v2.yc .h-left { align-items: start; }   /* G16 (giro 13): ogni scheda della Dashboard alta quanto il suo contenuto, niente vuoti */
 @media (min-width: 1024px) { .kpis.dk.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -2834,3 +2835,28 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 /* L6 (giro 15): un solo stile per eliminare nella scheda del movimento: pulsante fantasma rosso da 38 px, 14 px semigrassetto */
 .detail-main .factions form > .btn.ghost[style*="--red"], .detail-main .mv-demo .btn, .detail-main .danger-zone:not(.reopen) > summary.btn {
   color: var(--red) !important; background: transparent; border: 1px solid color-mix(in srgb, var(--red) 35%, transparent); min-height: 38px; font-size: 14px; font-weight: 600; padding: 0 14px; }
+/* M2 (giro 16): sul telefono il titolo della scadenza usa tutta la larghezza; importo sotto, poi stato a sinistra e azioni a destra */
+@media (max-width: 760px) {
+  ul.dl.dl2 li { grid-template-columns: 44px minmax(0, 1fr); }
+  ul.dl.dl2 .dl-body { grid-column: 2; grid-row: 1; }
+  ul.dl.dl2 .dl-amt { grid-column: 2; grid-row: 2; text-align: left; }
+  ul.dl.dl2 .dl-amt:empty { display: none; }
+  ul.dl.dl2 .dl-amt .two { align-items: flex-start; }
+  ul.dl.dl2 .dl-tag { grid-column: 2; grid-row: 3; justify-self: start; }
+  ul.dl.dl2 .dl-act { grid-column: 2; grid-row: 3; justify-self: end; }
+  ul.dl.dl2 .dl-day { grid-row: 1 / span 3; }
+}
+.gen-docs > .btn:last-child:nth-child(odd):not(:first-child) { grid-column: 1 / -1; }   /* M6 (giro 16): il terzo pulsante, se resta solo, prende tutta la riga */
+.pr-n b, .gcard .pr-n small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }   /* M7c (giro 16): titoli delle schede su due righe, mai troncati */
+.fx-mo { display: inline-block; min-width: 9.5em; }   /* M8 (giro 16): pastiglie DEMO in colonna */
+.vzl span:last-child { white-space: nowrap; }   /* M9: la percentuale resta in riga con l’etichetta */
+/* L9 (giro 16): nomi dei conti senza parole sole a capo */
+.bal-t td, .bal-cards .bc-top b, .acclist .an { text-wrap: balance; }
+/* K7 (giro 16): dove non ci sono sotto-schede, «Come funziona» sta a destra; sul telefono sale nella riga del titolo invece di occupare una fascia */
+.subrow:not(:has(> .subnav)) { justify-content: flex-end; }
+@media (max-width: 760px) {
+  .subrow:not(:has(> .subnav)), .subrow:has(> .subnav[data-sec="set"]) { justify-content: flex-end; margin-top: -52px; min-height: 0; pointer-events: none; }
+  .subrow:not(:has(> .subnav)) > *, .subrow:has(> .subnav[data-sec="set"]) > * { pointer-events: auto; }
+}
+/* M10 (giro 16): righe di «Ultimi movimenti» allineate al titolo della scheda */
+@media (max-width: 760px) { .prj-d table.recent td:first-child { padding-left: 18px; } }

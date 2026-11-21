@@ -5,7 +5,8 @@ import { date, money, eurShort } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
 import { CIcon } from '@/components/CIcon';
 import { Donut, Legend, Viz } from '@/components/Charts';
-import { INCOME_SHADES, REST } from '@/lib/palette';
+import { REST } from '@/lib/palette';
+const ARDESIA = ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'];
 import { DonorMark } from '@/components/DonorMark';
 import { createGrant } from './actions';
 import { COUNTED, GrantFields, eurOf, timeOf, totals, type GrantRow, type Mv } from './shared';
@@ -58,7 +59,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   const dn = [...byDonor.entries()].map(([k, x]) => ({ k: k || 'none', ...x })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
   const dnTop0 = (dn.length > 6 ? [...dn.slice(0, 5), { k: 'rest', label: L(`Altri (${dn.length - 5})`, `Autres (${dn.length - 5})`), v: dn.slice(5).reduce((s, x) => s + x.v, 0) }] : dn);
   // H9 (giro 12): i finanziatori sono entrate: blu notte e suoi grigi, mai i colori dei progetti
-  const dnCols = dnTop0.map((x, n) => (x.k === 'rest' ? REST : INCOME_SHADES[n % INCOME_SHADES.length]!));
+  const dnCols = dnTop0.map((x, n) => (x.k === 'rest' ? REST : ARDESIA[n % ARDESIA.length]!));   // M4 (giro 16): «Concesso» in ardesia, il blu notte resta a «Ricevuto»
   const dnTop = dnTop0.map((x, n) => ({ ...x, color: dnCols[n]! }));
   const maxPair = Math.max(1, ...shown.flatMap((g) => [granted(g), T(g).rec, T(g).sp]));
   const net = sum.rec - sum.sp;

@@ -421,3 +421,14 @@ Rapporti in `docs/revisione-finale-2026-11-15/quindicesimo-giro/`. Solo P3.
 - Operatore: Guida senza frasi rotte e con «Come è stata pagata» (R6/S2); «da verificare» anche in Movimenti (S1); «Frais généraux» in tutta
   l'app in francese (S4); «Mostra 1 movimento» e solo il proprio anticipo nei filtri (S5); messaggi di errore dei campi sempre nella lingua
   dell'app (S6); rimborsi vuoti senza didascalie doppie (S3).
+
+## 21/11 — sedicesimo giro (grafica 9,5/8,5/9/9,5/9,5/8,5/8 · operatore aree ≥ 9, complessivo 8)
+Rapporti in `docs/revisione-finale-2026-11-15/sedicesimo-giro/`. Un P2 (M1), il resto P3.
+- Grafica: «Previsto e speso» con intestazioni nella stessa griglia dei numeri fino a 1099 px (M1); Scadenze sul telefono con titolo a tutta
+  larghezza (M2); due punti non separabili in francese (M3); conteggi in grigio e concesso in ardesia, il blu notte solo per le entrate (M4);
+  terzo pulsante di «Genera un documento» a tutta riga (M6); finanziamenti: legenda solo con il grafico, stato vuoto uguale, titoli su due righe
+  (M7); DEMO in colonna nei Cambi (M8); percentuali in riga e «4 gruppi di voci» non separati (M9); rientro di «Ultimi movimenti» (M10);
+  nomi dei conti senza parole sole (L9); «Come funziona» a destra dove non ci sono sotto-schede e nella riga del titolo sul telefono (K7).
+- Operatore: la Guida mostra all'operatore i testi scritti per lui (T1); «Bozze da completare» anche in Scadenze, senza categorie da
+  amministratore (T2); scheda della bozza senza scontrino con «tocca Modifica e fotografa lo scontrino» (T3); Rimborsi dell'operatore con
+  l'elenco delle sue spese al posto della vista per persona (T4).

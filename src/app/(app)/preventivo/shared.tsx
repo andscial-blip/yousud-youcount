@@ -135,7 +135,7 @@ export function BudgetTiles({ c }: { c: Ctx }) {
       <div className="v num">{e0(tot)}</div>
       {gs.length > 0 && <><Viz.Cols vals={gs.map((x) => x.v)} colors={gs.map(() => color)} tip={gs.map((x) => `${x.g.code} · ${CL(x.g)}: ${e0(x.v)}`).join('\n')} />
         <div className="vzl"><span>{top(gs)!.g.code} · {CL(top(gs)!.g)}</span><span>{pc(top(gs)!.v, tot)}</span></div></>}
-      <div className="s">{n ? `${rows(n)} · ${gs.length === 1 ? L('1 gruppo di voci', '1 groupe de postes') : L(`${gs.length} gruppi di voci`, `${gs.length} groupes de postes`)}` : L('nessuna riga', 'aucune ligne')}</div>
+      <div className="s">{n ? `${rows(n)} · ${gs.length === 1 ? L('1\u00a0gruppo di\u00a0voci', '1\u00a0groupe de\u00a0postes') : L(`${gs.length}\u00a0gruppi di\u00a0voci`, `${gs.length}\u00a0groupes de\u00a0postes`)}` : L('nessuna riga', 'aucune ligne')}</div>
     </div>);
   return (
     <div className="kpis dk bqk">

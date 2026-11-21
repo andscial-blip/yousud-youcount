@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
-import { HELP, HELP_SECTIONS } from '@/lib/help';
+import { HELP, HELP_SECTIONS, OP_HELP } from '@/lib/help';
 import { PrintButton } from '@/components/PrintButton';
 import { GuideSearch } from '@/components/GuideSearch';
 import { CIcon } from '@/components/CIcon';
@@ -64,7 +64,10 @@ export default async function Guide() {
           <section key={s.id} className="panel g-sec" id={`sec-${s.id}`}>
             <div className="panel-h"><h2 className="h-ic"><span className="hic"><CIcon name={SEC_IC[s.id] ?? 'info'} size={15} /></span>{lang === 'fr' ? s.fr : s.it}</h2></div>
             {items.map((h) => {
-              const [title, paras] = lang === 'fr' ? h.fr : h.it;
+              const [title, paras0] = lang === 'fr' ? h.fr : h.it;
+              // T1 (giro 16): l'operatore legge la versione scritta per lui (la stessa di «Come funziona questa scheda»), non quella dell'amministratore
+              const opv = !staff ? OP_HELP[h.href] : undefined;
+              const paras = opv ? (lang === 'fr' ? opv.fr : opv.it) : paras0;
               return (
                 <details key={h.href} id={anchor(h.href)} className="g-topic">
                   <summary><span>{title}</span><CIcon name="arrow" size={16} /></summary>

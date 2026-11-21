@@ -243,7 +243,7 @@ export const VZ = {
     const n = vals.length;
     if (!n) return '';
     // G20 (giro 13): senza valori resta la riga di base, così il riquadro ha la stessa altezza degli altri
-    if (!vals.some((v) => v)) return `<svg class="vz" viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="31" width="200" height="1.5" rx=".75" fill="var(--surface-2)"/></svg>`;
+    if (!vals.some((v) => v)) return `<svg class="vz" viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="10" width="200" height="14" rx="3" fill="var(--surface-2)"/></svg>`;
     const mx = Math.max(1, ...vals.map((v) => Math.abs(v || 0))), bw = 200 / n;
     let out = '';
     vals.forEach((v, i) => { const h = Math.max(1.5, (Math.abs(v || 0) / mx) * 30); out += `<rect x="${(i * bw + bw * 0.18).toFixed(1)}" y="${(32 - h).toFixed(1)}" width="${(bw * 0.64).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${colorFn ? colorFn(i) : hi.includes(i) ? 'var(--c-ink)' : 'var(--band)'}"></rect>`; });

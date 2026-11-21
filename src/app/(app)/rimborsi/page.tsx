@@ -111,8 +111,8 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
         <div className="kpi">
           <div className="l">{resp ? LL('Da rimborsare', 'À rembourser') : LL('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className={`v num${due.length && e2(dueEur).length > 11 ? ' long' : ''}`}>{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 && curs[0] === 'EUR' ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
-          {dueEur > 0 ? <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'][i]! }))   /* H8 (giro 12): persone in ardesia, come negli Anticipi */} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
-            <div className="vzl"><span>{people[0]!.n.split(' ')[0]}</span><span>{!resp ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
+          {dueEur > 0 ? <><Viz.Stack segs={resp ? people.slice(0, 6).map((x, i) => ({ v: x.eur, c: ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'][i]! })) : [{ v: dueEur, c: '#8497B0' }]   /* H8 (giro 12): persone in ardesia, come negli Anticipi */} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
+            <div className="vzl"><span>{resp ? people[0]!.n.split(' ')[0] : LL('da ricevere', 'à recevoir')}</span><span>{!resp ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{due.length === 0 ? (resp ? LL('non dobbiamo niente a nessuno', 'nous ne devons rien à personne') : LL('nessuna spesa da rimborsarti', 'aucune dépense à vous rembourser'))
             : curs.length === 1 ? (curs[0] === 'EUR' ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : money(totals.get(curs[0]!)!, curs[0]!, lang))
             : [...totals.entries()].map(([c, v]) => money(v, c, lang)).join(' + ')}</div>
@@ -122,7 +122,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className={`v num${maxDays > 60 ? ' neg' : ''}`}>{!oldest ? '–' : maxDays === 0 ? LL('oggi', 'aujourd’hui') : maxDays === 1 ? LL('1 giorno', '1 jour') : LL(`${maxDays} giorni`, `${maxDays} jours`)}</div>
           {dueEur > 0 && <><Viz.Cols vals={ageBuckets} colors={ageBuckets.map((v, i) => (v ? AGE_C[i]! : 'var(--band)'))} tip={ageBuckets.map((v, i) => `${AGE_L[i]}: ${e2(v)}`).join('\n')} />
             <div className="vzl"><span>{LL('≤ 7 gg', '≤ 7 j')}</span><span>{LL('oltre 60 gg', 'plus de 60 j')}</span></div></>}
-          <div className="s">{oldest ? (resp ? LL(`la più vecchia: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`, `la plus ancienne : ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`) : LL(`la più vecchia è del ${dm(since(oldest))}`, `la plus ancienne date du ${dm(since(oldest))}`)) : LL('nessuna spesa in attesa', 'aucune dépense en attente')}</div>
+          <div className="s">{oldest ? (resp ? LL(`la più vecchia: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`, `la plus ancienne\u00a0: ${dm(since(oldest))}, ${oldest.paid_by ?? '–'}`) : LL(`la più vecchia è del ${dm(since(oldest))}`, `la plus ancienne date du ${dm(since(oldest))}`)) : LL('nessuna spesa in attesa', 'aucune dépense en attente')}</div>
         </div>
         {resp && (
         <div className="kpi">
@@ -148,6 +148,15 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="rb-empty"><span className="rb-av ok"><CIcon name="check" size={16} /></span>
             <div><b>{t('reimb_none')}</b><small className="muted">{LL('Quando qualcuno paga una spesa di tasca propria, si registra con «Spesa pagata di tasca mia» e compare qui, pronta per essere rimborsata.',
               'Quand quelqu’un paie une dépense personnellement, on l’enregistre avec « Dépense payée de ma poche » et elle apparaît ici, prête à être remboursée.')}</small></div></div>
+        ) : !resp ? (
+          /* T4 (giro 16): l'operatore vede l'elenco delle sue spese (data, descrizione, importo), non la vista per persona */
+          <ul className="rb-recent rb-mine">
+            {[...due].sort((a, b) => String(b.op_date).localeCompare(String(a.op_date))).map((r) => (
+              <li key={r.id}><span className="rb-d num">{dm(since(r))}</span>
+                <span className="rb-t"><Link href={`/movimenti/${r.id}`}><b>{r.description || LL('Spesa', 'Dépense')}</b></Link>{!hasDoc(r) && <small className="muted">{LL('senza giustificativo', 'sans justificatif')}</small>}</span>
+                <b className="num rb-a">{r.currency !== 'EUR' ? <>{e2(eurOf(r))}<small className="muted" style={{ display: 'block', fontWeight: 400 }}>{money(Number(r.amount), r.currency, lang)}</small></> : money(Number(r.amount), r.currency, lang)}</b></li>
+            ))}
+          </ul>
         ) : (
           <ul className="aw-list rb-who">
             {[...groups.values()].sort((a, b) => b.rows.reduce((s, r) => s + eurOf(r), 0) - a.rows.reduce((s, r) => s + eurOf(r), 0)).map((g) => {

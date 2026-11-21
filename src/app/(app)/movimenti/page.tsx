@@ -173,7 +173,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
         <div className="kpi">
           <div className="l">{L('Movimenti', 'Mouvements')}</div>
           <div className="v num">{num(total, lang)}</div>
-          <Viz.Cols vals={bN} colors={bN.map((v) => (v ? 'var(--slate-2)' : 'var(--band)'))} tip={bTip(L('Movimenti', 'Mouvements'), bN, (v) => num(v, lang))} />
+          <Viz.Cols vals={bN} colors={bN.map((v) => (v ? '#9DA6B4' : 'var(--band)'))} tip={bTip(L('Movimenti', 'Mouvements'), bN, (v) => num(v, lang))} />
           {bN.some(Boolean) && axis}
           <div className="s">{nRec > 0 ? <Link href={href({ stato: 'recorded' })} scroll={false}>{nRec === 1 ? L('1 da verificare', '1 à vérifier') : L(`${num(nRec, lang)} da verificare`, `${num(nRec, lang)} à vérifier`)}</Link> : L('niente da verificare', 'rien à vérifier')}</div>
         </div>

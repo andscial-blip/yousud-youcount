@@ -151,10 +151,10 @@ export default async function GrantDetail({ params, searchParams }: {
         </section>
         <section className="panel">
           <div className="panel-h"><H2 text={L('Previsto e speso per gruppo', 'Prévu et dépensé par groupe')} icon={null} /><div className="spacer" />
-            <Legend items={[{ label: L('Previsto', 'Prévu'), color: 'var(--plan-soft)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
+            {bRows.length > 0 && <Legend items={[{ label: L('Previsto', 'Prévu'), color: 'var(--plan-soft)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" />}</div>
           <div className="panel-b">{bRows.length === 0 ? <p className="muted bq-none">{staff ? L('Nessun previsto e nessuna spesa: il previsto per gruppo si imposta nella tabella qui sotto («Imposta il previsto»).', 'Aucun prévu ni dépense : le prévu par groupe se règle dans le tableau ci-dessous (« Définir le prévu »).') : L('Nessuna spesa collegata.', 'Aucune dépense liée.')}</p> : (
             <ul className="bq-pairs prj-pairs pv2">
-              <li className="pv2-h" aria-hidden="true"><span /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
+              <li className="pv2-h" aria-hidden="true"><span className="bq-pn" /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
               {bRows.map((r) => (
               <li key={r.k}><span className="bq-pn">{r.label}</span>
                 {/* 6-D11/7-2 (giro 12): stessa barra di Progetti: traccia celeste = previsto, giallo = speso, corallo = oltre */}

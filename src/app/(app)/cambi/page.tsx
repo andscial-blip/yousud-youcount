@@ -165,7 +165,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
                 const p = prevOf(r), a = ap.get(r.month);
                 return (
                   <tr key={key(r)} className={key(r) === (current && key(current)) ? 'hl' : ''}>
-                    <td className="nw" data-label={t('period')}>{M[r.month - 1]} {r.year}{r.demo && <span className="chip demo" style={{ marginLeft: 6 }}>DEMO</span>}</td>
+                    <td className="nw" data-label={t('period')}><span className="fx-mo">{M[r.month - 1]} {r.year}</span>{r.demo && <span className="chip demo">DEMO</span>}</td>
                     <td className="r num nw" data-label={L('Tasso del mese', 'Taux du mois')}><b>{mga(Number(r.rate))}</b></td>
                     <td className="r num nw" data-label={L('Variazione', 'Variation')}>{p ? chg(Number(r.rate), Number(p.rate)) : '–'}</td>
                     <td className="r num nw" data-label={L('Applicato (media)', 'Appliqué (moyenne)')}>{a && a.w ? <span className="two"><b>{mga(Math.round(a.s / a.w))}</b>

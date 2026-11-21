@@ -347,8 +347,8 @@ try {
     assert.deepEqual(m, { status: 'draft', reimb_status: 'due', account_id: null, paid_by: 'Operatore di prova', currency: 'MGA', amount: 18000 });
     // l'operatore vede la spesa in "Da rimborsare" ma non può rimborsarla
     await p.goto(`${base}/rimborsi`);
-    await p.locator('.aw-list > li', { hasText: 'Operatore di prova' }).getByRole('link').click();
-    await p.getByText('PROVA taxi da rimborsare').waitFor();
+    // giro 16: l'operatore vede l'elenco delle sue spese, non la vista per persona
+    await p.locator('.rb-mine').getByText('PROVA taxi da rimborsare').waitFor();
     assert.equal(await p.getByRole('button', { name: /^Rimborsa/ }).count(), 0);
   });
   const rs = await login('resp@test.local');
