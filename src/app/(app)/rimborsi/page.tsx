@@ -146,7 +146,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
         right={<Link className="btn primary" href="/nuovo?tipo=expense&tasca=1"><CIcon name="plus" size={15} />{LL('Spesa pagata di tasca mia', 'Dépense payée de ma poche')}</Link>}>
         {groups.size === 0 ? (
           <div className="rb-empty"><span className="rb-av ok"><CIcon name="check" size={16} /></span>
-            <div><b>{t('reimb_none')}</b><small className="muted">{LL('Quando qualcuno paga una spesa di tasca propria, si registra con «Spesa pagata di tasca mia» e compare qui, pronta per essere rimborsata.',
+            <div><b>{t('reimb_none')}</b><small className="muted">{!resp ? LL('Quando paghi una spesa di tasca tua, registrala con «Spesa pagata di tasca mia»: resta qui finché un responsabile non te la rimborsa.', 'Quand vous payez une dépense personnellement, enregistrez-la avec « Dépense payée de ma poche » : elle reste ici jusqu’à ce qu’un responsable vous la rembourse.') : LL('Quando qualcuno paga una spesa di tasca propria, si registra con «Spesa pagata di tasca mia» e compare qui, pronta per essere rimborsata.',
               'Quand quelqu’un paie une dépense personnellement, on l’enregistre avec « Dépense payée de ma poche » et elle apparaît ici, prête à être remboursée.')}</small></div></div>
         ) : !resp ? (
           /* T4 (giro 16): l'operatore vede l'elenco delle sue spese (data, descrizione, importo), non la vista per persona */
