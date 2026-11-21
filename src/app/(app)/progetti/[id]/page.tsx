@@ -1,3 +1,4 @@
+import { todayYmd, orgNow } from '@/lib/today';
 import { loadProjectColors } from '@/lib/palette';
 import { fixedColors } from '@/components/Charts';
 import Link from 'next/link';
@@ -23,7 +24,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const sp = await searchParams;
-  const now = new Date();
+  const now = orgNow();
   const year = Number(sp.anno) || now.getFullYear();
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
@@ -146,7 +147,7 @@ export default async function ProjectDetail({ params, searchParams }: {
         <div className="c6 stack">
           <Panel title={L('Scadenze', 'Échéances')}>
             {(dls ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessuna scadenza aperta.', 'Aucune échéance ouverte.')}</p> : (
-              <ul className="acclist">{dls!.map((d) => <li key={d.id}><span className={`cdp ${d.due_date < now.toISOString().slice(0, 10) ? 'late' : 'mid'}`}>{date(d.due_date)}</span><span className="an">{d.title}</span><span /></li>)}</ul>)}
+              <ul className="acclist">{dls!.map((d) => <li key={d.id}><span className={`cdp ${d.due_date < todayYmd() ? 'late' : 'mid'}`}>{date(d.due_date)}</span><span className="an">{d.title}</span><span /></li>)}</ul>)}
           </Panel>
           <Panel title={L('Documenti emessi', 'Documents émis')}>
             {(docs ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessun documento.', 'Aucun document.')}</p> : (

@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import { CIcon } from '@/components/CIcon';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
@@ -18,7 +19,7 @@ export default async function IssuedDocs({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const { supabase, t, lang, me } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const year = Number(sp.anno) || new Date().getFullYear();
+  const year = Number(sp.anno) || orgYear();
   const sez = DOC_GROUPS.find((g) => g.k === sp.sez);
   const q = (sp.q ?? '').trim().toLowerCase().slice(0, 80);
   const stato = ['draft', 'issued', 'cancelled'].includes(sp.stato ?? '') ? sp.stato! : '';

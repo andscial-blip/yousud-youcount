@@ -98,7 +98,9 @@ export default async function MovementDetail({ params, searchParams }: {
   const writer = Boolean(me && me.role !== 'read_only');
   const autPossible = m.kind === 'expense' && !m.reverses_id && !rev;
   const autNow = autQ === '1';   // arrivo da «Registra» con la scelta «prepara l'autocertificazione»
-  const showAut = autPossible && (Boolean(aut) || (writer && m.status !== 'verified' && docs.length === 0));
+  // il modulo si prepara su una spesa registrata, da chi l'ha inserita o da un responsabile (revisione 21/11: non sulle bozze né sulle spese altrui)
+  const canAut = writer && m.status === 'recorded' && (resp || m.created_by === me!.id);
+  const showAut = autPossible && (Boolean(aut) || (canAut && docs.length === 0));
   const autDefaultLang = aut?.lang ?? (m.account?.location === 'MG' || m.currency === 'MGA' ? 'both' : 'it');
   const signedAmount = m.kind === 'transfer' ? Number(m.amount) : Number(m.amount) * (m.reverses_id ? -1 : 1) * (m.kind === 'income' ? 1 : -1);
   const errText = err ? (t(`err_${err.split(':')[0]}` as Key) ?? err) : null;
@@ -261,7 +263,7 @@ export default async function MovementDetail({ params, searchParams }: {
                   )}
                   {resp && <p className="hint" style={{ margin: 0 }}>{t('aut_check')}</p>}
                 </div>
-              ) : writer && m.status !== 'verified' ? (
+              ) : canAut ? (
                 <form action={selfCertAction} className="aut-box">
                   {autNow && <div className="note info" role="status">{t('aut_now')}</div>}
                   <p className="muted" style={{ margin: 0 }}>{t('aut_intro')}</p>

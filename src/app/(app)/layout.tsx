@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Logo, Splash, Wordmark } from '@/components/Logo';
@@ -28,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     id: s.id, label: t(s.key), hint: t(s.hint), ic: s.ic, also: s.also, subs: s.subs.map((x) => ({ href: x.href, label: t(x.key) })),
   }));
   const canWrite = me.role !== 'read_only';
-  const cy = new Date().getFullYear();
+  const cy = orgYear();
   // l'anno prossimo serve a chi prepara il preventivo; all'operatore no (revisione 19/11)
   const years = Array.from({ length: cy + 2 - 2022 }, (_, i) => cy + 1 - i).filter((y) => y <= cy || me!.role !== 'operator');
   const syncL = { ok: t('sync_ok'), offline: t('sync_off'), pending: t('sync_wait') };

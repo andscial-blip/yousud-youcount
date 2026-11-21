@@ -1,4 +1,5 @@
 'use client';
+import { todayYmd } from '@/lib/today';
 // Anticipi: caricamento di un documento dell'anticipo (preventivo o stima alla richiesta; ricevuta di consegna firmata).
 // Il file va nello spazio privato dell'ente e si registra come documento del suo tipo (non è un giustificativo di spesa).
 // - senza reqId (modulo di richiesta): carica subito e mette l'id nel campo nascosto `name`, che il server collega alla richiesta;
@@ -36,7 +37,7 @@ export function AdvanceDoc({ orgId, kind, lang, label, name, reqId, compact }: {
       if (up.error && !/exists|Duplicate/i.test(up.error.message)) throw new Error(up.error.message);
       const { data: d, error: e1 } = await sb.rpc('register_document', { p: { client_uuid: crypto.randomUUID(), sha256: hash, original_path: path,
         mime: file.type, file_name: file.name.slice(0, 255), size_bytes: file.size, doc_type: kind === 'estimate' ? 'estimate' : 'delivery_receipt',
-        doc_date: new Date().toISOString().slice(0, 10) } });
+        doc_date: todayYmd() } });
       if (e1) throw new Error(e1.message);
       const id = (d as { id: string }).id;
       if (reqId) {

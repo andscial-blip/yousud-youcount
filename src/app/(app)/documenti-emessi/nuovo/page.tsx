@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { DOC_TYPES } from '@/lib/doc-model';
 import { DocForm, type DocInit, type IssuableType } from '@/components/DocForm';
@@ -31,10 +32,10 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
   // «Correggi»: nuova bozza con i dati di un documento già emesso (che si annulla a parte, con il motivo)
   const src = /^[0-9a-f-]{36}$/.test(sp.da ?? '') ? (await supabase.from('issued_docs')
     .select('type, lang, movement_id, project_id, counterparty_id, party_name, party_tax_id, party_address, amount, currency, data, number').eq('id', sp.da!).maybeSingle()).data : null;
-  const init: DocInit = src && src.type === type ? { type, lang: src.lang, doc_date: new Date().toISOString().slice(0, 10), movement_id: src.movement_id, project_id: src.project_id,
+  const init: DocInit = src && src.type === type ? { type, lang: src.lang, doc_date: todayYmd(), movement_id: src.movement_id, project_id: src.project_id,
     counterparty_id: src.counterparty_id, party_name: src.party_name, party_tax_id: src.party_tax_id, party_address: src.party_address, amount: src.amount,
     currency: src.currency, data: { ...(src.data ?? {}), fx_rate: undefined } } : {
-    type, lang: lang === 'fr' ? 'fr' : 'it', doc_date: new Date().toISOString().slice(0, 10), currency: m?.currency ?? 'EUR',
+    type, lang: lang === 'fr' ? 'fr' : 'it', doc_date: todayYmd(), currency: m?.currency ?? 'EUR',
     movement_id: m?.id ?? null, project_id: m?.project_id ?? (/^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : null), counterparty_id: m?.counterparty_id ?? null,
     party_name: m ? (type === 'NRS' || type === 'ASP' ? m.paid_by ?? m.counterparty?.name ?? '' : m.counterparty?.name ?? '') : '', // quietanza: chi riceve è il fornitore, mai chi ha pagato; se manca resta vuoto
     party_tax_id: priv?.tax_code ?? '', party_address: priv?.address ?? '', amount: m ? Number(m.amount) : '',

@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import AmountField from '@/components/AmountField';
 import { advanceLate } from '@/lib/advance-late';
 import { PersonPicker } from '@/components/PersonPicker';
@@ -47,12 +48,12 @@ export default async function Advances({ searchParams }: { searchParams: Promise
     supabase.from('settings').select('value').eq('key', 'adv_limits').maybeSingle(),
     persona && staff ? supabase.from('movements').select('id, ref, op_date, kind, amount, to_amount, account_id, to_account_id, description, status, movement_documents(document_id)')
       .or(`account_id.eq.${persona},to_account_id.eq.${persona}`).order('op_date', { ascending: false }).limit(200).returns<Mov[]>() : Promise.resolve({ data: [] as Mov[] }),
-    supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
+    supabase.rpc('fx_rate_for', { p_date: todayYmd() }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const fxNow = Number(fxl?.[0]?.rate ?? 0);
   const toEur = (v: number, c: string) => (c === 'EUR' ? v : fxNow > 0 ? v / fxNow : 0);
   const rows = (data ?? []) as S[];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayYmd();
   const plus = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
   const reqs = reqRaw ?? [];
@@ -288,7 +289,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
                       <span className={`pst ${st}`} title={stTxt} role="img" aria-label={stTxt}><CIcon name="user" size={17} /></span>
                       <span className="aw-n"><b>{accName(w)}</b><small className="muted">{late ? <span className="neg">{LL(`ricevute in ritardo dal ${date(late.report_by)}`, `reçus en retard depuis le ${date(late.report_by)}`)}</span>
                         : due ? LL(`ricevute entro il ${date(due)}`, `reçus avant le ${date(due)}`) : bal < 0 ? LL('da rimborsare alla persona', 'à rembourser à la personne') : LL('nessuna scadenza', 'aucune échéance')}
-                        {w.spent_no_doc > 0 ? ` · ${LL(`${w.spent_no_doc} senza ricevuta`, `${w.spent_no_doc} sans reçu`)}` : ''}{pend ? ` · ${LL(`${pend} richiesta in corso`, `${pend} demande en cours`)}` : ''}</small></span>
+                        {w.spent_no_doc > 0 ? ` · ${LL(`${w.spent_no_doc} senza ricevuta`, `${w.spent_no_doc} sans reçu`)}` : ''}{pend ? ` · ${pend === 1 ? LL('1 richiesta in corso', '1 demande en cours') : LL(`${pend} richieste in corso`, `${pend} demandes en cours`)}` : ''}</small></span>
                       <span className={`aw-b num ${bal < 0 ? 'neg' : ''}`}>{w.currency !== 'EUR' && fxNow > 0 ? money(bal / fxNow, 'EUR', lang) : money(bal, w.currency, lang)}<small>{w.currency !== 'EUR' && fxNow > 0 ? `${money(bal, w.currency, lang)} · ` : ''}{bal < 0 ? LL('anticipato dalla persona', 'avancé par la personne') : LL('in mano', 'en main')}</small></span>
                     </Link>
                   </li>

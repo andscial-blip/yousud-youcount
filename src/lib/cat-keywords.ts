@@ -18,7 +18,7 @@ export const CAT_KEYWORDS: Record<string, string> = {
   '308': 'medicine farmacia ospedale medico médicament pharmacie hôpital',
   '401': 'sapone igiene detersivo pulizia candeggina carta igienica savon hygiène détergent nettoyage javel consumabili',
   '402': 'carta penne cancelleria fotocopie stampa papier stylo fournitures photocopie impression',
-  '405': 'attrezzi utensili sedie tavolo outils chaise table',
+  '405': 'attrezzi utensili sedie tavolo tessuti tessuto stoffa filo aghi materiale laboratorio outils chaise table tissu tissus fil aiguilles matériel atelier',
   '502': 'computer pc portatile stampante tablet ordinateur imprimante',
   '601': 'affitto loyer location',
   '602': 'elettricità luce jirama corrente électricité',

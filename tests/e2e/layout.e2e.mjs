@@ -20,7 +20,7 @@ const SHOTS = process.env.SHOTS_DIR ?? '/tmp/youcount-layout';
 const WIDTHS = (process.env.WIDTHS ?? '320,360,390,412,600,768,820,1024,1280').split(',').map(Number);
 const LANGS = (process.env.LANGS ?? 'it,fr').split(',');
 const pool = new pg.Pool({ connectionString: DB });
-const today = new Date().toISOString().slice(0, 10);
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Indian/Antananarivo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());   // «oggi» come l'app e il database
 fs.mkdirSync(SHOTS, { recursive: true });
 
 async function as(uid, text, params) {

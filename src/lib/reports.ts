@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import 'server-only';
 import type { createClient } from './supabase/server';
 
@@ -161,7 +162,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
   }
 
   if (kind === 'cassa') {
-    const at = `${year}-12-31` < new Date().toISOString().slice(0, 10) ? `${year}-12-31` : new Date().toISOString().slice(0, 10);
+    const at = `${year}-12-31` < todayYmd() ? `${year}-12-31` : todayYmd();
     const [{ data: bal, error }, { data: adv }, { data: counts }] = await Promise.all([
       sb.rpc('account_balances', { p_at: at }),
       sb.rpc('advance_summary', { p_at: at }),

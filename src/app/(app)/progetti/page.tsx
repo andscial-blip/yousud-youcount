@@ -1,3 +1,4 @@
+import { orgNow } from '@/lib/today';
 import { projectColorMap } from '@/lib/palette';
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
@@ -18,7 +19,7 @@ type BI = { project_id: string | null; amount_eur: string | null; category: { di
 // con un solo avviso quando serve (oltre il preventivo, spesa in anticipo sul tempo, nessun preventivo). Il dettaglio è il cruscotto del progetto.
 export default async function Projects({ searchParams }: { searchParams: Promise<{ anno?: string; tutti?: string }> }) {
   const sp = await searchParams;
-  const now = new Date();
+  const now = orgNow();
   const year = Number(sp.anno) || now.getFullYear();
   const { supabase, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);

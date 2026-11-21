@@ -1,4 +1,5 @@
 'use client';
+import { orgYear } from '@/lib/today';
 import { InfoButton } from './InfoButton';
 import { LangSwitch } from './LangSwitch';
 // Cornice dell'app come Cairn (src/components/shell.tsx): menu laterale; intestazione con icona della sezione, titolo,
@@ -87,7 +88,7 @@ export function PageHeader({ secs, labels, canWrite, years, phoneBrand, phoneSyn
   const isMenu = path === '/altro';
   const isTab = isMenu || secs.some((x) => x.subs.some((y) => y.href === path));
   const phoneSub = sec?.id === 'set' && !!sub && !isMenu;
-  const year = Number(sp.get('anno')) || new Date().getFullYear();
+  const year = Number(sp.get('anno')) || orgYear();
   const setYear = (y: number) => {
     const q = new URLSearchParams(sp.toString()); q.set('anno', String(y));
     router.push(`${path}?${q.toString()}`);

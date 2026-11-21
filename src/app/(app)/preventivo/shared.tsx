@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import { PendingButton } from '@/components/PendingButton';
 import Link from 'next/link';
 import { RowReveal } from '@/components/RowReveal';
@@ -24,7 +25,7 @@ export const C_EXP = 'var(--vz-sp)';     // uscite: giallo
 export const C_NET = 'var(--green-soft)'; // avanzo: verde
 
 export async function loadBudget(sp: { anno?: string; v?: string }) {
-  const year = Number(sp.anno) || new Date().getFullYear();
+  const year = Number(sp.anno) || orgYear();
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const staff = can(me, STAFF), resp = can(me, RESP), admin = can(me, ADMIN);

@@ -1,3 +1,4 @@
+import { orgNow } from '@/lib/today';
 import { deadlineTitle } from '@/lib/format';
 import { loadProjectColors } from '@/lib/palette';
 import { OperatorHome } from './OperatorHome';
@@ -23,7 +24,7 @@ type Todo = { lvl: 'warn' | 'do' | 'ok'; ic: string; title: string; sub?: string
 // Colori con il significato di Cairn: blu notte = entrate, giallo = uscite, verde = avanzo. Tutti i numeri vengono dal database.
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ anno?: string; pw?: string }> }) {
   const { anno, pw } = await searchParams;
-  const now = new Date();
+  const now = orgNow();
   const cy = now.getFullYear();
   const year = Number(anno) || cy;
   const { supabase, me, t, lang } = await requireMe();

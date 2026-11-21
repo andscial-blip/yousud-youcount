@@ -1,3 +1,4 @@
+import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
 import { AutoTranslate } from '@/components/AutoTranslate';
@@ -128,7 +129,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const qs = (over: SP) => { const u = new URLSearchParams(); for (const [k, x] of Object.entries({ ...cur, p: '', ...over })) if (x) u.set(k, String(x)); return u.toString(); };
   const href = (over: SP) => { const s = qs(over); return s ? `/movimenti?${s}` : '/movimenti'; };
   const active = [f.prj, f.acc, f.from, f.to, f.cat, f.tipo, f.cp, f.pm, f.cur, f.doc, f.demo].filter(Boolean).length;
-  const now = new Date(), y = now.getFullYear(), mo = now.getMonth();
+  const now = orgNow(), y = now.getFullYear(), mo = now.getMonth();
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const periods: [string, string, string][] = [
     [L('Questo mese', 'Ce mois'), iso(new Date(y, mo, 1)), iso(new Date(y, mo + 1, 0))],

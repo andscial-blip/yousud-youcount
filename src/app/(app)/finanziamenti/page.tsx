@@ -1,3 +1,4 @@
+import { todayYmd, orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { can, requireMe, RESP } from '@/lib/session';
 import { date, money } from '@/lib/format';
@@ -18,7 +19,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   const sp = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayYmd();
   const [{ data, error }, { data: donors }, { data: projects }, { data: moves }, { data: rate }] = await Promise.all([
     supabase.from('grants').select('id, title, code, currency, amount, start_date, end_date, status, donor:counterparties(id, name), project:projects(id, name)')
       .order('status').order('start_date', { ascending: false }).returns<GrantRow[]>(),
@@ -46,7 +47,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
   const sum = shown.reduce((s, g) => { const x = T(g); s.g += granted(g); s.rec += x.rec; s.sp += x.sp; s.miss += x.miss; if (x.sp > x.rec + 0.005) s.adv += 1; return s; }, { g: 0, rec: 0, sp: 0, miss: 0, adv: 0 });
   // ultimi 12 mesi, il corrente per ultimo
-  const now = new Date(), keys = Array.from({ length: 12 }, (_, k) => { const d = new Date(now.getFullYear(), now.getMonth() - 11 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; });
+  const now = orgNow(), keys = Array.from({ length: 12 }, (_, k) => { const d = new Date(now.getFullYear(), now.getMonth() - 11 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; });
   const mRec = keys.map(() => 0), mSp = keys.map(() => 0);
   for (const m of moves ?? []) { if (!m.grant_id || !ids.has(m.grant_id)) continue; const k = keys.indexOf(m.op_date.slice(0, 7)); if (k < 0) continue;
     if (m.kind === 'income') mRec[k] += eurOf(m); else if (m.kind === 'expense') mSp[k] += eurOf(m); }

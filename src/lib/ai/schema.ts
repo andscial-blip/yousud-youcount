@@ -1,3 +1,5 @@
+// oggi ad Antananarivo (come lib/today.ts; qui scritto per intero perché i test unitari caricano questo file da solo)
+const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Indian/Antananarivo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 import { z } from 'zod';
 
 // Schema, istruzioni e controlli della lettura IA (codice puro, testabile). La chiamata all'API è in extract.ts.
@@ -96,7 +98,7 @@ export function mockExtraction(): Extraction {
     ({ value, source, status, confidence, note });
   return {
     doc_type: f('till_receipt', 'TICKET DE CAISSE', 'present'),
-    doc_date: f(new Date().toISOString().slice(0, 10), new Date().toLocaleDateString('fr-FR'), 'present'),
+    doc_date: f(todayYmd(), new Date().toLocaleDateString('fr-FR'), 'present'),
     doc_number: f('TK-0042', 'N° TK-0042', 'present', 0.9),
     supplier_name: f('Librairie Mixte Analakely', 'LIBRAIRIE MIXTE ANALAKELY', 'present'),
     supplier_tax_id: f(null, null, 'missing', 0),

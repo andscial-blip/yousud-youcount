@@ -1,4 +1,5 @@
 'use server';
+import { todayYmd } from '@/lib/today';
 import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -35,7 +36,7 @@ export async function moveAdvance(form: FormData) {
   const cash = String(form.get('cash') ?? '');
   const give = form.get('op') !== 'return';
   const amount = parseAmount(String(form.get('amount') ?? ''));
-  const opDate = String(form.get('date') ?? '') || new Date().toISOString().slice(0, 10);
+  const opDate = String(form.get('date') ?? '') || todayYmd();
   if (!cash || !amount || amount <= 0) back('err=missing');
   // persona: conto anticipi esistente, oppure utente / nome nuovo nella valuta della cassa (il conto si crea da solo)
   const who = readPerson(form);
@@ -144,7 +145,7 @@ export async function advanceStep(form: FormData) {
 export async function deliverAdvance(form: FormData) {
   const supabase = await createClient();
   const id = String(form.get('id') ?? ''), cash = String(form.get('cash') ?? '');
-  const opDate = String(form.get('date') ?? '') || new Date().toISOString().slice(0, 10);
+  const opDate = String(form.get('date') ?? '') || todayYmd();
   const { data: r } = await supabase.from('advance_requests').select('id, account_id, amount, authorized_amount, currency, purpose, status, accounts(holder)')
     .eq('id', id).maybeSingle<{ id: string; account_id: string; amount: string; authorized_amount: string | null; currency: string; purpose: string; status: string; accounts: { holder: string | null } | null }>();
   if (!r || r.status !== 'authorized') back('err=invalid_state');
@@ -212,7 +213,7 @@ export async function signDelivery(id: string, receiverPng: string, giverPng: st
     footer: L(`Firmato sul dispositivo nell'app YouCount il ${stamp} (ora di Antananarivo), registrato da ${me.full_name}.`,
       `Signé sur l'appareil dans l'app YouCount le ${stamp} (heure d'Antananarivo), enregistré par ${me.full_name}.`),
   });
-  const stored = await storePdf(supabase, { orgId: me.org_id, bytes, number: `ricevuta-anticipo-${r.id.slice(0, 8)}`, date: now.toISOString().slice(0, 10),
+  const stored = await storePdf(supabase, { orgId: me.org_id, bytes, number: `ricevuta-anticipo-${r.id.slice(0, 8)}`, date: todayYmd(),
     clientUuid: randomUUID(), docType: 'delivery_receipt', total: Number(r.authorized_amount ?? r.amount), currency: r.currency });
   if (stored.error || !stored.id) return { ok: false, error: stored.error ?? 'store' };
   const { error } = await supabase.rpc('advance_attach', { p: { id: r.id, kind: 'delivery', document_id: stored.id } });

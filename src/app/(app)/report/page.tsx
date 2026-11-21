@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money, num } from '@/lib/format';
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic';
 // Report contabili dell'anno, stampabili (PDF dal browser) ed esportabili in Excel con gli stessi numeri.
 export default async function Reports({ searchParams }: { searchParams: Promise<{ tipo?: string; anno?: string; righe?: string }> }) {
   const sp = await searchParams;
-  const year = Number(sp.anno) || new Date().getFullYear();
+  const year = Number(sp.anno) || orgYear();
   const kind = (REPORTS.find((r) => r.k === sp.tipo)?.k ?? 'mensile') as ReportKind;
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, STAFF)) return <Denied text={t('only_staff')} />;

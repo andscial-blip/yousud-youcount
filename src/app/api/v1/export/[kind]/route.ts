@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import ExcelJS from 'exceljs';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
   const { data: me } = await supabase.from('profiles').select('lang, active, role').eq('id', auth.user.id).maybeSingle();
   if (!me?.active) return NextResponse.json({ error: 'account non attivo' }, { status: 403 });
   const fr = normLang(me.lang) === 'fr';
-  const year = Number(req.nextUrl.searchParams.get('anno')) || new Date().getFullYear();
+  const year = Number(req.nextUrl.searchParams.get('anno')) || orgYear();
   const wb = new ExcelJS.Workbook();
   wb.creator = 'YouCount · YouSud ODV';
   wb.created = new Date();

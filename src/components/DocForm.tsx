@@ -1,4 +1,5 @@
 'use client';
+import { orgYear } from '@/lib/today';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { buildModel, DIC_TPL, DOC_TYPES, type DocType, type NotLine, type NrsLine, type Org } from '@/lib/doc-model';
@@ -140,7 +141,7 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
             <Fld x={x} k="hours" label={L('Ore (facoltativo)', 'Heures (facultatif)')} type="num" />
             <Fld x={x} k="activity" label={L('Attività svolta', 'Activité réalisée')} span />
           </>}
-          {tpl === 'don' && <Fld x={x} k="year" label={L('Anno', 'Année')} def={s('year') || String(new Date().getFullYear() - 1)} />}
+          {tpl === 'don' && <Fld x={x} k="year" label={L('Anno', 'Année')} def={s('year') || String(orgYear() - 1)} />}
           {tpl === 'free' && <>
             <Fld x={x} k="title" label={L('Titolo del documento', 'Titre du document')} span req />
             <div className="field span2"><label htmlFor="df-body">{L('Testo in italiano (riga vuota = nuovo paragrafo)', 'Texte en italien (ligne vide = nouveau paragraphe)')}</label>

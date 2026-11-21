@@ -1,4 +1,5 @@
 'use client';
+import { todayYmd, orgYear } from '@/lib/today';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -37,7 +38,7 @@ const METHOD_HINT: Record<string, RegExp> = {
 };
 type Dup = { id: string; ref: string | null; op_date: string; amount: string; currency: string; description: string };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayYmd();
 
 // Precompilazione di un movimento nuovo (es. da una riga dell'estratto conto senza corrispondenza)
 export type Prefill = { kind?: Kind; op_date?: string; amount?: number; account_id?: string; description?: string; own?: boolean; project_id?: string;
@@ -301,7 +302,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   }
 
   const missing = {
-    amount: !amount, account: !accountId && !due, opDate: !!opDate && (Date.parse(opDate) - Date.now() > (R.role === 'operator' ? 0.5 : 61) * 864e5 || (R.role === 'operator' && Number(opDate.slice(0, 4)) < new Date().getFullYear())), toAccount: kind === 'transfer' && !toAccountId,
+    amount: !amount, account: !accountId && !due, opDate: !!opDate && (Date.parse(opDate) - Date.now() > (R.role === 'operator' ? 0.5 : 61) * 864e5 || (R.role === 'operator' && Number(opDate.slice(0, 4)) < orgYear())), toAccount: kind === 'transfer' && !toAccountId,
     paidBy: kind === 'expense' && !paidBy.trim(),
     // operatore: la data del documento non può essere nel futuro (revisione 20/11: l'avviso restava fuori schermo e si registrava lo stesso)
     docDate: R.role === 'operator' && !!docDate && Date.parse(docDate) - Date.now() > 0.5 * 864e5,
@@ -589,7 +590,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       <div className={aiCls('docDate')}>
         <label htmlFor="docdate">{t.f_doc_date}</label>
         <input className="input" id="docdate" type="date" aria-invalid={touched && shown.docDate ? true : undefined} value={docDate} onChange={(e) => { setDocDate(e.target.value); confirm('docDate'); }} style={{ maxWidth: 220 }} />
-        {docDate && docDate > new Date().toISOString().slice(0, 10) && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date du justificatif est dans le futur : vérifiez-la.' : 'La data del giustificativo è nel futuro: controllala.'}</span>}
+        {docDate && docDate > todayYmd() && <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date du justificatif est dans le futur : vérifiez-la.' : 'La data del giustificativo è nel futuro: controllala.'}</span>}
         {aiTag('docDate')}
       </div>
       </div></section>
@@ -627,10 +628,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         <div className={aiCls('opDate')}>
           <label htmlFor="opdate">{t.f_op_date}</label>
           <input className="input" id="opdate" type="date" value={opDate} onChange={(e) => { setOpDate(e.target.value); confirm('opDate'); }} />
-          {(() => { const today = new Date().toISOString().slice(0, 10); if (!opDate) return null;
+          {(() => { const today = todayYmd(); if (!opDate) return null;
             const diff = Math.round((Date.parse(opDate) - Date.parse(today)) / 864e5);
             if (R.role === 'operator' && diff > 0) return <span className="ferr" role="alert">{t.lang_code === 'fr' ? 'Cette date est dans le futur : corrigez-la.' : 'Questa data è nel futuro: correggila.'}</span>;
-            if (R.role === 'operator' && Number(opDate.slice(0, 4)) < new Date().getFullYear()) return <span className="ferr" role="alert">{t.lang_code === 'fr' ? `Les dépenses de ${opDate.slice(0, 4)} sont saisies par un responsable.` : `Le spese del ${opDate.slice(0, 4)} le registra un responsabile.`}</span>;
+            if (R.role === 'operator' && Number(opDate.slice(0, 4)) < orgYear()) return <span className="ferr" role="alert">{t.lang_code === 'fr' ? `Les dépenses de ${opDate.slice(0, 4)} sont saisies par un responsable.` : `Le spese del ${opDate.slice(0, 4)} le registra un responsabile.`}</span>;
             return diff > 60 ? <span className="ferr" role="alert">{t.lang_code === 'fr' ? 'La date est trop loin dans le futur : corrigez-la.' : 'La data è troppo nel futuro: correggila.'}</span>
               : diff > 0 ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? 'La date est dans le futur : vérifiez-la.' : 'La data è nel futuro: controllala.'}</span>
               : diff < -30 ? <span className="hint warn-txt" role="status">{t.lang_code === 'fr' ? `C’est il y a plus de 30 jours (${-diff} j) : vérifiez la date.` : `È di più di 30 giorni fa (${-diff} gg): controlla la data.`}</span> : null; })()}

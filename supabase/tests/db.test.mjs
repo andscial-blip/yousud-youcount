@@ -43,7 +43,7 @@ async function newUser(name, role) {
     [`${name}@test.local`, { role }, { full_name: name }]);
   return u.id;
 }
-const today = new Date().toISOString().slice(0, 10);
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Indian/Antananarivo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());   // «oggi» come l'app e il database
 const year = Number(today.slice(0, 4));
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 

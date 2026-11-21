@@ -1,4 +1,5 @@
 'use server';
+import { todayYmd, orgNow } from '@/lib/today';
 import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -64,7 +65,7 @@ export async function selfCertAction(form: FormData) {
   const { buildModel } = await import('@/lib/doc-model');
   const { renderPdf } = await import('@/lib/doc-pdf');
   const { storePdf } = await import('@/lib/store-pdf');
-  const md = buildModel({ type: 'AUT', number: s.number, lang: s.lang, doc_date: new Date().toISOString().slice(0, 10), party_name: s.declarant,
+  const md = buildModel({ type: 'AUT', number: s.number, lang: s.lang, doc_date: todayYmd(), party_name: s.declarant,
     party_tax_id: null, party_address: null, amount: s.amount, currency: s.currency, amount_eur: s.amount_eur, signer_name: s.signer_name,
     signer_role: s.signer_role, movement_ref: mv?.ref ?? null, project_name: s.project_name,
     // il cambio stampato è quello registrato sul movimento, non il rapporto fra importi arrotondati (revisione del 15/11: 5.357 invece di 5.340)
@@ -119,11 +120,11 @@ export async function reportErrorAction(form: FormData) {
   const id = String(form.get('id'));
   const what = String(form.get('what') ?? '').trim().slice(0, 900);
   if (what.length < 5) back(id, `err=${encodeURIComponent(String(form.get('lang')) === 'fr' ? 'Écrivez ce qui ne va pas (au moins 5 caractères).' : 'Scrivi cosa è sbagliato (almeno 5 caratteri).')}#segnala`);
-  const now = new Date();
+  const now = orgNow();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const { error } = await (await createClient()).rpc('deadline_save', { p: {
     title: `${String(form.get('lang')) === 'fr' ? 'Erreur signalée' : 'Errore segnalato'}: ${String(form.get('ref') || '')}`.slice(0, 200),
-    category: 'int', due_date: today, priority: 'high', movement_id: id, notes: what } });
+    category: 'int', due_date: today, priority: 'normal', movement_id: id, notes: what } });
   revalidatePath('/', 'layout');
   back(id, error ? `err=${encodeURIComponent(error.message)}` : 'ok=reported');
 }

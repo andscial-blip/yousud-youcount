@@ -1,3 +1,5 @@
+// oggi ad Antananarivo (come lib/today.ts; qui scritto per intero perché i test unitari caricano questo file da solo)
+const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Indian/Antananarivo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 // Dati dimostrativi per provare YouCount (grafici, filtri, preventivo, scostamenti, cambi).
 // Base: il foglio Excel «01. Contabilità 2026» (righe di preventivo e tassi di cambio reali, in excel-2026.json).
 // Tutto il resto è INVENTATO e marcato: movimenti DEMO-AAAA-NNN con nota «DEMO», controparti «(demo)», preventivo «DEMO».
@@ -71,7 +73,7 @@ export function buildDemo(year: number, mgaRate = 5000) {
       cur: 'EUR', rate: '', note: 'DEMO: entrata prevista inventata', eurTot: qty * cost });
 
   // movimenti: per ogni riga di uscita del preventivo, spese mese per mese con scostamenti realistici
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayYmd();
   const lastMonth = Math.min(12, +today.slice(0, 4) > year ? 12 : +today.slice(5, 7));
   const movements: Record<string, unknown>[] = [];
   const over = new Set(['École Piccolino|505', 'Spese generali|201', 'StreetFood|401']);      // righe che sforano (scostamenti)

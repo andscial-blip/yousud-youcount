@@ -1,3 +1,4 @@
+import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { ADMIN, can, requireMe } from '@/lib/session';
 import { dateTime } from '@/lib/format';
@@ -13,7 +14,7 @@ export default async function Periods({ searchParams }: { searchParams: Promise<
   const { ok, err } = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, ADMIN)) return <Denied text={t('only_admin')} />;
-  const now = new Date();
+  const now = orgNow();
   const from = new Date(now.getFullYear(), now.getMonth() - 17, 1);
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   const [{ data: periods }, { data: users }, { data: pending }, { data: revs }] = await Promise.all([

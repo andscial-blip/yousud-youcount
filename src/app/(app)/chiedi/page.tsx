@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import { requireMe } from '@/lib/session';
 import { PageHead, Panel } from '@/components/Page';
 import { AskAI } from '@/components/AskAI';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function Ask({ searchParams }: { searchParams: Promise<{ anno?: string }> }) {
   const sp = await searchParams;
   const { lang } = await requireMe();
-  const year = Number(sp.anno) || new Date().getFullYear();
+  const year = Number(sp.anno) || orgYear();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const suggestions = [
     L(`Come stanno andando entrate e uscite nel ${year} rispetto all'anno prima?`, `Comment évoluent recettes et dépenses en ${year} par rapport à l'année précédente ?`),

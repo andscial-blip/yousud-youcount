@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { normLang } from '@/lib/i18n';
@@ -17,7 +18,7 @@ export async function GET() {
   const { data: me } = await supabase.from('profiles').select('lang, active, role').eq('id', auth.user.id).maybeSingle();
   if (!me?.active) return NextResponse.json({ error: 'account non attivo' }, { status: 403 });
   const fr = normLang(me.lang) === 'fr';
-  const today = new Date().toISOString().slice(0, 10), Y = Number(today.slice(0, 4));
+  const today = todayYmd(), Y = Number(today.slice(0, 4));
   const { data: saved } = await supabase.from('deadlines').select('id, rule_key, title, due_date, status, notes').gte('due_date', today).order('due_date');
   const staff = ['super_admin', 'admin', 'responsabile', 'read_only'].includes(me.role);
   const incs = staff ? await Promise.all([Y - 1, Y].map((y) => supabase.rpc('income_of_year', { p_year: y }))) : [];

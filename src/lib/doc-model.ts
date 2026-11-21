@@ -216,6 +216,6 @@ export function buildModel(d: DocData, org: Org): Model {
   const orgLine = [org.address, org.tax_id ? `C.F.\u00a0${org.tax_id}` : null].filter(Boolean).join(' · ');
   const footer = [org.runts, org.email, org.phone?.replace(/ /g, '\u00a0'), org.web].filter(Boolean).join(' · ');
   const fxNote = fx && !(d.type === 'DIC' && !Number(d.amount)) ? J(`Cambio applicato: 1\u00a0€ = ${fxRate(fx, 'it')}`, `Taux appliqué\u00a0: 1\u00a0€ = ${fxRate(fx, 'fr')}`) : null;
-  return { title, number: d.number, meta, blocks, org, draftLabel: J('BOZZA – non valida', 'BROUILLON – non valable'), placeDate: J('Luogo e data', 'Lieu et date'),
+  return { title, number: d.number, meta, blocks, org, draftLabel: J('BOZZA – non valida', 'BROUILLON – non valable'), placeDate: J('Luogo e data:', 'Lieu et date\u00a0:'),
     orgLine, footer, fxNote };
 }

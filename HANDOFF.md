@@ -325,3 +325,20 @@ e testo ruggine introdotti da me) e «Facilità» dell'operatore (8 → 7, difet
   aiuto in pagina scaricato in anticipo; «più grande: …» negli anticipi aperti; pulsanti del ritaglio alti uguali; Guida «Vedere cosa scade» per l'operatore.
 - Verifiche: unit 39/39, db 52/52, e2e tutti superati (un test del rendiconto fallito per lentezza, ripetuto e superato), offline 9/9,
   layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok.
+
+## 21/11 — decimo giro (colori 8,5/8/9/8/8,5 · operatore 8, nessuna area scesa per peggioramento reale)
+Rapporti in `docs/revisione-finale-2026-11-15/decimo-giro/`. Riverifica: colori 26 chiusi/9 aperti, operatore 40 chiusi/11 aperti, 0 peggiorati.
+- **«Oggi» con l'ora di Antananarivo** (`src/lib/today.ts`: `todayYmd()`, `orgNow()`, `orgYear()`), in tutte le pagine, azioni e API (40 file).
+  Prima il server online (UTC) e alcune pagine (UTC) davano il giorno prima tra le 00:00 e le 03:00 malgasce. Test: `tests/unit/today.test.ts`
+  (eseguito anche con TZ=UTC). Le due librerie caricate dai test unitari (`ai/schema.ts`, `demo/build.ts`) hanno la funzione scritta per intero.
+  Resta: nel database `current_date` è UTC (17 usi nelle migrazioni, soprattutto valori predefiniti): per allinearlo serve una migrazione
+  (fuso del database su Indian/Antananarivo), da approvare.
+- Operatore: data delle ricevute in Dashboard solo dagli anticipi consegnati (come in Anticipi); anticipi autorizzati da ritirare anche per altre
+  persone; autocertificazione solo su spese registrate proprie (o del responsabile); aiuto breve di Scadenze; «tessuti/tissu» trovano il codice 405;
+  casella grande nella conferma della conta; «Lieu et date :»; plurale «richieste in corso»; segnalazioni d'errore con priorità normale.
+- Colori: previsto più riconoscibile (`--plan-soft` al 34%).
+- **Database**: migrazione `20261121000100_org_timezone.sql` (fuso del database su Indian/Antananarivo, come consigliato dalla documentazione Supabase)
+  provata in locale: senza, tra le 00:00 e le 03:00 malgasce il database rifiutava come «futura» la data di oggi dell'app (conta, rimborso,
+  riconciliazione). Anche i test usano «oggi» di Antananarivo. **Codice e migrazione vanno pubblicati insieme.**
+- Verifiche 21/11 notte: unit 41/41 (anche con TZ=UTC), db 52/52, e2e tutti superati (rendiconto fallito nel giro lungo per lentezza, superato
+  ripetendolo insieme al test precedente), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok.

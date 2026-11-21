@@ -1,3 +1,4 @@
+import { todayYmd, orgYear } from '@/lib/today';
 import { NextResponse, type NextRequest } from 'next/server';
 import { aiGate } from '@/lib/ai/gate';
 import { callText, MAIN_MODEL } from '@/lib/ai/text';
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
   const { supabase, me, mock, apiKey } = g;
   const body = await req.json().catch(() => ({}));
   const q = String(body.q ?? '').trim().slice(0, 600);
-  const year = Number(body.year) || new Date().getFullYear();
+  const year = Number(body.year) || orgYear();
   const history = (Array.isArray(body.history) ? body.history : []).slice(-6)
     .map((h: { q?: string; a?: string }) => ({ q: String(h.q ?? '').slice(0, 600), a: String(h.a ?? '').slice(0, 1500) }));
   if (q.length < 3) return NextResponse.json({ error: 'empty' }, { status: 400 });
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
   type Cm = { direction: string; category_code: string; cat_it: string; project_name: string | null; budget_eur: string; actual_eur: string; committed_eur: string };
   const prev_ = (cmp ?? []) as Cm[];
   const ctx = {
-    oggi: new Date().toISOString().slice(0, 10), anno: year, valuta: 'EUR (importi in ariary convertiti al tasso del movimento)',
+    oggi: todayYmd(), anno: year, valuta: 'EUR (importi in ariary convertiti al tasso del movimento)',
     mesi: months.map((m) => ({ ...m, entrate: r0(m.entrate), uscite: r0(m.uscite) })),
     anno_precedente_mesi: prevM.map((m) => ({ ...m, entrate: r0(m.entrate), uscite: r0(m.uscite) })),
     per_progetto: [...byPrj].map(([p, v]) => ({ progetto: p, entrate: r0(v.entrate), uscite: r0(v.uscite) })).sort((a, b) => b.uscite - a.uscite),

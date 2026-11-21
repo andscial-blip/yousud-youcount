@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -29,9 +30,9 @@ export default async function BudgetPage({ searchParams }: {
   const sp = await searchParams;
   // vecchi indirizzi: riepilogo e schema hanno la loro scheda, il confronto è in Analisi
   if (sp.vista === 'riepilogo' || sp.vista === 'riassunto' || sp.vista === 'schema') {
-    redirect(`/preventivo/riepilogo?anno=${Number(sp.anno) || new Date().getFullYear()}${isId(sp.v) ? `&v=${sp.v}` : ''}${sp.vista !== 'riepilogo' || sp.schema === '1' ? '&schema=1' : ''}`);
+    redirect(`/preventivo/riepilogo?anno=${Number(sp.anno) || orgYear()}${isId(sp.v) ? `&v=${sp.v}` : ''}${sp.vista !== 'riepilogo' || sp.schema === '1' ? '&schema=1' : ''}`);
   }
-  if (sp.vista === 'confronto' || sp.vista === 'analisi') redirect(`/analisi?anno=${Number(sp.anno) || new Date().getFullYear()}&vista=budget`);
+  if (sp.vista === 'confronto' || sp.vista === 'analisi') redirect(`/analisi?anno=${Number(sp.anno) || orgYear()}&vista=budget`);
   const c = await loadBudget(sp);
   const { L, lang, year, shown, draft, its, catBy, prjBy, cpBy, CL, dirOf, eur, e0, m, totIn, totOut, editing, amending, needReason, resp } = c;
   if (!c.staff) return <Denied text={c.t('only_staff')} />;

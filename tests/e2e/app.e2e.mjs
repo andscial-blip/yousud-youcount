@@ -17,8 +17,8 @@ const DB = process.env.DATABASE_URL ?? 'postgres://tester:tester@localhost:5432/
 const APP_PORT = 3312;
 const SHOTS = process.env.SHOTS_DIR ?? '/tmp/youcount-e2e';
 const pool = new pg.Pool({ connectionString: DB });
-const year = new Date().getFullYear();
-const today = new Date().toISOString().slice(0, 10);
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Indian/Antananarivo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());   // «oggi» come l'app e il database
+const year = Number(today.slice(0, 4));
 
 async function as(uid, text, params) {
   const c = await pool.connect();

@@ -1,4 +1,5 @@
 'use client';
+import { todayYmd } from '@/lib/today';
 import { useMemo, useState } from 'react';
 import { money } from '@/lib/format';
 import type { Lang } from '@/lib/i18n';
@@ -36,7 +37,7 @@ export function CashCounter({ accounts, lang, L }: { accounts: { id: string; lab
           <select className="input" id="cc-account" name="account" value={acc} onChange={(e) => { setAcc(e.target.value); setQ({}); }}>
             {accounts.map((c) => <option key={c.id} value={c.id}>{c.label} · {c.currency}</option>)}</select></div>
         <div className="field"><label htmlFor="cc-date">{L.date}</label>
-          <input className="input" type="date" id="cc-date" name="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
+          <input className="input" type="date" id="cc-date" name="date" defaultValue={todayYmd()} required /></div>
       </div>
       <div className="cc-groups">
       {(() => {

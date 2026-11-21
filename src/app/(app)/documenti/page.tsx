@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
 import { requireMe } from '@/lib/session';
@@ -68,7 +69,7 @@ export default async function Documents({ searchParams }: { searchParams: Promis
       {err && <p className="note err" role="alert">{err}</p>}
       {rows.length > 0 && <Panel>
         <div className="panel-b stack" style={{ gap: 8 }}>
-          <DocsZip year={new Date().getFullYear()} lang={FR ? 'fr' : 'it'} />
+          <DocsZip year={orgYear()} lang={FR ? 'fr' : 'it'} />
         </div>
       </Panel>}
       <Panel>

@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import { COUNTRY_SHADES } from '@/lib/palette';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
@@ -28,7 +29,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
     supabase.from('cash_counts').select('id, count_date, counted, system_balance, difference, notes, counted_by, account:accounts(name_it, name_fr, currency)')
       .order('count_date', { ascending: false }).order('created_at', { ascending: false }).limit(20).returns<CC[]>(),
     supabase.rpc('user_directory'),
-    supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
+    supabase.rpc('fx_rate_for', { p_date: todayYmd() }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const all = (data ?? []) as Balance[];
   // operatore (P2-28): solo le casse in contanti e gli anticipi che ha chiesto o ricevuto; banche e anticipi altrui restano

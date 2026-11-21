@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import { deadlineTitle } from '@/lib/format';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
@@ -19,7 +20,7 @@ type D = { id: string; movement_id?: string | null; rule_key: string | null; tit
 type Item = { key: string; id?: string; rule_key?: string; date: string; cat: DlCat; title: string; sub: string; amount?: number; currency?: string;
   status: 'open' | 'done' | 'cancelled'; priority: 'low' | 'normal' | 'high'; applies: boolean; href?: string; auto?: boolean; owner?: string | null; project?: string | null; movement_id?: string | null };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayYmd();
 const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const daysTo = (d: string) => Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${today()}T00:00:00Z`)) / 864e5);
 

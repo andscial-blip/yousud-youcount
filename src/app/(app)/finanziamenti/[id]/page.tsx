@@ -1,3 +1,4 @@
+import { todayYmd } from '@/lib/today';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, RESP, STAFF } from '@/lib/session';
@@ -25,7 +26,7 @@ export default async function GrantDetail({ params, searchParams }: {
   const sp = await searchParams;
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayYmd();
   const { data: g } = await supabase.from('grants')
     .select('id, title, code, currency, amount, start_date, end_date, status, notes, donor:counterparties(id, name), project:projects(id, name)')
     .eq('id', id).maybeSingle<GrantRow>();

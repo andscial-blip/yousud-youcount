@@ -1,3 +1,4 @@
+import { todayYmd, orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { RESP, requireMe } from '@/lib/session';
 import { money } from '@/lib/format';
@@ -23,7 +24,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
   const { supabase, me, t, lang } = await requireMe();
   const resp = Boolean(me && RESP.includes(me.role));
   const LL = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  const now = new Date(), Y = now.getFullYear();
+  const now = orgNow(), Y = now.getFullYear();
   const td = `${Y}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [{ data, error }, { data: accounts }, { data: methods }, { data: paid }, { data: paidY }, { data: fxl }] = await Promise.all([
     supabase.from('movements').select(`id, description, amount, currency, fx_rate, amount_eur, doc_date, op_date, paid_by, created_by,
@@ -36,7 +37,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
     // operatore (revisione 20/11): solo i rimborsi delle proprie spese, non quelli di tutto l'ente
     supabase.from('movements').select('amount, currency, amount_eur, fx_rate, op_date, reimb_batch').eq('reimb_status', 'paid').or(resp ? 'id.not.is.null' : `created_by.eq.${me!.id}`)
       .gte('op_date', `${Y}-01-01`).lte('op_date', `${Y}-12-31`).limit(5000),
-    supabase.rpc('fx_rate_for', { p_date: new Date().toISOString().slice(0, 10) }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
+    supabase.rpc('fx_rate_for', { p_date: todayYmd() }).then((r) => ({ data: r.data ? [{ rate: r.data as number }] : [] })),
   ]);
   const fxNow = Number(fxl?.[0]?.rate ?? 0);
   // controvalore in euro (serve solo ai riquadri e ai confronti: il rimborso si fa sempre nella valuta della spesa)

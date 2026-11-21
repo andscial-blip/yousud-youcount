@@ -28,7 +28,7 @@ export function DocPreview({ md }: { md: Model }) {
         ) : b.k === 'totals' ? (
           <dl key={i} className="dp-tot">{b.rows.map(([k, v, s], j) => <div key={j} className={s ? 'strong' : ''}><dt>{k}</dt><dd className="num"><Amt c={v} /></dd></div>)}</dl>
         ) : (
-          <div key={i} className="dp-sig"><p className="soft">{md.placeDate}: ______________________</p>
+          <div key={i} className="dp-sig"><p className="soft">{md.placeDate} ______________________</p>
             <div>{b.labels.map((l, j) => <span key={j}>{l}</span>)}</div></div>
         ))}
       {md.fxNote && <p className="dp-fx soft">{md.fxNote}</p>}

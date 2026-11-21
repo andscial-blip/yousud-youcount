@@ -15,7 +15,7 @@ const DB = process.env.DATABASE_URL ?? 'postgres://tester:tester@localhost:5432/
 const PORT = 3315;
 const base = `http://localhost:${PORT}`;
 const pool = new pg.Pool({ connectionString: DB });
-const today = new Date().toISOString().slice(0, 10);
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Indian/Antananarivo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());   // «oggi» come l'app e il database
 let passed = 0, failed = 0;
 async function check(name, fn) {
   try { await fn(); passed++; console.log(`ok   ${name}`); }

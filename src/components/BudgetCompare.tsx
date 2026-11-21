@@ -1,3 +1,4 @@
+import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { money } from '@/lib/format';
 import { Empty } from './Page';
@@ -25,7 +26,7 @@ export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[
   const inB = tot('in', 'b'), outB = tot('out', 'b'), inA = tot('in', 'a'), outA = tot('out', 'a');
   const over = all.filter((x) => x.r.direction === 'out' && x.a > x.b + 0.005);
   const near = all.filter((x) => x.r.direction === 'out' && x.b > 0 && x.a <= x.b && x.a + x.c >= x.b * NEAR);
-  const now = new Date();
+  const now = orgNow();
   const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0
     : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
   // stessi colori del resto dell'app: giallo = uscite, blu notte = entrate; sforamento (solo per le uscite) come nella tabella per gruppo

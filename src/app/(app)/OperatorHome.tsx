@@ -1,3 +1,4 @@
+import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Lang, T } from '@/lib/i18n';
@@ -16,7 +17,7 @@ type Mov = { id: string; ref: string | null; op_date: string; kind: string; desc
 export async function OperatorHome({ supabase, me, t, lang }: { supabase: SupabaseClient; me: Me; t: T; lang: Lang }) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const nb = lang === 'fr' ? ' ' : '';
-  const now = new Date();
+  const now = orgNow();
   const td = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [{ data: bal }, { data: reqs }, { data: last }, { count: waiting }, { count: drafts }, { data: due }, { data: auts }, { data: fx }, { data: dls }, { data: notesRow }, { data: advAcc }, { data: noDoc }, { data: allAut }, { data: myReports }] = await Promise.all([
     supabase.rpc('account_balances'),
@@ -44,14 +45,14 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
   type Rq = { account_id: string | null; report_by: string | null; status: string; authorized_amount: string | null; amount: string; currency: string; beneficiary_id: string };
   const allRq = (reqs ?? []) as Rq[];
   const rqs = allRq.filter((r) => r.beneficiary_id === me.id);   // contanti propri: solo dove sono io il beneficiario
-  const toCollect = rqs.filter((r) => r.status === 'authorized');
+  const toCollect = allRq.filter((r) => r.status === 'authorized');   // anche quelli chiesti per altre persone: li ritira chi li ha chiesti
   const waitReq = allRq.filter((r) => r.status === 'requested');   // revisione 20/11: le richieste in attesa si vedono anche qui
-  const advIds = new Set([...rqs.filter((r) => r.status !== 'authorized' && r.account_id).map((r) => r.account_id!),
+  const advIds = new Set([...rqs.filter((r) => (r.status === 'delivered' || r.status === 'reported') && r.account_id).map((r) => r.account_id!),
     ...((advAcc ?? []) as { id: string; holder: string | null }[]).filter((a) => (a.holder ?? '').toLowerCase() === me.full_name.toLowerCase()).map((a) => a.id)]);
   const myAdv = ((bal ?? []) as B[]).filter((b) => b.kind === 'advance' && advIds.has(b.account_id));
   const inHand = myAdv.reduce((s, b) => s + Number(b.balance), 0);
   const handCur = myAdv[0]?.currency ?? 'MGA';
-  const reportBy = rqs.filter((r) => r.status !== 'authorized').map((r) => r.report_by).filter(Boolean).sort()[0] ?? null;
+  const reportBy = rqs.filter((r) => r.status === 'delivered').map((r) => r.report_by).filter(Boolean).sort()[0] ?? null;
   const dueRows = (due ?? []) as { amount: string; currency: string; amount_eur: string | null }[];
   const dueEur = dueRows.reduce((s, r) => s + (r.currency === 'EUR' ? Number(r.amount) : Number(r.amount_eur ?? 0) || eurOf(Number(r.amount), r.currency)), 0);
   const autRows = (auts ?? []) as { id: string; movement_id: string }[];

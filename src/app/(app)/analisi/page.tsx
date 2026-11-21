@@ -1,3 +1,4 @@
+import { orgYear, orgNow } from '@/lib/today';
 import { projectColorMap } from '@/lib/palette';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -20,7 +21,7 @@ type Grp = { id: string; code: string; name_it: string; name_fr: string | null; 
 // Ogni voce porta all'elenco dei movimenti che la compongono. Solo movimenti registrati e verificati (v_ledger).
 export default async function Analysis({ searchParams }: { searchParams: Promise<{ anno?: string; progetto?: string; vista?: string }> }) {
   const sp = await searchParams;
-  const year = Number(sp.anno) || new Date().getFullYear();
+  const year = Number(sp.anno) || orgYear();
   const prj = /^[0-9a-f-]{36}$/.test(sp.progetto ?? '') ? sp.progetto! : '';
   const VIEWS = ['panoramica', 'entrate', 'uscite', 'progetti', 'andamento', 'budget'] as const;
   const view = (VIEWS as readonly string[]).includes(sp.vista ?? '') ? sp.vista as (typeof VIEWS)[number] : 'panoramica';
@@ -65,7 +66,7 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
     return m;
   };
   // preventivo annuale: niente ripartizione per mese (non si sa quando cadono le spese): il riferimento è la quota dell'anno trascorsa
-  const now = new Date();
+  const now = orgNow();
   const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0
     : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
   const spentG = sumBy(out, (r) => (r.category_id ? groupOf.get(r.category_id) ?? null : null));

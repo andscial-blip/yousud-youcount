@@ -112,7 +112,7 @@ export async function renderPdf(md: Model): Promise<Uint8Array> {
       y -= 8;
     } else {
       y -= 18;
-      put(`${md.placeDate}: ______________________`, { size: 9.5, color: soft, gap: 30 });
+      put(`${md.placeDate} ______________________`, { size: 9.5, color: soft, gap: 30 });
       need(40);
       const colW = (W - 30) / 2, sigY = y;
       b.labels.forEach((lab, i) => {

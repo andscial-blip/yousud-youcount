@@ -1,4 +1,5 @@
 'use client';
+import { todayYmd } from '@/lib/today';
 import { useState } from 'react';
 import Link from 'next/link';
 import { reimburse } from '@/app/(app)/rimborsi/actions';
@@ -52,7 +53,7 @@ export function ReimburseForm({ rows, currency, canPay, accounts, methods, lang,
                 <option value="">{L('Scegli la cassa o il conto…', 'Choisir la caisse ou le compte…')}</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select></label>
             <label className="field"><span className="flabel">{L('Data', 'Date')}</span>
-              <input className="input" type="date" name="date" required defaultValue={new Date().toISOString().slice(0, 10)} /></label>
+              <input className="input" type="date" name="date" required defaultValue={todayYmd()} /></label>
             {more ? <label className="field"><span className="flabel">{L('Metodo di pagamento', 'Moyen de paiement')}</span>
               <select className="input" name="method_id" defaultValue=""><option value="">–</option>
                 {methods.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></label>

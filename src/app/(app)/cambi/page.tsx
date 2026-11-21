@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import { short3 } from '@/lib/viz';
 import Link from 'next/link';
 import { FilterBar } from '@/components/FilterBar';
@@ -21,7 +22,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
   const { supabase, me, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const loc = lang === 'fr' ? 'fr-FR' : 'it-IT';
-  const year = Number(sp.anno) || new Date().getFullYear();
+  const year = Number(sp.anno) || orgYear();
   const nowKey = new Date().toISOString().slice(0, 7);
   const [{ data: rates, error }, { data: applied }, { data: users }] = await Promise.all([
     supabase.from('fx_rates').select('year, month, rate, source, updated_by, updated_at, demo').order('year').order('month').returns<Rate[]>(),

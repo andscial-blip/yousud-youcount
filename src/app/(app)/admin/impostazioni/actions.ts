@@ -1,4 +1,5 @@
 'use server';
+import { orgYear } from '@/lib/today';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -75,7 +76,7 @@ export async function removeLogo() {
 export async function loadDemo() {
   const { buildDemo } = await import('@/lib/demo/build');
   const supabase = await createClient();
-  const { error } = await supabase.rpc('demo_load', { p: buildDemo(new Date().getFullYear()) });
+  const { error } = await supabase.rpc('demo_load', { p: buildDemo(orgYear()) });
   revalidatePath('/', 'layout');
   redirect(error ? `/admin/dati?err=${encodeURIComponent(error.message)}#demo` : '/admin/dati?ok=demo_loaded#demo');
 }

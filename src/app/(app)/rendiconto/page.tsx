@@ -1,3 +1,4 @@
+import { orgYear } from '@/lib/today';
 import Link from 'next/link';
 import { can, requireMe, STAFF } from '@/lib/session';
 import { money } from '@/lib/format';
@@ -20,7 +21,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
   const { anno, modello, compatto } = await searchParams;
   const compact = compatto === '1';
   const modelE = modello === 'E';
-  const year = Number(anno) || new Date().getFullYear();
+  const year = Number(anno) || orgYear();
   const { supabase, me, t, lang } = await requireMe();
   if (!can(me, STAFF)) return <Denied text={t('only_staff')} />;
   const [{ data, error }, { data: unclassified }, { data: labels }, { data: fees }] = await Promise.all([

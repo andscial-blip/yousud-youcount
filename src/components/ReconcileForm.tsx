@@ -1,4 +1,5 @@
 'use client';
+import { todayYmd } from '@/lib/today';
 import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ function Confirm({ label, busy, disabled }: { label: string; busy: string; disab
 export function ReconcileForm({ accountId, accountName, currency, legs, previous, lastDate, labels: t, lang }: {
   accountId: string; accountName: string; currency: string; legs: Leg[]; previous: number; lastDate: string | null; labels: L; lang: string;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayYmd();
   const [date, setDate] = useState(today);
   const [balTxt, setBalTxt] = useState('');
   // prima riconciliazione di un conto: si parte senza spunte, perché spuntare è il controllo; dalle successive si parte da tutto spuntato
