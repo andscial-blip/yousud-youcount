@@ -411,3 +411,13 @@ Rapporti in `docs/revisione-finale-2026-11-15/quattordicesimo-giro/`. Un solo P2
 - Operatore: Guida con i nomi esatti («Registra una spesa», «Come è stata pagata», «toccalo per sceglierlo») (R2/R6); «Da verificare» in
   Dashboard (R3); con zero risultati il menu mostra tutti i codici (R1); Scadenze e Rimborsi con le parole dell'operatore (R4/Q4); modulo di
   segnalazione chiuso se ce n'è già una aperta (R5); «Frais généraux» anche nell'intestazione del PDF (N-6).
+
+## 21/11 — quindicesimo giro (grafica 9/9/9/9/9,5/8,5/8,5 · operatore tutte ≥ 9, complessivo 8,5)
+Rapporti in `docs/revisione-finale-2026-11-15/quindicesimo-giro/`. Solo P3.
+- Grafica: colonne del Rendiconto allineate (L1); etichette a destra dei titoli che vanno a capo (L2); Impostazioni in griglia 5 × 2 anche a 768
+  (L3); titoli dei riquadri a capo sul telefono e riquadro solo a tutta riga (L4); segnaposto «Cerca nella Guida» (L5); un solo stile per eliminare
+  (L6); icone della Guida (L7); tavolozza: Sport in pesca #F0C2A0 (L8/J6, in produzione resta il colore salvato); niente parole sole (L9); bordi
+  delle righe di un solo tono (H6); schede della Dashboard alte quanto il contenuto anche su tablet (G16); simboli delle note più uniformi (J2).
+- Operatore: Guida senza frasi rotte e con «Come è stata pagata» (R6/S2); «da verificare» anche in Movimenti (S1); «Frais généraux» in tutta
+  l'app in francese (S4); «Mostra 1 movimento» e solo il proprio anticipo nei filtri (S5); messaggi di errore dei campi sempre nella lingua
+  dell'app (S6); rimborsi vuoti senza didascalie doppie (S3).

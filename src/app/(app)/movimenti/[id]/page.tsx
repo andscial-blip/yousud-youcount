@@ -1,3 +1,4 @@
+import { prjName } from '@/lib/project-theme';
 import { PendingButton } from '@/components/PendingButton';
 import { docName } from '@/lib/doc-name';
 import Link from 'next/link';
@@ -148,7 +149,7 @@ export default async function MovementDetail({ params, searchParams }: {
                 {m.reimb_status === 'paid' && m.reimbursed_at && row(t('reimb_done_row'), `${date(m.op_date)} · ${name.get(m.reimbursed_by ?? '') ?? '–'}`)}
                 {m.kind === 'transfer' && row(t('f_to_account'), `${nm(lang, m.to_account)} · ${money(m.to_amount, m.to_account?.currency ?? m.currency, lang)}`)}
                 {m.category && row(t('f_category'), `${m.category.code} · ${nm(lang, m.category)}`)}
-                {m.kind !== 'transfer' && row(t('project'), m.project?.name)}
+                {m.kind !== 'transfer' && row(t('project'), m.project?.name ? prjName(m.project.name, lang) : m.project?.name)}
                 {m.grant && row(t('nav_grants'), <Link href={`/finanziamenti/${m.grant.id}`}>{m.grant.title}</Link>)}
                 {m.counterparty && row(t('f_counterparty'), m.counterparty.name)}
                 {m.method && row(t('f_method'), nm(lang, m.method))}

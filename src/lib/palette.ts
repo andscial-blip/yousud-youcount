@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // revisione 19/11 (settimo giro): progetti e gruppi di spesa non condividono più nessun colore.
 // Progetti: dodici tinte fredde e rosate (nessun giallo, ocra o oliva, che restano alle uscite); nessun doppione fino a dodici progetti.
 // 20/11 (nono giro): tinte tenui scelte per restare distinte anche con il daltonismo rosso-verde (min ΔE 10,6 normale, 6,4 deuteranopia; prima 8,2 e 1,5)
-export const ITEM_PAL = ['#8A739D', '#1D7954', '#FFB0BB', '#CAC0F0', '#A45C73', '#3AA8C5', '#CF93BE', '#427B78', '#2279A5', '#BE8088', '#4A9D9F', '#BB71A0'];   // giro 12: i primi 10 scelti per distanza (ΔE ≥ 12,6, deuteranopia ≥ 9), tenui, niente oliva scura né marrone
+export const ITEM_PAL = ['#8A739D', '#1D7954', '#FFB0BB', '#F0C2A0', '#A45C73', '#3AA8C5', '#CF93BE', '#427B78', '#2279A5', '#BE8088', '#4A9D9F', '#BB71A0'];   // giro 12: i primi 10 scelti per distanza (ΔE ≥ 12,6, deuteranopia ≥ 9), tenui, niente oliva scura né marrone
 export const PAL = ITEM_PAL;
 // Gruppi di spesa (01…09): la famiglia del giallo delle uscite, dall'ocra al crema; codici vicini lontani di chiarezza.
 // gruppi di spesa: gialli e albicocca alternati a toni salvia, ben distinti tra loro e dai progetti (freddi e rosati)

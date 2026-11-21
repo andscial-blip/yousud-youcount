@@ -2813,3 +2813,24 @@ td.an-st .chip { min-width: 112px; justify-content: center; }   /* K6 (giro 14):
 @media (max-width: 760px) { ul.dl.dl2 .dl-act { justify-content: flex-end; } ul.dl.dl2 .dl-act > a.btn.ghost { order: -1; } }
 @media (max-width: 760px) { .bv-r > * { flex: 1 1 0; min-width: 0; } .bv-r .btn, .bv-pop > summary.btn { width: 100%; min-width: 0; box-sizing: border-box; } }   /* G3: «Apri la bozza» e «Versioni» metà ciascuno */
 .prj-two { align-items: start; }   /* K2 (giro 14): schede affiancate all’altezza del contenuto, niente bianchi */
+table.rep-cols { table-layout: fixed; } @media (max-width: 760px) { table.rep-cols col:not(:first-child) { width: 104px !important; } }
+/* L2 (giro 15): l'etichetta a destra del titolo non tocca mai il bordo: va a capo, allineata a destra */
+.panel-h > .eyebrow { min-width: 0; max-width: 48%; white-space: normal; text-align: right; overflow-wrap: normal; text-wrap: balance; }
+/* L3 (giro 15): Impostazioni da 761 px in su sempre in griglia 5 × 2 */
+@media (min-width: 761px) { .subrow .subnav[data-sec="set"]:has(> a:nth-child(9)) { display: grid; grid-template-columns: repeat(5, max-content); column-gap: 20px; row-gap: 0; } }
+@media (min-width: 761px) and (max-width: 1099px) { .subrow .subnav[data-sec="set"] > a { font-size: 14px; } }
+/* L9 (giro 15): niente parole sole a capo nei piedi dei riquadri e nei nomi dei conti */
+.kpi .s, .kpi .l, .vzl span, .acclist .an { text-wrap: balance; }
+@media (min-width: 761px) and (max-width: 1199px) {
+  .subrow .subnav[data-sec="set"]:has(> a:nth-child(9)) { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 12px; }
+  .subrow .subnav[data-sec="set"] > a { white-space: normal; line-height: 1.2; text-wrap: balance; min-width: 0; }
+}
+/* L4 (giro 15): sul telefono i titoli dei riquadri vanno a capo invece di troncarsi; un riquadro rimasto solo prende tutta la riga */
+@media (max-width: 760px) { .kpi .l { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; } .kpis.dk > .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+/* H6 (giro 15): un solo tono per i bordi delle righe, anche nella prima colonna */
+table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2) !important; }
+/* G16 (giro 15): anche su tablet le schede della Dashboard sono alte quanto il loro contenuto */
+@media (max-width: 1099px) { .home.v2.yc .h-card { align-self: start; } .home.v2.yc .h-card .panel-b { flex: 0 0 auto; } }
+/* L6 (giro 15): un solo stile per eliminare nella scheda del movimento: pulsante fantasma rosso da 38 px, 14 px semigrassetto */
+.detail-main .factions form > .btn.ghost[style*="--red"], .detail-main .mv-demo .btn, .detail-main .danger-zone:not(.reopen) > summary.btn {
+  color: var(--red) !important; background: transparent; border: 1px solid color-mix(in srgb, var(--red) 35%, transparent); min-height: 38px; font-size: 14px; font-weight: 600; padding: 0 14px; }

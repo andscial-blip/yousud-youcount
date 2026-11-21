@@ -14,7 +14,7 @@ const SYM_G: [string, string, string[]][] = [
   ['Vita', 'Vie', ['♥︎', '☺︎', '☹︎', '♫', '☕︎', '✿', '☘︎', '♻︎', '⚽︎', '⚕︎']],
 ];
 const REC_K = 'yc-note-syms';
-const DEF = ['✓', '☆', '⚐', '!', '€', '☏', '✉︎'];   // J2 (giro 14): simboli a linea, non pieni
+const DEF = ['✓', '☆', '⚐', '!', '€', '☏', '@'];   // J2 (giro 14): simboli a linea, non pieni
 const BOX = /^([ \t]*)\[( |x|X)?\] /gm;
 
 export function DashNotes({ text, meta, canWrite, lang }: { text: string; meta: string; canWrite: boolean; lang: 'it' | 'fr' }) {

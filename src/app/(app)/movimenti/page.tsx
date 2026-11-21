@@ -1,3 +1,4 @@
+import { prjName } from '@/lib/project-theme';
 import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { can, requireMe } from '@/lib/session';
@@ -204,7 +205,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       <ErrorNote prefix={t('error_load')} error={error} />
 
       {/* l'operatore: niente riquadri contabili, la lista subito sotto le schede con una riga di riepilogo (revisione operatore, 16/11) */}
-      {isOp && <p className="muted mv-oprow">{total === 1 ? L('1 movimento', '1 mouvement') : L(`${num(total, lang)} movimenti`, `${num(total, lang)} mouvements`)}{nRec > 0 && <> · <Link href={href({ stato: 'recorded' })}>{L(`${num(nRec, lang)} in attesa di verifica`, `${num(nRec, lang)} en vérification`)}</Link></>}</p>}
+      {isOp && <p className="muted mv-oprow">{total === 1 ? L('1 movimento', '1 mouvement') : L(`${num(total, lang)} movimenti`, `${num(total, lang)} mouvements`)}{nRec > 0 && <> · <Link href={href({ stato: 'recorded' })}>{L(`${num(nRec, lang)} da verificare`, `${num(nRec, lang)} à vérifier`)}</Link></>}</p>}
       {isOp && <nav className="seg mv-mine" aria-label={L('Quali movimenti', 'Quels mouvements')}>
         <Link href={href({ mie: '' })} scroll={false} aria-current={mine ? 'true' : undefined}>{L('I miei', 'Les miens')}</Link>
         <Link href={href({ mie: '0' })} scroll={false} aria-current={!mine ? 'true' : undefined}>{L('Tutti', 'Tous')}</Link></nav>}
@@ -212,7 +213,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
         <FilterBar action="/movimenti" lang={lang} hidden={cur.mie ? { mie: cur.mie } : undefined} search={{ value: term, placeholder: t('search_mov') }}
           after={<a className="btn fb-exp" href={expHref} aria-label={expLabel} title={L('Scarica tutti i movimenti dell’anno: non segue i filtri', 'Télécharge tous les mouvements de l’année : ne suit pas les filtres')}><Ico name="download" /><span>{expLabel}</span></a>}
           active={active + (stato ? 1 : 0)} reset={term || stato || active > 0 ? '/movimenti' : null}
-          result={L(`Mostra ${num(total, lang)} movimenti`, `Afficher ${num(total, lang)} mouvements`)}
+          result={total === 1 ? L('Mostra 1 movimento', 'Afficher 1 mouvement') : L(`Mostra ${num(total, lang)} movimenti`, `Afficher ${num(total, lang)} mouvements`)}
           quick={<>
             {periods.map(([l, a, b]) => <Link key={l} href={href({ dal: a, al: b })} scroll={false} aria-current={f.from === a && f.to === b ? 'true' : undefined}>{l}</Link>)}
             <Link href={href({ stato: 'recorded' })} scroll={false} aria-current={stato === 'recorded' ? 'true' : undefined}>{L('Da verificare', 'À vérifier')}</Link>
@@ -239,7 +240,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   {(pms ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>}
               <label className="field"><span className="flabel">{L('Conto o cassa', 'Compte ou caisse')}</span>
                 <select className="input" name="conto" defaultValue={f.acc}><option value="">{t('all')}</option>
-                  {(accounts ?? []).filter((x) => !isOp || (x.location === 'MG' && (x.kind !== 'advance' || Boolean(x.holder)))).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
+                  {(accounts ?? []).filter((x) => !isOp || (x.location === 'MG' && (x.kind !== 'advance' || (x.holder ?? '').trim().toLowerCase() === (me!.full_name ?? '').trim().toLowerCase()))).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
               <label className="field"><span className="flabel">{L('Valuta', 'Devise')}</span>
                 <select className="input" name="valuta" defaultValue={f.cur}><option value="">{t('all')}</option><option>EUR</option><option>MGA</option></select></label>
               <label className="field"><span className="flabel">{t('f_doc')}</span>
@@ -272,7 +273,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                       {m.reimb_status === 'due' && <span className="chip ichip pend tiny"><Ico name="wallet" size={14} />{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
                       {(m.counterparty || m.method) && <div className="muted small">{[m.counterparty?.name, m.method ? nm(lang, m.method) : null].filter(Boolean).join(' · ')}</div>}</td>
                     <td className="muted nw">{m.category?.code ?? '–'}</td>
-                    <td>{m.project?.name ?? '–'}<div className="muted small">{nm(lang, m.account)}</div></td>
+                    <td>{m.project?.name ? prjName(m.project.name, lang) : '–'}<div className="muted small">{nm(lang, m.account)}</div></td>
                     <td className={`r num nw ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>
                       {/* regola unica a ogni larghezza: euro in evidenza con il segno, valuta originale sotto in piccolo */}
                       {(() => { const eur = m.currency !== 'EUR' && m.amount_eur ? Number(m.amount_eur) * m.sign * (m.kind === 'income' ? 1 : -1) : null;
@@ -295,7 +296,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 <li key={m.id}><Link href={`/movimenti/${m.id}`}>
                   <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} />
                   <div className="mc-m"><b className="mc-t">{desc(m) || t(`k_${m.kind}`)}</b>
-                    <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
+                    <span className="mc-s">{[date(m.op_date), m.category?.code, m.project?.name ? prjName(m.project.name, lang) : null].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}</span>
                     <span className="mc-c">{m.reimb_status === 'due' ? <span className="chip ichip pend"><Ico name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}{m.demo && <span className="chip demo tiny">DEMO</span>}
                       {m.kind !== 'transfer' && !m.docs?.[0]?.count && m.no_doc_reason && <span className="chip tiny">{L('motivo dichiarato', 'motif déclaré')}</span>}</span></div>
                   <span className={`mc-a two num ${m.kind === 'income' ? 'amt-in' : m.kind === 'transfer' ? 'amt-tr' : ''}`}>

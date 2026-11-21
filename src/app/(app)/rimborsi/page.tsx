@@ -112,7 +112,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="l">{resp ? LL('Da rimborsare', 'À rembourser') : LL('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className={`v num${due.length && e2(dueEur).length > 11 ? ' long' : ''}`}>{due.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 && curs[0] === 'EUR' ? money(totals.get(curs[0]!)!, curs[0]!, lang) : e2(dueEur)}</div>
           {dueEur > 0 ? <><Viz.Stack segs={people.slice(0, 6).map((x, i) => ({ v: x.eur, c: ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'][i]! }))   /* H8 (giro 12): persone in ardesia, come negli Anticipi */} max={dueEur} tip={people.map((x) => `${x.n}: ${e2(x.eur)}`).join('\n')} />
-            <div className="vzl"><span>{people[0]!.n.split(' ')[0]}</span><span>{!resp ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>{LL('nessuna spesa da rimborsare', 'aucune dépense à rembourser')}</span><span /></div></>}
+            <div className="vzl"><span>{people[0]!.n.split(' ')[0]}</span><span>{!resp ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : people.length === 1 ? LL('1 persona', '1 personne') : LL(`${people.length} persone`, `${people.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{due.length === 0 ? (resp ? LL('non dobbiamo niente a nessuno', 'nous ne devons rien à personne') : LL('nessuna spesa da rimborsarti', 'aucune dépense à vous rembourser'))
             : curs.length === 1 ? (curs[0] === 'EUR' ? (due.length === 1 ? LL('1 spesa', '1 dépense') : LL(`${due.length} spese`, `${due.length} dépenses`)) : money(totals.get(curs[0]!)!, curs[0]!, lang))
             : [...totals.entries()].map(([c, v]) => money(v, c, lang)).join(' + ')}</div>
@@ -129,7 +129,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="l">{LL('Da documentare', 'À documenter')}</div>
           <div className={`v num${missing ? ' amb' : ''}`}>{missing}</div>
           {due.length > 0 ? <><Viz.Stack segs={[{ v: missing, c: 'var(--gold-d)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />
-            <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec justificatif ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>{LL('nessuna spesa da documentare', 'aucune dépense à documenter')}</span><span /></div></>}
+            <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec justificatif ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile} con documento, ${declared} con motivo dichiarato`, `${withFile} avec justificatif, ${declared} avec motif déclaré`) : LL('tutte con documento', 'toutes avec justificatif')) : LL('niente da completare', 'rien à compléter')}</div>
         </div>
         )}
@@ -137,7 +137,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="l">{LL(`Rimborsato nel ${Y}`, `Remboursé en ${Y}`)}</div>
           <div className="v num">{e2(paidTot)}</div>
           {paidTot > 0 ? <><Viz.Cols vals={paidM} colors={paidM.map((v) => (v ? 'var(--c-out)' : 'var(--band)'))} tip={`${LL('Rimborsato', 'Remboursé')} ${Y}\n${paidM.map((v, i) => (v ? `${MESI[lang][i]}: ${e2(v)}` : '')).filter(Boolean).join('\n')}`} />
-            <div className="vzl"><span>{MESI[lang][0]!.toLowerCase()}</span><span>{MESI[lang][11]!.toLowerCase()}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>{LL('nessun rimborso', 'aucun remboursement')}</span><span /></div></>}
+            <div className="vzl"><span>{MESI[lang][0]!.toLowerCase()}</span><span>{MESI[lang][11]!.toLowerCase()}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{paidN === 0 ? LL('nessun rimborso quest’anno', 'aucun remboursement cette année') : `${paidN === 1 ? LL('1 rimborso', '1 remboursement') : LL(`${paidN} rimborsi`, `${paidN} remboursements`)} · ${LL('ultimo il', 'dernier le')} ${dm(lastPaid!)}`}</div>
         </div>
       </div>

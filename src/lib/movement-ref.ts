@@ -1,3 +1,4 @@
+import { prjName } from './project-theme';
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Lang } from './i18n';
@@ -70,7 +71,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
       const g = c.group as unknown as G;
       return { id: c.id, code: c.code, name: L(c), direction: c.direction, group: g ? `${g.code} · ${L(g)}` : '' };
     }),
-    projects: (prj.data ?? []).filter((p) => !allowed || allowed.has(p.id)),
+    projects: (prj.data ?? []).filter((p) => !allowed || allowed.has(p.id)).map((p) => ({ ...p, name: prjName(p.name, lang) })),   // S4: «Frais généraux» in francese
     methods: (met.data ?? []).map((m) => ({ id: m.id, name: L(m), code: m.code })),
     counterparties: cp.data ?? [],
     rates: (fx.data ?? []).map((r) => ({ year: r.year, month: r.month, rate: Number(r.rate) })),

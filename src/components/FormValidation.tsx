@@ -10,7 +10,11 @@ export function FormValidation() {
     const msgOf = (el: HTMLInputElement) => {
       const fr = document.documentElement.lang === 'fr';
       if (el.validity.valueMissing) return fr ? 'Champ obligatoire' : 'Campo obbligatorio';
-      return el.validationMessage;
+      // S6 (giro 15): messaggi sempre nella lingua dell'app, mai quelli del browser
+      if (el.validity.tooShort) return fr ? `Écrivez au moins ${el.minLength} caractères` : `Scrivi almeno ${el.minLength} caratteri`;
+      if (el.validity.typeMismatch) return fr ? 'Format non valide' : 'Formato non valido';
+      if (el.validity.rangeUnderflow || el.validity.rangeOverflow) return fr ? 'Valeur hors limites' : 'Valore fuori dai limiti';
+      return fr ? 'Valeur non valide' : 'Valore non valido';
     };
     const onInvalid = (e: Event) => {
       const el = e.target as HTMLInputElement;

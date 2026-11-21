@@ -107,7 +107,9 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
       {(['out', 'in'] as const).map((dir) => (
         <section className="panel rep-sheet" key={dir} style={{ overflowX: 'auto' }}>
           <div className="panel-h"><H2 text={dir === 'out' ? t('out') : t('in')} /></div>
-          <table className="t keep">
+          {/* L1 (giro 15): stesse larghezze di colonna nelle due tabelle, così gli anni sono allineati */}
+          <table className="t keep rep-cols">
+            <colgroup><col /><col style={{ width: 170 }} /><col style={{ width: 170 }} /></colgroup>
             <thead><tr><th>{t('rep_item')}</th><th className="r">{year}</th><th className="r">{year - 1}</th></tr></thead>
             <tbody>
               {sections(dir).map((sec) => <SectionRows key={sec[0].section} sec={sec} lang={lang} aggregated={modelE} compact={compact} />)}

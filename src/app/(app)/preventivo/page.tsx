@@ -220,7 +220,7 @@ export default async function BudgetPage({ searchParams }: {
         <FilterBar action="/preventivo" lang={lang} hidden={{ anno: String(year), v: shown.id, grafico: filters.grafico }} className="bq-fbar"
           search={{ value: term, placeholder: L('Codice o descrizione', 'Code ou description') }}
           active={nActive} reset={term || nActive ? href({ progetto: '', tipo: '', cp: '', q: '' }, '#righe') : null}
-          result={L(`Mostra ${fil.length} righe`, `Afficher ${fil.length} lignes`)}
+          result={fil.length === 1 ? L('Mostra 1 riga', 'Afficher 1 ligne') : L(`Mostra ${fil.length} righe`, `Afficher ${fil.length} lignes`)}
           after={<a className="btn fb-exp" href={`/api/v1/export/budget?anno=${year}&v=${shown.id}`} aria-label={c.t('exp_xlsx')}><Ico name="download" /><span>{c.t('exp_xlsx')}</span></a>}>
           <label className="field"><span className="flabel">{L('Tipo', 'Type')}</span>
             <select className="input" name="tipo" defaultValue={tipo}><option value="">{L('Entrate e uscite', 'Recettes et dépenses')}</option>

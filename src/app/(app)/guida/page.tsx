@@ -30,7 +30,7 @@ export default async function Guide() {
         <div className="g-h2row"><div><h2>{L('Come faccio a…', 'Comment faire pour…')}</h2>
           <p className="muted">{L('Le domande più frequenti, ognuna in pochi passi. Sotto, ogni pagina spiegata una per una: la stessa spiegazione si apre da ogni pagina con «Come funziona questa scheda».', 'Les questions les plus fréquentes, chacune en quelques étapes. En dessous, chaque page expliquée une par une : la même explication s’ouvre depuis chaque page avec « Comment fonctionne cet onglet ».')}</p></div>
           <PrintButton label={L('Stampa o salva in PDF', 'Imprimer ou enregistrer en PDF')} /></div>
-        <GuideSearch placeholder={L('Cerca: rimborso, ricevuta, cambio, anticipo…', 'Rechercher : remboursement, reçu, change, avance…')}
+        <GuideSearch placeholder={L('Cerca nella Guida', 'Chercher dans le guide')}
           none={L('Nessun argomento trovato.', 'Aucun sujet trouvé.')} />
       </section>
 
