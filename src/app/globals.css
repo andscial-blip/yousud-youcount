@@ -1198,7 +1198,7 @@ a.k4:hover { transform: translateY(-1px); }
 }
 
 /* ── Scadenze (scelta 4A): calendario per primo con colori per importanza, elenco allineato, righello delle soglie ── */
-:root { --imp-c: #E2917F; --imp-a: #D9A6C9; --imp-n: #8497B0; --imp-p: #A9BDE0; --imp-f: #E3EDDF; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia chiara, 21/11 ΔE deut 15 dal corallo (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
+:root { --imp-c: #E2917F; --imp-a: #D9A6C9; --imp-n: #8497B0; --imp-p: #A9BDE0; --imp-f: #B9D7B0; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia chiara, 21/11 ΔE deut 15 dal corallo (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
 .cal-i.i-c { background: color-mix(in srgb, var(--imp-c) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-c); }
 .cal-i.i-a { background: color-mix(in srgb, var(--imp-a) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-a); }
 .cal-i.i-n { background: color-mix(in srgb, var(--imp-n) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-n); }
@@ -2801,3 +2801,15 @@ table.t thead tr > th { border-bottom: 1px solid var(--line-2); }
 .g-tb i { background: #2E3D52; }
 .home.v2.yc .h-left { align-items: start; }   /* G16 (giro 13): ogni scheda della Dashboard alta quanto il suo contenuto, niente vuoti */
 @media (min-width: 1024px) { .kpis.dk.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* K1 (giro 14): sul telefono la tabella per codice sta nel riquadro (importi interi, colonne strette, nome che va a capo) */
+@media (max-width: 480px) { table.bud-t { table-layout: fixed; width: 100%; } table.bud-t th:first-child, table.bud-t td:first-child { width: 46%; white-space: normal; } table.bud-t td, table.bud-t th { padding-left: 6px; padding-right: 6px; font-size: 13px; } }
+/* K10/J11 (giro 14): giorni fuori mese leggibili (5,7:1); pallino «fatta» più visibile */
+.cal-d.out, .cal-d.out * { color: #556275; }
+/* K9 (giro 14): «Correggi questo movimento» non è distruttivo: blu notte; pulsanti della scheda alti come nel resto dell'app */
+.danger-zone.reopen > summary, .detail-main .danger-zone.reopen > summary.btn { color: var(--navy); }
+.detail-main .factions > .btn, .detail-main .factions > form > .btn, .detail-main .danger-zone > summary.btn { min-height: 38px; padding-top: 0; padding-bottom: 0; }
+td.an-st .chip { min-width: 112px; justify-content: center; }   /* K6 (giro 14): stato in una colonna propria, centrato */
+/* K8 (giro 14): sul telefono «Fatta» sta sempre sul bordo destro; la matita, quando c'è, gli sta a sinistra */
+@media (max-width: 760px) { ul.dl.dl2 .dl-act { justify-content: flex-end; } ul.dl.dl2 .dl-act > a.btn.ghost { order: -1; } }
+@media (max-width: 760px) { .bv-r > * { flex: 1 1 0; min-width: 0; } .bv-r .btn, .bv-pop > summary.btn { width: 100%; min-width: 0; box-sizing: border-box; } }   /* G3: «Apri la bozza» e «Versioni» metà ciascuno */
+.prj-two { align-items: start; }   /* K2 (giro 14): schede affiancate all’altezza del contenuto, niente bianchi */

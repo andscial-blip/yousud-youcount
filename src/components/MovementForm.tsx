@@ -766,20 +766,20 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                   {catHits.slice(0, 8).map((c) => <button key={`h-${c.id}`} type="button" className={`chip-btn${categoryId === c.id ? ' on' : ''}`} aria-pressed={categoryId === c.id} onClick={() => { setCategoryId(c.id); confirm('category'); }}>
                     <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}
                   {catHits.length > 8 && <span className="hint">{lang === 'fr' ? `+ ${catHits.length - 8} dans la liste` : `+ altri ${catHits.length - 8} nell’elenco`}</span>}</div>
-              : <p className="hint warn-txt cat-none" role="status">{lang === 'fr' ? `Aucun code pour « ${catQ.trim()} ». Essayez un mot plus général (« nourriture », « transport ») ou choisissez dans la liste.` : `Nessun codice per «${catQ.trim()}». Prova una parola più generale («cibo», «trasporto») o scegli dall’elenco.`}</p>)}
+              : <p className="hint warn-txt cat-none" role="status">{lang === 'fr' ? `Aucun code pour « ${catQ.trim()} ». Essayez un mot plus général (« nourriture », « transport ») ou choisissez dans la liste ci-dessous, qui montre tous les codes.` : `Nessun codice per «${catQ.trim()}». Prova una parola più generale («cibo», «trasporto») o scegli dall’elenco qui sotto, che mostra tutti i codici.`}</p>)}
             {/* codici più usati: un tocco li sceglie (i propri recenti, altrimenti i sei più comuni sul campo) */}
             {dir === 'out' && !catQ.trim() && (() => { const quick = [...recentCats.filter((c) => !descSug.includes(c)), ...['202', '203', '204', '307', '401', '606'].map((k) => cats.find((c) => c.code === k)).filter((c): c is NonNullable<typeof c> => Boolean(c))].filter((c, i, all) => !descSug.includes(c) && all.findIndex((x) => x.id === c.id) === i).slice(0, 6);
               return quick.length > 1 ? <div className="chips-row cat-quick" role="group" aria-label={lang === 'fr' ? 'Codes fréquents' : 'Codici frequenti'}>
                 {quick.map((c) => <button key={`f-${c.id}`} type="button" className={`chip-btn${categoryId === c.id ? ' on' : ''}`} aria-pressed={categoryId === c.id} onClick={() => { setCategoryId(c.id); confirm('category'); }}>
                   <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}</div> : null; })()}
             <select className="input" id="category" aria-invalid={touched && shown.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
-              <option value="">{catQ.trim() ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé : touchez-le ci-dessus' : `${catHits.length} codes trouvés : touchez-en un ci-dessus`) : (catHits.length === 1 ? '1 codice trovato: toccalo qui sopra' : `${catHits.length} codici trovati: toccane uno qui sopra`)) : t.f_choose}</option>
-              {catQ.trim() ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}
-              {!catQ.trim() && recentCats.length > 0 && (
+              <option value="">{catQ.trim() && catHits.length ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé : touchez-le ci-dessus' : `${catHits.length} codes trouvés : touchez-en un ci-dessus`) : (catHits.length === 1 ? '1 codice trovato: toccalo qui sopra' : `${catHits.length} codici trovati: toccane uno qui sopra`)) : t.f_choose}</option>
+              {catQ.trim() && catHits.length ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}
+              {!(catQ.trim() && catHits.length) && recentCats.length > 0 && (
                 <optgroup label={t.f_recent}>
                   {recentCats.map((c) => <option key={`r-${c.id}`} value={c.id}>{c.code} · {c.name}</option>)}
                 </optgroup>)}
-              {!catQ.trim() && groups.map((g) => (
+              {!(catQ.trim() && catHits.length) && groups.map((g) => (
                 <optgroup key={g} label={g}>
                   {cats.filter((c) => c.group === g).map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}
                 </optgroup>

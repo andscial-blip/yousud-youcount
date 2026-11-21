@@ -1,3 +1,4 @@
+import { prjName } from './project-theme';
 import { date, money, rate as fxRate, noDocReason } from './format';
 
 // Modelli dei documenti emessi da YouCount. Lo stesso modello produce l'anteprima nella pagina e il PDF,
@@ -217,7 +218,7 @@ export function buildModel(d: DocData, org: Org): Model {
   }
   const meta: [string, string][] = [[J('N.', 'N°'), d.number ?? J('BOZZA', 'BROUILLON')], [J('Data', 'Date'), date(d.doc_date)]];
   if (d.movement_ref) meta.push([J('Rif. movimento', 'Réf. mouvement'), d.movement_ref]);
-  if (d.project_name && d.type !== 'ASP') meta.push([J('Progetto', 'Projet'), d.project_name]);
+  if (d.project_name && d.type !== 'ASP') { const fr = prjName(d.project_name, 'fr'); meta.push([J('Progetto', 'Projet'), d.lang === 'fr' ? fr : d.lang === 'both' && fr !== d.project_name ? `${d.project_name} / ${fr}` : d.project_name]); }   // N-6
   const orgLine = [org.address, org.tax_id ? `C.F.\u00a0${org.tax_id}` : null].filter(Boolean).join(' · ');
   const footer = [org.runts, org.email, org.phone?.replace(/ /g, '\u00a0'), org.web].filter(Boolean).join(' · ');
   const fxNote = fx && !(d.type === 'DIC' && !Number(d.amount)) ? J(`Cambio applicato: 1\u00a0€ = ${fxRate(fx, 'it')}`, `Taux appliqué\u00a0: 1\u00a0€ = ${fxRate(fx, 'fr')}`) : null;

@@ -3,7 +3,7 @@
 const RULES: [RegExp, string][] = [
   // J8 (giro 13): autocertificazione = documento; storno = freccia di ritorno
   [/autocertific|attestation|auto-certific/, 'file'],
-  [/storn|extourn/, 'back'],
+  [/storn|extourn/, 'sync'],
   [/storico|historique|modifiche|modifications/, 'clock'],
   [/da fare|a faire|verific|controll|riconcil|rapproch|chiusur|cloture/, 'check'],
   [/scadenz|echeanc|calendar|period|mese|mois/, 'cal'],

@@ -133,7 +133,7 @@ export default async function MovementDetail({ params, searchParams }: {
             <div className="mv-amt">
               <span className="l">{t('amount')}</span>
               {/* euro in evidenza con il segno; sotto l'importo nella valuta del conto (quello scritto sulla ricevuta) e il tasso */}
-              <span className={`v num ${signedAmount < 0 ? '' : m.kind === 'income' ? 'pos' : ''}`}>{m.currency === 'MGA' && m.amount_eur ? money(Number(m.amount_eur) * Math.sign(signedAmount || 1), 'EUR', lang) : money(signedAmount, m.currency, lang)}</span>
+              <span className={`v num ${m.kind === 'income' && signedAmount > 0 ? 'amt-in' : ''}`}>{m.kind === 'income' && signedAmount > 0 ? '+' : ''}{m.currency === 'MGA' && m.amount_eur ? money(Number(m.amount_eur) * Math.sign(signedAmount || 1), 'EUR', lang) : money(signedAmount, m.currency, lang)}</span>
               {m.currency === 'MGA' && m.amount_eur && <span className="s num"><b>{money(signedAmount, m.currency, lang)}</b> · {t('f_rate')} {fxRate(m.fx_rate, lang, false)}</span>}
             </div>
             <div className="panel-b">
@@ -301,6 +301,8 @@ export default async function MovementDetail({ params, searchParams }: {
                 <div key={r.id} className={`note ${r.status === 'done' ? 'ok' : 'info'}`} style={{ marginBottom: 10 }}>
                   <b>{r.status === 'done' ? L(`Corretto il ${date((r.done_at ?? r.created_at).slice(0, 10))}`, `Corrigé le ${date((r.done_at ?? r.created_at).slice(0, 10))}`) : L(`Segnalato il ${date(r.created_at.slice(0, 10))}, in attesa del responsabile`, `Signalé le ${date(r.created_at.slice(0, 10))}, en attente du responsable`)}</b>
                   {r.notes && <div>«{r.notes}»</div>}</div>))}
+              {/* R5 (giro 14): con una segnalazione già aperta il modulo si apre solo su richiesta (niente doppioni per errore) */}
+              {(() => { const openRep = ((reports ?? []) as { status: string }[]).some((r) => r.status !== 'done'); const form = (
               <form action={reportErrorAction} className="stack" id="segnala" style={{ gap: 8 }}>
                 <input type="hidden" name="id" value={m.id} /><input type="hidden" name="ref" value={m.ref ?? ''} /><input type="hidden" name="lang" value={lang} />
                 <label className="field"><span className="flabel">{L('Cosa è sbagliato (importo, data, codice…)', 'Ce qui ne va pas (montant, date, code…)')}</span>
@@ -308,6 +310,7 @@ export default async function MovementDetail({ params, searchParams }: {
                 <div className="row-btns"><PendingButton className="btn" busy={L('Invio…', 'Envoi…')}>{L('Segnala al responsabile', 'Signaler au responsable')}</PendingButton></div>
                 <p className="hint" style={{ margin: 0 }}>{L('La segnalazione arriva ai responsabili in «Da fare» e in Scadenze: la correggono loro.', 'Le signalement arrive aux responsables dans « À faire » et dans Échéances : ce sont eux qui corrigent.')}</p>
               </form>
+              ); return openRep ? <details className="rep-more"><summary className="btn small ghost">{L('Aggiungi un dettaglio alla segnalazione', 'Ajouter un détail au signalement')}</summary>{form}</details> : form; })()}
             </Panel>
           )}
 

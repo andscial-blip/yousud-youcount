@@ -1,5 +1,5 @@
 import type { Lang, T } from '@/lib/i18n';
-import { money } from '@/lib/format';
+import { money, eurShort } from '@/lib/format';
 import { BudgetBar } from './Charts';
 import { saveBudget } from '@/app/(app)/budget-action';
 
@@ -17,7 +17,7 @@ export function BudgetTable({ rows, t, lang, edit }: {
   const shown = rows.filter((r) => Number(r.budget_eur) || Number(r.spent_eur));
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <table className="t keep">
+      <table className="t keep bud-t">
         <thead><tr><th>{t('group')}</th><th className="r">{t('b_budget')}</th><th className="r">{t('b_spent')}</th>
           <th className="r hm">{t('b_remaining')}</th><th style={{ width: '30%' }} className="hm" /></tr></thead>
         <tbody>
@@ -26,19 +26,19 @@ export function BudgetTable({ rows, t, lang, edit }: {
             return (
               <tr key={r.group_id}>
                 <td>{`${r.group_code}\u00a0·\u00a0${nm(r).replace(' ', '\u00a0')}`}</td>
-                <td className="r num">{b ? money(b, 'EUR', lang) : '–'}</td>
+                <td className="r num">{b ? eurShort(b, lang) : '–'}</td>
                 {/* H2 (giro 12): lo sforamento si vede anche sul telefono, dove residuo e barra non ci stanno */}
-                <td className={`r num${b && sp > b ? ' over-t' : ''}`}>{money(sp, 'EUR', lang)}{b && sp > b ? <span aria-label={lang === 'fr' ? 'au-delà du prévu' : 'oltre il previsto'}> ▲</span> : null}</td>
-                <td className="r num hm" style={b && sp > b ? { color: 'var(--red)', fontWeight: 600 } : undefined}>{b ? money(b - sp, 'EUR', lang) : '–'}</td>
+                <td className={`r num${b && sp > b ? ' over-t' : ''}`}>{eurShort(sp, lang)}{b && sp > b ? <span aria-label={lang === 'fr' ? 'au-delà du prévu' : 'oltre il previsto'}> ▲</span> : null}</td>
+                <td className="r num hm" style={b && sp > b ? { color: 'var(--red)', fontWeight: 600 } : undefined}>{b ? eurShort(b - sp, lang) : '–'}</td>
                 <td className="hm"><BudgetBar budget={b} spent={sp} /></td>
               </tr>
             );
           })}
           <tr>
             <td style={{ fontWeight: 700 }}>{t('b_total')}</td>
-            <td className="r num" style={{ fontWeight: 700 }}>{money(tb, 'EUR', lang)}</td>
-            <td className="r num" style={{ fontWeight: 700 }}>{money(ts, 'EUR', lang)}</td>
-            <td className="r num hm" style={{ fontWeight: 700 }}>{tb ? money(tb - ts, 'EUR', lang) : '–'}</td>
+            <td className="r num" style={{ fontWeight: 700 }}>{eurShort(tb, lang)}</td>
+            <td className="r num" style={{ fontWeight: 700 }}>{eurShort(ts, lang)}</td>
+            <td className="r num hm" style={{ fontWeight: 700 }}>{tb ? eurShort(tb - ts, lang) : '–'}</td>
             <td className="hm">{tb ? <BudgetBar budget={tb} spent={ts} /> : null}</td>
           </tr>
         </tbody>

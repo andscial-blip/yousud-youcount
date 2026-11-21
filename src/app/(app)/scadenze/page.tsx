@@ -83,8 +83,9 @@ export default async function Deadlines({ searchParams }: {
   const auto = (key: string, dt: string, cat: DlCat, title: string, sub: string, href: string, amount?: number) =>
     items.push({ key, date: dt, cat, title, sub, href, status: 'open', priority: 'high', applies: true, auto: true, amount, currency: amount ? 'EUR' : undefined });
   const dueList = due.data ?? [];
-  if (dueList.length) auto('a-reimb', td, 'pay', L(`Rimborsi da pagare: ${dueList.length}`, `Remboursements à payer : ${dueList.length}`),
-    L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées personnellement, à rembourser.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
+  // R4 (giro 14): per l'operatore è un rimborso da ricevere, non da pagare
+  if (dueList.length) auto('a-reimb', td, 'pay', staff ? L(`Rimborsi da pagare:\u00a0${dueList.length}`, `Remboursements à payer\u00a0:\u00a0${dueList.length}`) : L(`Rimborso che ti spetta:\u00a0${dueList.length}`, `Remboursement qui vous revient\u00a0:\u00a0${dueList.length}`),
+    staff ? L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées personnellement, à rembourser.') : L('Spese che hai pagato di tasca tua: te le rimborsa un responsabile.', 'Dépenses que vous avez payées personnellement : un responsable vous les rembourse.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
   if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare:\u00a0${drafts.count}`, `Mouvements à compléter\u00a0:\u00a0${drafts.count}`),
     L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas enregistrés.'), '/movimenti?stato=draft');
   if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),
@@ -129,6 +130,8 @@ export default async function Deadlines({ searchParams }: {
   const imp = (i: Item): 'c' | 'a' | 'n' | 'p' | 'f' => i.status !== 'open' ? 'f' : i.cat === 'fisc' || i.cat === 'ets' ? 'c' : i.cat === 'prj' || (i.priority === 'high' && !i.auto) ? 'a' : i.cat === 'pay' || i.cat === 'inc' ? 'n' : 'p';
   const IMP: [ReturnType<typeof imp>, string, string][] = [['c', 'critica (sanzioni)', 'critique (sanctions)'], ['a', 'alta (finanziatori)', 'haute (bailleurs)'],
     ['n', 'normale (pagamenti)', 'normale (paiements)'], ['p', 'promemoria', 'rappel'], ['f', 'fatta', 'faite']];
+  // R4: l'operatore vede una legenda semplice (le priorità per sanzioni e finanziatori sono dell'amministrazione)
+  const IMP_SHOWN = staff ? IMP : IMP.filter(([c]) => c === 'n' || c === 'p' || c === 'f').map(([c, it, fr]) => [c, c === 'n' ? 'da fare' : it, c === 'n' ? 'à faire' : fr] as typeof IMP[number]);
   const fxr = Number((rate.data as number | null) ?? 0);
   const toPay = items.filter((i) => i.applies && i.status === 'open' && i.cat === 'pay' && i.amount && i.date <= addDays(td, 30));
   const inEur = (i: Item) => (i.currency === 'MGA' ? (fxr ? i.amount! / fxr : 0) : i.amount!);
@@ -284,7 +287,7 @@ export default async function Deadlines({ searchParams }: {
             );
           })}
         </div>
-        <ul className="imp-leg">{IMP.map(([c, it, fr]) => <li key={c}><i className={`i-${c}`} />{L(it, fr)}</li>)}</ul>
+        <ul className="imp-leg">{IMP_SHOWN.map(([c, it, fr]) => <li key={c}><i className={`i-${c}`} />{L(it, fr)}</li>)}</ul>
       </section>
 
       <div id="elenco" className="anchor">
@@ -307,7 +310,7 @@ export default async function Deadlines({ searchParams }: {
                   <div className="dl-t"><Link href={href({ apri: i.key })} scroll={false}>{i.title}</Link></div>
                   <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
                 </div>
-                <div className="dl-amt num">{!i.amount ? '' : i.currency === 'MGA' && fxr ? <span className="two"><b>{eurShort(inEur(i), lang)}</b><small>{money(i.amount, 'MGA', lang)}</small></span> : money(i.amount, i.currency ?? 'EUR', lang)}</div>
+                <div className="dl-amt num">{!i.amount ? '' : i.currency === 'MGA' && fxr ? <span className="two"><b>{eurShort(inEur(i), lang)}</b><small>{money(i.amount, 'MGA', lang)}</small></span> : (i.currency ?? 'EUR') === 'EUR' ? eurShort(i.amount, lang) : money(i.amount, i.currency ?? 'EUR', lang)}</div>
                 <div className="dl-tag">{tag(i)}</div>
                 <div className="dl-act">
                   {!i.auto && canClose(i) && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}

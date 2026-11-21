@@ -399,3 +399,15 @@ Rapporti in `docs/revisione-finale-2026-11-15/tredicesimo-giro/`. Nessun P0/P1/P
   «Salva da rimborsare» (Q3); Rimborsi dell'operatore con tre riquadri, senza «Da documentare» (Q4); «Contanti in mano» ovunque, euro grande (Q5);
   «da rimborsare» sotto la data (Q7); francese «Payée personnellement» al posto di «de sa poche» (N9-5); ruolo del firmatario e «Frais généraux»
   tradotti (N-6).
+
+## 21/11 — quattordicesimo giro (grafica 9/9/8,5/8,5/8,5/8,5/8 · operatore 9 in ogni area, complessivo 8,5)
+Rapporti in `docs/revisione-finale-2026-11-15/quattordicesimo-giro/`. Un solo P2 (K1), il resto P3.
+- Grafica: tabella per codice che sta nel telefono, importi interi (K1); «previsto» anche nelle Analisi (G12) e stessa regola d'arrotondamento
+  (K4); giorni fuori mese leggibili (K10); «fatta» #B9D7B0 (J11); «Da documentare» mostra solo ciò che manca (H17); gruppo 05 rosa tenue
+  #E6CFE0 (J4); tavolozza senza oliva né grigi (J5/K5, StreetFood in produzione resta col colore salvato: cambiabile da Impostazioni);
+  entrata blu notte con «+» e avanzo verde (K3); «Correggi» non rosso e pulsanti da 38 px (K9); stato dei gruppi in colonna (K6); «Fatta»
+  sempre a destra sul telefono (K8); Excel/Stampa e Apri la bozza/Versioni larghi uguali (G3); schede affiancate senza bianchi (K2);
+  simboli delle note a linea (J2); storno con freccia circolare (J8).
+- Operatore: Guida con i nomi esatti («Registra una spesa», «Come è stata pagata», «toccalo per sceglierlo») (R2/R6); «Da verificare» in
+  Dashboard (R3); con zero risultati il menu mostra tutti i codici (R1); Scadenze e Rimborsi con le parole dell'operatore (R4/Q4); modulo di
+  segnalazione chiuso se ce n'è già una aperta (R5); «Frais généraux» anche nell'intestazione del PDF (N-6).

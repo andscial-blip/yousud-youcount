@@ -103,7 +103,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
         <Link className="kpi" href="/rimborsi"><div className="l">{L('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className="v num">{money(dueEur, 'EUR', lang)}</div>
           <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de votre poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de votre poche`)}</div></Link>
-        <Link className="kpi" href="/movimenti?stato=recorded"><div className="l">{L('In attesa di verifica', 'En vérification')}</div>
+        <Link className="kpi" href="/movimenti?stato=recorded"><div className="l">{L('Da verificare', 'À vérifier')}</div>
           <div className="v num">{waiting ?? 0}</div><div className="s">{L('le controlla un responsabile', 'un responsable les contrôle')}</div></Link>
         <Link className="kpi" href="/movimenti?stato=draft"><div className="l">{L('Bozze', 'Brouillons')}</div>
           <div className="v num">{drafts ?? 0}</div><div className="s">{L('da completare e registrare', 'à compléter et comptabiliser')}</div></Link>

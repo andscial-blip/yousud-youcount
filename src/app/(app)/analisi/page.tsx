@@ -116,16 +116,17 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       <p className="panel-b muted" style={{ margin: 0 }}>{t('an_by_group_note').replace('{p}', `${Math.round(elapsed * 100)}\u00a0%`)}</p>
       {outGroups.length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('none')}</p> : (
         <div className="tscroll"><table className="t" data-cards="">
-          <thead><tr><th>{t('an_group')}</th><th className="r">{lg('Previsto', 'Prévu')}</th><th className="r">{t('prj_spent')}</th><th className="r">%</th><th style={{ width: '30%' }} /></tr></thead>
+          <thead><tr><th>{t('an_group')}</th><th className="r">{lg('Previsto', 'Prévu')}</th><th className="r">{t('prj_spent')}</th><th className="r">%</th><th className="c an-st">{lg('Stato', 'État')}</th><th style={{ width: '26%' }} /></tr></thead>
           <tbody>
             {outGroups.map((g) => {
               const sp2 = spentG.get(g.id) ?? 0, b = budG.get(g.id) ?? 0, st = state(sp2, b);
               return (
                 <tr key={g.id}>
-                  <td data-label={t('an_group')}><Link className="rowlink" href={mov({ tipo: 'expense' })}>{gName.get(g.id)}</Link>{st && <> <span className={`chip ${st === 'ok' ? 'ok' : st === 'over' ? 'bad' : 'warn'}`}>{t(`an_${st}` as 'an_ok')}</span></>}</td>
-                  <td className="r num nw" data-label={lg('Previsto', 'Prévu')}>{b ? money(b, 'EUR', lang) : '–'}</td>
-                  <td className="r num nw" data-label={t('prj_spent')}>{money(sp2, 'EUR', lang)}</td>
+                  <td data-label={t('an_group')}><Link className="rowlink" href={mov({ tipo: 'expense' })}>{gName.get(g.id)}</Link></td>
+                  <td className="r num nw" data-label={lg('Previsto', 'Prévu')}>{b ? eurShort(b, lang) : '–'}</td>
+                  <td className="r num nw" data-label={t('prj_spent')}>{eurShort(sp2, lang)}</td>
                   <td className="r num" data-label="%">{pct(sp2, b)}</td>
+                  <td className="c an-st" data-label={lg('Stato', 'État')}>{st && <span className={`chip ${st === 'ok' ? 'ok' : st === 'over' ? 'bad' : 'warn'}`}>{t(`an_${st}` as 'an_ok')}</span>}</td>
                   <td data-label=""><BudgetBar budget={b} spent={sp2} elapsed={elapsed} /></td>
                 </tr>
               );

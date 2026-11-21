@@ -145,7 +145,7 @@ try {
     await op.page.getByText('Le mie ultime spese').waitFor();
     const txt = await op.page.locator('main').innerText();
     assert.doesNotMatch(txt, /Banca Italia|Saldo dei conti|Entrate 20\d\d/, 'niente conti né totali dell\'associazione all\'operatore');
-    assert.match(txt, /Contanti in mano[\s\S]*Da rimborsare a te[\s\S]*In attesa di verifica[\s\S]*Bozze/);
+    assert.match(txt, /Contanti in mano[\s\S]*Da rimborsare a te[\s\S]*Da verificare[\s\S]*Bozze/);
     assert.match(txt, /PROVA materiale scolastico[\s\S]*-?189,\d\d\s?€|PROVA materiale scolastico/, 'la propria spesa in elenco');
     assert.match(await op.page.locator('aside.side').innerText(), /Operatore di prova\s+Operatore/);
     await op.page.screenshot({ path: `${SHOTS}/op_cruscotto.png`, fullPage: true });
@@ -671,7 +671,7 @@ try {
     assert.equal(await p.locator('.kpis.prk .kpi').count(), 4);
     assert.equal(await p.locator('.an .bq-donut svg.donut').count(), 2, 'panoramica: uscite per progetto ed entrate per voce');
     await p.goto(`${base}/analisi?vista=uscite`);
-    await p.getByText('Uscite per gruppo di spesa e preventivo').waitFor();
+    await p.getByText('Uscite per gruppo di spesa e previsto').waitFor();
     await p.locator('.an .bq-donut svg.donut').first().waitFor();
     // «Progetti» non è più una vista di Analisi: porta alla pagina dei progetti
     await p.locator('.an-bar').getByRole('link', { name: /Progetti/ }).click();

@@ -69,8 +69,8 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <Link href={q(year, false, true)} aria-current={compact ? 'true' : undefined}>{t('rep_compact')}</Link>
         </div>}
         <div className="spacer" />
-        <a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}><Ico name="download" />{t('rep_xlsx')}</a>
-        <PrintButton label={t('rep_print')} />
+        <div className="pair2"><a className="btn" href={`/api/v1/export/rendiconto?anno=${year}`}><Ico name="download" />{t('rep_xlsx')}</a>
+        <PrintButton label={t('rep_print')} /></div>
       </div>
       {/* il risultato si legge per primo (P2-11): tre indicatori col confronto con l'anno precedente */}
       {(() => {
@@ -83,7 +83,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <div className="kpis rep-kpis noprint">
             <div className="kpi"><div className="l">{lang === 'fr' ? 'Total des recettes' : 'Totale entrate'}</div><div className="v num">{v(tin)}</div><div className="s">{pv(pin)}</div></div>
             <div className="kpi"><div className="l">{lang === 'fr' ? 'Total des dépenses' : 'Totale uscite'}</div><div className="v num">{v(tout)}</div><div className="s">{pv(pout)}</div></div>
-            <div className="kpi"><div className="l">{net >= 0 ? (lang === 'fr' ? 'Excédent' : 'Avanzo') : (lang === 'fr' ? 'Déficit' : 'Disavanzo')}</div><div className="v num">{v(net)}</div><div className="s">{pv(pin - pout)}</div></div>
+            <div className="kpi"><div className="l">{net >= 0 ? (lang === 'fr' ? 'Excédent' : 'Avanzo') : (lang === 'fr' ? 'Déficit' : 'Disavanzo')}</div><div className={`v num ${net < 0 ? "neg" : "pos"}`}>{v(net)}</div><div className="s">{pv(pin - pout)}</div></div>
           </div>);
       })()}
       <div className="note noprint">{t('rep_draft')}</div>
