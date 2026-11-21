@@ -383,4 +383,4 @@ Rapporti in `docs/revisione-finale-2026-11-15/dodicesimo-giro/`. Riverifica: gra
   (G3); stesso arrotondamento nei Conti (G10); «previsto» nel finanziamento (G12, 6-D11/7-2: stessa barra di Progetti); pastiglie di Scadenze
   larghe uguali (G19); traccia vuota e piede in fondo nei riquadri (G20); riferimenti indivisibili nei Report (G23); filo sotto contrasto 1,8 (G25);
   gruppo 03 albicocca lontano dal corallo (9-N3); nuova tavolozza dei progetti (7-7, migrazione `20261121000300_project_palette_v2.sql` che
-  cambia solo i colori ancora automatici: **da approvare per la produzione**); colori stabili anche con i dati dimostrativi ricaricati.
+  cambia solo i colori ancora automatici; approvata da Andrea e applicata in produzione il 21/11 alle 10:10); colori stabili anche con i dati dimostrativi ricaricati.
