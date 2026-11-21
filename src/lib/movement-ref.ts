@@ -18,7 +18,8 @@ export type RefData = {
   lastMine: Record<'income' | 'expense', { account_id: string | null; project_id: string | null; payment_method_id: string | null } | null>;
   grants: { id: string; title: string; project_id: string | null }[];
   aiEnabled: boolean; requireDoc: boolean;
-  myAdvances: string[];   // conti di anticipo di cui chi compila è beneficiario
+  myAdvances: string[];
+  advProject: Record<string, string>;   // conto di anticipo → progetto dell'anticipo consegnato   // conti di anticipo di cui chi compila è beneficiario
   userNames: string[];    // nomi degli utenti dell'app (l'operatore non usa l'anticipo di un altro utente)
 };
 
@@ -26,7 +27,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
   const L = (o: { name_it: string; name_fr: string | null }) => (lang === 'fr' && o.name_fr ? o.name_fr : o.name_it);
   // gli ultimi movimenti inseriti da questa persona: servono a proporre conto, progetto e modalità e i codici «usati di recente»
   // velocità (16/11): tutte le letture partono insieme (prima tre erano in fila)
-  const [rec, bal, rd, myAdv, [acc, cat, prj, met, cp, fx, mem, gr, ai, last, pb, pf]] = await Promise.all([
+  const [rec, bal, rd, myAdv, advPrj, [acc, cat, prj, met, cp, fx, mem, gr, ai, last, pb, pf]] = await Promise.all([
     supabase.from('movements').select('kind, account_id, project_id, payment_method_id, category_id')
       .eq('created_by', me.id).in('kind', ['income', 'expense']).is('reverses_id', null).order('created_at', { ascending: false }).limit(40),
     // saldo dei conti: serve ad avvisare quando una spesa manda sotto zero una cassa e a dire quanto resta in mano con un anticipo
@@ -34,6 +35,8 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     supabase.from('settings').select('value').eq('key', 'require_document').maybeSingle(),
     // anticipi di cui questa persona è beneficiaria: si propongono per primi (e da soli, per l'operatore)
     supabase.from('advance_requests').select('account_id').eq('beneficiary_id', me.id).not('account_id', 'is', null),
+    // progetto dell'anticipo consegnato più recente di ogni conto di anticipo: una spesa con quell'anticipo parte da quel progetto
+    supabase.from('advance_requests').select('account_id, project_id, delivered_at').eq('status', 'delivered').not('account_id', 'is', null).not('project_id', 'is', null).order('delivered_at', { ascending: false }),
     Promise.all([
     supabase.from('accounts').select('id, name_it, name_fr, currency, location, kind, holder').eq('active', true).order('sort'),
     supabase.from('categories').select('id, code, name_it, name_fr, direction, group:category_groups(code, name_it, name_fr)')
@@ -76,6 +79,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     // regola «giustificativo obbligatorio» (attiva se non impostata): il modulo la segnala insieme agli altri campi mancanti
     requireDoc: (rd.data?.value ?? true) !== false,
     myAdvances: [...new Set(((myAdv.data ?? []) as { account_id: string }[]).map((r) => r.account_id))],
+    advProject: ((advPrj.data ?? []) as { account_id: string; project_id: string }[]).reduce<Record<string, string>>((m, r) => { if (!m[r.account_id]) m[r.account_id] = r.project_id; return m; }, {}),
     userNames: ((pf.data ?? []) as { full_name: string }[]).map((x) => (x.full_name ?? '').trim().toLowerCase()).filter(Boolean),
     recentCats: { income: recentCats('income'), expense: recentCats('expense') },
     lastMine: { income: lastOf('income'), expense: lastOf('expense') },

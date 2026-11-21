@@ -1,5 +1,5 @@
 import { todayYmd } from '@/lib/today';
-import { deadlineTitle } from '@/lib/format';
+import { deadlineTitle, eurShort } from '@/lib/format';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import AmountField from '@/components/AmountField';
@@ -307,7 +307,7 @@ export default async function Deadlines({ searchParams }: {
                   <div className="dl-t"><Link href={href({ apri: i.key })} scroll={false}>{i.title}</Link></div>
                   <div className="muted dl-s">{[L(...DL_CAT[i.cat]), i.project, i.owner ? userBy.get(i.owner) : null, i.sub].filter(Boolean).join(' · ')}</div>
                 </div>
-                <div className="dl-amt num">{i.amount ? money(i.amount, i.currency ?? 'EUR', lang) : ''}</div>
+                <div className="dl-amt num">{!i.amount ? '' : i.currency === 'MGA' && fxr ? <span className="two"><b>{eurShort(inEur(i), lang)}</b><small>{money(i.amount, 'MGA', lang)}</small></span> : money(i.amount, i.currency ?? 'EUR', lang)}</div>
                 <div className="dl-tag">{tag(i)}</div>
                 <div className="dl-act">
                   {!i.auto && canClose(i) && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}

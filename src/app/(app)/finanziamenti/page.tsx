@@ -1,7 +1,7 @@
 import { todayYmd, orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { can, requireMe, RESP } from '@/lib/session';
-import { date, money } from '@/lib/format';
+import { date, money, eurShort } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
 import { CIcon } from '@/components/CIcon';
 import { Donut, Legend, Viz, fixedColors } from '@/components/Charts';
@@ -43,7 +43,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
   // concesso in euro: gli importi in ariary sono convertiti al tasso di oggi dell'app (valore indicativo)
   const granted = (g: GrantRow) => (!g.amount ? 0 : g.currency === 'EUR' ? Number(g.amount) : fx ? Number(g.amount) / fx : 0);
   const T = (g: GrantRow) => totals(byGrant.get(g.id) ?? []);
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
   const sum = shown.reduce((s, g) => { const x = T(g); s.g += granted(g); s.rec += x.rec; s.sp += x.sp; s.miss += x.miss; if (x.sp > x.rec + 0.005) s.adv += 1; return s; }, { g: 0, rec: 0, sp: 0, miss: 0, adv: 0 });
   // ultimi 12 mesi, il corrente per ultimo

@@ -4,7 +4,7 @@ import { fixedColors } from '@/components/Charts';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, STAFF } from '@/lib/session';
-import { date, money } from '@/lib/format';
+import { date, money, signedMoney, eurShort } from '@/lib/format';
 import { Empty, PageHead, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
 import { MonthBars, Viz } from '@/components/Charts';
@@ -54,7 +54,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   // preventivo delle uscite del progetto: gruppi di codici di spesa (quelli di entrata iniziano per E)
   const bOut = ((budget ?? []) as BudgetRow[]).filter((r) => !r.group_code.startsWith('E')).reduce((s, r) => s + Number(r.budget_eur ?? 0), 0);
   const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0 : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const used = bOut ? out / bOut : 0;
   const gparts = [...byG.entries()].sort((a, b) => b[1] - a[1]);
   const gtot = gparts.reduce((a, [, v]) => a + v, 0) || 1;
@@ -65,7 +65,7 @@ export default async function ProjectDetail({ params, searchParams }: {
   return (
     <div className="stack prj prj-d">
       <PageHead title={`${p.name} · ${year}`} lead={<ProjectIcon p={p} size={34} color={prjColors.get(p.id)} />}>
-        <div className="prj-act">
+        <div className="prj-act pair2">
           <Link className="btn" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('Tutti i movimenti', 'Tous les mouvements')}</Link>
           <Link className="btn" href={`/documenti-emessi/nuovo?progetto=${id}`}>{L('Emetti documento', 'Émettre un document')}</Link>
         </div>
@@ -74,7 +74,7 @@ export default async function ProjectDetail({ params, searchParams }: {
       {sp.err && <div className="note err">{sp.err}</div>}
       <div className="kpis dk prk">
         <div className="kpi">
-          <div className="l">{L('Preventivo uscite', 'Budget dépenses')}</div>
+          <div className="l">{L('Uscite previste', 'Dépenses prévues')}</div>
           <div className="v num">{bOut ? e0(bOut) : '–'}</div>
           {bOut > 0 && <><Viz.Stack segs={[{ v: Math.min(out, bOut), c: 'var(--vz-sp)' }, { v: Math.max(0, bOut - out), c: 'var(--plan-soft)' }, { v: Math.max(0, out - bOut), c: 'var(--tax)' }]} max={Math.max(bOut, out)}
             marks={year === now.getFullYear() ? [{ v: elapsed * bOut, c: 'var(--c-in)', dash: true }] : undefined}
@@ -97,7 +97,6 @@ export default async function ProjectDetail({ params, searchParams }: {
           <div className="s">{inc - out < -0.005 ? L('uscite superiori alle entrate', 'dépenses supérieures aux recettes') : L('entrate che coprono le uscite', 'recettes couvrant les dépenses')}</div>
         </div>
         <div className="kpi">
-          {bOut > 0 && <Viz.Ring p={Math.min(used, 1)} color={out > bOut ? 'var(--tax)' : 'var(--vz-sp)'} tip={`${L('Usato', 'Utilisé')}: ${pc(out, bOut)}`} />}
           <div className="l">{L('Residuo', 'Reste')}</div>
           <div className={`v num ${bOut ? (bOut - out < 0 ? 'neg' : 'pos') : ''}`}>{bOut ? e0(bOut - out) : '–'}</div>
           {bOut > 0 && <><Viz.Stack segs={out > bOut ? [{ v: bOut, c: 'var(--plan-soft)' }, { v: out - bOut, c: 'var(--tax)' }] : [{ v: bOut - out, c: 'var(--green-soft)' }, { v: out, c: 'var(--band)' }]} max={Math.max(bOut, out)}
@@ -119,7 +118,7 @@ export default async function ProjectDetail({ params, searchParams }: {
         </Panel>
       </div>
       {staff && (
-        <Panel title={L('Preventivo e consuntivo per codice', 'Budget et réalisé par code')} pad
+        <Panel title={L('Previsto e speso per codice', 'Prévu et dépensé par code')} pad
           right={<Link className="eyebrow" href={`/preventivo?anno=${year}&progetto=${id}#righe`}>{L('modifica nel Preventivo', 'modifier dans le Budget')} →</Link>}>
           {/* una sola fonte: il preventivo si modifica solo nella pagina Preventivo (versioni e delibera) */}
           <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang} />
@@ -136,8 +135,8 @@ export default async function ProjectDetail({ params, searchParams }: {
                   <tr key={m.id}>
                     <td><Link className="rowlink" href={`/movimenti/${m.id}`}>{m.description || t(`k_${m.kind as 'income'}`)}</Link>
                       <small className="muted num rc-d">{date(m.op_date)}</small></td>
-                    <td className="r num nw"><span className="two"><b>{eur != null ? money(eur, 'EUR', lang) : money(Number(m.amount) * sg, m.currency, lang)}</b>
-                      {eur != null && <small>{money(Number(m.amount) * sg, m.currency, lang)}</small>}</span></td>
+                    <td className="r num nw"><span className="two"><b>{eur != null ? signedMoney(eur, 'EUR', lang) : signedMoney(Number(m.amount) * sg, m.currency, lang)}</b>
+                      {eur != null && <small>{signedMoney(Number(m.amount) * sg, m.currency, lang)}</small>}</span></td>
                   </tr>
                 );
               })}
@@ -157,7 +156,7 @@ export default async function ProjectDetail({ params, searchParams }: {
           <Panel title={t('prj_grants')}>
             {(grants ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('none')}</p> : (
               <ul className="acclist">{grants!.map((g) => <li key={g.id}><span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? t('g_active') : t('g_closed')}</span>
-                <Link className="an" href={`/finanziamenti/${g.id}`}>{g.title}</Link><span className="muted">{g.code}</span></li>)}</ul>)}
+                <Link className="lnk" href={`/finanziamenti/${g.id}`}>{g.title}</Link><span className="muted">{g.code}</span></li>)}</ul>)}
           </Panel>
         </div>
       </div>

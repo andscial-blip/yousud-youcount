@@ -1,5 +1,5 @@
 import { orgNow } from '@/lib/today';
-import { deadlineTitle } from '@/lib/format';
+import { deadlineTitle, eurShort } from '@/lib/format';
 import { loadProjectColors } from '@/lib/palette';
 import { OperatorHome } from './OperatorHome';
 import Link from 'next/link';
@@ -153,7 +153,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const TODO_MAX = 7;
   const notes = (notesRow?.value ?? null) as { text?: string; by_name?: string; at?: string } | null;
 
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)} %` : '–');
   const projects = [...byProject.values()].filter((p) => p.value > 0).sort((a, b) => b.value - a.value);
   const catParts = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
@@ -239,7 +239,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               {out <= 0 ? <p className="muted" style={{ margin: 0 }}>{t('none')}</p> : <>
                 <div className="hstack" role="img" aria-label={L('Uscite per voce', 'Dépenses par poste')}>
                   {parts.map(([n, v], i) => <i key={n} style={{ width: `${((v / catTot) * 100).toFixed(2)}%`, background: catCols[i] }} data-tip={`${n}: ${e0(v)} (${pct(v, catTot)})`} />)}</div>
-                <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: catCols[i] }} /><span className="hc-n">{n}</span><span className="hc-p">{pct(v, catTot)}</span><b className="num">{e0(v)}</b></li>)}</ul>
+                <ul className="hcat hq">{parts.map(([n, v], i) => <li key={n}><i style={{ background: catCols[i] }} /><span className="hc-n">{n}</span><b className="num">{e0(v)}</b><span className="hc-p">{pct(v, catTot)}</span></li>)}</ul>
                 {noDoc ? <div className="hcat-f"><span><b className="num">{num(noDoc, lang)}</b> {noDoc === 1 ? L('uscita senza giustificativo', 'dépense sans justificatif') : L('uscite senza giustificativo', 'dépenses sans justificatif')}</span><Link href={`/movimenti?doc=no&dal=${year}-01-01&al=${year}-12-31`}>{L('Vedi', 'Voir')} →</Link></div> : null}
               </>}
             </div>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
 import { ADMIN, requireMe, RESP } from '@/lib/session';
-import { date, dateTime, money, nm, rate as fxRate, noDocReason } from '@/lib/format';
+import { date, dateTime, money, nm, rate as fxRate, noDocReason, nbRef } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
@@ -142,7 +142,7 @@ export default async function MovementDetail({ params, searchParams }: {
                 {row(t('description'), m.description || null)}
                 {tr && tr.source === m.description && (lang === 'fr' ? tr.fr : tr.it) !== m.description &&
                   row(lang === 'fr' ? 'Traduction (IA)' : 'Traduzione (AI)', lang === 'fr' ? tr.fr : tr.it)}
-                {m.reimb_status === 'due' ? row(t('account'), <span className="chip pend">{t('reimb_due_chip')}</span>)
+                {m.reimb_status === 'due' ? row(t('account'), <span className="chip ichip pend"><Ico name="wallet" size={14} />{t('reimb_due_chip')}</span>)
                 : row(m.kind === 'transfer' ? t('f_from_account') : t('account'), nm(lang, m.account))}
                 {m.paid_by && row(t('f_paid_by'), m.paid_by)}
                 {m.reimb_status === 'paid' && m.reimbursed_at && row(t('reimb_done_row'), `${date(m.op_date)} · ${name.get(m.reimbursed_by ?? '') ?? '–'}`)}
@@ -166,7 +166,7 @@ export default async function MovementDetail({ params, searchParams }: {
             <form action={deleteDemoAction} className="note mv-demo">
               <input type="hidden" name="id" value={m.id} />
               <span>{lang === 'fr' ? 'Mouvement de démonstration (DEMO) : il peut être supprimé.' : 'Movimento dimostrativo (DEMO): si può eliminare.'}</span>
-              <label className="check"><input type="checkbox" name="confirm" required /> {lang === 'fr' ? `Je confirme la suppression de ${m.ref ?? 'ce mouvement'}` : `Confermo l'eliminazione di ${m.ref ?? 'questo movimento'}`}</label>
+              <label className="check"><input type="checkbox" name="confirm" required /> {lang === 'fr' ? `Je confirme la suppression de ${m.ref ? nbRef(m.ref) : 'ce mouvement'}` : `Confermo l'eliminazione di ${m.ref ? nbRef(m.ref) : 'questo movimento'}`}</label>
               <button className="btn" type="submit">{lang === 'fr' ? 'Supprimer' : 'Elimina'}</button>
             </form>
           )}

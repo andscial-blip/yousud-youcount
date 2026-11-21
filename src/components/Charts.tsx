@@ -1,5 +1,5 @@
 import type { Lang } from '@/lib/i18n';
-import { donut, eur0, flowMini, MESI, monthChart, svgBars, svgLines, svgMirror, VZ, type Ref, type Series } from '@/lib/viz';
+import { lightEdgeCss, donut, eur0, flowMini, MESI, monthChart, svgBars, svgLines, svgMirror, VZ, type Ref, type Series } from '@/lib/viz';
 
 // Componenti grafici con gli stessi disegni di Cairn (src/lib/viz.ts). Sul computer la versione larga,
 // sul telefono quella stretta e alta (si sceglie con il CSS, nessun JavaScript).
@@ -55,7 +55,9 @@ export function Bars({ cats, series, lang, stacked, labels, refs, label, h, href
   return (
     <div className="chart-wrap">
       <Svg className="ch-s" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 520 })} />
+      <Svg className="ch-x" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 640 })} />
       <Svg className="ch-d" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 800 })} />
+      <Svg className="ch-y" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 960 })} />
       <Svg className="ch-w" html={svgBars(cats, series, { stacked, labels, refs, label, h, lang, hrefs, w: 1120 })} />
       <Svg className="ch-m" html={svgBars(cats, series, { stacked, labels: false, refs, label, lang, hrefs, phone: true })} />
     </div>
@@ -70,7 +72,9 @@ export function Lines({ cats, series, lang, refs, label, h, zoom, unit }: {
   return (
     <div className="chart-wrap">
       <Svg className="ch-s" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 520 })} />
+      <Svg className="ch-x" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 640 })} />
       <Svg className="ch-d" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 800 })} />
+      <Svg className="ch-y" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 960 })} />
       <Svg className="ch-w" html={svgLines(cats, series, { refs, label, h, lang, zoom, fmt, w: 1120 })} />
       <Svg className="ch-m" html={svgLines(cats, series, { refs, label, lang, phone: true, zoom, fmt })} />
     </div>
@@ -107,7 +111,9 @@ export function MonthBars({ data, lang, labels, hrefFor }: {
     <figure style={{ margin: 0 }}>
       <div className="chart-wrap">
         <Svg className="ch-s" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 520 })} />
+        <Svg className="ch-x" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 640 })} />
         <Svg className="ch-d" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 800 })} />
+        <Svg className="ch-y" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 960 })} />
         <Svg className="ch-w" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, w: 1120 })} />
         <Svg className="ch-m" html={svgMirror(cats, inc, out, { label: `${labels.in} / ${labels.out}`, lang, hrefs, names, phone: true })} />
       </div>
@@ -148,7 +154,7 @@ export function ShareStrip({ rows, lang }: { rows: { label: string; value: numbe
   return (
     <div className="hbar" role="img" aria-label={rows.map((r) => `${r.label} ${eur0(r.value, lang)}`).join(', ')}>
       {rows.filter((r) => r.value > 0).map((r) => (
-        <i key={r.label} style={{ width: `${(r.value / tot) * 100}%`, background: r.color }} data-tip={`${r.label}: ${eur0(r.value, lang)} (${Math.round((r.value / tot) * 100)}%)`} />
+        <i key={r.label} style={{ width: `${(r.value / tot) * 100}%`, background: r.color, boxShadow: lightEdgeCss(r.color) }} data-tip={`${r.label}: ${eur0(r.value, lang)} (${Math.round((r.value / tot) * 100)}%)`} />
       ))}
     </div>
   );

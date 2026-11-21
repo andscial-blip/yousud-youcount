@@ -81,7 +81,9 @@ export default async function BudgetPage({ searchParams }: {
   const delRow = rowActions ? its.find((i) => i.id === sp.elimina) : undefined;
   const reason = Boolean(amending && needReason);
   const lastCat = isId(sp.lc) ? sp.lc! : '';
-  const lastPrj = isId(sp.lp) ? sp.lp! : prj && prj !== 'gen' ? prj : '';
+  // proposti solo da un dato esplicito: la riga appena salvata con «Salva e continua» (lc/lp) o il progetto filtrato nella pagina
+  const lastPrj = isId(sp.lp) || sp.lp === 'gen' ? sp.lp! : prj;
+  const fromLast = Boolean(sp.lc || sp.lp);
 
   // ── composizione del preventivo (tutta la versione mostrata) ──
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '');
@@ -281,7 +283,7 @@ export default async function BudgetPage({ searchParams }: {
                 : L(`La riga riceve il numero ${Math.max(0, ...its.map((i) => i.line_no)) + 1} al salvataggio.`, `La ligne reçoit le numéro ${Math.max(0, ...its.map((i) => i.line_no)) + 1} à l'enregistrement.`)}
                 {reason && draft ? ` ${L('Esiste una bozza di revisione: ciò che cambi qui non entra nella bozza.', 'Un brouillon de révision existe : ce que vous changez ici n\'entre pas dans le brouillon.')}` : ''}</p>
               <BudgetRowForm key={edit?.id ?? `new-${sp.n ?? ''}`} action={saveItem} lang={lang} year={year} budgetId={shown.id} ret={ret} cancelHref={close} item={edit}
-                {...formProps} rate={c.rate} needReason={reason} defCat={lastCat} defPrj={lastPrj} />
+                {...formProps} rate={c.rate} needReason={reason} defCat={lastCat} defPrj={lastPrj} fromLast={fromLast} />
               <p className="muted small bq-sh">{L('Manca un donatore o un fornitore nell\'elenco? Si aggiunge in ', 'Un donateur ou un fournisseur manque dans la liste ? Il s\'ajoute dans ')}
                 <Link href="/controparti">{L('Movimenti › Controparti', 'Mouvements › Tiers')}</Link>.</p>
             </div>

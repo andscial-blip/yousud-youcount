@@ -55,11 +55,11 @@ export function svgBars(cats: string[], series: Series[], opt: { stacked?: boole
       if (v <= 0) return;
       const st = s.dashed && s.dashed[i];
       if (opt.stacked) {
-        out += `<rect x="${x0}" y="${y(acc + v)}" width="${gw}" height="${hh(v)}" fill="${st ? 'var(--band)' : s.color}" ${st ? `stroke="${s.color}" stroke-dasharray="3 2"` : ''}></rect>`;
+        out += `<rect x="${x0}" y="${y(acc + v)}" width="${gw}" height="${hh(v)}" fill="${st ? 'var(--band)' : s.color}" ${st ? `stroke="${s.color}" stroke-dasharray="3 2"` : lightEdge(s.color)}></rect>`;
         acc += v;
       } else {
         const bw = gw / k;
-        out += `<rect x="${x0 + bw * j + 1}" y="${y(v)}" width="${bw - 2}" height="${hh(v)}" fill="${st ? 'var(--band)' : s.color}" ${st ? `stroke="${s.color}" stroke-dasharray="3 2"` : ''} rx="2"></rect>`;
+        out += `<rect x="${x0 + bw * j + 1}" y="${y(v)}" width="${bw - 2}" height="${hh(v)}" fill="${st ? 'var(--band)' : s.color}" ${st ? `stroke="${s.color}" stroke-dasharray="3 2"` : lightEdge(s.color)} rx="2"></rect>`;
         if (opt.labels) out += `<text class="vl" x="${x0 + bw * j + bw / 2}" y="${y(v) - 4}" text-anchor="middle" font-size="13" fill="var(--muted)">${kfmt(v, lang)}</text>`;
       }
     });
@@ -176,8 +176,10 @@ export function donut(items: { label: string; value: number; color: string; tip?
   let acc = 0;
   const seg = items.filter((x) => x.value > 0).map((t) => {
     const f = t.value / tot;
+    const eg = lightEdge(t.color).match(/stroke="(#[0-9a-f]{6})"/);   // G25: fetta chiara con filo più scuro
+    const under = eg ? `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${eg[1]}" stroke-width="${Wd + 2}" stroke-dasharray="${Math.max(0, f * C - 1.5).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc * C).toFixed(2)}" transform="rotate(-90 100 100)" pointer-events="none"></circle>` : '';
     const s = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${t.color}" stroke-width="${Wd}" stroke-dasharray="${Math.max(0, f * C - 1.5).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc * C).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(t.tip ?? t.label)}"></circle>`;
-    acc += f; return s;
+    acc += f; return under + s;
   }).join('');
   // il valore al centro si rimpicciolisce quando è lungo, così resta dentro il foro (visto sull'iPhone: 24.231.107 € toccava l'anello)
   const vfs = Math.max(14, Math.min(19, Math.floor(108 / (Math.max(1, center.value.length) * 0.56))));
@@ -206,6 +208,25 @@ export function flowMini(rows: { inc: number; out: number }[], curM: number, lan
   return `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(`${names[0]} / ${names[1]}`)}" tabindex="0" data-kbd="1">${o}${dots}</svg>`;
 }
 
+// G25 (21/11): le tinte chiare sulla traccia chiara ricevono un filo più scuro del 25 %, così la barra si vede (contrasto < 1,6).
+function lum(hex: string): number {
+  const n = parseInt(hex.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * ch[0]! + 0.7152 * ch[1]! + 0.0722 * ch[2]!;
+}
+export function lightEdge(c: string): string {
+  if (!/^#[0-9A-Fa-f]{6}$/.test(c)) return '';
+  const track = lum('#F2F5F9'), l = lum(c);
+  if ((track + 0.05) / (l + 0.05) >= 1.6) return '';
+  const n = parseInt(c.slice(1), 16), d = (v: number) => Math.round(v * 0.75).toString(16).padStart(2, '0');
+  return ` stroke="#${d((n >> 16) & 255)}${d((n >> 8) & 255)}${d(n & 255)}" stroke-width="1" vector-effect="non-scaling-stroke"`;
+}
+
+/** Lo stesso filo come ombra interna, per le barre fatte di elementi HTML. */
+export function lightEdgeCss(c: string): string | undefined {
+  const m = lightEdge(c).match(/stroke="(#[0-9a-f]{6})"/);
+  return m ? `inset 0 0 0 1px ${m[1]}` : undefined;
+}
+
 export const VZ = {
   ring: (p: number, col: string, tip = '') => {
     const r = 19, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, p));
@@ -214,7 +235,7 @@ export const VZ = {
   stack: (segs: { v: number; c: string }[], max: number, marks: { v: number; c: string; dash?: boolean }[] = [], tip = '') => {
     let x = 0, out = '';
     const W = 200, sc = (v: number) => (max > 0 ? (v / max) * W : 0);
-    segs.forEach((g) => { const w = sc(Math.max(0, g.v)); if (w > 0.5) out += `<rect x="${x.toFixed(1)}" y="10" width="${Math.max(0, w - 1).toFixed(1)}" height="14" rx="3" fill="${g.c}"></rect>`; x += w; });
+    segs.forEach((g) => { const w = sc(Math.max(0, g.v)); if (w > 0.5) out += `<rect x="${x.toFixed(1)}" y="10" width="${Math.max(0, w - 1).toFixed(1)}" height="14" rx="3" fill="${g.c}"${lightEdge(g.c)}></rect>`; x += w; });
     marks.forEach((m) => { const mx = Math.min(W, sc(m.v)); out += `<line x1="${mx}" x2="${mx}" y1="4" y2="30" stroke="${m.c}" stroke-width="1.6" stroke-dasharray="${m.dash ? '2 2' : '0'}"/>`; });
     return `<svg class="vz" viewBox="0 0 200 34" preserveAspectRatio="none" data-tip="${esc(tip)}"><rect x="0" y="10" width="200" height="14" rx="3" fill="var(--surface-2)"/>${out}</svg>`;
   },

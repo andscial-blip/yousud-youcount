@@ -86,7 +86,7 @@ const ONLY = (process.env.ONLY ?? '').split('|').filter(Boolean);
 async function check(name, fn) {
   if (ONLY.length && !ONLY.some((o) => name.includes(o))) return;
   await keepAlive();
-  try { await fn(); results.push(['ok', name]); } catch (e) { results.push(['FAIL', name, e.message.replace(/\s+/g, ' ').slice(0, 700)]); }
+  try { await fn(); results.push(['ok', name]); } catch (e) { results.push(['FAIL', name, (e.message.replace(/\s+/g, ' ').slice(0, 500) + ' @ ' + String(e.stack ?? '').split('\n').filter((l) => l.includes('app.e2e.mjs')).slice(0, 2).join(' | '))]); }
 }
 
 const U = await seed();
@@ -200,9 +200,9 @@ try {
   await check('operatore: lo stesso file caricato in un nuovo movimento dice a quale movimento è già allegato; proposte dall\'ultimo movimento', async () => {
     const p = op.page;
     await p.goto(`${base}/nuovo`);
-    // conto, progetto e modalità partono da quelli dell'ultima uscita inserita dalla stessa persona
+    // conto e modalità partono da quelli dell'ultima uscita inserita dalla stessa persona; il progetto no: si sceglie ogni volta (21/11)
     assert.equal(await p.locator('#account option:checked').innerText(), 'Cassa Madagascar (contanti) · MGA');
-    assert.equal(await p.locator('#project option:checked').innerText(), 'École Antanetibe');
+    assert.equal(await p.locator('#project').inputValue(), '');
     await p.getByText('Proposto dal tuo ultimo movimento').waitFor();
     assert.equal(await p.locator('#category optgroup').first().getAttribute('label'), 'Usati di recente');
     await p.locator('input[type=file]').nth(1).setInputFiles({ name: 'scontrino.png', mimeType: 'image/png', buffer: PNG });
@@ -219,6 +219,7 @@ try {
     await p.fill('#amount', '12.000');
     await p.selectOption('#account', { label: 'Cassa Madagascar (contanti) · MGA' });
     await p.selectOption('#category', { label: '401 · Materiali di consumo' });
+    await p.selectOption('#project', { label: 'École Antanetibe' });
     { const more = p.locator('details.op-more:not([open]) > summary'); if (await more.count()) await more.click(); }   // operatore: «Altri dettagli»
     await p.selectOption('#method', { label: 'Contanti' });
     await p.fill('#desc', 'PROVA taxi senza ricevuta');
@@ -867,7 +868,7 @@ try {
     await p.getByText('Riga n. 1 salvata.').waitFor();
     assert.equal(await f.locator('#bq-prj option:checked').innerText(), 'École Piccolino');
     await f.locator('#bq-cat').selectOption({ label: 'E101 · Donazioni da privati' });
-    await f.locator('#bq-prj').selectOption('');
+    await f.locator('#bq-prj').selectOption('gen');   // «Generale (struttura)»: il progetto si sceglie sempre (21/11)
     await f.locator('#bq-cp').selectOption({ label: 'Fondazione PROVA' });
     await f.locator('#bq-cost').fill('3.000');
     await f.getByRole('button', { name: 'Salva', exact: true }).click();
@@ -954,6 +955,7 @@ try {
     await a.getByRole('link', { name: 'Aggiungi riga' }).click();
     await a.waitForURL(/nuova=1/);
     await fa.locator('#bq-cat').selectOption({ label: '401 · Materiali di consumo' });
+    await fa.locator('#bq-prj').selectOption({ label: 'École Piccolino' });   // progetto sempre da scegliere (21/11)
     await fa.locator('#bq-desc').fill('Gessi');
     await fa.locator('#bq-cost').fill('50');
     await fa.locator('#bi-reason').fill('spesa approvata dal Consiglio');
@@ -1057,6 +1059,9 @@ try {
     await p.waitForURL(/documenti-emessi\/nuovo\?tipo=RIC/);
     assert.equal(await p.inputValue('#df-amount'), '2500');
     await p.fill('#df-party_name', 'Mario Rossi');
+    // la causale non è mai precompilata (valore fiscale, 21/11): si sceglie ogni volta
+    assert.equal(await p.inputValue('#df-causale'), '');
+    await p.selectOption('#df-causale', 'don');
     await p.getByRole('button', { name: /Salva la bozza/ }).click();
     await p.waitForURL(/ok=saved/);
     assert.match(await p.locator('.docprev').innerText(), /BOZZA[\s\S]*Mario Rossi[\s\S]*2\.500,00/);

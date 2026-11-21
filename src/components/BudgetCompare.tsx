@@ -1,6 +1,6 @@
 import { orgNow } from '@/lib/today';
 import Link from 'next/link';
-import { money } from '@/lib/format';
+import { money, eurShort } from '@/lib/format';
 import { Empty } from './Page';
 import { BudgetBar } from './Charts';
 
@@ -15,7 +15,7 @@ const NEAR = 0.9;   // avviso quando speso più impegnato arriva al 90% della vo
 export function BudgetCompare({ rows, groups, lang, year, prj }: { rows: CmpRow[]; groups: Grp[]; lang: 'it' | 'fr'; year: number; prj?: string }) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const N = (g: { name_it: string; name_fr: string | null }) => (lang === 'fr' && g.name_fr ? g.name_fr : g.name_it);
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const fr = rows.filter((r) => (!prj || r.project_id === prj) && (Number(r.budget_eur) || Number(r.actual_eur) || Number(r.committed_eur)));
   const by = new Map<string, { b: number; a: number; c: number; n: number; r: CmpRow }>();
   for (const r of fr) { const x = by.get(r.category_id) ?? { b: 0, a: 0, c: 0, n: 0, r };

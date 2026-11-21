@@ -2,7 +2,7 @@ import { todayYmd } from '@/lib/today';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { can, requireMe, RESP, STAFF } from '@/lib/session';
-import { date, money } from '@/lib/format';
+import { date, money, eurShort } from '@/lib/format';
 import { Empty, H2, Panel } from '@/components/Page';
 import { BudgetTable, type BudgetRow } from '@/components/Budget';
 import { Legend, Lines, Viz } from '@/components/Charts';
@@ -51,7 +51,7 @@ export default async function GrantDetail({ params, searchParams }: {
   const x = totals(moves);
   const fx = rate == null ? null : Number(rate);
   const granted = !g.amount ? 0 : g.currency === 'EUR' ? Number(g.amount) : fx ? Number(g.amount) / fx : 0;
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
   const tm = timeOf(g, today);
   const net = x.rec - x.sp, over = granted > 0 && x.sp > granted + 0.005;
@@ -150,8 +150,8 @@ export default async function GrantDetail({ params, searchParams }: {
               ...(granted ? [{ label: L('Concesso', 'Accordé'), color: 'var(--vz-plan)', value: e0(granted) }] : [])]} /></>)}</div>
         </section>
         <section className="panel">
-          <div className="panel-h"><H2 text={L('Budget e speso per gruppo', 'Budget et dépensé par groupe')} icon={null} /><div className="spacer" />
-            <Legend items={[{ label: 'Budget', color: 'var(--vz-plan)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
+          <div className="panel-h"><H2 text={L('Previsto e speso per gruppo', 'Prévu et dépensé par groupe')} icon={null} /><div className="spacer" />
+            <Legend items={[{ label: L('Previsto', 'Prévu'), color: 'var(--vz-plan)' }, { label: L('Speso', 'Dépensé'), color: 'var(--vz-sp)' }]} className="prj-leg" /></div>
           <div className="panel-b">{bRows.length === 0 ? <p className="muted bq-none">{staff ? L('Nessun budget e nessuna spesa: il budget per gruppo si imposta nella tabella qui sotto.', 'Aucun budget ni dépense : le budget par groupe se règle dans le tableau ci-dessous.') : L('Nessuna spesa collegata.', 'Aucune dépense liée.')}</p> : (
             <ul className="bq-pairs prj-pairs">{bRows.map((r) => (
               <li key={r.k}><span className="bq-pn">{r.label}</span>

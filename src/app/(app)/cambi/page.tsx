@@ -95,7 +95,7 @@ export default async function Rates({ searchParams }: { searchParams: Promise<{ 
           {vals.length > 1 && <><Viz.Cols vals={spark(M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return r ? Number(r.rate) : 0; }))}
             colors={M.map((_, i) => { const r = byKey.get(`${year}-${String(i + 1).padStart(2, '0')}`); return !r ? 'var(--band)' : r === current ? 'var(--navy)' : 'var(--c-soft)'; })}
             tip={`${L('In blu notte: il mese in corso', 'En bleu nuit : le mois en cours')}\n` + yr.map((r) => `${M[r.month - 1]}${lang === 'fr' ? '\u00a0' : ''}: ${mga(Number(r.rate))}`).join('\n')} />
-            <div className="vzl"><span>{short3(M[0]!).toLowerCase()}</span><span>{short3(M[11]!).toLowerCase()}</span></div></>}
+            <div className="vzl"><span>{short3(M[0]!).toLowerCase()}–{short3(M[11]!).toLowerCase()}</span><span><i className="vz-key" aria-hidden="true" />{L('mese in corso', 'mois en cours')}</span></div></>}
           <div className="s">{lo && hi ? `min ${n(Math.round(Number(lo.rate)))} (${short3(M[lo.month - 1]!).toLowerCase()}) · max ${n(Math.round(Number(hi.rate)))} (${short3(M[hi.month - 1]!).toLowerCase()})` : `${vals.length} ${L('mesi', 'mois')}`}</div></div>
       </div>
 

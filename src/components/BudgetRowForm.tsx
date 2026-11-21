@@ -19,7 +19,7 @@ export type RowFormProps = {
   units: string[];
   rate: number | null;
   needReason: boolean;
-  defCat?: string; defPrj?: string;
+  defCat?: string; defPrj?: string; fromLast?: boolean;
 };
 
 // numeri nei campi come nel resto dell'app: punto delle migliaia, virgola dei decimali (parseAmount li rilegge)
@@ -29,10 +29,10 @@ const nf = (v: string | number | null | undefined) => {
   return int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (dec ? `,${dec}` : '');
 };
 
-export function BudgetRowForm({ action, lang, year, budgetId, ret, cancelHref, item, cats, projects, parties, units, rate, needReason, defCat, defPrj }: RowFormProps) {
+export function BudgetRowForm({ action, lang, year, budgetId, ret, cancelHref, item, cats, projects, parties, units, rate, needReason, defCat, defPrj, fromLast = false }: RowFormProps) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const [cat, setCat] = useState(item?.category_id ?? defCat ?? '');
-  const [qty, setQty] = useState(item ? nf(item.qty) : '1');
+  const [qty, setQty] = useState(item ? nf(item.qty) : '');   // vuoto = 1 (scritto come suggerimento nel campo)
   const [cost, setCost] = useState(item ? nf(item.unit_cost) : '');
   const [cur, setCur] = useState(item?.currency ?? 'EUR');
   const [fx, setFx] = useState(item?.fx_rate ? nf(item.fx_rate) : rate ? nf(rate.toFixed(2)) : '');
@@ -49,6 +49,7 @@ export function BudgetRowForm({ action, lang, year, budgetId, ret, cancelHref, i
     : [[L('Fornitori', 'Fournisseurs'), parties.supplier], [L('Donatori e finanziatori', 'Donateurs et bailleurs'), parties.donor], [L('Altri', 'Autres'), parties.other]];
   return (
     <form action={action} className="fgrid bq-form">
+      {fromLast && !item && <div className="note info span2">{L('Codice e progetto ripresi dalla riga appena salvata: controllali prima di salvare.', 'Code et projet repris de la ligne que vous venez d’enregistrer : vérifiez-les avant d’enregistrer.')}</div>}
       <input type="hidden" name="year" value={year} /><input type="hidden" name="budget_id" value={budgetId} />
       <input type="hidden" name="ret" value={ret} />{item && <input type="hidden" name="id" value={item.id} />}
       <div className="field span2"><label htmlFor="bq-cat">{L('Codice (voce di uscita o di entrata)', 'Code (poste de dépense ou de recette)')}</label>
@@ -61,8 +62,9 @@ export function BudgetRowForm({ action, lang, year, budgetId, ret, cancelHref, i
         <input className="input" id="bq-desc" name="description" maxLength={300} defaultValue={item?.description ?? ''}
           placeholder={isIn ? L('Es. contributo per il progetto scuola', 'Ex. contribution pour le projet école') : L('Es. quaderni e penne per 3 classi', 'Ex. cahiers et stylos pour 3 classes')} /></div>
       <div className="field span2p"><label htmlFor="bq-prj">{L('Progetto', 'Projet')}</label>
-        <select className="input" id="bq-prj" name="project_id" defaultValue={item ? item.project_id ?? '' : defPrj ?? ''}>
-          <option value="">{L('Generale (struttura)', 'Général (structure)')}</option>
+        <select className="input" id="bq-prj" name="project_id" required defaultValue={item ? item.project_id ?? 'gen' : defPrj ?? ''}>
+          <option value="" disabled>{L('Scegli il progetto…', 'Choisir le projet…')}</option>
+          <option value="gen">{L('Generale (struttura)', 'Général (structure)')}</option>
           {projects.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
         </select></div>
       <div className="field span2p"><label htmlFor="bq-cp">{isIn ? L('Donatore (facoltativo)', 'Donateur (facultatif)') : L('Fornitore (facoltativo)', 'Fournisseur (facultatif)')}</label>
@@ -71,7 +73,7 @@ export function BudgetRowForm({ action, lang, year, budgetId, ret, cancelHref, i
           {partyGroups.filter(([, xs]) => xs.length > 0).map(([g, xs]) => <optgroup key={g} label={g}>{xs.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</optgroup>)}
         </select></div>
       <div className="field"><label htmlFor="bq-qty">{L('Quantità', 'Quantité')}</label>
-        <input className="input num" id="bq-qty" name="qty" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} /></div>
+        <input className="input num" id="bq-qty" name="qty" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="1" /></div>
       <div className="field"><label htmlFor="bq-unit">{L('Unità di misura', 'Unité de mesure')}</label>
         <input className="input" id="bq-unit" name="unit" maxLength={30} list="bq-units" defaultValue={item?.unit ?? ''} placeholder={L('es. mesi, pezzi, persone', 'ex. mois, pièces, personnes')} />
         <datalist id="bq-units">{units.map((u) => <option key={u} value={u} />)}</datalist></div>

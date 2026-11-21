@@ -132,7 +132,7 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
   const rows = budget.map((b) => ({ ...b, b: Number(b.budget_eur), a: b.key ? act.get(`${b.direction}|${b.key}`) ?? 0 : 0 }));
   const tot = (d: 'in' | 'out', k: 'a' | 'b') => rows.filter((r) => r.direction === d).reduce((s, r) => s + r[k], 0);
   if (!rows.some((r) => r.b || r.a)) return <Empty text={L('Nessuna voce: il preventivo è vuoto e non ci sono movimenti nell\'anno.', 'Aucun poste : le budget est vide et il n\'y a pas de mouvements dans l\'année.')} />;
-  const LB = [L('Preventivo', 'Budget'), L('Consuntivo', 'Réalisé'), L('Differenza', 'Écart')];
+  const LB = [L('Previsto', 'Prévu'), L('Consuntivo', 'Réalisé'), L('Differenza', 'Écart')];
   const block = (d: 'in' | 'out') => {
     const secs: StLine['section'][] = [...new Set(rows.filter((r) => r.direction === d).map((r) => r.section))];
     return secs.map((sec) => {
@@ -157,7 +157,7 @@ function StatementTable({ budget, actual, lang }: { budget: StLine[]; actual: St
   return (
     <div className="tscroll">
       <table className="t keep stmt">
-        <thead><tr><th>{L('Voce', 'Poste')}</th><th /><th className="r">{L('Preventivo', 'Budget')}</th><th className="r">{L('Consuntivo', 'Réalisé')}</th><th className="r">{L('Differenza', 'Écart')}</th></tr></thead>
+        <thead><tr><th>{L('Voce', 'Poste')}</th><th /><th className="r">{L('Previsto', 'Prévu')}</th><th className="r">{L('Consuntivo', 'Réalisé')}</th><th className="r">{L('Differenza', 'Écart')}</th></tr></thead>
         <tbody><tr className="sec"><th colSpan={5} scope="rowgroup">{L('Uscite', 'Dépenses')}</th></tr></tbody>
         {block('out')}
         <tbody><tr className="tot"><td colSpan={2}>{L('Totale uscite', 'Total des dépenses')}</td><td className="r num" data-l={LB[0]}>{m(outB)}</td><td className="r num" data-l={LB[1]}>{m(outA)}</td><td className={`r num ${outB - outA < 0 ? 'neg' : ''}`} data-l={LB[2]}>{m(outB - outA)}</td></tr></tbody>

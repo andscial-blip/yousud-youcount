@@ -1,8 +1,8 @@
 import { orgNow } from '@/lib/today';
-import { projectColorMap } from '@/lib/palette';
+import { loadProjectColors } from '@/lib/palette';
 import Link from 'next/link';
 import { requireMe } from '@/lib/session';
-import { money } from '@/lib/format';
+import { money, eurShort } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
 import { Donut, Legend, Viz, fixedColors } from '@/components/Charts';
 import { ProjectIcon } from '@/components/ProjectIcon';
@@ -24,6 +24,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const { supabase, t, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const { data: bud } = await supabase.from('budgets').select('id').eq('year', year).eq('status', 'approved').maybeSingle();
+  const prjColsP = loadProjectColors(supabase);
   const [{ data: projects, error }, { data: ledger }, { data: items }] = await Promise.all([
     supabase.from('projects').select('id, name, kind, active, demo, theme, created_at').order('kind').order('name'),
     supabase.from('v_ledger').select('project_id, kind, amount_eur, month').eq('year', year).neq('kind', 'transfer').eq('out_of_report', false).limit(50000).returns<Led[]>(),
@@ -37,7 +38,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const all = (projects ?? []).filter((p) => p.active || A(p.id).n > 0);
   const shown = all.filter((p) => sp.tutti || A(p.id).n > 0 || A(p.id).bOut > 0).sort((x, y) => (y.kind === 'structure' ? 1 : 0) - (x.kind === 'structure' ? 1 : 0) || A(y.id).out - A(x.id).out);
   const hidden = all.length - shown.length;
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const tot = shown.reduce((s, p) => { const a = A(p.id); s.out += a.out; s.inc += a.inc; s.b += a.bOut; return s; }, { out: 0, inc: 0, b: 0 });
 
   // riquadri e grafici nel disegno di Cairn (14/11): giallo = uscite, blu notte = entrate, azzurro = previsto, verde = disponibile
@@ -54,7 +55,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const top5 = <T extends { v: number }>(xs: T[], rest: (v: number, n: number) => T) => xs.length > 6 ? [...xs.slice(0, 5), rest(xs.slice(5).reduce((a, x) => a + x.v, 0), xs.length - 5)] : xs;
   const mix0 = top5(shown.filter((p) => A(p.id).out > 0).sort((x, y) => A(y.id).out - A(x.id).out).map((p) => ({ k: p.id, label: p.name, v: A(p.id).out })),
     (v, n) => ({ k: 'rest', label: L(`Altri progetti (${n})`, `Autres projets (${n})`), v }));
-  const prjCols = projectColorMap([...(projects ?? [])].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)) || a.id.localeCompare(b.id)).map((p) => p.id));
+  const prjCols = await prjColsP;
   const mixCols = fixedColors(mix0.map((x) => (x.k === 'rest' ? '' : x.label)), mix0.map((x) => x.k), prjCols);
   const mix = mix0.map((x, n) => ({ ...x, color: mixCols[n]! }));
   const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
@@ -111,7 +112,9 @@ export default async function Projects({ searchParams }: { searchParams: Promise
             <div className="panel-h"><H2 text={L('Previsto e speso', 'Prévu et dépensé')} icon={null} /><div className="spacer" />
               <Legend items={[...(bud ? [{ label: L('Previsto', 'Prévu'), color: 'var(--plan-soft)' }] : []), { label: L('Speso', 'Dépensé'), color: C_SP }]} className="prj-leg" /></div>
             <div className="panel-b">
-              <ul className="bq-pairs prj-pairs">{pairs.map((p) => { const a = A(p.id); return (
+              <ul className="bq-pairs prj-pairs pv2">
+                <li className="pv2-h" aria-hidden="true"><span /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
+                {pairs.map((p) => { const a = A(p.id); return (
                 <li key={p.id}>
                   <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{p.name}</Link>
                   {/* previsto come in tutta l'app (20/11): traccia blu chiara lunga quanto il preventivo, riempita dallo speso; oltre, corallo */}
@@ -162,6 +165,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
           })}
         </div>
       )}
+      {shown.length > 0 && elapsed > 0 && elapsed < 1 && <p className="muted small pring-cap"><span className="tick-k" aria-hidden="true" />{L(`tacca sulla ciambella = anno trascorso (${Math.round(elapsed * 100)} %)`, `repère sur l’anneau = année écoulée (${Math.round(elapsed * 100)} %)`)}</p>}
       {hidden > 0 && <p className="muted" style={{ margin: 0 }}><Link href={`/progetti?anno=${year}&tutti=1`}>{L(`Mostra anche ${hidden} progetti senza movimenti né preventivo nel ${year}`, `Afficher aussi ${hidden} projets sans mouvements ni budget en ${year}`)}</Link></p>}
     </div>
   );

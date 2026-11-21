@@ -342,3 +342,27 @@ Rapporti in `docs/revisione-finale-2026-11-15/decimo-giro/`. Riverifica: colori 
   riconciliazione). Anche i test usano «oggi» di Antananarivo. **Codice e migrazione vanno pubblicati insieme.**
 - Verifiche 21/11 notte: unit 41/41 (anche con TZ=UTC), db 52/52, e2e tutti superati (rendiconto fallito nel giro lungo per lentezza, superato
   ripetendolo insieme al test precedente), offline 9/9, layout 0 problemi a 375 IT/FR, 768 e 1440 IT, build ok.
+  Migrazione approvata e applicata in produzione il 21/11 alle 05:27; codice pubblicato con il commit 3596685.
+
+## 21/11 — undicesimo giro (grafica 8/8,5/8,5/8,5/8,5/8/7) e correzioni chieste da Andrea
+Rapporto in `docs/revisione-finale-2026-11-15/undicesimo-giro/grafica.md` (area allargata: colori, design, bellezza, coerenza, impaginazione).
+- **Precompilati (richiesta di Andrea)**: nuovo movimento senza progetto ripreso dall'ultimo movimento (si sceglie ogni volta; resta solo
+  quello dell'anticipo da cui si spende); descrizione tra i primi campi del giustificativo, con i codici suggeriti dalle sue parole;
+  riga di preventivo con progetto obbligatorio («Scegli il progetto…», «Generale (struttura)»), quantità vuota (segnaposto 1) e nota quando codice e
+  progetto sono ripresi dalla riga appena salvata; documenti emessi senza causale, ritenuta e nota sulle agevolazioni precompilate.
+- **Colori fissi dei progetti (G4)**: colonna `projects.color` (migrazione `20261121000200_project_color.sql`, riempie i progetti esistenti con il
+  colore che avevano finora), scelta in Impostazioni › Progetti («Colore del progetto nei grafici», punto = colore già usato). `loadProjectColors`
+  legge `select('*')`, quindi il codice funziona anche prima della migrazione (colore per ordine di creazione). **La migrazione va approvata**:
+  finché non c'è, salvare un progetto da Impostazioni dà errore perché il modulo invia `color`.
+- Tavolozza progetti: niente talpa, niente celeste simile al previsto, niente due rosa vicini (min ΔE 11,2). Gruppi di spesa senza terracotta,
+  senape e crema invisibile (min ΔE 8,3). Sfumature dell'Italia più distanti (ΔE 9,4). «Fatta» più chiara (ΔE deut 15 dal corallo «critica»).
+- Previsto con un solo aspetto (traccia celeste, tacca tratteggiata blu notte) anche nella scheda «Preventivo» della Dashboard e nel confronto.
+- «Previsto» come nome unico della colonna (FR «Prévu»); la vista «Preventivo e consuntivo» ora si chiama «Previsto e speso».
+- Impaginazione: Guida a sinistra senza parole spezzate; coppie di pulsanti larghe uguali (`.pair2`); collegamenti in blu notte (`a.lnk`);
+  sotto-schede a capo sul telefono (niente etichette tagliate dalla «i»); schede del Report in griglia 3 × 3; 4 colonne di schede progetto a 1440;
+  scadenze con colonna fissa per le pastiglie ed euro grande/ariary piccolo; riquadri KPI con il piede sempre in fondo; pannelli all'altezza del
+  contenuto; «Versioni» del Preventivo nel flusso sul telefono; riferimenti (DEMO-…) che non vanno a capo; segnaposto «Nome o n. MOV».
+- Grafici: una variante ogni ~150 px (etichette 11–13 px ovunque); niente anelli che ripetono la barra; intestazioni «Previsto/Speso» in Progetti;
+  didascalia della tacca; importo prima della percentuale; «+» sulle entrate nella scheda progetto; stesso arrotondamento ovunque (`eurShort`:
+  centesimi sotto 1.000 €); filo più scuro su barre, fette e quadratini chiari (`lightEdge`); report mensile con «Uscite per paese».
+- Stati vuoti con la stessa illustrazione (`EmptyArt`, piccola nei pannelli); icona portafoglio su «Da rimborsare».

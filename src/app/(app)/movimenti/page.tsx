@@ -222,16 +222,16 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               <label className="field"><span className="flabel">{L('Al', 'Au')}</span><input className="input" type="date" name="al" defaultValue={f.to} /></label>
               <label className="field"><span className="flabel">{L('Codice contabile', 'Code comptable')}</span>
                 <select className="input" name="codice" defaultValue={f.cat}><option value="">{t('all')}</option>
-                  {(cats ?? []).map((c) => <option key={c.id} value={c.id}>{c.code} · {nm(lang, c)}</option>)}</select></label>
+                  {(cats ?? []).filter((c) => !isOp || c.direction !== 'income').map((c) => <option key={c.id} value={c.id}>{c.code} · {nm(lang, c)}</option>)}</select></label>
               <label className="field"><span className="flabel">{t('project')}</span>
                 <select className="input" name="progetto" defaultValue={f.prj}><option value="">{t('all')}</option>
                   {(projects ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
               <label className="field"><span className="flabel">{L('Fornitore o donatore', 'Fournisseur ou donateur')}</span>
                 <select className="input" name="cp" defaultValue={f.cp}><option value="">{t('all')}</option>
                   {(cps ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-              <label className="field"><span className="flabel">{L('Modalità di pagamento', 'Mode de paiement')}</span>
+              {!isOp && <label className="field"><span className="flabel">{L('Modalità di pagamento', 'Mode de paiement')}</span>
                 <select className="input" name="metodo" defaultValue={f.pm}><option value="">{t('all')}</option>
-                  {(pms ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
+                  {(pms ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>}
               <label className="field"><span className="flabel">{L('Conto o cassa', 'Compte ou caisse')}</span>
                 <select className="input" name="conto" defaultValue={f.acc}><option value="">{t('all')}</option>
                   {(accounts ?? []).filter((x) => !isOp || (x.location === 'MG' && (x.kind !== 'advance' || Boolean(x.holder)))).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
@@ -264,7 +264,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     <td className="num nw">{date(m.op_date)}<div className="muted small">{m.ref ?? L('bozza', 'brouillon')}</div></td>
                     <td className="mv-d"><Link className="rowlink" href={`/movimenti/${m.id}`}>{desc(m) || t(`k_${m.kind}`)}</Link>
                       {m.demo && <span className="chip demo tiny">DEMO</span>}{m.reverses_id && <span className="chip tiny">{t('reversal')}</span>}
-                      {m.reimb_status === 'due' && <span className="chip pend tiny">{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
+                      {m.reimb_status === 'due' && <span className="chip ichip pend tiny"><Ico name="wallet" size={14} />{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}
                       {(m.counterparty || m.method) && <div className="muted small">{[m.counterparty?.name, m.method ? nm(lang, m.method) : null].filter(Boolean).join(' · ')}</div>}</td>
                     <td className="muted nw">{m.category?.code ?? '–'}</td>
                     <td>{m.project?.name ?? '–'}<div className="muted small">{nm(lang, m.account)}</div></td>

@@ -42,19 +42,26 @@ export function Place({ loc, label }: { loc: 'IT' | 'MG' | string; label: string
 }
 
 // Stato vuoto: piccola ricevuta a mosaico in toni pastello, con distintivo, titolo e azione
+// Illustrazione unica degli stati vuoti (ricevuta a mosaico con distintivo): grande negli stati vuoti di pagina, piccola nei pannelli (G15)
+export function EmptyArt({ badge = 'plus', small }: { badge?: IconName; small?: boolean }) {
+  return (
+    <svg className={`empty-art${small ? ' sm' : ''}`} viewBox="0 0 80 80" aria-hidden="true">
+      <path d="M18 6h44v62l-7.3-5-7.4 5-7.3-5-7.3 5-7.4-5L18 68z" fill="var(--surface)" stroke="var(--line)" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M20 8h20l-6 20H20z" fill="#D3EEE6" /><path d="M42 8h18v16l-22 4z" fill="#E4DEF4" />
+      <path d="M20 30h14l6 18H20z" fill="#FBEFC9" /><path d="M36 30l24-4v20H42z" fill="#DCEBCF" />
+      <path d="M20 50h20l-6 14-7-4.8-7 4.8z" fill="#D6E6F5" /><path d="M42 48h18v16l-5.3-3.6-7.4 5-7.3-5z" fill="#F5D7E1" />
+      <circle cx="58" cy="58" r="13" fill="var(--surface)" stroke="var(--line)" strokeWidth="1.5" />
+      <g transform="translate(50 50) scale(.667)" fill="none" stroke="var(--slate-2)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d={I[badge]} />
+      </g>
+    </svg>
+  );
+}
+
 export function EmptyState({ title, text, action, badge = 'plus' }: { title: string; text?: string; action?: ReactNode; badge?: IconName }) {
   return (
     <div className="empty">
-      <svg className="empty-art" viewBox="0 0 80 80" aria-hidden="true">
-        <path d="M18 6h44v62l-7.3-5-7.4 5-7.3-5-7.3 5-7.4-5L18 68z" fill="var(--surface)" stroke="var(--line)" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M20 8h20l-6 20H20z" fill="#D3EEE6" /><path d="M42 8h18v16l-22 4z" fill="#E4DEF4" />
-        <path d="M20 30h14l6 18H20z" fill="#FBEFC9" /><path d="M36 30l24-4v20H42z" fill="#DCEBCF" />
-        <path d="M20 50h20l-6 14-7-4.8-7 4.8z" fill="#D6E6F5" /><path d="M42 48h18v16l-5.3-3.6-7.4 5-7.3-5z" fill="#F5D7E1" />
-        <circle cx="58" cy="58" r="13" fill="var(--surface)" stroke="var(--line)" strokeWidth="1.5" />
-        <g transform="translate(50 50) scale(.667)" fill="none" stroke="var(--slate-2)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d={I[badge]} />
-        </g>
-      </svg>
+      <EmptyArt badge={badge} />
       <div className="empty-t">{title}</div>
       {text && <p className="muted" style={{ margin: 0, fontSize: 13 }}>{text}</p>}
       {action}

@@ -286,12 +286,14 @@ select.input { appearance: none; -webkit-appearance: none; padding-right: 32px; 
 /* Quattro disegni dello stesso grafico (320, 520, 800, 1120 unità): si mostra quello adatto alla larghezza del RIQUADRO,
    così assi ed etichette restano fra 10 e 14 px invece di ingrandirsi o rimpicciolirsi con l'immagine (revisione del 15/11) */
 .chart-wrap { container-type: inline-size; }
-.chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w { display: none; }
-/* soglie (16/11): ogni variante è usata da ~0,92 volte la sua larghezza in su, così il testo dell'asse (13) non scende sotto 12 px a schermo */
+.chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w, .chart-wrap .ch-x, .chart-wrap .ch-y { display: none; }
+/* G6 (21/11): una variante ogni ~150 px di larghezza, così le etichette restano tra 11 e 13 px come in Analisi e Dashboard */
 @container (max-width: 479px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-m { display: block; } }
-@container (min-width: 480px) and (max-width: 739px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-s { display: block; } }
+@container (min-width: 480px) and (max-width: 579px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-s { display: block; } }
+@container (min-width: 580px) and (max-width: 719px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-x { display: block; } }
+@container (min-width: 880px) and (max-width: 1039px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-y { display: block; } }
 @container (min-width: 1040px) { .chart-wrap .ch-d { display: none; } .chart-wrap .ch-w { display: block; } }
-@media print { .chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w { display: none !important; } .chart-wrap .ch-d { display: block !important; } }
+@media print { .chart-wrap .ch-m, .chart-wrap .ch-s, .chart-wrap .ch-w, .chart-wrap .ch-x, .chart-wrap .ch-y { display: none !important; } .chart-wrap .ch-d { display: block !important; } }
 .cbars { display: flex; flex-direction: column; }
 .cbar .n a { color: var(--fg); text-decoration: none; }
 .cbar .n a:hover { text-decoration: underline; }
@@ -1157,9 +1159,9 @@ form.filters label.check input[type="checkbox"] { width: auto; min-height: 0; fl
 p, li, dd, figcaption, .note, .muted, small, .help-b p { text-wrap: pretty; }
 h1, h2, h3, h4, .panel-h h2 { text-wrap: balance; }
 @media (min-width: 900px) {
-  .guide .g-body p { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+  .guide .g-body p { text-align: left; hyphens: manual; -webkit-hyphens: manual; max-width: 70ch; }   /* niente parole spezzate (21/11) */
 }
-@media print { .guide .g-body p, .doc-print p { text-align: justify; hyphens: auto; } }
+@media print { .doc-print p { text-align: justify; hyphens: auto; } }
 .panel:has(> .fbar), .panel:has(> * > .fbar) { overflow: visible; }
 
 /* ── Dashboard (scelta 2C): 4 cifre uguali in alto, poi pannelli a coppie della stessa altezza ── */
@@ -1196,7 +1198,7 @@ a.k4:hover { transform: translateY(-1px); }
 }
 
 /* ── Scadenze (scelta 4A): calendario per primo con colori per importanza, elenco allineato, righello delle soglie ── */
-:root { --imp-c: #E2917F; --imp-a: #D9A6C9; --imp-n: #8497B0; --imp-p: #C9D6EA; --imp-f: #A8C3A1; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
+:root { --imp-c: #E2917F; --imp-a: #D9A6C9; --imp-n: #8497B0; --imp-p: #C9D6EA; --imp-f: #CFE0C8; }   /* importanza: critica corallo, alta prugna, normale acciaio, promemoria nebbia, fatta salvia chiara, 21/11 ΔE deut 15 dal corallo (16/11: nessun colore con altro significato; luminosità diverse, distinguibili anche con discromie) */
 .cal-i.i-c { background: color-mix(in srgb, var(--imp-c) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-c); }
 .cal-i.i-a { background: color-mix(in srgb, var(--imp-a) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-a); }
 .cal-i.i-n { background: color-mix(in srgb, var(--imp-n) 26%, var(--surface)); color: var(--fg); box-shadow: inset 3px 0 var(--imp-n); }
@@ -2657,3 +2659,93 @@ form[data-busy] button[type=submit]::after, form[data-busy] button:not([type])::
 .cc-sure { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
 .cc-sure input { width: 22px; height: 22px; flex: none; margin: 1px 0 0; accent-color: var(--navy); }   /* casella grande da toccare col dito (21/11) */
 :root { --plan-soft: color-mix(in srgb, var(--vz-plan) 34%, var(--surface)); }   /* previsto più riconoscibile della traccia vuota (21/11) */
+.cc-acc-m { display: none; }
+@media (max-width: 480px) {   /* telefono: il conto va sotto la data, così contato e differenza restano interi (21/11) */
+  .cc-hist .cc-acc { display: none; }
+  .cc-acc-m { display: block; font-size: 12px; color: var(--muted); white-space: normal; font-family: inherit; }
+  .cc-hist td.num { white-space: nowrap; }
+}
+/* sui telefoni il PDF dentro la pagina quasi mai si vede (resta un riquadro vuoto): si usa «Apri» (21/11) */
+@media (max-width: 760px), (pointer: coarse) { .doc-prev.pdf { display: none; } }
+@media (max-width: 760px) {   /* cinque filtri esatti: 3 sopra e 2 sotto, larghezze uguali per riga (21/11, Scadenze) */
+  .quick:has(> a:nth-child(5)):not(:has(> a:nth-child(6))) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .quick:has(> a:nth-child(5)):not(:has(> a:nth-child(6))) > a { grid-column: span 2; }
+  .quick:has(> a:nth-child(5)):not(:has(> a:nth-child(6))) > a:nth-child(n + 4) { grid-column: span 3; }
+}
+/* collegamenti nel testo: blu notte con sottolineatura sottile, mai il blu del browser (21/11) */
+a.lnk, .note a:not(.btn) { color: var(--navy); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:not([class]) { color: var(--navy); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* scelta del colore del progetto (Impostazioni › Progetti, 21/11) */
+.swatches { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.swatches legend { font-size: .86rem; font-weight: 600; color: var(--ink-2, #34445A); margin-bottom: 6px; padding: 0; }
+.swatches .sw { position: relative; display: inline-flex; cursor: pointer; }
+.swatches .sw input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.swatches .sw > span[aria-hidden] { width: 32px; height: 32px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(30,43,60,.18); }
+.swatches .sw input:checked + span { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--navy); }
+.swatches .sw input:focus-visible + span { outline: 2px solid var(--navy); outline-offset: 4px; }
+.swatches .sw-used { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px var(--navy); }
+.swatches .hint { flex-basis: 100%; }
+/* coppie di pulsanti dello stesso rango: stessa larghezza (G3, 21/11) */
+.pair2 { display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(140px, 1fr); gap: 8px; align-items: stretch; }
+.pair2 > .btn, .pair2 > form > .btn, .pair2 > * > .btn { width: 100%; justify-content: center; }
+.pair2 > form { display: contents; }
+@media (max-width: 560px) { .pair2 { display: grid; width: 100%; grid-auto-columns: 1fr; } .pair2 > .btn { min-width: 0; } }
+.fbar .fb-exp, .fbar .fb-btn { min-width: 140px; justify-content: center; }
+@media (max-width: 560px) { .fbar .fb-exp, .fbar .fb-btn { min-width: 0; } }
+.bv-r .btn.small, .bv-r summary.btn { min-width: 132px; justify-content: center; }
+.aw-act > details > summary.btn { min-width: 112px; justify-content: center; }
+.hcat.hq .hc-p { min-width: 3.4em; text-align: right; }
+/* «Previsto e speso» in Progetti: due colonne d'importi con intestazione, barra più vicina ai numeri (G7) */
+.prj-pairs.pv2 li { grid-template-columns: minmax(0, 170px) minmax(0, 1fr) 196px; column-gap: 12px; }
+.prj-pairs.pv2 .bq-pv { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; column-gap: 10px; }
+.prj-pairs.pv2 .pv2-h { margin-bottom: -6px; }
+.prj-pairs.pv2 .pv2-h small { font-size: 12px; color: var(--muted); font-weight: 600; }
+@media (max-width: 760px) {
+  .prj-pairs.pv2 li { grid-template-columns: minmax(0, 1fr) 176px; }
+  .prj-pairs.pv2 .pv2-h > span:first-child { display: none; }
+  .prj-pairs.pv2 .pv2-h { grid-template-columns: minmax(0, 1fr) 176px; }
+}
+.pring-cap { margin: -4px 0 0; display: flex; align-items: center; gap: 8px; }
+.pring-cap .tick-k { width: 3px; height: 12px; border-radius: 1px; background: var(--navy); display: inline-block; }
+@media (min-width: 1380px) { .pring-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }   /* G22: 8 progetti = 2 righe piene a 1440 */
+/* schede del Report: griglia regolare 3 × 3 (G21), 2 colonne sul telefono con l'ultima a tutta riga */
+nav.segs.rep-segs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; width: 100%; }
+nav.segs.rep-segs > a { justify-content: center; text-align: center; white-space: normal; line-height: 1.25; padding: 6px 10px; min-width: 0; }
+@media (max-width: 760px) {
+  nav.segs.rep-segs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  nav.segs.rep-segs > a:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  nav.segs.rep-segs > a { font-size: 13px; }
+}
+/* G20: la riga di piede dei riquadri sta sempre in fondo, anche quando manca la barra */
+.kpis.dk .kpi > .s:last-child, .an .kpis .kpi > .s:last-child { margin-top: auto; padding-top: 4px; }
+/* G19: pastiglie di stato in una colonna fissa, centrate; azioni allineate a sinistra nella loro colonna */
+@media (min-width: 761px) { ul.dl.dl2 .dl-tag { justify-self: center; width: 100%; display: flex; justify-content: center; } ul.dl.dl2 .dl-tag .chip { min-width: 84px; justify-content: center; } }
+ul.dl.dl2 .dl-amt .two { display: inline-flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+ul.dl.dl2 .dl-amt .two small { font-size: 12px; color: var(--muted); font-weight: 400; }
+/* G18: fondo della riga totale su tutte le celle, anche la prima (prima la copriva il fondo della cella di intestazione) */
+table.cbudget tr.bl-sec > th, table.cbudget tr.bl-sec > td { background: #E3EAF4 !important; }
+table.cbudget tr.cb-grp > th, table.cbudget tr.cb-grp > td { background: var(--surface-2) !important; }
+/* G16: niente grandi vuoti per l'altezza forzata */
+.prj-d .grid > .c6.stack { align-self: start; }
+.prj-d .grid > .c6.stack > .panel { flex: 0 0 auto; }
+@media (min-width: 1100px) { .home.v2.yc .h-side > .h-note { flex: 0 0 auto; } .home.v2.yc .h-note textarea { min-height: 180px; } }
+/* G17: sul telefono il pannello «Versioni» si apre subito sotto il pulsante, nel flusso della pagina (non copre il grafico) */
+@media (max-width: 760px) {
+  .bv-pop[open] { flex-basis: 100%; }
+  .bv-pop[open] > .bv-menu { position: static; margin-top: 8px; width: auto; box-shadow: none; }
+}
+.empty-art.sm { width: 48px; height: 48px; }
+/* G5 (21/11): sul telefono le sotto-schede vanno a capo invece di scorrere sotto la «i»: nessuna etichetta tagliata */
+@media (max-width: 760px) {
+  .subrow { align-items: flex-start; }
+  .subrow .subnav { flex-wrap: wrap !important; overflow: visible; column-gap: 16px; row-gap: 0; -webkit-mask-image: none; mask-image: none; padding-right: 0; }
+  .subrow > .helpline, .subrow > .helpline:first-child { margin-top: 4px; }
+}
+/* 6-D11 / 7-2 (21/11): il previsto ha un solo aspetto in tutta l'app: traccia celeste (--plan-soft) riempita dallo speso,
+   tacca tratteggiata blu notte = anno trascorso. Vale anche per la scheda «Preventivo» della Dashboard e per le barre del confronto. */
+.home.v2.yc .cov .meter { background: var(--plan-soft); }
+.home.v2.yc .cov .meter .mk { width: 0; background: none; border-left: 2px dashed var(--navy); box-shadow: none; top: -4px; bottom: -4px; }
+.cb-bar { background: var(--plan-soft); }
+.cb-bar em { border-left-style: dashed; }
+.vzl .vz-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--navy); margin-right: 5px; vertical-align: 0; }
+.r-country { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--line-2); } .r-cap { font-size: 13px; font-weight: 600; color: var(--slate-2); margin-bottom: 6px; }

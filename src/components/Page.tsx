@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Ico } from './Ui';
+import { EmptyArt, Ico } from './Ui';
+import type { IconName } from '@/lib/icons';
 import { PageHeadRow } from './PageHeadRow';
 import { CIcon } from './CIcon';
 import type { ReactNode } from 'react';
@@ -36,8 +37,8 @@ export function Help({ summary, children }: { summary: string; children: ReactNo
   return <details className="help"><summary><CIcon name="info" size={14} />{summary}</summary><div className="help-b">{children}</div></details>;
 }
 
-export function Empty({ text }: { text: string }) {
-  return <div className="empty"><CIcon name="inbox" size={22} /><span>{text}</span></div>;
+export function Empty({ text, badge = 'check' }: { text: string; badge?: IconName }) {
+  return <div className="empty"><EmptyArt badge={badge} small /><span>{text}</span></div>;
 }
 
 export function Denied({ text }: { text: string }) {

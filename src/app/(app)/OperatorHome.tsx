@@ -98,7 +98,7 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
           <div className="s">{myAdv.length && inHand > 0 ? (reportBy ? L(`ricevute entro il ${date(reportBy)}`, `reçus avant le ${date(reportBy)}`) : L('contanti dell’anticipo', 'espèces de l’avance')) : toCollect.length ? L('anticipo autorizzato: da ritirare', 'avance autorisée : à retirer') : (myAdv.length ? L('nessun contante in mano', 'aucune espèce en main') : L('nessun anticipo aperto', 'aucune avance ouverte'))}</div></Link>
         <Link className="kpi" href="/rimborsi"><div className="l">{L('Da rimborsare a te', 'À vous rembourser')}</div>
           <div className="v num">{money(dueEur, 'EUR', lang)}</div>
-          <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de votre poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de votre poche`)}</div></Link>
+          <div className="s">{dueRows.length === 1 ? L('1 spesa pagata di tasca tua', '1 dépense payée de sa poche') : L(`${dueRows.length} spese pagate di tasca tua`, `${dueRows.length} dépenses payées de sa poche`)}</div></Link>
         <Link className="kpi" href="/movimenti?stato=recorded"><div className="l">{L('In attesa di verifica', 'En vérification')}</div>
           <div className="v num">{waiting ?? 0}</div><div className="s">{L('le controlla un responsabile', 'un responsable les contrôle')}</div></Link>
         <Link className="kpi" href="/movimenti?stato=draft"><div className="l">{L('Bozze', 'Brouillons')}</div>

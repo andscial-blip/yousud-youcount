@@ -7,7 +7,7 @@ import type { createClient } from './supabase/server';
 type Sb = Awaited<ReturnType<typeof createClient>>;
 export type Cell = { v: number | string | null; t?: 'eur' | 'int' | 'date' | 'text' | 'cur'; cur?: string; href?: string };
 // Grafico facoltativo accanto alla tabella (stessi numeri): mesi affiancati o barre orizzontali delle voci principali.
-export type Chart = { kind: 'months'; data: { inc: number; out: number }[]; hrefs?: string[] }
+export type Chart = { kind: 'months'; data: { inc: number; out: number }[]; hrefs?: string[]; byCountry?: { it: number[]; mg: number[] } }
   | { kind: 'bars'; dir: 'in' | 'out'; rows: { label: string; value: number; href?: string }[]; more: number; total: number };
 export type Table = { title: string; head: { h: string; num?: boolean }[]; rows: Cell[][]; foot?: Cell[]; note?: string; chart?: Chart };
 const TOP = 8;
@@ -73,7 +73,7 @@ export async function buildReport(sb: Sb, kind: ReportKind, year: number, lang: 
           { h: L('Uscite Italia', 'Dépenses Italie'), num: true }, { h: L('Uscite Madagascar', 'Dépenses Madagascar'), num: true }, { h: L('Saldo del mese', 'Solde du mois'), num: true }],
         rows: by.map((r, i) => [txt(MONTHS[lang][i], `/movimenti?dal=${year}-${String(i + 1).padStart(2, '0')}-01&al=${year}-${String(i + 1).padStart(2, '0')}-${String(new Date(year, i + 1, 0).getDate()).padStart(2, '0')}`), ...row(r)]),
         foot: [txt(L('Totale', 'Total')), ...row(tot)],
-        chart: { kind: 'months', data: by.map((r) => ({ inc: r.iIT + r.iMG, out: r.oIT + r.oMG })) },
+        chart: { kind: 'months', data: by.map((r) => ({ inc: r.iIT + r.iMG, out: r.oIT + r.oMG })), byCountry: { it: by.map((r) => r.oIT), mg: by.map((r) => r.oMG) } },
         note: L('Il paese è quello del conto del movimento. In euro al cambio di ciascun movimento.', 'Le pays est celui du compte du mouvement. En euros au taux de chaque mouvement.'),
       }];
     }

@@ -1,4 +1,5 @@
 import type { Lang, T } from '@/lib/i18n';
+import { lightEdgeCss } from '@/lib/viz';
 import Link from 'next/link';
 import { money, nm } from '@/lib/format';
 import { Place } from './Ui';
@@ -13,7 +14,7 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, 
   // saldo: verde se positivo, rosso se negativo
   const tone = (r: Balance) => (Number(r.balance) < 0 ? ' neg' : '')   // positivi in nero come in Dashboard e altrove; solo i negativi in rosso (20/11);
   // swatch: il colore del conto nella barra della scheda Italia/Madagascar, così la barra ha la sua legenda (D9)
-  const dot = (r: Balance) => { const c = swatch?.(r); return c ? <i className="bal-sw" style={{ background: c }} aria-hidden="true" /> : null; };
+  const dot = (r: Balance) => { const c = swatch?.(r); return c ? <i className="bal-sw" style={{ background: c, boxShadow: lightEdgeCss(c) }} aria-hidden="true" /> : null; };
   const nameOf = (r: Balance) => (hrefFor ? <Link className="bal-a" href={hrefFor(r)} scroll={false}>{dot(r)}{nm(lang, r)}</Link> : <>{dot(r)}{nm(lang, r)}</>);
   const ver = (r: Balance, tiny = false) => { const c = `chip pend${tiny ? ' tiny' : ''}`, tx = tiny ? `${r.unverified} ${t('nav_verify').toLowerCase()}` : String(r.unverified);
     return verHref ? <Link className={c} href={verHref(r)} title={t('nav_verify')}>{tx}</Link> : <span className={c}>{tx}</span>; };

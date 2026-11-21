@@ -2,7 +2,7 @@ import { todayYmd } from '@/lib/today';
 import { COUNTRY_SHADES } from '@/lib/palette';
 import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
-import { date, money, nm, rate as fxRate } from '@/lib/format';
+import { date, money, nm, rate as fxRate, eurShort } from '@/lib/format';
 import { Empty, ErrorNote } from '@/components/Page';
 import { BalancesTable, type Balance } from '@/components/Balances';
 import { CountryMark } from '@/components/CountryMark';
@@ -44,7 +44,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
   const fx = Number(fxl?.[0]?.rate ?? 0);
   const eur = (r: Balance) => (r.currency === 'EUR' ? Number(r.balance) : fx > 0 ? Number(r.balance) / fx : 0);
-  const e0 = (v: number) => money(Math.round(v), 'EUR', lang).replace(/,00(?=\s?€)/, '');
+  const e0 = (v: number) => eurShort(v, lang);
   const pc = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '–');
   const lg = (txt: string) => (txt.length > 11 ? ' long' : '');   // cifre lunghe (ariary): più piccole su telefono
   const byLoc = (loc: string) => rows.filter((r) => r.location === loc);
@@ -93,7 +93,8 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       <ErrorNote prefix={t('error_load')} error={error} />
       {ok === 'cash' && <div className="note ok" role="status">{t('cc_ok')}</div>}
       {err && <div className="note err">{err}</div>}
-      {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. La cassa è comune: il saldo comprende le spese di tutte le persone che la usano. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. La caisse est commune : son solde comprend les dépenses de toutes les personnes qui l’utilisent. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
+      {!staff && rows.some((r) => r.kind === 'cash' && Number(r.balance) < 0) && <div className="note warn">{L('Una cassa risulta in negativo: in cassa non possono esserci meno di zero contanti, quindi manca qualche entrata o c\'è un errore. Avvisa il responsabile.', 'Une caisse est en négatif : il ne peut pas y avoir moins de zéro espèces, il manque donc une recette ou il y a une erreur. Prévenez le responsable.')}</div>}
+          {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. La cassa è comune: il saldo comprende le spese di tutte le persone che la usano. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. La caisse est commune : son solde comprend les dépenses de toutes les personnes qui l’utilisent. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
       <div className="kpis dk">
         <div className="kpi">
           <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
@@ -102,7 +103,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />
             <div className="vzl"><span>IT {pc(Math.max(0, itEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span><span>MG {pc(Math.max(0, mgEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span></div></>}
           <div className="s">{unver > 0 ? <Link href={staff ? '/movimenti?stato=recorded' : '/movimenti?stato=recorded&mie=1'}>{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>
-            : (rows.length === 1 ? L('1 conto, tutto verificato', '1 compte, tout vérifié') : L(`${rows.length} conti, tutto verificato`, `${rows.length} comptes, tout vérifié`))}</div>
+            : !staff ? L('nessuna tua spesa da verificare', 'aucune de vos dépenses à vérifier') : (rows.length === 1 ? L('1 conto, tutto verificato', '1 compte, tout vérifié') : L(`${rows.length} conti, tutto verificato`, `${rows.length} comptes, tout vérifié`))}</div>
         </div>
         {!opMG && locTile('IT', it, itEur)}
         {locTile('MG', mg, mgEur)}
@@ -138,7 +139,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           )}
           {(counts ?? []).length > 0 && (
             <table className="t cc-hist">
-              <thead><tr><th>{t('date')}</th><th>{t('account')}</th><th className="r">{t('cc_counted')}</th>
+              <thead><tr><th>{t('date')}</th><th className="cc-acc">{t('account')}</th><th className="r">{t('cc_counted')}</th>
                 <th className="r hm">{t('cc_system')}</th><th className="r">{t('cc_diff')}</th><th className="hm">{t('cc_by')}</th></tr></thead>
               <tbody>
                 {counts!.map((c) => {
@@ -146,7 +147,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
                   const d = Number(c.difference);
                   return (
                     <tr key={c.id}>
-                      <td className="num nw">{date(c.count_date)}</td><td>{nm(lang, c.account)}</td>
+                      <td className="num nw">{date(c.count_date)}<small className="cc-acc-m">{nm(lang, c.account)}</small></td><td className="cc-acc">{nm(lang, c.account)}</td>
                       <td className="r num">{money(c.counted, cur, lang)}</td>
                       <td className="r num hm">{money(c.system_balance, cur, lang)}</td>
                       <td className="r num" style={{ color: d === 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{d > 0 ? '+' : ''}{money(d, cur, lang)}</td>

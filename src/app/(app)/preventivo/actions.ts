@@ -30,7 +30,7 @@ export async function saveItem(form: FormData) {
   const cur = String(form.get('currency') ?? 'EUR');
   const p = {
     id: String(form.get('id') ?? '') || undefined, budget_id: String(form.get('budget_id')),
-    project_id: String(form.get('project_id') ?? ''), category_id: String(form.get('category_id') ?? ''),
+    project_id: String(form.get('project_id') ?? '') === 'gen' ? '' : String(form.get('project_id') ?? ''), category_id: String(form.get('category_id') ?? ''),
     counterparty_id: String(form.get('counterparty_id') ?? ''),
     description: String(form.get('description') ?? ''), unit: String(form.get('unit') ?? ''),
     qty: parseAmount(String(form.get('qty') ?? '1')) ?? 1, unit_cost: parseAmount(String(form.get('unit_cost') ?? '')),
@@ -40,7 +40,8 @@ export async function saveItem(form: FormData) {
   const r = ret(form);
   const v = `&v=${encodeURIComponent(p.budget_id)}`;
   const open = p.id ? `&riga=${p.id}` : '&nuova=1';
-  if (!p.category_id || p.unit_cost == null) back(year, `err=missing${r ? `&${r}` : ''}${v}${open}`);
+  // il progetto si sceglie sempre (anche «Generale (struttura)»): nessun valore dato per scontato (21/11)
+  if (!p.category_id || p.unit_cost == null || !String(form.get('project_id') ?? '')) back(year, `err=missing${r ? `&${r}` : ''}${v}${open}`);
   const reason = String(form.get('reason') ?? '') || null;
   const sb = await createClient();
   const { data, error } = p.id
@@ -50,7 +51,7 @@ export async function saveItem(form: FormData) {
   const n = (data as { line_no?: number } | null)?.line_no ?? '';
   // «Salva e continua»: la scheda resta aperta e ripropone codice e progetto (si inseriscono di seguito le righe dello stesso codice)
   const again = !p.id && form.get('again')
-    ? `&nuova=1&lc=${encodeURIComponent(p.category_id)}${p.project_id ? `&lp=${encodeURIComponent(p.project_id)}` : ''}` : '';
+    ? `&nuova=1&lc=${encodeURIComponent(p.category_id)}&lp=${encodeURIComponent(p.project_id || 'gen')}` : '';
   // il gruppo della riga appena salvata resta aperto: chi inserisce vuole vederla
   done(year, `ok=row&n=${n}${r ? `&${r}` : ''}${v}${again}&gc=${encodeURIComponent(p.category_id)}`);
 }

@@ -108,7 +108,8 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
 
         {t === 'RIC' && <>
           <div className="field"><label htmlFor="df-causale">{L('Causale', 'Motif')}</label>
-            <select className="input" id="df-causale" name="causale" defaultValue={s('causale') || 'don'}>
+            <select className="input" id="df-causale" name="causale" required defaultValue={s('causale')}>
+              <option value="" disabled>{L('Scegli la causale…', 'Choisir le motif…')}</option>
               <option value="don">{L('Erogazione liberale', 'Libéralité (don)')}</option><option value="quota">{L('Quota associativa', 'Cotisation')}</option>
               <option value="contr">{L('Contributo ai progetti', 'Contribution aux projets')}</option><option value="altro">{L('Altro', 'Autre')}</option></select></div>
           <Fld x={x} k="received_on" label={L('Ricevuto il', 'Reçu le')} type="date" />
@@ -159,7 +160,7 @@ export function DocForm({ init, lang, projects, methods, back, org, rates, movem
         {t === 'NOT' && <>
           <Fld x={x} k="period" label={L('Periodo della prestazione', 'Période de la prestation')} />
           <div className="field"><label htmlFor="df-rit">{L('Ritenuta d\'acconto %', 'Retenue à la source %')}</label>
-            <input className="input num" id="df-rit" name="ritenuta" inputMode="decimal" defaultValue={num(x.ritenuta as number) || '0'} />
+            <input className="input num" id="df-rit" name="ritenuta" inputMode="decimal" required defaultValue={x.ritenuta == null ? '' : num(x.ritenuta as number) || '0'} placeholder={L('20 oppure 0', '20 ou 0')} />
             <span className="hint">{L('20% se il prestatore è residente in Italia; 0 per prestazioni rese all\'estero da non residenti. Da confermare con il commercialista.',
               '20 % si le prestataire réside en Italie ; 0 pour des prestations réalisées hors d\'Italie par des non-résidents. À confirmer.')}</span></div>
         </>}

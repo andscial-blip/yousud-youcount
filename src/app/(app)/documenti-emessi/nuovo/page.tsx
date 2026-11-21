@@ -41,7 +41,7 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
     party_tax_id: priv?.tax_code ?? '', party_address: priv?.address ?? '', amount: m ? Number(m.amount) : '',
     data: m ? { method, desc: m.description ?? '', causale_txt: type === 'RIC' ? m.description ?? '' : undefined, received_on: m.op_date, paid_on: m.op_date,
       lines: type === 'NOT' ? [{ d: m.description ?? '', q: 1, p: Number(m.amount) }] : type === 'NRS' ? [{ date: m.op_date, d: m.description ?? '', amt: Number(m.amount), doc: true }] : undefined,
-      deduc: true } : { deduc: true },
+      deduc: false } : { deduc: false },   // la nota sulle agevolazioni fiscali si aggiunge solo se chi emette la spunta (21/11)
   };
   const fromNumber = src?.number ?? null;
   const ctx = await docFormContext(supabase);

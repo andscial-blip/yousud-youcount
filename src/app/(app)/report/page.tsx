@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { STAFF, can, requireMe } from '@/lib/session';
 import { date, money, num } from '@/lib/format';
 import { buildReport, REPORTS, type Cell, type ReportKind, type Table } from '@/lib/reports';
-import { HBars, MonthBars } from '@/components/Charts';
+import { Bars, HBars, Legend, MonthBars } from '@/components/Charts';
+import { COUNTRY_SHADES } from '@/lib/palette';
+import { MESI } from '@/lib/viz';
 
 const TOPN = 8;
 import { Denied, PageHead, H2 } from '@/components/Page';
@@ -32,14 +34,14 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
   return (
     <div className="stack prj">
       <PageHead title={`${L('Report', 'Rapports')} ${year}`}>
-        <a className="btn" href={`/api/v1/export/report?tipo=${kind}&anno=${year}`}><Ico name="download" />Excel</a>
-        <PrintButton label={L('Stampa / PDF', 'Imprimer / PDF')} />
+        <div className="pair2"><a className="btn" href={`/api/v1/export/report?tipo=${kind}&anno=${year}`}><Ico name="download" />Excel</a>
+        <PrintButton label={L('Stampa / PDF', 'Imprimer / PDF')} /></div>
       </PageHead>
       <PrintHead sb={supabase} lang={lang} title={`${L(REPORTS.find((r) => r.k === kind)!.it, REPORTS.find((r) => r.k === kind)!.fr)} ${year}`} sub={L('Importi in euro, salvo dove indicato', 'Montants en euros, sauf indication contraire')} />
-      <nav className="segs noprint" aria-label={L('Tipo di report', 'Type de rapport')}>
+      <nav className="segs rep-segs noprint" aria-label={L('Tipo di report', 'Type de rapport')}>
         {REPORTS.map((r) => <Link key={r.k} href={q(r.k, year)} aria-current={(r.k === kind) ? "page" : undefined}>{L(r.it, r.fr)}</Link>)}
         <Link href={`/rendiconto?anno=${year}`}>{L('Rendiconto ETS', 'Compte rendu ETS')}</Link>
-        <Link href={`/analisi?anno=${year}&vista=budget`}>{L('Preventivo e consuntivo', 'Budget et réalisé')}</Link>
+        <Link href={`/analisi?anno=${year}&vista=budget`}>{L('Previsto e speso', 'Prévu et dépensé')}</Link>
       </nav>
       {err && <div className="note err">{t('error_load')}: {err}</div>}
       {tables.map((tb, i) => (
@@ -48,7 +50,17 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
           {tb.chart && tb.rows.length > 0 && (
             <div className="panel-b rchart">
               {tb.chart.kind === 'months'
-                ? <MonthBars data={tb.chart.data} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }} />
+                ? <>
+                    <MonthBars data={tb.chart.data} lang={lang} labels={{ in: L('Entrate', 'Recettes'), out: L('Uscite', 'Dépenses') }} />
+                    {/* 7-11 (21/11): le uscite per paese con i colori di Italia (blu) e Madagascar (lilla), come in Conti */}
+                    {tb.chart.byCountry && [...tb.chart.byCountry.it, ...tb.chart.byCountry.mg].some(Boolean) && (
+                      <figure className="r-country">
+                        <figcaption className="r-cap">{L('Uscite per paese', 'Dépenses par pays')}</figcaption>
+                        <Bars cats={MESI[lang]} lang={lang} stacked label={L('Uscite per paese', 'Dépenses par pays')} h={200}
+                          series={[{ name: L('Italia', 'Italie'), vals: tb.chart.byCountry.it, color: COUNTRY_SHADES.IT[0]! }, { name: 'Madagascar', vals: tb.chart.byCountry.mg, color: COUNTRY_SHADES.MG[0]! }]} />
+                        <Legend className="under" items={[{ label: L('Italia', 'Italie'), color: COUNTRY_SHADES.IT[0]! }, { label: 'Madagascar', color: COUNTRY_SHADES.MG[0]! }]} />
+                      </figure>)}
+                  </>
                 : <>
                     <HBars rows={tb.chart.rows} lang={lang} total={tb.chart.total} color={tb.chart.dir === 'in' ? 'var(--c-in)' : 'var(--c-out)'} />
                     {tb.chart.more > 0 && <p className="hint" style={{ margin: '6px 0 0' }}>{L(`Le ${TOPN} voci più alte; altre ${tb.chart.more} nella tabella.`, `Les ${TOPN} postes les plus élevés ; ${tb.chart.more} autres dans le tableau.`)}</p>}

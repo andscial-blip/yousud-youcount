@@ -86,7 +86,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const opMG = isOp && R.accounts.some((a) => a.location === 'MG' && a.kind !== 'advance');
   const lastMine = !initial && !P ? R.lastMine.expense : null;
   const lmAccount = lastMine?.account_id && R.accounts.some((a) => a.id === lastMine.account_id && a.kind !== 'advance') ? lastMine.account_id : '';
-  const lmProject = lastMine?.project_id && R.projects.some((x) => x.id === lastMine.project_id) ? lastMine.project_id : '';
+  // il progetto (centro di costo) non si propone mai dall'ultimo movimento: va scelto ogni volta, perché una spesa imputata
+  // al progetto sbagliato passa inosservata (21/11, segnalazione del committente). Resta proposto solo quando viene da un dato
+  // collegato: l'anticipo scelto (che ha il suo progetto) o un movimento aperto apposta con quel progetto.
+  const lmProject = '';
   const lmMethod = lastMine?.payment_method_id && R.methods.some((x) => x.id === lastMine.payment_method_id) ? lastMine.payment_method_id : '';
   const opDefault = opMG && !lmAccount ? (R.accounts.find((a) => a.location === 'MG' && a.kind === 'cash' && a.currency === 'MGA') ?? R.accounts.find((a) => a.location === 'MG' && a.kind !== 'advance'))?.id ?? '' : '';
   const [accountId, setAccountId] = useState(initial?.account_id ?? P?.account_id ?? (lmAccount || opDefault));
@@ -169,6 +172,12 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     const r = cats.map((c) => [c, catRank(c, q)] as const).filter(([, k]) => k < 4).sort((a, b) => a[1] - b[1]).map(([c]) => c);
     return r.length ? r : cats.filter((c) => nq(c.group).includes(q)); };
   const catHits = hitsFor(catQ);
+  // codici suggeriti dalle parole della descrizione (solo proposti come pulsanti: la scelta resta a chi registra)
+  const descSug = (() => { if (categoryId || catQ.trim()) return [];
+    const out: typeof cats = [];
+    for (const w of description.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((x) => x.length >= 3))
+      for (const c of hitsFor(w)) if (!out.includes(c) && out.length < 3) out.push(c);
+    return out; })();
   const recentCats = R.recentCats[dir === 'in' ? 'income' : 'expense'].map((id) => cats.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const grants = R.grants.filter((g) => !g.project_id || g.project_id === projectId);
 
@@ -467,6 +476,9 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   // (a mano, proposto, o da «+ Ricevuta») — revisione 19/11, MOV con l'anticipo di un'altra persona
   const advHolder = advMode ? R.accounts.find((a) => a.id === accountId)?.holder ?? null : null;
   useEffect(() => { if (advHolder) setPaidBy(advHolder); }, [advHolder]);
+  // spesa con un anticipo legato a un progetto: il progetto viene dall'anticipo (dato collegato, non un'ipotesi), se non è già scelto
+  const advPrj = advMode ? R.advProject?.[accountId] : undefined;
+  useEffect(() => { if (advPrj && R.projects.some((x) => x.id === advPrj)) setProjectId((cur) => cur || advPrj); }, [advPrj, R.projects]);
   // gli anticipi non si scelgono come conto di una spesa dell'ente o di un'entrata (solo con «Con l'anticipo» o nei giroconti)
   // operatore: solo i conti del Madagascar, anche in modifica (resta visibile il conto già scelto, se fosse italiano)
   const accVisible = (a: { id: string; location: string | null }) => !opMG || a.location === 'MG' || a.id === accountId || a.id === toAccountId;
@@ -529,7 +541,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                     onCancel={() => setScanQueue((q) => q.slice(1))} />
       )}
       <section className="panel doc-first" id="giust"><div className="panel-h"><h2>{t.f_doc}</h2>{touched && shown.doc && <span className="ferr">{t.f_required}</span>}{kind === 'transfer' && <span className="muted" style={{ fontSize: 13 }}>{t.f_doc_optional}</span>}</div><div className="panel-b stack" style={{ gap: 12 }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="pair2">
         <label className="btn primary big-touch"><Ico name="camera" size={20} />{t.f_doc_photo}
           <input type="file" accept="image/*" capture="environment" className="vh-file" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
         </label>
@@ -609,6 +621,15 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       )}
 
       <section className="panel"><div className="panel-b fgrid">
+        {/* la descrizione per prima (21/11, richiesta del committente): si scrive cosa si è comprato guardando lo scontrino,
+            e le sue parole propongono il codice contabile più sotto */}
+        <div className={`${aiCls('description')} span2`}>
+          <label htmlFor="desc">{t.f_description}</label>
+          <input className="input" id="desc" aria-invalid={touched && shown.desc ? true : undefined} maxLength={500} placeholder={t.f_description_ph} value={description}
+                 onChange={(e) => { setDescription(e.target.value); confirm('description'); }} />
+          {req(shown.desc)}
+          {aiTag('description')}
+        </div>
         <div className={aiCls('amount')}>
           <label htmlFor="amount">{t.f_amount}{account || due ? ` (${currency})` : ''}</label>
           <input className="input big num" id="amount" aria-invalid={touched && shown.amount ? true : undefined} inputMode="decimal" autoComplete="off" value={amountTxt}
@@ -680,7 +701,10 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
               if (advMode && h) setPaidBy(h);
             }}>
               <option value="">{t.f_choose}</option>
-              {advMode ? advances.map((a) => <option key={a.id} value={a.id}>{a.holder ?? a.name} · {a.currency}</option>) : accOptions(undefined, kind !== 'transfer')}
+              {advMode ? (() => { const mine = advances.filter((a) => isMineAdv(a)), others = advances.filter((a) => !isMineAdv(a)); const opt = (a: typeof advances[number]) => <option key={a.id} value={a.id}>{a.holder ?? a.name} · {a.currency}</option>;
+                // i propri anticipi separati da quelli di altre persone (per cui si registra la spesa): mai confusi (21/11)
+                return others.length ? <>{mine.length > 0 && <optgroup label={t.lang_code === 'fr' ? 'Vos avances' : 'I tuoi anticipi'}>{mine.map(opt)}</optgroup>}
+                  <optgroup label={t.lang_code === 'fr' ? 'Avances d’autres personnes' : 'Anticipi di altre persone'}>{others.map(opt)}</optgroup></> : mine.map(opt); })() : accOptions(undefined, kind !== 'transfer')}
             </select>
             {lmAccount && accountId === lmAccount && !advMode && kind !== 'transfer' ? <span className="hint">{t.f_from_last}</span> : null}
             {req(shown.account)}
@@ -726,6 +750,11 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                     <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}
                   {catHits.length > 8 && <span className="hint">{lang === 'fr' ? `+ ${catHits.length - 8} dans la liste` : `+ altri ${catHits.length - 8} nell’elenco`}</span>}</div>
               : <p className="hint warn-txt cat-none" role="status">{lang === 'fr' ? `Aucun code pour « ${catQ.trim()} ». Essayez un mot plus général (« nourriture », « transport ») ou choisissez dans la liste.` : `Nessun codice per «${catQ.trim()}». Prova una parola più generale («cibo», «trasporto») o scegli dall’elenco.`}</p>)}
+            {descSug.length > 0 && (
+              <div className="chips-row cat-quick cat-sug" role="group" aria-label={lang === 'fr' ? 'Suggérés par la description' : 'Suggeriti dalla descrizione'}>
+                <span className="hint">{lang === 'fr' ? 'D’après la description :' : 'Dalla descrizione:'}</span>
+                {descSug.map((c) => <button key={`s-${c.id}`} type="button" className="chip-btn" onClick={() => { setCategoryId(c.id); confirm('category'); }}><b>{c.code}</b> {c.name.split(' (')[0]}</button>)}
+              </div>)}
             {/* codici più usati: un tocco li sceglie (i propri recenti, altrimenti i sei più comuni sul campo) */}
             {dir === 'out' && !catQ.trim() && (() => { const quick = [...recentCats, ...['202', '203', '204', '307', '401', '606'].map((k) => cats.find((c) => c.code === k)).filter((c): c is NonNullable<typeof c> => Boolean(c))].filter((c, i, all) => all.findIndex((x) => x.id === c.id) === i).slice(0, 6);
               return quick.length > 1 ? <div className="chips-row cat-quick" role="group" aria-label={lang === 'fr' ? 'Codes fréquents' : 'Codici frequenti'}>
@@ -783,13 +812,6 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
           </div>
         </>)}
         {!isOp && methodField}
-        <div className={`${aiCls('description')} span2`}>
-          <label htmlFor="desc">{t.f_description}</label>
-          <input className="input" id="desc" aria-invalid={touched && shown.desc ? true : undefined} maxLength={500} placeholder={t.f_description_ph} value={description}
-                 onChange={(e) => { setDescription(e.target.value); confirm('description'); }} />
-          {req(shown.desc)}
-          {aiTag('description')}
-        </div>
       </div></section>
 
       {isOp ? (
