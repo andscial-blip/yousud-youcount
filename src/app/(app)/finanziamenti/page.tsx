@@ -74,8 +74,8 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
         <div className="kpi">
           <div className="l">{L('Concesso', 'Accordé')}</div>
           <div className="v num">{e0(sum.g)}</div>
-          {dnTop.length > 0 && <><Viz.Stack segs={dnTop.map((x) => ({ v: x.v, c: x.color }))} max={Math.max(1, sum.g)} tip={dn.map((x) => `${x.label}: ${e0(x.v)}`).join('\n')} />
-            <div className="vzl"><span>{dnTop[0]!.label}</span><span>{pc(dnTop[0]!.v, sum.g)}</span></div></>}
+          {dnTop.length > 0 ? <><Viz.Stack segs={dnTop.map((x) => ({ v: x.v, c: x.color }))} max={Math.max(1, sum.g)} tip={dn.map((x) => `${x.label}: ${e0(x.v)}`).join('\n')} />
+            <div className="vzl"><span>{dnTop[0]!.label}</span><span>{pc(dnTop[0]!.v, sum.g)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
           <div className="s">{shown.length === 1 ? L('1 finanziamento', '1 financement') : L(`${shown.length} finanziamenti`, `${shown.length} financements`)} · {nDon === 1 ? L('1 finanziatore', '1 bailleur') : L(`${nDon} finanziatori`, `${nDon} bailleurs`)}</div>
         </div>
         <div className="kpi">
@@ -95,9 +95,9 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
         <div className="kpi">
           <div className="l">{L('Disponibile in cassa', 'Disponible en caisse')}</div>
           <div className={`v num ${net < -0.005 ? 'neg' : 'pos'}`}>{e0(net)}</div>
-          {(sum.rec > 0 || sum.sp > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: sum.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: sum.rec, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, sum.rec, sum.sp)}
+          {(sum.rec > 0 || sum.sp > 0) ? <><Viz.Stack segs={net >= 0 ? [{ v: sum.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: sum.rec, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, sum.rec, sum.sp)}
             tip={`${L('Ricevuto', 'Reçu')}: ${e0(sum.rec)}\n${L('Speso', 'Dépensé')}: ${e0(sum.sp)}`} />
-            <div className="vzl"><span>{L('ricevuto meno speso', 'reçu moins dépensé')}</span><span>{net >= 0 ? pc(net, sum.rec) : ''}</span></div></>}
+            <div className="vzl"><span>{L('ricevuto meno speso', 'reçu moins dépensé')}</span><span>{net >= 0 ? pc(net, sum.rec) : ''}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
           <div className="s">{sum.adv ? (sum.adv === 1 ? L('1 finanziamento anticipato da YouSud', '1 financement avancé par YouSud') : L(`${sum.adv} finanziamenti anticipati da YouSud`, `${sum.adv} financements avancés par YouSud`)) : L('nessuna spesa anticipata', 'aucune dépense avancée')}</div>
         </div>
       </div>

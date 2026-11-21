@@ -101,7 +101,7 @@ export default async function ProjectDetail({ params, searchParams }: {
           <div className={`v num ${bOut ? (bOut - out < 0 ? 'neg' : 'pos') : ''}`}>{bOut ? e0(bOut - out) : '–'}</div>
           {bOut > 0 && <><Viz.Stack segs={out > bOut ? [{ v: bOut, c: 'var(--plan-soft)' }, { v: out - bOut, c: 'var(--tax)' }] : [{ v: bOut - out, c: 'var(--green-soft)' }, { v: out, c: 'var(--band)' }]} max={Math.max(bOut, out)}
             tip={`${L('Previsto', 'Prévu')}: ${e0(bOut)}\n${L('Speso', 'Dépensé')}: ${e0(out)}`} />
-            <div className="vzl"><span>{out > bOut ? L('oltre il preventivo', 'au-delà du budget') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(bOut - out), bOut)}</span></div></>}
+            <div className="vzl"><span>{out > bOut ? L('oltre il previsto', 'au-delà du prévu') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(bOut - out), bOut)}</span></div></>}
           <div className="s">{bOut ? L('preventivo meno speso', 'budget moins dépensé') : L('nessun preventivo in vigore', 'aucun budget en vigueur')}</div>
         </div>
       </div>

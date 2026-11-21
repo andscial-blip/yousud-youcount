@@ -110,8 +110,8 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
         <Link className="kpi" href="/anticipi">
           <div className="l">{L('Anticipi aperti', 'Avances en cours')}</div>
           <div className={`v num${adv.length ? lg(advN.c !== 'EUR' ? e0(advEur) : e0(advN.v)) : ''}`}>{adv.length ? (advN.c !== 'EUR' ? e0(advEur) : e0(advN.v)) : e0(0)}</div>
-          {advEur > 0 && <><Viz.Stack segs={seg(adv)} max={advEur} tip={adv.map((r) => `${holder(r)}: ${money(r.balance, r.currency, lang)}`).join('\n')} />
-            <div className="vzl"><span>{adv.length > 1 ? L(`più grande: ${holder(seg(adv)[0]!.r)}`, `le plus grand : ${holder(seg(adv)[0]!.r)}`) : holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></>}
+          {advEur > 0 ? <><Viz.Stack segs={seg(adv)} max={advEur} tip={adv.map((r) => `${holder(r)}: ${money(r.balance, r.currency, lang)}`).join('\n')} />
+            <div className="vzl"><span>{adv.length > 1 ? L(`più grande: ${holder(seg(adv)[0]!.r)}`, `le plus grand : ${holder(seg(adv)[0]!.r)}`) : holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
           <div className="s">{adv.length ? (advN.c !== 'EUR' ? `${money(advN.v, advN.c, lang)} · ` : '') + L('contanti in mano alle persone', 'espèces confiées aux personnes') : L('nessun anticipo da giustificare', 'aucune avance à justifier')}</div>
         </Link>
       </div>

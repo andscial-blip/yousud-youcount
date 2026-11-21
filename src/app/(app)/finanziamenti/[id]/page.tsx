@@ -132,9 +132,9 @@ export default async function GrantDetail({ params, searchParams }: {
         <div className="kpi">
           <div className="l">{L('Disponibile in cassa', 'Disponible en caisse')}</div>
           <div className={`v num ${net < -0.005 ? 'neg' : 'pos'}`}>{e0(net)}</div>
-          {(x.rec > 0 || x.sp > 0) && <><Viz.Stack segs={net >= 0 ? [{ v: x.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: x.rec, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, x.rec, x.sp)}
+          {(x.rec > 0 || x.sp > 0) ? <><Viz.Stack segs={net >= 0 ? [{ v: x.sp, c: 'var(--vz-sp)' }, { v: net, c: 'var(--green-soft)' }] : [{ v: x.rec, c: 'var(--c-in)' }, { v: -net, c: 'var(--tax)' }]} max={Math.max(1, x.rec, x.sp)}
             tip={`${L('Ricevuto', 'Reçu')}: ${e0(x.rec)}\n${L('Speso', 'Dépensé')}: ${e0(x.sp)}`} />
-            <div className="vzl"><span>{L('ricevuto meno speso', 'reçu moins dépensé')}</span><span>{net >= 0 ? pc(net, x.rec) : ''}</span></div></>}
+            <div className="vzl"><span>{L('ricevuto meno speso', 'reçu moins dépensé')}</span><span>{net >= 0 ? pc(net, x.rec) : ''}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
           <div className="s">{net < -0.005 ? L('spese anticipate da YouSud', 'dépenses avancées par YouSud') : L('fondi ricevuti e non ancora spesi', 'fonds reçus et pas encore dépensés')}</div>
         </div>
       </div>

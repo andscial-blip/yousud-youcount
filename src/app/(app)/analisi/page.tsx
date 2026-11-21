@@ -61,6 +61,9 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
       .filter((r) => r.direction === 'out' && Number(r.budget_eur) > 0 && (!prj || r.project_id === prj))
       .map((r) => ({ group_id: groupOfCat.get(r.category_id) ?? '', amount_eur: Number(r.budget_eur) }))];
   const totBudget = (budget ?? []).reduce((s, b) => s + Number(b.amount_eur), 0);
+  // J12 (giro 13): previsto anche per le entrate (righe del preventivo in vigore)
+  const totBudgetIn = ((cmp ?? []) as { direction: string; project_id: string | null; budget_eur: string }[])
+    .filter((r) => r.direction === 'in' && Number(r.budget_eur) > 0 && (!prj || r.project_id === prj)).reduce((s, r) => s + Number(r.budget_eur), 0);
   const sumBy = (list: Led[], key: (r: Led) => string | null) => {
     const m = new Map<string, number>();
     for (const r of list) { const k = key(r) ?? '-'; m.set(k, (m.get(k) ?? 0) + val(r)); }
@@ -280,9 +283,11 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
             <div className="panel-h"><H2 text={lg('Entrate cumulate', 'Recettes cumulées')} icon={null} /><div className="spacer" /><span className="eyebrow">{year}{prevIn ? ` · ${year - 1}` : ""}</span></div>
             <div className="panel-b">
               <Lines lang={lang} cats={MESI[lang]} label={lg('Entrate cumulate', 'Recettes cumulées')}
+                refs={totBudgetIn ? [{ v: totBudgetIn, color: 'var(--vz-plan)', label: lg('previsto', 'prévu') }] : undefined}
                 series={[{ name: String(year), color: 'var(--c-in)', w: 2.4, vals: cum(months.map((m) => m.inc), lastM) as number[] },
                   ...(prevIn ? [{ name: String(year - 1), color: 'var(--vz-hyp)', dash: '5 4', w: 2, vals: cum(pm.map((m) => m.inc)) as number[] }] : [])]} />
-              <Legend className="under" items={[{ label: String(year), color: 'var(--c-in)', value: e0(totIn) }, ...(prevIn ? [{ label: String(year - 1), color: 'var(--vz-hyp)', value: e0(prevIn) }] : [])]} />
+              <Legend className="under" items={[{ label: String(year), color: 'var(--c-in)', value: e0(totIn) }, ...(prevIn ? [{ label: String(year - 1), color: 'var(--vz-hyp)', value: e0(prevIn) }] : []),
+                ...(totBudgetIn ? [{ label: lg('Previsto', 'Prévu'), color: 'var(--vz-plan)', dashed: true, value: e0(totBudgetIn) }] : [])]} />
             </div>
           </section>
         </div>

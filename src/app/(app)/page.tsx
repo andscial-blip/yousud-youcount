@@ -141,7 +141,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (advToAuth && me && ['super_admin', 'admin', 'responsabile'].includes(me.role)) todo.push({ lvl: 'do', ic: 'user', title: L(`Richieste di anticipo da autorizzare: ${advToAuth}`, `Demandes d’avance à autoriser : ${advToAuth}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (advLate) todo.push({ lvl: 'warn', ic: 'user', title: L(`Anticipi con ricevute in ritardo: ${advLate}`, `Avances avec reçus en retard : ${advLate}`), href: '/anticipi', act: L('Apri', 'Ouvrir') });
   if (autToSign) todo.push({ lvl: 'do', ic: 'receipt', title: L(`Autocertificazioni da firmare: ${autToSign}`, `Attestations à signer : ${autToSign}`), href: autRows.length === 1 ? `/movimenti/${autRows[0]!.movement_id}` : isResp ? '/documenti-emessi' : autRows[0] ? `/movimenti/${autRows[0].movement_id}` : '/anticipi', act: L('Apri', 'Ouvrir') });
-  if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il preventivo: ${over.size}`, `Codes de dépense au-delà du budget : ${over.size}`), href: `/analisi?anno=${year}&vista=budget`, act: L('Vedi', 'Voir') });
+  if (over.size) todo.push({ lvl: 'warn', ic: 'chart', title: L(`Codici di spesa oltre il previsto: ${over.size}`, `Codes de dépense au-delà du prévu : ${over.size}`), href: `/analisi?anno=${year}&vista=budget`, act: L('Vedi', 'Voir') });
   if (!fx || `${fx.year}-${String(fx.month).padStart(2, '0')}` < td.slice(0, 7)) todo.push({ lvl: 'warn', ic: 'bank', title: L('Manca il tasso di cambio del mese', 'Taux de change du mois manquant'), sub: L('Serve per le spese in ariary', 'Nécessaire pour les dépenses en ariary'), href: '/cambi', act: L('Inserisci', 'Saisir') });
   if (drafts) todo.push({ lvl: 'do', ic: 'pen', title: L(`Le tue bozze: ${drafts}`, `Vos brouillons : ${drafts}`), sub: L('Da completare e registrare', 'À compléter et enregistrer'), href: '/movimenti?stato=draft', act: L('Apri', 'Ouvrir') });
   if (isAdmin && (backupDays === null || backupDays >= 7)) todo.push({ lvl: 'do', ic: 'safe', title: backupDays === null ? L('Nessun backup scaricato', 'Aucune sauvegarde téléchargée') : L(`Ultimo backup ${backupDays} giorni fa`, `Dernière sauvegarde il y a ${backupDays} jours`),
@@ -192,7 +192,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <div className="l">{L('Uscite', 'Dépenses')} {year}</div>
           <div className="v num">{e0(out)}</div>
           <Viz.Cols vals={months.map((m) => m.out)} colors={months.map((_, k) => (k < curM ? 'var(--vz-sp)' : 'var(--band)'))} tip={monthTip(`${L('Uscite', 'Dépenses')} ${year}`, (m) => m.out)} />
-          <div className="s">{bOut ? <><span className={overPace ? 'neg' : undefined}>{pct(aOut, bOut)} {L('del preventivo', 'du budget')}</span>{curM ? ` · ${e0(out / curM)} ${L('al mese', 'par mois')}` : ''}</> : curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : ' '}</div>
+          <div className="s">{bOut ? <><span className={overPace ? 'neg' : undefined}>{pct(aOut, bOut)} {L('del previsto', 'du prévu')}</span>{curM ? ` · ${e0(out / curM)} ${L('al mese', 'par mois')}` : ''}</> : curM ? `${e0(out / curM)} ${L('al mese', 'par mois')}` : ' '}</div>
         </div>
         <div className="kpi">
           <div className="l">{net >= 0 ? L('Avanzo', 'Excédent') : L('Disavanzo', 'Déficit')} {year}</div>

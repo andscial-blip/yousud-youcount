@@ -384,3 +384,18 @@ Rapporti in `docs/revisione-finale-2026-11-15/dodicesimo-giro/`. Riverifica: gra
   larghe uguali (G19); traccia vuota e piede in fondo nei riquadri (G20); riferimenti indivisibili nei Report (G23); filo sotto contrasto 1,8 (G25);
   gruppo 03 albicocca lontano dal corallo (9-N3); nuova tavolozza dei progetti (7-7, migrazione `20261121000300_project_palette_v2.sql` che
   cambia solo i colori ancora automatici; approvata da Andrea e applicata in produzione il 21/11 alle 10:10); colori stabili anche con i dati dimostrativi ricaricati.
+
+## 21/11 — tredicesimo giro (grafica 9/9/9/8,5/8,5/8,5/8 · operatore 8,5, nessuna area scesa salvo Grafici per J4)
+Rapporti in `docs/revisione-finale-2026-11-15/tredicesimo-giro/`. Nessun P0/P1/P2 in nessuna area; restano solo P3.
+- Impaginazione: colonna azioni di Scadenze più larga e matita come icona (J1/J2); «Modifica»/«Verifica» larghi uguali (G3); traccia vuota nei
+  riquadri a zero (G20, anche grafici a colonne senza valori); bordo continuo nelle righe delle tabelle (H6); codice legato alla prima parola (H13);
+  Impostazioni in due righe da 5 (J3); «Rimborsato nel 2026» (J9); «Esporta» solo icona fino a 1100 px (J10); Versioni ancorato sotto i pulsanti,
+  titolo senza «· DEMO» (J13); cinque filtri di Scadenze larghi uguali (J14).
+- Grafici/colori: gruppo 08 acqua #A8DADC e 09 ardesia #A7B3C4 (J4/J5); previsto anche nelle entrate cumulate (J12); pallino «fatta» con bordo (J11);
+  finanziamenti con tacca e barra blu notte (J7); icone dei titoli per autocertificazione e storno (J8); Dashboard senza schede stirate (G16);
+  «oltre il previsto» / «del previsto» ovunque (G12).
+- Operatore: progetto dell'anticipo davvero tolto quando si cambia modo di pagamento (O4: il valore veniva letto dopo l'azzeramento); «1 codice
+  trovato: toccalo qui sopra» (Q1); «perché manca il giustificativo» e «Per salvare mancano» (Q2); modulo dell'autocertificazione anche dopo
+  «Salva da rimborsare» (Q3); Rimborsi dell'operatore con tre riquadri, senza «Da documentare» (Q4); «Contanti in mano» ovunque, euro grande (Q5);
+  «da rimborsare» sotto la data (Q7); francese «Payée personnellement» al posto di «de sa poche» (N9-5); ruolo del firmatario e «Frais généraux»
+  tradotti (N-6).

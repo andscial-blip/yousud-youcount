@@ -266,7 +266,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 return (
                   <tr key={m.id}>
                     <td><KindIcon kind={m.kind} label={t(`k_${m.kind}`)} faded={Boolean(m.reverses_id)} /></td>
-                    <td className="num nw">{date(m.op_date)}<div className="muted small">{m.ref ?? L('bozza', 'brouillon')}</div></td>
+                    <td className="num nw">{date(m.op_date)}<div className="muted small">{m.ref ?? (m.reimb_status === 'due' ? L('da rimborsare', 'à rembourser') : L('bozza', 'brouillon'))}</div></td>
                     <td className="mv-d"><Link className="rowlink" href={`/movimenti/${m.id}`}>{desc(m) || t(`k_${m.kind}`)}</Link>
                       {m.demo && <span className="chip demo tiny">DEMO</span>}{m.reverses_id && <span className="chip tiny">{t('reversal')}</span>}
                       {m.reimb_status === 'due' && <span className="chip ichip pend tiny"><Ico name="wallet" size={14} />{t('reimb_due_chip')}{m.paid_by ? ` · ${m.paid_by}` : ''}</span>}

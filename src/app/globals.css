@@ -2739,8 +2739,9 @@ table.cbudget tr.cb-grp > th, table.cbudget tr.cb-grp > td { background: var(--s
 @media (min-width: 1100px) { .home.v2.yc .h-side > .h-note { flex: 0 0 auto; } .home.v2.yc .h-note textarea { min-height: 180px; } }
 /* G17: sul telefono il pannello «Versioni» si apre subito sotto il pulsante, nel flusso della pagina (non copre il grafico) */
 @media (max-width: 760px) {
-  .bv-pop[open] { flex-basis: 100%; }
-  .bv-pop[open] > .bv-menu { position: static; margin-top: 8px; width: auto; box-shadow: none; }
+  /* J13 (giro 13): i due pulsanti restano affiancati; il pannello si apre subito sotto la loro riga, largo quanto la riga */
+  .bv-r { position: relative; }
+  .bv-pop[open] > .bv-menu { position: absolute; left: 0; right: 0; top: calc(100% + 8px); width: auto; }
 }
 .empty-art.sm { width: 48px; height: 48px; }
 /* G5/H10 (giro 12): sul telefono le sotto-schede sono una griglia regolare di colonne uguali (4 schede = 2 × 2), nessuna etichetta
@@ -2767,7 +2768,7 @@ table.cbudget tr.cb-grp > th, table.cbudget tr.cb-grp > td { background: var(--s
 .guide .gt-b, .guide .gt-b li, .guide .gt-b p, .guide .g-topic p, .guide .g-topic li { max-width: 75ch; }
 @media (min-width: 761px) { .fbar > a.btn, .fbar > .fb-btn { min-width: 184px; justify-content: center; } }
 /* G19 (giro 12): tutte le pastiglie di stato larghe uguali nella loro colonna; azioni larghe uguali */
-@media (min-width: 761px) {
+@media (min-width: 1100px) {
   ul.dl.dl2 .dl-tag .chip { width: 118px; min-width: 0; justify-content: center; white-space: nowrap; }
   ul.dl.dl2 .dl-act > form > .btn.small, ul.dl.dl2 .dl-act > .chip, ul.dl.dl2 .dl-act > .btn.small:not(.ghost) { min-width: 96px; justify-content: center; }
 }
@@ -2776,3 +2777,27 @@ table.cbudget tr.cb-grp > th, table.cbudget tr.cb-grp > td { background: var(--s
 .bqs-pair { align-items: start; }
 .prj-two > .panel > .panel-b { justify-content: flex-start; }
 @media (max-width: 760px) { .subrow .subnav[data-sec="set"] { display: none !important; } }   /* Impostazioni: sul telefono si naviga dal menu «Altro» */
+/* J1/J2 (giro 13): colonna delle azioni delle scadenze larga abbastanza (Fatta 96 + matita 32 + spazio); simboli delle note in grigio, non neri */
+@media (min-width: 1100px) { ul.dl.dl2 li { grid-template-columns: 52px minmax(0, 1fr) 150px 124px 140px; } }
+.dnotes .note-bar button, .dnotes .nb-row button { color: #556275; font-weight: 400; }
+/* G3 (giro 13): nella scheda del movimento «Modifica» e «Verifica» larghi uguali */
+.factions > .btn:not(.ghost), .factions > form > .btn:not(.ghost) { min-width: 132px; justify-content: center; }
+/* J10 (giro 13): fino a 1100 px «Esporta» è solo icona (come sul telefono) e i due pulsanti stanno sulla riga della ricerca */
+@media (max-width: 1100px) { .fb-exp > span { display: none; } .fbar .fb-exp, .fbar .fb-btn, .fbar > a.btn { min-width: 0 !important; } .fb-exp { padding: 0 12px; } }
+/* H6 (giro 13): stessa linea di separazione sotto intestazioni di riga e celle, così fondo e bordo della riga sono continui */
+table.t tbody tr > th, table.t tbody tr > td { border-bottom: 1px solid var(--line-2); border-top: 0; }
+table.t thead tr > th { border-bottom: 1px solid var(--line-2); }
+/* J3 (giro 13): le 10 schede di Impostazioni in due righe regolari da 5, in colonna, invece di una sola scheda sola in seconda riga */
+@media (min-width: 1200px) { .subrow .subnav[data-sec="set"]:has(> a:nth-child(9)) { display: grid; grid-template-columns: repeat(5, max-content); column-gap: 28px; row-gap: 0; } }
+/* J14 (giro 13): cinque filtri rapidi sul telefono, tutti larghi uguali: 3 sopra e 2 centrati sotto */
+@media (max-width: 760px) {
+  .quick.fb-inline:has(> a:nth-child(5)):not(:has(> a:nth-child(6))) { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  .quick.fb-inline:has(> a:nth-child(5)):not(:has(> a:nth-child(6))) > a { grid-column: span 2 !important; justify-content: center; text-align: center; }
+  .quick.fb-inline:has(> a:nth-child(5)):not(:has(> a:nth-child(6))) > a:nth-child(4) { grid-column: 2 / span 2 !important; }
+}
+.imp-leg .i-f { box-shadow: inset 0 0 0 1px #9DBF94; }   /* J11 (giro 13): il pallino «fatta» si vede anche sul bianco */
+/* J7 (giro 13): «tempo trascorso» e «concesso» blu notte anche nella scheda in elenco dei finanziamenti, come nei riquadri */
+.fin-pb em { background: #2E3D52; }
+.g-tb i { background: #2E3D52; }
+.home.v2.yc .h-left { align-items: start; }   /* G16 (giro 13): ogni scheda della Dashboard alta quanto il suo contenuto, niente vuoti */
+@media (min-width: 1024px) { .kpis.dk.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

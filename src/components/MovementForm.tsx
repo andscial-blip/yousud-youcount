@@ -118,7 +118,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const ownPocket = payMode === 'own';
   const choosePay = (m: 'org' | 'own' | 'adv') => {
     setPayMode(m);
-    if (m !== 'adv' && prjFromAdv.current) { setProjectId((cur) => (cur === prjFromAdv.current ? '' : cur)); prjFromAdv.current = ''; }
+    if (m !== 'adv' && prjFromAdv.current) { const from = prjFromAdv.current; setProjectId((cur) => (cur === from ? '' : cur)); prjFromAdv.current = ''; }   // O4: valore letto prima di azzerarlo
     const isAdv = R.accounts.find((a) => a.id === accountId)?.kind === 'advance';
     if ((m === 'adv') !== isAdv) {
       // passando ad «Anticipo» si propone l'anticipo di chi compila, non quello di un altro
@@ -341,7 +341,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const DRAFT_KEYS = ['opDate', 'docDate', 'amount', 'account', 'toAccount'];
   const shown = (tried === 'draft' ? Object.fromEntries(Object.entries(missing).map(([k, v]) => [k, DRAFT_KEYS.includes(k) && v])) : missing) as typeof missing;
   const missingNames = ([['opDate', t.f_op_date], ['docDate', `${t.f_doc_date} ${t.lang_code === 'fr' ? '(dans le futur)' : '(nel futuro)'}`], ['amount', t.f_amount], ['account', t.f_account], ['toAccount', t.f_to_account], ['paidBy', t.f_paid_by], ['toAmount', t.f_to_amount],
-    ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.f_doc]] as const)
+    ['category', t.f_category], ['project', t.project], ['rate', t.f_rate], ['desc', t.f_description], ['doc', t.f_doc], ['noDocReason', t.lang_code === 'fr' ? 'pourquoi le justificatif manque' : 'perché manca il giustificativo']] as const)   // Q2: dice cosa manca davvero
     .filter(([k]) => shown[k]).map(([, l]) => l.toLowerCase()).filter((l, i, a) => a.indexOf(l) === i);
 
   function errorText(msg: string) {
@@ -435,7 +435,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       if (data.outcome === 'conflict') { setError(t.f_conflict); setBusy(false); return; }
       if (!initial) { savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ } }
       // spesa registrata senza giustificativo, con la scelta «prepara l'autocertificazione»: la scheda si apre sul modulo
-      const goAut = status === 'recorded' && kind === 'expense' && noDoc && wantAut && docs.length === 0;
+      const goAut = (status === 'recorded' || due) && kind === 'expense' && noDoc && wantAut && docs.length === 0;   // Q3: anche «Salva da rimborsare»
       router.push(`/movimenti/${data.id}?ok=${initial && !(initial.status === 'draft' && status === 'recorded') ? 'saved' : 'new'}${goAut ? '&aut=1' : ''}`);
       router.refresh();
     } catch (e) {
@@ -773,7 +773,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
                 {quick.map((c) => <button key={`f-${c.id}`} type="button" className={`chip-btn${categoryId === c.id ? ' on' : ''}`} aria-pressed={categoryId === c.id} onClick={() => { setCategoryId(c.id); confirm('category'); }}>
                   <b>{c.code}</b> {c.name.split(' (')[0]}</button>)}</div> : null; })()}
             <select className="input" id="category" aria-invalid={touched && shown.category ? true : undefined} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); confirm('category'); }}>
-              <option value="">{catQ.trim() ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé' : `${catHits.length} codes trouvés`) : (catHits.length === 1 ? '1 codice trovato' : `${catHits.length} codici trovati`)) : t.f_choose}</option>
+              <option value="">{catQ.trim() ? (lang === 'fr' ? (catHits.length === 1 ? '1 code trouvé : touchez-le ci-dessus' : `${catHits.length} codes trouvés : touchez-en un ci-dessus`) : (catHits.length === 1 ? '1 codice trovato: toccalo qui sopra' : `${catHits.length} codici trovati: toccane uno qui sopra`)) : t.f_choose}</option>
               {catQ.trim() ? [...catHits, ...cats.filter((c) => c.id === categoryId && !catHits.includes(c))].map((c) => <option key={`q-${c.id}`} value={c.id}>{c.code} · {c.name}</option>) : null}
               {!catQ.trim() && recentCats.length > 0 && (
                 <optgroup label={t.f_recent}>
@@ -862,7 +862,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
         )}
         <button type="submit" className="btn primary" disabled={busy}><Ico name="check" />{busy && tried !== 'draft' ? t.f_saving : due ? t.f_save_due : t.f_record}</button>
         <span className="hint" style={{ flex: '1 1 260px' }}>{due ? t.f_due_hint : t.f_record_hint} {t.lang_code === 'fr' ? '* obligatoire pour comptabiliser.' : '* obbligatorio per registrare.'}</span>
-        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{tried === 'draft' ? (t.lang_code === 'fr' ? 'Pour enregistrer le brouillon il manque' : 'Per salvare la bozza mancano') : t.f_missing_list}{t.lang_code === 'fr' ? '\u00a0' : ''}: {missingNames.join(', ')}</span>}
+        {touched && missingNames.length > 0 && <span className="ferr mform-miss" role="alert">{tried === 'draft' ? (t.lang_code === 'fr' ? 'Pour enregistrer le brouillon il manque' : 'Per salvare la bozza mancano') : due ? (t.lang_code === 'fr' ? 'Pour enregistrer il manque' : 'Per salvare mancano') : t.f_missing_list}{t.lang_code === 'fr' ? '\u00a0' : ''}: {missingNames.join(', ')}</span>}
       </div>
     </form>
   );

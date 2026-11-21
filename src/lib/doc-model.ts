@@ -84,7 +84,10 @@ export function buildModel(d: DocData, org: Org): Model {
   const blocks: Block[] = [];
   // un paragrafo per lingua: il secondo (francese nel bilingue) in grigio
   const P = (fn: (l: 'it' | 'fr') => string) => ls.forEach((l, i) => blocks.push({ k: 'p', text: fn(l), soft: i > 0 }));
-  const sign = [d.signer_name, d.signer_role].filter(Boolean).join(', ');
+  // N-6 (giro 13): il ruolo del firmatario si traduce come il resto (Presidente → Président…)
+  const ROLE_FR: Record<string, string> = { presidente: 'Président', 'vice presidente': 'Vice-président', vicepresidente: 'Vice-président', tesoriere: 'Trésorier', segretario: 'Secrétaire', segretaria: 'Secrétaire', direttore: 'Directeur', direttrice: 'Directrice', coordinatore: 'Coordinateur', coordinatrice: 'Coordinatrice', responsabile: 'Responsable' };
+  const signRole = d.signer_role ? (() => { const fr = ROLE_FR[d.signer_role.trim().toLowerCase()]; return !fr || d.lang === 'it' ? d.signer_role : d.lang === 'fr' ? fr : `${d.signer_role} / ${fr}`; })() : '';
+  const sign = [d.signer_name, signRole].filter(Boolean).join(', ');
   const party = (l: 'it' | 'fr') => `${v(d.party_name)}${d.party_address ? `, ${d.party_address}` : ''}${d.party_tax_id ? ` (${l === 'it' ? 'C.F./ID' : 'ID'} ${d.party_tax_id})` : ''}`;
   // N-6 (giro 12): il nome italiano della struttura si traduce nel testo francese
   const prjFr = (n: string) => ({ 'spese generali': 'Frais généraux', 'struttura e spese generali': 'Structure et frais généraux', 'struttura': 'Structure' } as Record<string, string>)[n.trim().toLowerCase()] ?? n;

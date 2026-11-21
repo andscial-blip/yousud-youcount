@@ -29,3 +29,9 @@ export function themeOf(p: { name: string; kind?: string | null; theme?: string 
   if (/(formaz|formation|training)/.test(n)) return 'training';
   return 'other';
 }
+
+/** N-6 (giro 13): il nome italiano della struttura si mostra tradotto in francese (gli altri progetti hanno nomi propri). */
+const FR_NAMES: Record<string, string> = { 'spese generali': 'Frais généraux', 'struttura e spese generali': 'Structure et frais généraux', 'struttura': 'Structure' };
+export function prjName(name: string, lang: string): string {
+  return lang === 'fr' ? FR_NAMES[name.trim().toLowerCase()] ?? name : name;
+}

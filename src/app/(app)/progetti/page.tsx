@@ -6,7 +6,7 @@ import { money, eurShort } from '@/lib/format';
 import { Empty, ErrorNote, H2 } from '@/components/Page';
 import { Donut, Legend, Viz, fixedColors } from '@/components/Charts';
 import { ProjectIcon } from '@/components/ProjectIcon';
-import { THEMES, themeOf } from '@/lib/project-theme';
+import { THEMES, prjName, themeOf } from '@/lib/project-theme';
 
 export const dynamic = 'force-dynamic';
 const MESI_S = { it: ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'], fr: ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'] } as const;
@@ -35,7 +35,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   for (const l of ledger ?? []) { if (!l.project_id) continue; const a = A(l.project_id); if (l.kind === 'expense') { a.out += Number(l.amount_eur ?? 0); a.m[(l.month || 1) - 1] += Number(l.amount_eur ?? 0); } else a.inc += Number(l.amount_eur ?? 0); a.n += 1; }
   for (const i of items ?? []) { if (!i.project_id) continue; const a = A(i.project_id); if (i.category?.direction === 'in') a.bIn += Number(i.amount_eur ?? 0); else a.bOut += Number(i.amount_eur ?? 0); }
   const elapsed = year < now.getFullYear() ? 1 : year > now.getFullYear() ? 0 : (now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime());
-  const all = (projects ?? []).filter((p) => p.active || A(p.id).n > 0);
+  const all = (projects ?? []).map((p) => ({ ...p, name: prjName(p.name, lang) })).filter((p) => p.active || A(p.id).n > 0);   // N-6: «Frais généraux» in francese
   const shown = all.filter((p) => sp.tutti || A(p.id).n > 0 || A(p.id).bOut > 0).sort((x, y) => (y.kind === 'structure' ? 1 : 0) - (x.kind === 'structure' ? 1 : 0) || A(y.id).out - A(x.id).out);
   const hidden = all.length - shown.length;
   const e0 = (v: number) => eurShort(v, lang);
@@ -86,7 +86,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
           {tot.b > 0 && <><Viz.Stack segs={[{ v: Math.min(tot.out, tot.b), c: C_SP }, { v: Math.max(0, tot.b - tot.out), c: 'var(--green-soft)' }, { v: Math.max(0, tot.out - tot.b), c: 'var(--tax)' }]} max={Math.max(tot.b, tot.out)}
             tip={`${L('Previsto', 'Prévu')}: ${e0(tot.b)}\n${L('Speso', 'Dépensé')}: ${e0(tot.out)}`} />
             <div className="vzl"><span>{tot.out > tot.b ? L('oltre il previsto', 'au-delà du prévu') : L('ancora disponibile', 'encore disponible')}</span><span>{pc(Math.abs(tot.b - tot.out), tot.b)}</span></div></>}
-          <div className="s">{!tot.b ? L('nessun preventivo in vigore', 'aucun budget en vigueur') : over ? (over === 1 ? L('1 progetto oltre il preventivo', '1 projet au-delà du budget') : L(`${over} progetti oltre il preventivo`, `${over} projets au-delà du budget`)) : L('tutti i progetti nei limiti', 'tous les projets dans les limites')}</div>
+          <div className="s">{!tot.b ? L('nessun preventivo in vigore', 'aucun budget en vigueur') : over ? (over === 1 ? L('1 progetto oltre il previsto', '1 projet au-delà du prévu') : L(`${over} progetti oltre il previsto`, `${over} projets au-delà du prévu`)) : L('tutti i progetti nei limiti', 'tous les projets dans les limites')}</div>
         </div>
         <div className="kpi">
           <div className="l">{L('Entrate', 'Recettes')}</div>
@@ -122,7 +122,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
                     {a.bOut > 0 && <span className="pt" style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%` }} />}
                     <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((Math.min(a.out, a.bOut || a.out) / maxPair) * 100).toFixed(1)}%`, background: C_SP }} />
                     {a.bOut > 0 && a.out > a.bOut && <i className="ov" style={{ left: `${((a.bOut / maxPair) * 100).toFixed(1)}%`, width: `${(((a.out - a.bOut) / maxPair) * 100).toFixed(1)}%` }} />}</span>
-                  <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b className={a.bOut > 0 && a.out > a.bOut ? 'over-t' : undefined} title={a.bOut > 0 && a.out > a.bOut ? L('oltre il preventivo', 'au-delà du budget') : undefined}>{e0(a.out)}{a.bOut > 0 && a.out > a.bOut ? ' ▲' : ''}</b></span>
+                  <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b className={a.bOut > 0 && a.out > a.bOut ? 'over-t' : undefined} title={a.bOut > 0 && a.out > a.bOut ? L('oltre il previsto', 'au-delà du prévu') : undefined}>{e0(a.out)}{a.bOut > 0 && a.out > a.bOut ? ' ▲' : ''}</b></span>
                 </li>); })}</ul>
             </div>
           </section>

@@ -8,7 +8,7 @@ import { Viz } from '@/components/Charts';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { RESP, STAFF, can, requireMe } from '@/lib/session';
-import { date, money, num } from '@/lib/format';
+import { date, money, num, eurShort } from '@/lib/format';
 import type { Key } from '@/lib/i18n';
 import { Denied, Empty, ErrorNote, Panel, H2 } from '@/components/Page';
 import { advanceStep, closeSettled, createAdvanceAccount, deleteRequest, deliverAdvance, moveAdvance, requestAdvance } from './actions';
@@ -186,8 +186,8 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             <div className="kpi">
               <div className="l">{LL('Anticipi in corso', 'Avances en cours')}</div>
               <div className={`v num${open.length && curs.length === 1 && curs[0] === 'EUR' && money(inHand.get(curs[0]!)!, curs[0]!, lang).length > 11 ? ' long' : ''}`}>{open.length === 0 ? money(0, 'EUR', lang) : curs.length === 1 && (curs[0] === 'EUR' || !(fxNow > 0)) ? money(inHand.get(curs[0]!)!, curs[0]!, lang) : money(openEur, 'EUR', lang)}</div>
-              {openEur > 0 && <><Viz.Stack segs={open.slice(0, 6).map((w, i) => ({ v: toEur(Number(w.balance), w.currency), c: ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'][i]! }))} max={openEur} tip={open.map((w) => `${accName(w)}: ${money(w.balance, w.currency, lang)}`).join('\n')} />
-                <div className="vzl"><span>{open.length > 1 ? LL(`più grande: ${accName(open[0]!)}`, `le plus grand : ${accName(open[0]!)}`) : accName(open[0]!)}</span><span>{open.length === 1 ? LL('1 persona', '1 personne') : LL(`${open.length} persone`, `${open.length} personnes`)}</span></div></>}
+              {openEur > 0 ? <><Viz.Stack segs={open.slice(0, 6).map((w, i) => ({ v: toEur(Number(w.balance), w.currency), c: ['#8497B0', '#B7C2D1', '#5F6F85', '#D3D9E2', '#9AA7B8', '#6E7E94'][i]! }))} max={openEur} tip={open.map((w) => `${accName(w)}: ${money(w.balance, w.currency, lang)}`).join('\n')} />
+                <div className="vzl"><span>{open.length > 1 ? LL(`più grande: ${accName(open[0]!)}`, `le plus grand : ${accName(open[0]!)}`) : accName(open[0]!)}</span><span>{open.length === 1 ? LL('1 persona', '1 personne') : LL(`${open.length} persone`, `${open.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
               <div className="s">{open.length === 0 ? LL('nessun contante da giustificare', 'aucune espèce à justifier') : curs.length > 1 ? [...inHand.entries()].map(([c, v]) => money(v, c, lang)).join(' + ') : curs[0] !== 'EUR' && fxNow > 0 ? `${money(inHand.get(curs[0]!)!, curs[0]!, lang)} · ${LL('ancora da giustificare', 'encore à justifier')}` : LL('contanti ancora da giustificare', 'espèces encore à justifier')}</div>
             </div>
             <div className="kpi">
@@ -207,8 +207,8 @@ export default async function Advances({ searchParams }: { searchParams: Promise
             <div className="kpi">
               <div className="l">{LL('Giustificativi in ritardo', 'Justificatifs en retard')}</div>
               <div className={`v num${lateN ? ' neg' : ''}`}>{lateN}</div>
-              {open.length > 0 && <><Viz.Stack segs={[{ v: okN, c: 'var(--green-soft)' }, { v: lateN, c: 'var(--tax)' }]} max={open.length} tip={LL(`Nei termini: ${okN}\nIn ritardo: ${lateN}`, `Dans les délais : ${okN}\nEn retard : ${lateN}`)} />
-                <div className="vzl"><span>{LL(`nei termini ${okN}`, `dans les délais ${okN}`)}</span><span>{LL(`in ritardo ${lateN}`, `en retard ${lateN}`)}</span></div></>}
+              {open.length > 0 ? <><Viz.Stack segs={[{ v: okN, c: 'var(--green-soft)' }, { v: lateN, c: 'var(--tax)' }]} max={open.length} tip={LL(`Nei termini: ${okN}\nIn ritardo: ${lateN}`, `Dans les délais : ${okN}\nEn retard : ${lateN}`)} />
+                <div className="vzl"><span>{LL(`nei termini ${okN}`, `dans les délais ${okN}`)}</span><span>{LL(`in ritardo ${lateN}`, `en retard ${lateN}`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
               <div className="s">{lateN ? LL('oltre la data per portare le ricevute', 'au-delà de la date pour apporter les reçus') : open.length ? LL('tutti nei termini', 'tous dans les délais') : LL('nessun anticipo aperto', 'aucune avance en cours')}</div>
             </div>
           </div>);
@@ -305,11 +305,11 @@ export default async function Advances({ searchParams }: { searchParams: Promise
 
       {/* chi ha i contanti in tasca vede subito quanto gli resta e entro quando portare le ricevute (P2-9) */}
       {!staff && [true, false].map((self) => { const hs = myHand.filter((h) => h.self === self); return hs.length > 0 && (
-        <Panel key={String(self)} title={self ? LL('Contanti che ho in mano', 'Espèces que j’ai en main') : LL('Contanti consegnati ad altre persone', 'Espèces remises à d’autres personnes')}>
+        <Panel key={String(self)} title={self ? LL('Contanti in mano', 'Espèces en main') : LL('Contanti consegnati ad altre persone', 'Espèces remises à d’autres personnes')}>
           <ul className="aw-hand">
             {hs.map((h) => (
               <li key={h.account_id}>
-                <span className="aw-hand-m"><b className="num">{money(h.balance, h.currency, lang)}</b>
+                <span className="aw-hand-m">{h.currency !== 'EUR' && toEur(h.balance, h.currency) ? <><b className="num">{eurShort(toEur(h.balance, h.currency), lang)}</b><small className="num muted">{money(h.balance, h.currency, lang)}</small></> : <b className="num">{money(h.balance, h.currency, lang)}</b>}   {/* Q5: euro grande, ariary piccolo, come in Dashboard */}
                   {!self && <span className="aw-hand-who">{h.holder}</span>}
                   <small className={h.by && h.by < today ? 'neg' : 'muted'}>{h.by ? `${LL('ricevute entro il', 'reçus avant le')} ${date(h.by)}` : LL('nessuna scadenza per le ricevute', 'pas d’échéance pour les reçus')}</small></span>
                 {writer && <Link className="btn" href={`/nuovo?tipo=expense&conto=${h.account_id}${h.project_id ? `&progetto=${h.project_id}` : ''}`}>+ {LL('Ricevuta', 'Reçu')}</Link>}

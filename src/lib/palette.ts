@@ -11,7 +11,7 @@ export const PAL = ITEM_PAL;
 // gruppi di spesa: gialli e albicocca alternati a toni salvia, ben distinti tra loro e dai progetti (freddi e rosati)
 // due famiglie alternate (gialli-albicocca e salvia): distanza minima ΔE 9 (prima 6), nessun colore uguale alle uscite (20/11)
 // 21/11 (undicesimo giro): senza senape, terracotta e crema invisibile; gialli, albicocca e salvia tenui, min ΔE 8,3 tra gruppi
-export const EXPENSE_SHADES = ['#F2D16A', '#90C39C', '#F5B86B', '#D6E8BE', '#F7E5A4', '#5D9883', '#F8C3A3', '#B9B27A', '#B3D58C'];
+export const EXPENSE_SHADES = ['#F2D16A', '#90C39C', '#F5B86B', '#D6E8BE', '#F7E5A4', '#5D9883', '#F8C3A3', '#A8DADC', '#A7B3C4'];
 export const REST = '#E3E8EF';
 export const INCOME_SHADES = ['#1E2B3C', '#4C5A6E', '#8A94A3', '#C2C8D1'];   // entrate: blu notte e suoi grigi   // «Altri», più chiaro di ogni tinta
 

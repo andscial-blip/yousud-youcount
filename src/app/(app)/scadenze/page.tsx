@@ -84,8 +84,8 @@ export default async function Deadlines({ searchParams }: {
     items.push({ key, date: dt, cat, title, sub, href, status: 'open', priority: 'high', applies: true, auto: true, amount, currency: amount ? 'EUR' : undefined });
   const dueList = due.data ?? [];
   if (dueList.length) auto('a-reimb', td, 'pay', L(`Rimborsi da pagare: ${dueList.length}`, `Remboursements à payer : ${dueList.length}`),
-    L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées de sa poche, à rembourser.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
-  if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare: ${drafts.count}`, `Mouvements à compléter : ${drafts.count}`),
+    L('Spese anticipate di tasca propria da rimborsare.', 'Dépenses payées personnellement, à rembourser.'), '/rimborsi', dueList.reduce((s, m) => s + Number(m.amount_eur ?? 0), 0));
+  if ((drafts.count ?? 0) > 0) auto('a-drafts', td, 'doc', L(`Movimenti da completare:\u00a0${drafts.count}`, `Mouvements à compléter\u00a0:\u00a0${drafts.count}`),
     L('Bozze che non contano nei saldi finché non si registrano.', 'Brouillons hors soldes tant qu\'ils ne sont pas enregistrés.'), '/movimenti?stato=draft');
   if ((unver.count ?? 0) > 0) auto('a-verify', td, 'int', L(`Movimenti da verificare: ${unver.count}`, `Mouvements à vérifier : ${unver.count}`),
     L('Controllo a quattro occhi prima della chiusura del mese.', 'Contrôle à quatre yeux avant la clôture du mois.'), '/verifica');
@@ -311,7 +311,7 @@ export default async function Deadlines({ searchParams }: {
                 <div className="dl-tag">{tag(i)}</div>
                 <div className="dl-act">
                   {!i.auto && canClose(i) && (i.status === 'open' ? statusForm(i, 'done') : statusForm(i, 'open'))}
-                  {!i.auto && !i.rule_key && canEditD(i) && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}>✎</Link>}
+                  {!i.auto && !i.rule_key && canEditD(i) && i.id && <Link className="btn small ghost" href={href({ edit: i.id })} aria-label={L('Modifica', 'Modifier')}><Ico name="edit" size={16} /></Link>}
                   {i.auto && <span className="chip">{L('automatica', 'automatique')}</span>}
                 </div>
               </li>
