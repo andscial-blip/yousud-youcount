@@ -1,4 +1,4 @@
-import { Ico, StatusChip } from '@/components/Ui';
+import { Ico, StatusChip, EmptyState } from '@/components/Ui';
 import { orgNow } from '@/lib/today';
 import Link from 'next/link';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -6,7 +6,7 @@ import type { Lang, T } from '@/lib/i18n';
 import type { Me } from '@/lib/session';
 import { date, money } from '@/lib/format';
 import { CIcon } from '@/components/CIcon';
-import { H2, Empty } from '@/components/Page';
+import { H2 } from '@/components/Page';
 import { DashNotes } from '@/components/DashNotes';
 
 // Dashboard dell'operatore (revisione del 16/11): solo ciò che riguarda chi la apre — contanti che ha in mano, spese da farsi
@@ -116,7 +116,9 @@ export async function OperatorHome({ supabase, me, t, lang }: { supabase: Supaba
               <li key={m.id}><Link href={`/movimenti/${m.id}`}><span className="op-t"><b>{m.description || t(`k_${m.kind}` as 'k_expense')}</b>
                 <small className="muted">{date(m.op_date)}{m.ref ? ` · ${m.ref}` : ''}</small></span>
                 <span className="op-r num">{amt(m)}{stLabel(m)}</span></Link></li>))}</ul>
-              : <div className="panel-b op-empty"><Empty badge="plus" text={L('Ancora nessuna spesa registrata da te: la prima con «Registra una spesa».', 'Aucune dépense saisie par vous pour l’instant : la première avec « Saisir une dépense ».')} /></div>}
+              : <div className="panel-b op-empty"><EmptyState title={L('Ancora nessuna spesa registrata da te', 'Aucune dépense saisie par vous pour l’instant')}
+                text={L('Fotografa lo scontrino e registra la prima spesa: comparirà qui con il suo stato.', 'Photographiez le ticket et saisissez la première dépense : elle apparaîtra ici avec son état.')}
+                action={<Link className="btn primary" href="/nuovo"><CIcon name="plus" size={16} />{L('Registra una spesa', 'Saisir une dépense')}</Link>} /></div>}
           </section>
         </div>
         <div className="h-side">
