@@ -2921,3 +2921,11 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
   .grid > .panel:has(> .panel-b > .chart-wrap) { display: flex; flex-direction: column; }
   .grid > .panel > .panel-b:has(> .chart-wrap) { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
 }
+/* ===== Giro 18 ===== */
+/* N8: scheda progetto, Andamento mensile e Voci di spesa alti uguali; il grafico si centra e le voci si distribuiscono, nessun vuoto in fondo */
+@media (min-width: 1100px) {
+  .prj-d > .grid > .panel { display: flex; flex-direction: column; }
+  .prj-d > .grid > .panel > .panel-b { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+  .prj-d > .grid > .panel > .panel-b > .hcat { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .prj-trio > .panel > .acclist { flex: 1 1 auto; }
+}

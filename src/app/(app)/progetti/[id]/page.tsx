@@ -127,8 +127,24 @@ export default async function ProjectDetail({ params, searchParams }: {
           <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang} />
         </Panel>
       )}
-      <div className="grid">
-        <Panel className="c6" title={t('prj_recent')} right={<Link className="eyebrow" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('tutti', 'tous')} →</Link>}>
+      {/* N7 (giro 18): le tre schede corte in una riga, «Ultimi movimenti» a tutta larghezza sotto: niente colonna mezza vuota */}
+      <div className="grid prj-trio">
+        <Panel className="c4" title={L('Scadenze', 'Échéances')}>
+          {(dls ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessuna scadenza aperta.', 'Aucune échéance ouverte.')}</p> : (
+            <ul className="acclist">{dls!.map((d) => <li key={d.id}><span className={`cdp ${d.due_date < todayYmd() ? 'late' : 'mid'}`}>{date(d.due_date)}</span><span className="an">{d.title}</span><span /></li>)}</ul>)}
+        </Panel>
+        <Panel className="c4" title={L('Documenti emessi', 'Documents émis')}>
+          {(docs ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessun documento.', 'Aucun document.')}</p> : (
+            <ul className="acclist">{docs!.map((d) => <li key={d.id}><span className="muted num">{date(d.doc_date)}</span>
+              <Link className="an" href={`/documenti-emessi/${d.id}`}>{d.number ?? L('Bozza', 'Brouillon')} · {L(DOC_TYPES[d.type as keyof typeof DOC_TYPES]?.it ?? d.type, DOC_TYPES[d.type as keyof typeof DOC_TYPES]?.fr ?? d.type)}</Link><span className="muted">{d.party_name}</span></li>)}</ul>)}
+        </Panel>
+        <Panel className="c4" title={t('prj_grants')}>
+          {(grants ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('none')}</p> : (
+            <ul className="acclist">{grants!.map((g) => <li key={g.id}><span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? t('g_active') : t('g_closed')}</span>
+              <Link className="lnk" href={`/finanziamenti/${g.id}`}>{g.title}</Link><span className="muted">{g.code}</span></li>)}</ul>)}
+        </Panel>
+      </div>
+        <Panel title={t('prj_recent')} right={<Link className="eyebrow" href={`/movimenti?progetto=${id}&dal=${year}-01-01&al=${year}-12-31`}>{L('tutti', 'tous')} →</Link>}>
           {(moves ?? []).length === 0 ? <Empty text={t('none')} /> : (
             <table className="t keep recent"><tbody>
               {moves!.map((m) => {
@@ -146,23 +162,6 @@ export default async function ProjectDetail({ params, searchParams }: {
             </tbody></table>
           )}
         </Panel>
-        <div className="c6 stack">
-          <Panel title={L('Scadenze', 'Échéances')}>
-            {(dls ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessuna scadenza aperta.', 'Aucune échéance ouverte.')}</p> : (
-              <ul className="acclist">{dls!.map((d) => <li key={d.id}><span className={`cdp ${d.due_date < todayYmd() ? 'late' : 'mid'}`}>{date(d.due_date)}</span><span className="an">{d.title}</span><span /></li>)}</ul>)}
-          </Panel>
-          <Panel title={L('Documenti emessi', 'Documents émis')}>
-            {(docs ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{L('Nessun documento.', 'Aucun document.')}</p> : (
-              <ul className="acclist">{docs!.map((d) => <li key={d.id}><span className="muted num">{date(d.doc_date)}</span>
-                <Link className="an" href={`/documenti-emessi/${d.id}`}>{d.number ?? L('Bozza', 'Brouillon')} · {L(DOC_TYPES[d.type as keyof typeof DOC_TYPES]?.it ?? d.type, DOC_TYPES[d.type as keyof typeof DOC_TYPES]?.fr ?? d.type)}</Link><span className="muted">{d.party_name}</span></li>)}</ul>)}
-          </Panel>
-          <Panel title={t('prj_grants')}>
-            {(grants ?? []).length === 0 ? <p className="panel-b muted" style={{ margin: 0 }}>{t('none')}</p> : (
-              <ul className="acclist">{grants!.map((g) => <li key={g.id}><span className={`chip ${g.status === 'active' ? 'ok' : ''}`}>{g.status === 'active' ? t('g_active') : t('g_closed')}</span>
-                <Link className="lnk" href={`/finanziamenti/${g.id}`}>{g.title}</Link><span className="muted">{g.code}</span></li>)}</ul>)}
-          </Panel>
-        </div>
-      </div>
     </div>
   );
 }
