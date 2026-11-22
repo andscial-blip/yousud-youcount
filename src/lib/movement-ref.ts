@@ -67,7 +67,7 @@ export async function loadRefData(supabase: SupabaseClient, me: Me, lang: Lang):
     payers: [...new Set([...((pf.data ?? []) as { full_name: string; active: boolean }[]).filter((x) => x.active).map((x) => x.full_name), ...(pb.data ?? []).map((x) => x.paid_by)]
       .filter((n): n is string => Boolean(n && n.trim())))].sort((a, b) => a.localeCompare(b)),
     // U2 (giro 17): l'operatore non vede i conti bancari (come in Conti): registra su casse, anticipi o di tasca propria
-    accounts: (acc.data ?? []).filter((a) => me.role !== 'operator' || (a.kind !== 'bank' && (a.kind !== 'advance' || (a.holder ?? '').trim().toLowerCase() === (me.full_name ?? '').trim().toLowerCase())))   /* W3: all'operatore solo il proprio anticipo */.map((a) => ({ id: a.id, name: L(a), currency: a.currency, location: a.location, kind: a.kind, holder: a.holder ?? null, balance: balOf.has(a.id) ? balOf.get(a.id)! : null })),
+    accounts: (acc.data ?? []).filter((a) => me.role !== 'operator' || a.kind !== 'bank')   /* W3 (giro 19): gli anticipi del Madagascar restano tutti (chi coordina registra le spese di chi non usa l'app); il proprio è proposto per primo */.map((a) => ({ id: a.id, name: L(a), currency: a.currency, location: a.location, kind: a.kind, holder: a.holder ?? null, balance: balOf.has(a.id) ? balOf.get(a.id)! : null })),
     categories: (cat.data ?? []).map((c) => {
       const g = c.group as unknown as G;
       return { id: c.id, code: c.code, name: L(c), direction: c.direction, group: g ? `${g.code} · ${L(g)}` : '' };

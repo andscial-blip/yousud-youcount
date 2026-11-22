@@ -465,3 +465,14 @@ di schede, colonne affiancate anche in griglie diverse, vuoti interni). Correzio
   (controllo nell'interfaccia + migrazione `20261122000100_operator_doc_issue.sql`, DA APPLICARE IN PRODUZIONE con l'ok del committente).
   V3 Conti dell'operatore con due riquadri e tabella a tutta larghezza; V4 niente conti bancari nel filtro; V5 Guida: sul telefono il
   pulsante ⓘ. V1 (codice vuoto nella conferma, 2 volte su 9) non riprodotto: resta aperto.
+
+## 22/11 — diciannovesimo giro (grafica: Grafici 7, Impaginazione 7, altre invariate · operatore complessivo 8,5)
+Rapporti in `docs/revisione-finale-2026-11-15/diciannovesimo-giro/`. Migrazione `20261122000100_operator_doc_issue.sql` APPLICATA in
+produzione il 22/11 con l'ok del committente (verificata con pg_get_functiondef). Correzioni:
+- Q1 ciambelle affiancate alla stessa altezza con legende distribuite; Q3/W1 Dashboard operatore: «Le mie ultime spese» alta quanto la
+  colonna accanto, stato vuoto con invito e pulsante; N8 FR grafico mensile distribuito nell'altezza; Q2/Q5 didascalie su una riga con
+  «…» a sinistra; Q4 link corto sul telefono; Q6 barre a tutta larghezza in «Previsto e speso»; Q7 riquadri vuoti uguali; Q8 verdi dei
+  gruppi 02 #87B96E e 06 #6E8A3C (lontani dal verde acqua del saldo); Q9 codici rapidi su due colonne di altezza uguale.
+- Operatore: W2 «Casse e Mvola»/«Caisses et Mvola»; W3 aiuto corretto (l'operatore vede gli anticipi del Madagascar, il proprio per primo: serve a registrare le spese di chi non usa l'app, come prevede il test e2e); W4 «basta l'importo»; W5 avvisi su chi
+  emette i documenti (scelta del tipo e bozza salvata); W7 Mvola visibile in Conti e Dashboard; W8 ariary nella scheda delle casse;
+  W9 «Payée de ma poche» ovunque. Aperti: W6 (autocertificazione non firmata conta come «Con documento»), J6 (colore salvato).
