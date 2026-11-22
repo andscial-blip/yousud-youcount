@@ -84,7 +84,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const admin = can(me, ['super_admin', 'admin']);
   const [{ data, error, count }, { data: sums }, { data: projects }, { data: accounts }, { data: cats }, { data: cps }, { data: pms }, { count: allCount }, { data: bk }, { count: nRec0 }] = await Promise.all([
     apply(supabase.from('movements')
-      .select(`id, ref, op_date, kind, status, demo, description, amount, currency, sign, amount_eur, reverses_id, no_doc_reason, reimb_status, paid_by, docs:movement_documents(count),
+      .select(`id, ref, op_date, kind, status, demo, description, amount, currency, sign, amount_eur, reverses_id, no_doc_reason, reimb_status, paid_by, docs:movement_documents(count), sc:self_certs(signed_at),
              account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name), counterparty:counterparties(name),
              method:payment_methods(name_it, name_fr), tr:movement_translations(source, it, fr)`, { count: 'exact' }))
       .order('op_date', { ascending: false }).order('created_at', { ascending: false })
@@ -280,7 +280,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                         const orig = m.kind === 'transfer' ? money(m.amount, m.currency, lang) : `${signed > 0 ? '+' : ''}${money(signed, m.currency, lang)}`;
                         return <span className="two"><b>{eur != null ? `${eur > 0 ? '+' : ''}${money(m.kind === 'transfer' ? Math.abs(eur) : eur, 'EUR', lang)}` : orig}</b>{eur != null && <small>{orig}</small>}</span>; })()}</td>
                     <td>{m.kind !== 'transfer' && <DocIndicator count={m.docs?.[0]?.count ?? 0} noDocReason={m.no_doc_reason}
-                      labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
+                      labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none'), unsigned: L('Autocertificazione da firmare', 'Attestation à signer') }}
+                      unsignedSelfCert={(() => { const sc = (m as unknown as { sc?: { signed_at: string | null } | { signed_at: string | null }[] | null }).sc; const o = Array.isArray(sc) ? sc[0] : sc; return !!o && !o.signed_at; })()} />}</td>
                     <td>{m.reimb_status === 'due' ? <span className="chip ichip pend"><Ico name="wallet" size={14} />{L('Da rimborsare', 'À rembourser')}</span> : <StatusChip s={m.status} label={t(`st_${m.status}`)} />}</td>
                   </tr>
                 );

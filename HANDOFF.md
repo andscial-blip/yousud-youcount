@@ -476,3 +476,11 @@ produzione il 22/11 con l'ok del committente (verificata con pg_get_functiondef)
 - Operatore: W2 «Casse e Mvola»/«Caisses et Mvola»; W3 aiuto corretto (l'operatore vede gli anticipi del Madagascar, il proprio per primo: serve a registrare le spese di chi non usa l'app, come prevede il test e2e); W4 «basta l'importo»; W5 avvisi su chi
   emette i documenti (scelta del tipo e bozza salvata); W7 Mvola visibile in Conti e Dashboard; W8 ariary nella scheda delle casse;
   W9 «Payée de ma poche» ovunque. Aperti: W6 (autocertificazione non firmata conta come «Con documento»), J6 (colore salvato).
+
+## 22/11 sera — chiusura del ciclo dei giri (decisione del committente)
+Basta giri a ricerca libera: ultimi tre punti chiusi e una sola verifica di conferma (solo difetti noti + audit.mjs), poi stop.
+- W6: nell'elenco Movimenti e in Verifica un'autocertificazione generata ma non firmata appare «Autocertificazione da firmare», non «Con documento».
+- Colore #BE8088 (vicino al corallo d'allarme) sostituito in tavolozza con #A8C078; in produzione aggiornato École Ambohitsiroa
+  (migrazione `20261122000200_project_color_coral.sql`, applicata; valore precedente #BE8088). In produzione Piccolino è #3AA8C5.
+- N-2: «oggi» verificato con test unitari in un processo UTC (21:00–23:59 UTC = giorno dopo ad Antananarivo); il calcolo del ritardo
+  degli anticipi da un orario ora usa il giorno di Antananarivo (`advance-late.ts`).

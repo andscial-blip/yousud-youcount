@@ -29,9 +29,11 @@ export function StatusChip({ s, label }: { s: keyof typeof STATUS_ICON; label: s
 }
 
 // Giustificativo: graffetta (presente, con numero se più di uno), documento con «!» (manca), documento con «–» (assenza dichiarata)
-export function DocIndicator({ count, noDocReason, labels }: {
-  count: number; noDocReason: string | null; labels: { has: string; missing: string; none: string };
+export function DocIndicator({ count, noDocReason, labels, unsignedSelfCert = false }: {
+  count: number; noDocReason: string | null; labels: { has: string; missing: string; none: string; unsigned?: string }; unsignedSelfCert?: boolean;
 }) {
+  // W6 (giro 19): un'autocertificazione generata ma non firmata non è ancora un giustificativo
+  if (count === 1 && unsignedSelfCert) return <span className="docind miss" title={labels.unsigned ?? labels.missing}><Ico name="docMissing" /><span className="sr-only">{labels.unsigned ?? labels.missing}</span></span>;
   if (count > 0) return <span className="docind" title={labels.has}><Ico name="clip" />{count > 1 && <small>{count}</small>}<span className="sr-only">{labels.has}</span></span>;
   if (noDocReason) return <span className="docind" title={`${labels.none}: ${noDocReason}`}><Ico name="docNone" /><span className="sr-only">{labels.none}</span></span>;
   return <span className="docind miss" title={labels.missing}><Ico name="docMissing" /><span className="sr-only">{labels.missing}</span></span>;

@@ -1,3 +1,4 @@
+import { todayYmd } from './today';
 // Regola unica del ritardo degli anticipi, usata da Dashboard, Scadenze e Conti › Anticipi (revisione 14/11):
 //  · se l'anticipo nasce da una richiesta, è in ritardo quando è passata la data per portare le ricevute (report_by);
 //  · se non c'è una richiesta (anticipo dato direttamente), è in ritardo dopo ADVANCE_DAYS giorni con saldo ancora aperto.
@@ -10,6 +11,7 @@ export function advanceLate(w: AdvWallet, reqs: AdvReq[], today: string): { sinc
   const late = mine.filter((r) => r.report_by < today).map((r) => r.report_by).sort()[0];
   if (late) return { since: late };
   if (mine.length > 0 || !(Number(w.balance) > 0) || !w.open_since) return null;
-  const due = new Date(Date.parse(w.open_since) + ADVANCE_DAYS * 864e5).toISOString().slice(0, 10);
+  const due = /^\d{4}-\d{2}-\d{2}$/.test(w.open_since) ? new Date(Date.parse(`${w.open_since}T00:00:00Z`) + ADVANCE_DAYS * 864e5).toISOString().slice(0, 10)
+    : todayYmd(new Date(Date.parse(w.open_since) + ADVANCE_DAYS * 864e5));   // giorno di Antananarivo anche per un orario (N-2)
   return due < today ? { since: due } : null;
 }

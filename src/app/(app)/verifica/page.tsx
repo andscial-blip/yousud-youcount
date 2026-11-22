@@ -22,7 +22,7 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
   if (!can(me, RESP)) return <Denied text={t('only_staff')} />;
   const [{ data, error }, { data: users }, { data: fourEyes }] = await Promise.all([
     supabase.from('movements')
-      .select(`id, ref, op_date, kind, description, amount, currency, amount_eur, sign, version, project_id, created_by, recorded_by, reverses_id, no_doc_reason, docs:movement_documents(count),
+      .select(`id, ref, op_date, kind, description, amount, currency, amount_eur, sign, version, project_id, created_by, recorded_by, reverses_id, no_doc_reason, docs:movement_documents(count), sc:self_certs(signed_at),
                account:accounts!movements_account_id_fkey(name_it, name_fr), category:categories(code), project:projects(name)`)
       .eq('status', 'recorded').order('op_date').limit(300).returns<Row[]>(),
     supabase.rpc('user_directory'),
@@ -82,7 +82,8 @@ export default async function Verify({ searchParams }: { searchParams: Promise<{
                     <td>{r.project?.name ?? '–'}<div className="muted small">{nm(lang, r.account)}</div></td>
                     <td className="r num nw">{eq(r) ?? money(signed(r), r.currency, lang)}{eq(r) && <div className="muted small">{money(signed(r), r.currency, lang)}</div>}</td>
                     <td>{r.kind !== 'transfer' && <DocIndicator count={r.docs?.[0]?.count ?? 0} noDocReason={r.no_doc_reason}
-                      labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none') }} />}</td>
+                      labels={{ has: t('doc_has'), missing: t('doc_missing'), none: t('doc_none'), unsigned: L('Autocertificazione da firmare', 'Attestation à signer') }}
+                      unsignedSelfCert={(() => { const sc = (r as unknown as { sc?: { signed_at: string | null } | { signed_at: string | null }[] | null }).sc; const o = Array.isArray(sc) ? sc[0] : sc; return !!o && !o.signed_at; })()} />}</td>
                     <td className="r">{action}</td>
                   </tr>
                 );
