@@ -322,7 +322,7 @@ export default async function Advances({ searchParams }: { searchParams: Promise
       {!staff && (
         <Panel title={LL('Le mie richieste', 'Mes demandes')} className="rb-panel"
           right={writer ? <Link className="btn primary" href={href({ nuova: '1' })} scroll={false}><CIcon name="plus" size={15} />{LL('Nuova richiesta', 'Nouvelle demande')}</Link> : undefined}>
-          {mine.length === 0 ? <Empty text={LL('Nessuna richiesta. Per chiedere contanti usa «+ Nuova richiesta».', 'Aucune demande. Pour demander des espèces, utilisez « + Nouvelle demande ».')} /> : (
+          {mine.length === 0 ? <Empty text={LL('Nessuna richiesta. Per chiedere contanti usa «+ Nuova richiesta».', 'Aucune demande. Pour demander des espèces, utilisez « + Nouvelle demande ».')} /> : (
             <ul className="aw-rq">
               {mine.slice(0, 30).map((r) => (
                 <li key={r.id}>{reqLine(r)}<div className="aw-act">{chip(r.status)}

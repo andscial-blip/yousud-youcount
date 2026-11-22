@@ -1,3 +1,4 @@
+import { prjName } from '@/lib/project-theme';
 import { todayYmd, orgNow } from '@/lib/today';
 import Link from 'next/link';
 import { can, requireMe, RESP } from '@/lib/session';
@@ -147,7 +148,7 @@ export default async function Grants({ searchParams }: { searchParams: Promise<{
             return (
               <Link key={g.id} className="pring gcard" href={`/finanziamenti/${g.id}`}>
                 <div className="pr-h"><DonorMark name={g.donor?.name} logo={g.donor ? logoOf.get(g.donor.id) : null} />
-                  <div className="pr-n"><b>{g.title}</b><small>{[g.donor?.name ?? L('finanziatore da indicare', 'bailleur à préciser'), g.project?.name].filter(Boolean).join(' · ')}</small></div>
+                  <div className="pr-n"><b>{g.title}</b><small>{[g.donor?.name ?? L('finanziatore da indicare', 'bailleur à préciser'), g.project?.name ? prjName(g.project.name, lang) : null].filter(Boolean).join('\u00a0· ')}</small></div>
                   {note && <span className={`cdp ${note.c}`}>{note.t}</span>}</div>
                 <div className="pr-mid">
                   <svg className="pr-ring" viewBox="0 0 100 100" role="img" aria-label={gr ? L(`Speso ${Math.round(used * 100)} % del concesso`, `Dépensé ${Math.round(used * 100)} % de l'accordé`) : L('importo concesso non indicato', 'montant accordé non indiqué')}>

@@ -2867,8 +2867,9 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 .bal-cards .bc-top .bc-bal { margin-left: auto; }
 /* N1: sul telefono, dove «Come funziona» sale nella riga del titolo, il titolo lascia il posto al pulsante e va a capo bilanciato invece di finirci sotto */
 @media (max-width: 760px) {
-  body:has(.subrow:not(:has(> .subnav))) .phead-row .ptitle h1,
-  body:has(.subrow:has(> .subnav[data-sec="set"])) .phead-row .ptitle h1 { padding-right: 50px; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.2; }
+  /* (giro 18) senza :has annidati, che rendevano nulla la regola */
+  body:has(.subrow):not(:has(.subrow > .subnav)) .phead-row .ptitle h1,
+  body:has(.subrow > .subnav[data-sec="set"]) .phead-row .ptitle h1 { padding-right: 50px; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.2; }
 }
 /* M7c: titolo del finanziamento su più righe, mai troncato (la regola di .gcard vinceva per specificità) */
 .gcard .pr-n b { display: block; -webkit-line-clamp: unset; overflow: visible; }
@@ -2939,3 +2940,17 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 .home.v2.yc .h-note textarea { line-height: 26px; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 25px, var(--line-2) 25px, var(--line-2) 26px); background-position: 0 10px; background-attachment: local; }
 /* N9: la classe «in» delle barre delle entrate prendeva lo stile dei campi di input (alto 40 px): stessa barra sottile delle uscite */
 .cb-bar.in { min-height: 0; height: 8px; border: 0; padding: 0; border-radius: 4px; box-shadow: none; background: var(--plan-soft); }
+/* N10: Uscita, Entrata e Giroconto larghi uguali sul telefono */
+@media (max-width: 760px) {
+  .seg.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; width: 100%; }
+  .seg.kinds > * { justify-content: center; text-align: center; min-width: 0; }
+}
+/* M9: nelle didascalie sotto le barre la cifra a destra resta sempre in riga con l'inizio dell'etichetta; è l'etichetta ad andare a capo */
+.vzl { align-items: flex-start; }
+.vzl > span:last-child { white-space: nowrap; flex: none; }
+.vzl > span:first-child { min-width: 0; text-wrap: pretty; }
+.kpis.dk .kpi .vzl, .kpi .vzl, .itile .vzl { flex-wrap: nowrap; }
+/* M10 (giro 18): righe di «Ultimi movimenti» allineate al titolo e a «tutti →», con gli stessi rientri dell'intestazione della scheda */
+.prj-d table.recent td:first-child { padding-left: 18px; }
+.prj-d table.recent td:last-child { padding-right: 18px; }
+@media (max-width: 760px) { .prj-d table.recent td:first-child { padding-left: 14px; } .prj-d table.recent td:last-child { padding-right: 14px; } }

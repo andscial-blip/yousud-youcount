@@ -30,7 +30,7 @@ export const DL_RULES: Rule[] = [
     dit: 'Per ETS con entrate oltre 100.000 € (art. 14 c.2 CTS). La norma non fissa il giorno: 30 giugno è un termine interno.',
     dfr: 'Pour les ETS dont les recettes dépassent 100 000 € (art. 14 al.2 CTS). La date du 30 juin est un délai interne.' },
   { k: 'soc', m: 6, d: 30, cat: 'ets', cond: 1000000, it: 'Bilancio sociale: deposito RUNTS e pubblicazione', fr: 'Bilan social : dépôt RUNTS et publication',
-    dit: 'Obbligatorio per ETS con entrate oltre 1 milione di euro.', dfr: 'Obligatoire pour les ETS dont les recettes dépassent 1 million d\'euros.' },
+    dit: 'Obbligatorio per ETS con entrate oltre 1 milione di euro.', dfr: 'Obligatoire pour les ETS dont les recettes dépassent 1 million d\'euros.' },
   { k: '770', m: 10, d: 31, cat: 'fisc', it: 'Modello 770 per le ritenute {Y-1}', fr: 'Modèle 770 pour les retenues {Y-1}',
     dit: 'Solo se nel {Y-1} sono state operate ritenute d\'acconto.', dfr: 'Seulement si des retenues ont été opérées en {Y-1}.' },
   { k: 'redd', m: 11, d: 30, cat: 'fisc', it: 'Dichiarazione dei redditi enti non commerciali (se dovuta)', fr: 'Déclaration de revenus des organismes non commerciaux (si due)',
@@ -44,7 +44,7 @@ export const THRESHOLDS: { v: number; it: string; fr: string }[] = [
   { v: 60000, it: 'Rendiconto per cassa in forma aggregata (fino a 60.000 €, art. 13 c.2‑bis CTS)', fr: 'Compte rendu de caisse sous forme agrégée (jusqu\'à 60 000 €, art. 13 al.2‑bis CTS)' },
   { v: 100000, it: 'Pubblicazione dei compensi (oltre 100.000 €, art. 14 c.2 CTS)', fr: 'Publication des rémunérations (au-delà de 100 000 €, art. 14 al.2 CTS)' },
   { v: 300000, it: 'Rendiconto per cassa per enti senza personalità giuridica (fino a 300.000 €, art. 13 c.2 CTS)', fr: 'Compte rendu de caisse pour organismes sans personnalité juridique (jusqu\'à 300 000 €, art. 13 al.2 CTS)' },
-  { v: 1000000, it: 'Bilancio sociale (oltre 1 milione, art. 14 c.1 CTS)', fr: 'Bilan social (au-delà d\'1 million, art. 14 al.1 CTS)' },
+  { v: 1000000, it: 'Bilancio sociale (oltre 1 milione, art. 14 c.1 CTS)', fr: 'Bilan social (au-delà d\'1 million, art. 14 al.1 CTS)' },
 ];
 
 export type RuleItem = { rule_key: string; date: string; cat: DlCat; it: string; fr: string; dit: string; dfr: string; applies: boolean };
