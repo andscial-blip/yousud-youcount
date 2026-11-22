@@ -484,3 +484,8 @@ Basta giri a ricerca libera: ultimi tre punti chiusi e una sola verifica di conf
   (migrazione `20261122000200_project_color_coral.sql`, applicata; valore precedente #BE8088). In produzione Piccolino è #3AA8C5.
 - N-2: «oggi» verificato con test unitari in un processo UTC (21:00–23:59 UTC = giorno dopo ad Antananarivo); il calcolo del ritardo
   degli anticipi da un orario ora usa il giorno di Antananarivo (`advance-late.ts`).
+- Verifica di conferma (22/11 notte, `docs/revisione-finale-2026-11-15/conferma-finale/`): 18 su 23 chiusi o voluti, audit senza righe
+  sfalsate, nessun errore grave. Chiusi subito dopo: Q5 didascalia «Da documentare» corta («1 con doc.»); Q6 barre di «Previsto e speso»
+  in scala sul previsto di ciascun progetto; W5 aiuto dell'operatore anche in /documenti-emessi/nuovo; W8 nella scheda delle casse
+  «N casse, in totale» accanto al totale in ariary; aiuto di Conti che cita Mvola. Ciclo dei giri chiuso: si interviene solo su
+  segnalazioni d'uso del committente o degli operatori.

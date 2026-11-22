@@ -59,7 +59,6 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const mixCols = fixedColors(mix0.map((x) => (x.k === 'rest' ? '' : x.label)), mix0.map((x) => x.k), prjCols);
   const mix = mix0.map((x, n) => ({ ...x, color: mixCols[n]! }));
   const pairs = shown.filter((p) => A(p.id).bOut > 0 || A(p.id).out > 0);
-  const maxPair = Math.max(1, ...pairs.flatMap((p) => [A(p.id).bOut, A(p.id).out]));
   const C_PLAN = 'var(--vz-plan)', C_SP = 'var(--vz-sp)', C_IN = 'var(--c-in)';   // previsto = blu del «piano», come in Dashboard, Analisi e Finanziamenti; entrate = blu notte
 
   return (
@@ -116,14 +115,14 @@ export default async function Projects({ searchParams }: { searchParams: Promise
             <div className="panel-b">
               <ul className="bq-pairs prj-pairs pv2">
                 <li className="pv2-h" aria-hidden="true"><span className="bq-pn" /><span /><span className="bq-pv"><small>{L('Previsto', 'Prévu')}</small><small>{L('Speso', 'Dépensé')}</small></span></li>
-                {pairs.map((p) => { const a = A(p.id); return (
+                {pairs.map((p) => { const a = A(p.id); const mx = Math.max(1, a.bOut, a.out); /* Q6: ogni barra in scala sul proprio previsto, così anche i progetti piccoli si leggono */ return (
                 <li key={p.id}>
                   <Link className="bq-pn" href={`/progetti/${p.id}?anno=${year}`}>{prjName(p.name, lang)}</Link>
                   {/* previsto come in tutta l'app (20/11): traccia blu chiara lunga quanto il preventivo, riempita dallo speso; oltre, corallo */}
                   <span className="bq-pb one" aria-hidden="true">
-                    {a.bOut > 0 && <span className="pt" style={{ width: `${((a.bOut / maxPair) * 100).toFixed(1)}%` }} />}
-                    <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((Math.min(a.out, a.bOut || a.out) / maxPair) * 100).toFixed(1)}%`, background: C_SP }} />
-                    {a.bOut > 0 && a.out > a.bOut && <i className="ov" style={{ left: `${((a.bOut / maxPair) * 100).toFixed(1)}%`, width: `${(((a.out - a.bOut) / maxPair) * 100).toFixed(1)}%` }} />}</span>
+                    {a.bOut > 0 && <span className="pt" style={{ width: `${((a.bOut / mx) * 100).toFixed(1)}%` }} />}
+                    <i className={a.out > 0 ? '' : 'z'} style={{ width: `${((Math.min(a.out, a.bOut || a.out) / mx) * 100).toFixed(1)}%`, background: C_SP }} />
+                    {a.bOut > 0 && a.out > a.bOut && <i className="ov" style={{ left: `${((a.bOut / mx) * 100).toFixed(1)}%`, width: `${(((a.out - a.bOut) / mx) * 100).toFixed(1)}%` }} />}</span>
                   <span className="bq-pv num"><b>{a.bOut ? e0(a.bOut) : '–'}</b><b className={a.bOut > 0 && a.out > a.bOut ? 'over-t' : undefined} title={a.bOut > 0 && a.out > a.bOut ? L('oltre il previsto', 'au-delà du prévu') : undefined}>{e0(a.out)}{a.bOut > 0 && a.out > a.bOut ? ' ▲' : ''}</b></span>
                 </li>); })}</ul>
             </div>
