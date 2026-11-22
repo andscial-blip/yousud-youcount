@@ -451,3 +451,17 @@ Rapporti in `docs/revisione-finale-2026-11-15/diciassettesimo-giro/`. Solo P3 (p
   ridondanti; scheda finanziamento con Periodo e Rendiconto nella colonna destra (operatore: in colonna unica); traccia vuota uguale in tutti
   i riquadri senza dati; nome dei progetti tradotto (Frais généraux) in titoli e menu. Esito finale: nessuna riga sfalsata; restano solo i
   giorni vuoti del calendario (normali) e 56 px sopra il grafico Entrate e uscite della Dashboard a 768.
+
+## 22/11 — diciottesimo giro (grafica: Grafici 7, Impaginazione 7, altre 9–9,5 · operatore complessivo 7)
+Rapporti in `docs/revisione-finale-2026-11-15/diciottesimo-giro/`. Nuova prova obbligatoria: `/tmp/yc-final/audit.mjs` (altezze nelle righe
+di schede, colonne affiancate anche in griglie diverse, vuoti interni). Correzioni:
+- N7: scheda progetto con Scadenze, Documenti emessi e Finanziamenti in una riga da tre e «Ultimi movimenti» a tutta larghezza sotto.
+- N8: Andamento mensile e Voci di spesa alti uguali, grafico centrato e voci distribuite. G16: colonna destra della Dashboard fino in fondo,
+  Note come foglio a righe. N9: le barre delle entrate in Analisi › Previsto e speso prendevano lo stile dei campi (classe «in»): ora 8 px.
+- N1: il selettore della regola del titolo su telefono conteneva :has annidati (non validi), riscritto. N10: Uscita/Entrata/Giroconto uguali.
+  M9: la cifra a destra delle didascalie non va più a capo. M10: rientri di «Ultimi movimenti» uguali all'intestazione. N3: altri spazi
+  non separabili. L8: gruppo 03 in lilla #D2B9FF (prima arancio vicino al giallo «Uscite»).
+- Operatore: V2 l'operatore emette da solo solo quietanze e autocertificazioni; gli altri documenti restano in bozza per un responsabile
+  (controllo nell'interfaccia + migrazione `20261122000100_operator_doc_issue.sql`, DA APPLICARE IN PRODUZIONE con l'ok del committente).
+  V3 Conti dell'operatore con due riquadri e tabella a tutta larghezza; V4 niente conti bancari nel filtro; V5 Guida: sul telefono il
+  pulsante ⓘ. V1 (codice vuoto nella conferma, 2 volte su 9) non riprodotto: resta aperto.

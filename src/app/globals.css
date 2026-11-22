@@ -2869,7 +2869,7 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 @media (max-width: 760px) {
   /* (giro 18) senza :has annidati, che rendevano nulla la regola */
   body:has(.subrow):not(:has(.subrow > .subnav)) .phead-row .ptitle h1,
-  body:has(.subrow > .subnav[data-sec="set"]) .phead-row .ptitle h1 { padding-right: 50px; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.2; }
+  body:has(.subrow > .subnav[data-sec="set"]) .phead-row .ptitle h1 { padding-right: 48px; white-space: nowrap; font-size: 19px; }
 }
 /* M7c: titolo del finanziamento su più righe, mai troncato (la regola di .gcard vinceva per specificità) */
 .gcard .pr-n b { display: block; -webkit-line-clamp: unset; overflow: visible; }

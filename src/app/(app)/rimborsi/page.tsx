@@ -130,7 +130,7 @@ export default async function Reimbursements({ searchParams }: { searchParams: P
           <div className="l">{LL('Da documentare', 'À documenter')}</div>
           <div className={`v num${missing ? ' amb' : ''}`}>{missing}</div>
           {due.length > 0 ? <><Viz.Stack segs={[{ v: missing, c: 'var(--gold-d)' }]} max={due.length} tip={LL(`Con documento: ${withFile}\nSenza documento, motivo dichiarato: ${declared}\nDa documentare: ${missing}`, `Avec justificatif : ${withFile}\nSans justificatif, motif déclaré : ${declared}\nÀ documenter : ${missing}`)} />
-            <div className="vzl"><span>{LL(`con documento ${withFile}`, `avec justificatif ${withFile}`)}</span><span>{LL(`da documentare ${missing}`, `à documenter ${missing}`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
+            <div className="vzl"><span>{LL(`con documento\u00a0${withFile}`, `avec justificatif\u00a0${withFile}`)}</span><span>{LL(`da documentare\u00a0${missing}`, `à documenter\u00a0${missing}`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{missing ? LL('da completare prima del rimborso', 'à compléter avant le remboursement') : due.length ? (declared ? LL(`${withFile}\u00a0con documento, ${declared}\u00a0con motivo dichiarato`, `${withFile}\u00a0avec justificatif, ${declared}\u00a0avec motif déclaré`) : LL('tutte con documento', 'toutes avec justificatif')) : LL('niente da completare', 'rien à compléter')}</div>
         </div>
         )}

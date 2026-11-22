@@ -38,7 +38,7 @@ export function BalancesTable({ rows, t, lang, detail = false, noPlace = false, 
     <table className={`t keep bal-t${detail ? ' bal-fixed' : ''}`}>
       {/* stesse larghezze in ogni tabella (Italia, Madagascar): le colonne restano allineate tra un riquadro e l'altro */}
       {detail && (noPlace
-        ? <colgroup><col style={{ width: '28%' }} /><col style={{ width: '15%' }} /><col style={{ width: '15%' }} /><col style={{ width: '16%' }} /><col style={{ width: '15%' }} /><col style={{ width: '11%' }} /></colgroup>
+        ? <colgroup><col style={{ width: '28%' }} /><col style={{ width: '15%' }} /><col style={{ width: '15%' }} /><col style={{ width: '16%' }} /><col style={{ width: '15%' }} />{!noVer && <col style={{ width: '11%' }} />}</colgroup>
         : <colgroup><col style={{ width: '25%' }} /><col style={{ width: '8%' }} /><col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
           <col style={{ width: '17%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} /></colgroup>)}
       <thead>
