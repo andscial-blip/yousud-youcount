@@ -14,7 +14,7 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
   const sp = await searchParams;
   const { supabase, me, lang } = await requireMe();
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
-  if (!Object.keys(DOC_TYPES).includes(sp.tipo ?? '')) return <TypePicker lang={lang} mov={sp.mov} prj={sp.progetto} />;
+  if (!Object.keys(DOC_TYPES).includes(sp.tipo ?? '')) return <TypePicker lang={lang} mov={sp.mov} prj={sp.progetto} op={me!.role === 'operator'} />;
   const type = sp.tipo as IssuableType;
   const [{ data: projects }, { data: pms }, mv] = await Promise.all([
     supabase.from('projects').select('id, name').eq('active', true).order('name'),
@@ -57,12 +57,13 @@ export default async function NewDoc({ searchParams }: { searchParams: Promise<{
 }
 
 // Passo 1 del flusso «Emetti nuovo documento»: scegliere il tipo (raggruppati come nell'archivio).
-function TypePicker({ lang, mov, prj }: { lang: 'it' | 'fr'; mov?: string; prj?: string }) {
+function TypePicker({ lang, mov, prj, op = false }: { lang: 'it' | 'fr'; mov?: string; prj?: string; op?: boolean }) {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   const m = (/^[0-9a-f-]{36}$/.test(mov ?? '') ? `&mov=${mov}` : '') + (/^[0-9a-f-]{36}$/.test(prj ?? '') ? `&progetto=${prj}` : '');
   return (
     <div className="stack">
       <PageHead title={L('Emetti nuovo documento', 'Émettre un nouveau document')} />
+      {op && <div className="note info">{L('Le quietanze le emetti tu; gli altri documenti li prepari in bozza e li emette un responsabile o un amministratore.', 'Les quittances, vous les émettez vous-même ; les autres documents, vous préparez le brouillon et un responsable ou un administrateur les émet.')}</div>}
       <ol className="steps" aria-label={L('Passaggi', 'Étapes')}>
         <li className="on">{L('Tipo', 'Type')}</li><li>{L('Dati e anteprima', 'Données et aperçu')}</li><li>{L('Bozza salvata', 'Brouillon enregistré')}</li><li>{L('Emissione e PDF', 'Émission et PDF')}</li>
       </ol>
@@ -71,7 +72,8 @@ function TypePicker({ lang, mov, prj }: { lang: 'it' | 'fr'; mov?: string; prj?:
           <div className="typecards">
             {g.types.filter((t) => t !== 'AUT').map((k) => {
               const T = DOC_TYPES[k as keyof typeof DOC_TYPES];
-              return <Link key={k} href={`/documenti-emessi/nuovo?tipo=${k}${m}`}><b>{L(T.it, T.fr)}</b><small>{L(...T.what)}</small></Link>;
+              return <Link key={k} href={`/documenti-emessi/nuovo?tipo=${k}${m}`}><b>{L(T.it, T.fr)}</b><small>{L(...T.what)}</small>
+                {op && k !== 'QUI' && <span className="chip tc-resp">{L('prepari la bozza, la emette un responsabile', 'vous préparez le brouillon, un responsable l’émet')}</span>}</Link>;   /* W5 (giro 19) */
             })}
           </div>
         </Panel>

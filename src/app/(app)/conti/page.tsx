@@ -38,7 +38,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
     .filter((r) => r.requested_by === me?.id || r.beneficiary_id === me?.id).map((r) => r.account_id));
   // l'operatore vede le casse del Madagascar (dove lavora), non quelle italiane (revisione operatore, 16/11)
   const opMG = !staff && all.some((r) => r.kind === 'cash' && r.location === 'MG');
-  const rows = all.filter((r) => r.kind !== 'advance' && (staff || (r.kind === 'cash' && (!opMG || r.location === 'MG'))));
+  const rows = all.filter((r) => r.kind !== 'advance' && (staff || ((r.kind === 'cash' || r.kind === 'mobile') && (!opMG || r.location === 'MG'))));   // W7: anche il mobile money che l'operatore usa nel modulo
   const adv = all.filter((r) => r.kind === 'advance' && Number(r.balance) > 0 && (!myAdv || myAdv.has(r.account_id)));
   const cash = rows.filter((r) => r.kind === 'cash');
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
@@ -98,14 +98,15 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. La cassa è comune: il saldo comprende le spese di tutte le persone che la usano. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. La caisse est commune : son solde comprend les dépenses de toutes les personnes qui l’utilisent. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
       <div className={`kpis dk${opMG ? ' k2' : ''}`}>   {/* V3 (giro 18): l'operatore del Madagascar ha due riquadri, non tre in una griglia da quattro */}
         <div className="kpi">
-          <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
+          <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Casse e Mvola', 'Caisses et Mvola')}</div>
           <div className={`v num${tot < 0 ? ' neg' : ''}`}>{e0(tot)}</div>
           {tot > 0 && !opMG && <><Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />
             <div className="vzl"><span>IT {pc(Math.max(0, itEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span><span>MG {pc(Math.max(0, mgEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span></div></>}
           {opMG && seg(mg).length > 0 && <><Viz.Stack segs={seg(mg)} max={seg(mg).reduce((a, x) => a + x.v, 0)} tip={tipOf(mg)} />
-            <div className="vzl"><span>{seg(mg)[0]!.n}</span><span>{mg.length === 1 ? L('1 cassa', '1 caisse') : L(`${mg.length} casse`, `${mg.length} caisses`)}</span></div></>}
-          {!(tot > 0 && !opMG) && !(opMG && seg(mg).length > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
+            <div className="vzl"><span>{seg(mg)[0]!.n}</span><span>{money(native(mg).v, native(mg).c, lang)}</span></div></>}
+          {opMG && !(seg(mg).length > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>{mg.length === 1 ? L('1 cassa', '1 caisse') : L(`${mg.length} casse`, `${mg.length} caisses`)}</span><span className={native(mg).v < 0 ? 'neg' : ''}>{money(native(mg).v, native(mg).c, lang)}</span></div></>}
+          {!(tot > 0 && !opMG) && !opMG && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{unver > 0 ? <Link href={staff ? '/movimenti?stato=recorded' : '/movimenti?stato=recorded&mie=1'}>{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>
             : !staff ? L('nessuna tua spesa da verificare', 'aucune de vos dépenses à vérifier') : (rows.length === 1 ? L('1 conto, tutto verificato', '1 compte, tout vérifié') : L(`${rows.length} conti, tutto verificato`, `${rows.length} comptes, tout vérifié`))}</div>
         </div>
@@ -115,7 +116,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           <div className="l">{L('Anticipi aperti', 'Avances en cours')}</div>
           <div className={`v num${adv.length ? lg(advN.c !== 'EUR' ? e0(advEur) : e0(advN.v)) : ''}`}>{adv.length ? (advN.c !== 'EUR' ? e0(advEur) : e0(advN.v)) : e0(0)}</div>
           {advEur > 0 ? <><Viz.Stack segs={seg(adv)} max={advEur} tip={adv.map((r) => `${holder(r)}: ${money(r.balance, r.currency, lang)}`).join('\n')} />
-            <div className="vzl"><span>{adv.length > 1 ? L(`più grande: ${holder(seg(adv)[0]!.r)}`, `le plus grand : ${holder(seg(adv)[0]!.r)}`) : holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>–</span><span /></div></>}
+            <div className="vzl"><span>{adv.length > 1 ? L(`più grande: ${holder(seg(adv)[0]!.r)}`, `le plus grand : ${holder(seg(adv)[0]!.r)}`) : holder(seg(adv)[0]!.r)}</span><span>{adv.length === 1 ? L('1 persona', '1 personne') : L(`${adv.length} persone`, `${adv.length} personnes`)}</span></div></> : <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{adv.length ? (advN.c !== 'EUR' ? `${money(advN.v, advN.c, lang)} · ` : '') + L('contanti in mano alle persone', 'espèces confiées aux personnes') : L('nessun anticipo da giustificare', 'aucune avance à justifier')}</div>
         </Link>
       </div>

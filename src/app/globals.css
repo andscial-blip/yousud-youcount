@@ -2954,3 +2954,35 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 .prj-d table.recent td:first-child { padding-left: 18px; }
 .prj-d table.recent td:last-child { padding-right: 18px; }
 @media (max-width: 760px) { .prj-d table.recent td:first-child { padding-left: 14px; } .prj-d table.recent td:last-child { padding-right: 14px; } }
+/* ===== Giro 19 ===== */
+/* Q1: nelle coppie di ciambelle, ciambella in alto alla stessa altezza e legenda subito sotto; le righe della legenda più corta si
+   distribuiscono fino in fondo, così legende e schede finiscono insieme */
+@media (min-width: 1100px) {
+  .prj-two > .panel > .panel-b > .bq-donut { justify-content: flex-start; }
+  .prj-two .bq-donut .bq-dl { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; }
+  .prj-two .bq-donut .bq-dl > li { flex: none; }
+}
+/* Q3: Dashboard dell'operatore, «Le mie ultime spese» alta quanto la colonna accanto; se è vuota, l'invito al centro */
+@media (min-width: 1100px) {
+  .home.v2.yc .h-left:has(> .op-last) { display: flex; flex-direction: column; }
+  .home.v2.yc .h-left > .op-last { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .home.v2.yc .op-last > .op-empty { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
+}
+.op-empty .empty { text-align: center; }
+/* N8 (francese): il grafico mensile della scheda progetto si allunga fino in fondo alla scheda invece di restare centrato in un vuoto */
+@media (min-width: 1100px) {
+  .prj-d > .grid > .panel > .panel-b > figure { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-around; }
+}
+/* Q2/Q5: didascalie sotto le barre sempre su una riga, uguali a sinistra e a destra; se l'etichetta di sinistra non entra finisce con «…»
+   e non tocca mai la cifra a destra (almeno 8 px) */
+.kpis.dk .kpi .vzl > span:first-child, .kpi .vzl > span:first-child, .itile .vzl > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpis.dk .kpi .vzl, .kpi .vzl, .itile .vzl { column-gap: 8px; }
+/* Q6: nelle schede a metà larghezza il nome sta sopra e la barra prende tutta la larghezza, come su tablet */
+.prj-two .prj-pairs.pv2 li { grid-template-columns: minmax(0, 1fr) 176px; }
+.prj-two .prj-pairs.pv2 .bq-pn { grid-column: 1 / -1; }
+.prj-two .prj-pairs.pv2 .pv2-h > .bq-pn { display: none; }
+/* Q9: codici rapidi in /nuovo su due colonne con righe tutte alte uguali; numero e nome restano insieme */
+@media (min-width: 901px) { .cat-quick:not(.cat-sug) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cat-quick:not(.cat-sug) { grid-auto-rows: 1fr; }
+.cat-quick .chip-btn { text-wrap: pretty; }
+.typecards .tc-resp { align-self: flex-start; margin-top: 6px; font-size: 12px; }

@@ -122,7 +122,7 @@ export default async function ProjectDetail({ params, searchParams }: {
       </div>
       {staff && (
         <Panel title={L('Previsto e speso per codice', 'Prévu et dépensé par code')} pad
-          right={<Link className="eyebrow" href={`/preventivo?anno=${year}&progetto=${id}#righe`}>{L('modifica nel Preventivo', 'modifier dans le Budget')} →</Link>}>
+          right={<Link className="eyebrow" href={`/preventivo?anno=${year}&progetto=${id}#righe`}><span className="not-phone">{L('modifica nel Preventivo', 'modifier dans le Budget')}</span><span className="only-phone">{L('modifica', 'modifier')}</span>{'\u00a0→'}</Link>}>
           {/* una sola fonte: il preventivo si modifica solo nella pagina Preventivo (versioni e delibera) */}
           <BudgetTable rows={(budget ?? []) as BudgetRow[]} t={t} lang={lang} />
         </Panel>

@@ -299,7 +299,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <section className="panel h-card" data-card="conti">
             <div className="panel-h"><H2 icon={null} text={staff ? L('Saldo dei conti', 'Solde des comptes') : L('Casse in contanti', 'Caisses en espèces')} /><div className="spacer" /><Link className="eyebrow" href="/conti">{L('conti', 'comptes')} →</Link></div>
             {/* l'operatore vede le casse in contanti (quelle che usa) e il proprio anticipo; i conti bancari restano a responsabili e amministratori (P2-28) */}
-            <ul className="acclist">{rows.filter((r) => r.kind !== 'advance' && (staff || r.kind === 'cash')).map((r) => (
+            <ul className="acclist">{rows.filter((r) => r.kind !== 'advance' && (staff || r.kind === 'cash' || r.kind === 'mobile')).map((r) => (
               <li key={r.account_id}><span className={`place ${r.location === 'IT' ? 'it' : 'mg'}`}>{r.location}</span><span className="an">{lang === 'fr' && r.name_fr ? r.name_fr : r.name_it}</span>
                 <b className={`num ${Number(r.balance) < 0 ? 'neg' : ''}`}>{money(r.balance, r.currency, lang)}</b></li>))}</ul>
           </section>

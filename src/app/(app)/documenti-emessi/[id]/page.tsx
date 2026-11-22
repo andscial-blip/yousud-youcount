@@ -42,7 +42,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
   const T = DOC_TYPES[d.type as keyof typeof DOC_TYPES];
   const st = d.status === 'draft' ? <span className="chip">{L('Bozza', 'Brouillon')}</span> : d.status === 'issued' ? <span className="chip ok">{L('Emesso', 'Émis')}</span>
     : <span className="chip bad">{L('Annullato', 'Annulé')}</span>;
-  const okText = { saved: L('Bozza salvata: controlla l\'anteprima, poi emetti.', 'Brouillon enregistré : vérifiez l\'aperçu, puis émettez.'),
+  const okText = { saved: canIssue ? L('Bozza salvata: controlla l\'anteprima, poi emetti.', 'Brouillon enregistré : vérifiez l\'aperçu, puis émettez.') : L('Bozza salvata: la emette un responsabile o un amministratore.', 'Brouillon enregistré : un responsable ou un administrateur l’émettra.'),
     issued: L('Documento emesso: numero assegnato e PDF archiviato.', 'Document émis : numéro attribué et PDF archivé.'),
     cancelled: L('Documento annullato.', 'Document annulé.'), archived: L('Documento archiviato.', 'Document archivé.'),
     restored: L('Documento riportato tra i correnti.', 'Document remis parmi les courants.') }[sp.ok ?? ''];

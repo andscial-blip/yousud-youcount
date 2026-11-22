@@ -429,7 +429,7 @@ const fr: Record<Key, string> = {
   bk_due: 'Dernière sauvegarde des données il y a {n} jours : téléchargez-en une nouvelle et conservez-la dans le Drive partagé de YouSud.', bk_last: 'Dernière sauvegarde',
   bk_text: 'Toutes les données de l’app (mouvements, comptes, catégories, projets, tiers, journal des modifications) dans un fichier Excel, une feuille par table. Conservez-le dans le Drive partagé de YouSud. Les fichiers des justificatifs restent dans l’archive de l’app : la feuille documents indique leur chemin et leur empreinte.',
   f_paid_by: 'Payé par', f_paid_by_hint: 'Qui a dépensé concrètement : vous ou un collègue.', f_how_paid: 'Comment a-t-elle été payée',
-  f_paid_org: 'Argent de YouSud', f_paid_own: 'Payée personnellement', f_currency: 'Devise', f_save_due: 'Enregistrer à rembourser',
+  f_paid_org: 'Argent de YouSud', f_paid_own: 'Payée de ma poche', f_currency: 'Devise', f_save_due: 'Enregistrer à rembourser',
   f_due_hint: 'Ne touche pas les comptes : entre en comptabilité quand un responsable la rembourse, à la date du remboursement.',
   dash_adv_late: 'Avances à justifier depuis plus de 30 jours : {n}', dash_aut_sign: 'Attestations à signer : {n}',
   f_quick: 'Filtres rapides', f_this_month: 'Ce mois-ci', f_to_complete: 'À compléter', f_transfers: 'Virements internes', f_incomes: 'Recettes',

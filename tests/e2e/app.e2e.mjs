@@ -500,7 +500,7 @@ try {
     await p.goto(`${base}/conti`);
     // operatore in Madagascar: 2 riquadri (contanti, anticipi), niente Italia né doppione «Madagascar» (V3, giro 18); gli anticipi non sono tra i conti
     assert.equal(await p.locator('.kpis.dk .kpi').count(), 2);
-    assert.match(await p.locator('.kpis.dk').innerText(), /Contanti nelle casse[\s\S]*Anticipi aperti/);
+    assert.match(await p.locator('.kpis.dk').innerText(), /Casse e Mvola[\s\S]*Anticipi aperti/);
     assert.equal(await p.locator('#conti-it').count(), 0);
     assert.equal(await p.locator('.bal-t tbody tr', { hasText: /Anticipi/ }).count(), 0);
     // il nome del conto apre il suo dettaglio, con il collegamento a tutti i suoi movimenti
