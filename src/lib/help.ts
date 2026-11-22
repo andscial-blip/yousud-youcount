@@ -17,6 +17,8 @@ export const OP_HELP: Record<string, { it: string[]; fr: string[] }> = {
     fr: ['Ici se trouvent les dépenses que vous avez payées de votre poche.', 'Elles restent « À rembourser » jusqu’à ce qu’un responsable vous rembourse : elles disparaissent alors d’ici.', 'En haut : « À vous rembourser » (ce qu’on vous doit), « En attente depuis » (depuis combien de jours) et « Remboursé en » année en cours.'] },
   '/scadenze': { it: ['In alto le scadute e quelle dei prossimi 14 giorni; sotto il calendario e l’elenco.', 'Ci sono anche gli errori che hai segnalato: li chiude un responsabile quando li ha corretti.', 'Le scadenze le crea un responsabile: se ne manca una, diglielo.'],
     fr: ['En haut les retards et les 14 prochains jours ; en dessous le calendrier et la liste.', 'Il y a aussi les erreurs que vous avez signalées : un responsable les clôt une fois corrigées.', 'Les échéances sont créées par un responsable : s’il en manque une, dites-le-lui.'] },
+  '/documenti-emessi': { it: ['Qui prepari i documenti dell’associazione: scegli il tipo, compila e salva la bozza.', 'Le quietanze (contanti dati a chi non ha fattura) le emetti tu con «Emetti e genera il PDF».', 'Gli altri documenti (ricevute per donazioni, notule, dichiarazioni, autorizzazioni) restano in bozza: li emette un responsabile o un amministratore.'],
+    fr: ['Ici vous préparez les documents de l’association : choisissez le type, remplissez et enregistrez le brouillon.', 'Les quittances (espèces données à qui n’a pas de facture), vous les émettez avec « Émettre et générer le PDF ».', 'Les autres documents (reçus pour dons, notes d’honoraires, déclarations, autorisations) restent en brouillon : un responsable ou un administrateur les émet.'] },
   '/conti': { it: ['Vedi le casse in contanti del Madagascar e il tuo anticipo.', '«Conta di cassa»: scrivi quanto c’è davvero in cassa; l’app mostra la differenza con il saldo.'],
     fr: ['Vous voyez les caisses en espèces de Madagascar et votre avance.', '« Comptage de caisse » : saisissez ce qu’il y a vraiment en caisse ; l’app montre l’écart avec le solde.'] },
 };
@@ -69,12 +71,12 @@ export const HELP: HelpEntry[] = [
     it: ['Muoversi nell\'app', [
       'Il menu a sinistra (sul telefono la barra in basso e «Altro») apre sempre la scheda principale di ogni sezione; le altre schede della sezione sono sotto il titolo.',
       'La freccia «‹» accanto al titolo torna alla pagina precedente; se è la prima pagina che apri, porta alla scheda principale della sezione. Il logo e la voce «Dashboard» portano sempre alla pagina iniziale.',
-      '«Come funziona questa scheda» (sul telefono «Come si fa»), sulla riga delle sotto-schede, apre la spiegazione della pagina in cui ti trovi; da lì si arriva a questa guida completa.',
+      '«Come funziona questa scheda» (sul telefono il pulsante ⓘ accanto al titolo), sulla riga delle sotto-schede, apre la spiegazione della pagina in cui ti trovi; da lì si arriva a questa guida completa.',
       'Nelle pagine che hanno l\'anno in alto, l\'anno scelto resta lo stesso passando da una sotto-scheda all\'altra della sezione.']],
     fr: ['Se déplacer dans l\'application', [
       'Le menu à gauche (sur téléphone la barre du bas et « Plus ») ouvre toujours l\'onglet principal de chaque section ; les autres onglets de la section sont sous le titre.',
       'La flèche « ‹ » à côté du titre revient à la page précédente ; si c\'est la première page ouverte, elle mène à l\'onglet principal de la section. Le logo et l\'entrée « Tableau de bord » ramènent toujours à la page d\'accueil.',
-      '« Comment fonctionne cet onglet » (sur téléphone « Mode d’emploi »), sur la ligne des onglets, ouvre l\'explication de la page affichée ; de là on accède à ce guide complet.',
+      '« Comment fonctionne cet onglet » (sur téléphone le bouton ⓘ à côté du titre), sur la ligne des onglets, ouvre l\'explication de la page affichée ; de là on accède à ce guide complet.',
       'Dans les pages qui ont l\'année en haut, l\'année choisie reste la même en passant d\'un onglet à l\'autre de la section.']] },
   { href: '/', sec: 'home',
     it: ['Dashboard', [

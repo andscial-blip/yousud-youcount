@@ -96,19 +96,21 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       {err && <div className="note err">{err}</div>}
       {!staff && rows.some((r) => r.kind === 'cash' && Number(r.balance) < 0) && <div className="note warn">{L('Una cassa risulta in negativo: in cassa non possono esserci meno di zero contanti, quindi manca qualche entrata o c\'è un errore. Avvisa il responsabile.', 'Une caisse est en négatif : il ne peut pas y avoir moins de zéro espèces, il manque donc une recette ou il y a une erreur. Prévenez le responsable.')}</div>}
           {!staff && <div className="note info">{L('Qui vedi le casse in contanti e gli anticipi che hai chiesto o ricevuto. La cassa è comune: il saldo comprende le spese di tutte le persone che la usano. I conti bancari li vedono responsabili e amministratori.', 'Vous voyez ici les caisses en espèces et les avances que vous avez demandées ou reçues. La caisse est commune : son solde comprend les dépenses de toutes les personnes qui l’utilisent. Les comptes bancaires sont visibles par les responsables et les administrateurs.')}</div>}
-      <div className="kpis dk">
+      <div className={`kpis dk${opMG ? ' k2' : ''}`}>   {/* V3 (giro 18): l'operatore del Madagascar ha due riquadri, non tre in una griglia da quattro */}
         <div className="kpi">
           <div className="l">{staff ? L('Liquidità totale', 'Liquidités totales') : L('Contanti nelle casse', 'Espèces dans les caisses')}</div>
           <div className={`v num${tot < 0 ? ' neg' : ''}`}>{e0(tot)}</div>
           {tot > 0 && !opMG && <><Viz.Stack segs={[{ v: itEur, c: 'var(--pp4)' }, { v: mgEur, c: 'var(--pp2)' }]} max={Math.max(1, Math.max(0, itEur) + Math.max(0, mgEur))}
             tip={`${t('italy')}: ${e0(itEur)}\n${t('madagascar')}: ${e0(mgEur)}`} />
             <div className="vzl"><span>IT {pc(Math.max(0, itEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span><span>MG {pc(Math.max(0, mgEur), Math.max(0, itEur) + Math.max(0, mgEur))}</span></div></>}
-          {!(tot > 0 && !opMG) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
+          {opMG && seg(mg).length > 0 && <><Viz.Stack segs={seg(mg)} max={seg(mg).reduce((a, x) => a + x.v, 0)} tip={tipOf(mg)} />
+            <div className="vzl"><span>{seg(mg)[0]!.n}</span><span>{mg.length === 1 ? L('1 cassa', '1 caisse') : L(`${mg.length} casse`, `${mg.length} caisses`)}</span></div></>}
+          {!(tot > 0 && !opMG) && !(opMG && seg(mg).length > 0) && <><Viz.Stack segs={[]} max={1} /><div className="vzl"><span>&nbsp;</span><span /></div></>}
           <div className="s">{unver > 0 ? <Link href={staff ? '/movimenti?stato=recorded' : '/movimenti?stato=recorded&mie=1'}>{unver === 1 ? L('1 movimento da verificare', '1 mouvement à vérifier') : L(`${unver} movimenti da verificare`, `${unver} mouvements à vérifier`)}</Link>
             : !staff ? L('nessuna tua spesa da verificare', 'aucune de vos dépenses à vérifier') : (rows.length === 1 ? L('1 conto, tutto verificato', '1 compte, tout vérifié') : L(`${rows.length} conti, tutto verificato`, `${rows.length} comptes, tout vérifié`))}</div>
         </div>
         {!opMG && locTile('IT', it, itEur)}
-        {locTile('MG', mg, mgEur)}
+        {!opMG && locTile('MG', mg, mgEur)}
         <Link className="kpi" href="/anticipi">
           <div className="l">{L('Anticipi aperti', 'Avances en cours')}</div>
           <div className={`v num${adv.length ? lg(advN.c !== 'EUR' ? e0(advEur) : e0(advN.v)) : ''}`}>{adv.length ? (advN.c !== 'EUR' ? e0(advEur) : e0(advN.v)) : e0(0)}</div>

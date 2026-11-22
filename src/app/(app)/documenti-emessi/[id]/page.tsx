@@ -36,6 +36,8 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
   const pdfHref = pdf && d.status === 'cancelled' ? `/api/v1/emesso/${id}` : pdf;
   const pdfLabel = d.status === 'cancelled' ? L('Scarica il PDF annullato', 'Télécharger le PDF annulé') : L('Scarica il PDF', 'Télécharger le PDF');
   const writer = me?.role !== 'read_only';
+  // V2 (giro 18): l'operatore prepara la bozza; emette da solo solo quietanze e autocertificazioni
+  const canIssue = writer && (me?.role !== 'operator' || d.type === 'QUI' || d.type === 'AUT');
   const editing = d.status === 'draft' && writer && sp.edit === '1';
   const T = DOC_TYPES[d.type as keyof typeof DOC_TYPES];
   const st = d.status === 'draft' ? <span className="chip">{L('Bozza', 'Brouillon')}</span> : d.status === 'issued' ? <span className="chip ok">{L('Emesso', 'Émis')}</span>
@@ -65,7 +67,10 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
             <Panel pad title={L('Azioni', 'Actions')}>
               <div className="stack" style={{ gap: 10 }}>
                 {d.status === 'draft' && writer && !editing && <Link className="btn" href={`/documenti-emessi/${id}?edit=1`}>{L('Modifica', 'Modifier')}</Link>}
-                {d.status === 'draft' && writer && (
+                {d.status === 'draft' && writer && !canIssue && (
+                  <p className="note" style={{ margin: 0 }}>{L('Bozza pronta: questo documento lo emette un responsabile o un amministratore, che lo trova in Documenti › Emessi.',
+                    'Brouillon prêt : ce document est émis par un responsable ou un administrateur, qui le trouve dans Documents › Émis.')}</p>)}
+                {d.status === 'draft' && canIssue && (
                   /* emissione in due passi: il numero assegnato è definitivo, quindi prima si conferma (revisione del 15/11) */
                   <details className="pd-act emit" id="emetti" open={sp.emetti === '1'}>
                     <summary className="btn primary"><Ico name="check" />{L('Emetti e genera il PDF', 'Émettre et générer le PDF')}</summary>
@@ -103,7 +108,7 @@ export default async function DocDetail({ params, searchParams }: { params: Prom
       {!editing && ((d.status === 'draft' && writer) || pdf) && (
         <div className="doc-bar no-print">
           {d.status === 'draft' && writer && <Link className="btn" href={`/documenti-emessi/${id}?edit=1`}>{L('Modifica', 'Modifier')}</Link>}
-          {d.status === 'draft' && writer && (
+          {d.status === 'draft' && canIssue && (
             <Link className="btn primary" href={`/documenti-emessi/${id}?emetti=1#emetti`}>{L('Emetti…', 'Émettre…')}</Link>)}
           {d.status !== 'draft' && pdfHref && <a className={d.status === 'cancelled' ? 'btn' : 'btn primary'} href={pdfHref}><Ico name="download" />{pdfLabel}</a>}
         </div>)}

@@ -240,7 +240,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   {(pms ?? []).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>}
               <label className="field"><span className="flabel">{L('Conto o cassa', 'Compte ou caisse')}</span>
                 <select className="input" name="conto" defaultValue={f.acc}><option value="">{t('all')}</option>
-                  {(accounts ?? []).filter((x) => !isOp || (x.location === 'MG' && (x.kind !== 'advance' || (x.holder ?? '').trim().toLowerCase() === (me!.full_name ?? '').trim().toLowerCase()))).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
+                  {(accounts ?? []).filter((x) => !isOp || (x.location === 'MG' && x.kind !== 'bank' && (x.kind !== 'advance' || (x.holder ?? '').trim().toLowerCase() === (me!.full_name ?? '').trim().toLowerCase()))).map((x) => <option key={x.id} value={x.id}>{nm(lang, x)}</option>)}</select></label>
               <label className="field"><span className="flabel">{L('Valuta', 'Devise')}</span>
                 <select className="input" name="valuta" defaultValue={f.cur}><option value="">{t('all')}</option><option>EUR</option><option>MGA</option></select></label>
               <label className="field"><span className="flabel">{t('f_doc')}</span>
