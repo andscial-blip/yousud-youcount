@@ -5,13 +5,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // revisione 19/11 (settimo giro): progetti e gruppi di spesa non condividono più nessun colore.
 // Progetti: dodici tinte fredde e rosate (nessun giallo, ocra o oliva, che restano alle uscite); nessun doppione fino a dodici progetti.
 // 20/11 (nono giro): tinte tenui scelte per restare distinte anche con il daltonismo rosso-verde (min ΔE 10,6 normale, 6,4 deuteranopia; prima 8,2 e 1,5)
-export const ITEM_PAL = ['#8A739D', '#1D7954', '#FFB0BB', '#F0C2A0', '#A45C73', '#3AA8C5', '#CF93BE', '#427B78', '#2279A5', '#A8C078', '#4A9D9F', '#BB71A0'];   // giro 12: i primi 10 scelti per distanza (ΔE ≥ 12,6, deuteranopia ≥ 9), tenui, niente oliva scura né marrone
+export const ITEM_PAL = ['#8A739D', '#1D7954', '#DCB4E6', '#8FD3DC', '#5A64B4', '#3AA8C5', '#829678', '#427B78', '#2279A5', '#A8C078', '#4A9D9F', '#6B5B95'];   // giro 12: i primi 10 scelti per distanza (ΔE ≥ 12,6, deuteranopia ≥ 9), tenui, niente oliva scura né marrone
 export const PAL = ITEM_PAL;
 // Gruppi di spesa (01…09): la famiglia del giallo delle uscite, dall'ocra al crema; codici vicini lontani di chiarezza.
 // gruppi di spesa: gialli e albicocca alternati a toni salvia, ben distinti tra loro e dai progetti (freddi e rosati)
 // due famiglie alternate (gialli-albicocca e salvia): distanza minima ΔE 9 (prima 6), nessun colore uguale alle uscite (20/11)
 // 21/11 (undicesimo giro): senza senape, terracotta e crema invisibile; gialli, albicocca e salvia tenui, min ΔE 8,3 tra gruppi
-export const EXPENSE_SHADES = ['#F4E3A1', '#87B96E', '#D2B9FF', '#D6E8BE', '#E6CFE0', '#6E8A3C', '#F8C3A3', '#A8DADC', '#A7B3C4'];
+export const EXPENSE_SHADES = ['#F4E3A1', '#87B96E', '#D2B9FF', '#D6E8BE', '#B7C7E6', '#6E8A3C', '#BFE3D0', '#A8DADC', '#A7B3C4'];
 export const REST = '#E3E8EF';
 export const INCOME_SHADES = ['#1E2B3C', '#4C5A6E', '#8A94A3', '#C2C8D1'];   // entrate: blu notte e suoi grigi   // «Altri», più chiaro di ogni tinta
 

@@ -489,3 +489,11 @@ Basta giri a ricerca libera: ultimi tre punti chiusi e una sola verifica di conf
   in scala sul previsto di ciascun progetto; W5 aiuto dell'operatore anche in /documenti-emessi/nuovo; W8 nella scheda delle casse
   «N casse, in totale» accanto al totale in ariary; aiuto di Conti che cita Mvola. Ciclo dei giri chiuso: si interviene solo su
   segnalazioni d'uso del committente o degli operatori.
+
+## 24/11 — dati dimostrativi tolti dalla produzione e tavolozza senza rosa
+- Copia completa delle tabelle in `backup_20261124` (schema non esposto all'API) prima di `demo_purge(1017)`, eseguita come Andrea.
+  Restano i dati reali: 190 movimenti (uno con data 2019 da controllare), 10 progetti, 78 controparti, preventivo con 48 righe, 10 tassi, 3 documenti.
+- Tavolozza senza rosa, pesca e magenta (solo il corallo per gli allarmi): `ITEM_PAL` e `EXPENSE_SHADES` in `lib/palette.ts`; in produzione
+  i colori dei progetti aggiornati (migrazioni `20261124000100_palette_no_pink.sql` e `20261124000200_project_colors_distinct.sql`,
+  con i valori precedenti nei commenti). Colori reali ora: Agricoltura #8A739D, Ambohitsiroa #A8C078, Anjazafohy #5A64B4, Antanetibe
+  #8FD3DC, Bonne Semence #427B78, Piccolino #3AA8C5, Sapone Solidale #829678, Spese generali #2279A5, Sport #CAC0F0, StreetFood #1D7954.
