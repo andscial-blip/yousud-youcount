@@ -170,7 +170,7 @@ const it = {
   fx_source: 'Fonte', fx_save: 'Salva', fx_saved: 'Tasso salvato.',
   r_super_admin: 'Super amministratore', r_admin: 'Amministratore', r_responsabile: 'Responsabile', r_operator: 'Operatore', r_read_only: 'Sola lettura',
   // coda offline
-  f_doc_local: 'sul telefono, sarà inviato con il movimento', q_saved: 'Salvato sul telefono: verrà inviato da solo appena torna la rete. Puoi inserire il prossimo.',
+  f_doc_local: 'sul telefono, sarà inviato con il movimento', q_saved: 'Salvato sul telefono: verrà inviato da solo appena torna la rete. Puoi inserire il prossimo.', q_saved_bg: 'Registrato: l\'invio si completa da solo in sottofondo. Puoi inserire il prossimo.',
   q_pending: 'da inviare', q_title: 'Sul telefono, in attesa di invio', q_send: 'Invia ora', q_sending: 'Invio in corso…', q_delete: 'Elimina',
   q_delete_confirm: 'Eliminare questo movimento dal telefono? Non è ancora stato inviato e andrà perso.',
   q_err: 'non inviato', q_wait: 'in attesa', q_empty: 'Nessun movimento in attesa: tutto è stato inviato.',
@@ -417,7 +417,7 @@ const fr: Record<Key, string> = {
   fx_source: 'Source', fx_save: 'Enregistrer', fx_saved: 'Taux enregistré.',
   r_super_admin: 'Super administrateur', r_admin: 'Administrateur', r_responsabile: 'Responsable', r_operator: 'Opérateur', r_read_only: 'Lecture seule',
   // file d'attente hors ligne
-  f_doc_local: 'sur le téléphone, sera envoyée avec le mouvement', q_saved: 'Enregistré sur le téléphone : il sera envoyé tout seul dès le retour du réseau. Vous pouvez saisir le suivant.',
+  f_doc_local: 'sur le téléphone, sera envoyée avec le mouvement', q_saved: 'Enregistré sur le téléphone : il sera envoyé tout seul dès le retour du réseau. Vous pouvez saisir le suivant.', q_saved_bg: 'Enregistré : l\'envoi se termine tout seul en arrière-plan. Vous pouvez saisir le suivant.',
   q_pending: 'à envoyer', q_title: 'Sur le téléphone, en attente d’envoi', q_send: 'Envoyer maintenant', q_sending: 'Envoi en cours…', q_delete: 'Supprimer',
   q_delete_confirm: 'Supprimer ce mouvement du téléphone ? Il n’a pas encore été envoyé et sera perdu.',
   q_err: 'non envoyé', q_wait: 'en attente', q_empty: 'Aucun mouvement en attente : tout a été envoyé.',

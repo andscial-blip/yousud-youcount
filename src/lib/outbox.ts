@@ -9,6 +9,7 @@ export type OutFile = {
   key: string;                 // client_uuid del documento
   name: string; type: string; size: number;
   original: Blob; enhanced?: Blob | null; pdf?: Blob | null;
+  sha?: string | null;         // impronta del file scelto (la foto intera), se si invia la versione compressa
   docId?: string;              // valorizzato quando il server ha registrato il documento
 };
 export type OutItem = {
@@ -72,7 +73,7 @@ export function isNetworkError(e: unknown) {
   return e instanceof TypeError || /Failed to fetch|NetworkError|Load failed|network|fetch failed|ERR_INTERNET/i.test(msg);
 }
 
-async function sha256(blob: Blob) {
+export async function sha256(blob: Blob) {
   const buf = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
@@ -81,9 +82,10 @@ async function sha256(blob: Blob) {
 // in archivio (stessa impronta) non lo ricarica; register_document con lo stesso client_uuid restituisce il precedente.
 export async function uploadDocument(supabase: SupabaseClient, o: {
   orgId: string; year: string; key: string; file: Blob; name: string; type: string; size: number;
-  enhanced?: Blob | null; pdf?: Blob | null; docDate?: string | null;
+  enhanced?: Blob | null; pdf?: Blob | null; docDate?: string | null; sha?: string | null;
 }): Promise<{ id: string; outcome: string }> {
-  const hash = await sha256(o.file);
+  // sha = impronta del file scelto (anche quando si invia la versione compressa), per riconoscere i doppioni
+  const hash = o.sha ?? await sha256(o.file);
   const ext = (o.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
   const base = `${o.orgId}/${o.year}/${o.key}`;
   const paths = { original: `${base}.${ext}`, enhanced: o.enhanced ? `${base}-scan.jpg` : null, pdf: o.pdf ? `${base}.pdf` : null };
@@ -95,9 +97,12 @@ export async function uploadDocument(supabase: SupabaseClient, o: {
       // "già esistente": un invio precedente interrotto dopo il caricamento del file
       if (up.error && !/exists|Duplicate/i.test(up.error.message)) throw up.error;
     };
-    await put(paths.original, o.file, o.type || 'application/octet-stream');
-    if (o.enhanced && paths.enhanced) await put(paths.enhanced, o.enhanced, 'image/jpeg');
-    if (o.pdf && paths.pdf) await put(paths.pdf, o.pdf, 'application/pdf');
+    // invii in parallelo (25/11): con la rete mobile la latenza pesa quanto la banda
+    await Promise.all([
+      put(paths.original, o.file, o.type || 'application/octet-stream'),
+      o.enhanced && paths.enhanced ? put(paths.enhanced, o.enhanced, 'image/jpeg') : null,
+      o.pdf && paths.pdf ? put(paths.pdf, o.pdf, 'application/pdf') : null,
+    ]);
   }
   const { data, error } = await supabase.rpc('register_document', {
     p: { client_uuid: o.key, sha256: hash, original_path: paths.original, enhanced_path: paths.enhanced, pdf_path: paths.pdf,
@@ -126,7 +131,7 @@ async function doFlush(supabase: SupabaseClient, { retryErrors = false }: { retr
       for (const f of item.files) {
         if (f.docId) continue;
         const r = await uploadDocument(supabase, { orgId: item.orgId, year: item.opDate.slice(0, 4), key: f.key, file: f.original,
-          name: f.name, type: f.type, size: f.size, enhanced: f.enhanced, pdf: f.pdf, docDate: (item.payload.doc_date as string) ?? null });
+          name: f.name, type: f.type, size: f.size, enhanced: f.enhanced, pdf: f.pdf, sha: f.sha ?? null, docDate: (item.payload.doc_date as string) ?? null });
         f.docId = r.id;
         await putOutbox(item);
       }

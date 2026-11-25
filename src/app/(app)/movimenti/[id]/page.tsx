@@ -50,7 +50,7 @@ export default async function MovementDetail({ params, searchParams }: {
   const L = (it: string, fr: string) => (lang === 'fr' ? fr : it);
   // velocità (16/11): tutte le letture che dipendono solo dal movimento partono insieme (prima tre erano in fila)
   const [{ data: links }, { data: hist }, { data: users }, { data: rev }, { data: fe }, { data: recs }, { data: aut }, { data: orig }, { data: tr }, { data: reports }] = await Promise.all([
-    supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
+    supabase.from('movement_documents').select('seq, document:documents(id, doc_type, original_path, enhanced_path, pdf_path, mime, file_name, created_at)').eq('movement_id', id).order('seq'),
     supabase.rpc('movement_history', { p_id: id }),
     supabase.rpc('user_directory'),
     supabase.from('movements').select('id, ref').eq('reverses_id', id).maybeSingle(),
@@ -68,11 +68,11 @@ export default async function MovementDetail({ params, searchParams }: {
   const recDates = ((recs ?? []) as unknown as { side: string; rec: { statement_date: string } | null }[])
     .map((r) => r.rec?.statement_date).filter(Boolean) as string[];
   const name = new Map(((users ?? []) as { id: string; full_name: string }[]).map((u) => [u.id, u.full_name]));
-  type D = { id: string; original_path: string; pdf_path: string | null; mime: string; file_name: string | null; created_at: string };
+  type D = { id: string; original_path: string; enhanced_path?: string | null; pdf_path: string | null; mime: string; file_name: string | null; created_at: string };
   const docs = ((links ?? []) as unknown as { seq: number; document: D | null }[])
     .filter((l) => l.document)
     .map((l) => {
-      const path = l.document!.pdf_path ?? l.document!.original_path;
+      const path = l.document!.pdf_path ?? l.document!.enhanced_path ?? l.document!.original_path;
       return { ...l.document!, path, name: docName(m.ref, l.seq, path, l.document!.file_name) };
     });
   const bucket = supabase.storage.from('documents');

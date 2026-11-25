@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { PDFDocument } from 'pdf-lib';
 import { detectCorners, enhance, inset, rotate90, warp, type Img, type Pt, type ScanMode } from '@/lib/scan';
 import type { Dict } from '@/lib/i18n';
 
-export type ScanResult = { original: File; enhanced?: Blob; pdf?: Blob };
+// original = file scelto (serve per il nome e per riconoscere i doppioni); prepared = file da inviare, già compressi:
+// la scansione (≈ 250 KB) e l'originale ridotto a 2000 px (≈ 300 KB) invece della foto intera di 3–6 MB (25/11)
+export type Prepared = { original: Blob; enhanced?: Blob };
+export type ScanResult = { original: File; prepared?: Promise<Prepared> };
 
-async function loadImage(file: File, maxSide = 2400): Promise<Img> {
+async function loadImage(file: File, maxSide = 2000): Promise<Img> {
   const bmp = await createImageBitmap(file);   // applica l'orientamento EXIF
   const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas');
@@ -22,13 +24,43 @@ function draw(c: HTMLCanvasElement, img: Img) {
   c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0);
 }
 
-async function makePdf(jpeg: Blob, w: number, h: number) {
-  const pdf = await PDFDocument.create();
-  const img = await pdf.embedJpg(await jpeg.arrayBuffer());
-  const pw = 595.28, ph = (pw * h) / w;   // larghezza A4, altezza in proporzione
-  pdf.addPage([pw, ph]).drawImage(img, { x: 0, y: 0, width: pw, height: ph });
-  pdf.setProducer('YouCount · YouSud ODV');
-  return new Blob([await pdf.save() as BlobPart], { type: 'application/pdf' });
+function toJpeg(img: Img, q: number): Promise<Blob> {
+  const c = document.createElement('canvas');
+  draw(c, img);
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('jpeg'))), 'image/jpeg', q));
+}
+
+// un solo worker per la pagina; se il browser non ha Worker o OffscreenCanvas si lavora sul thread principale
+let worker: Worker | null | undefined;
+function scanWorker(): Worker | null {
+  if (worker !== undefined) return worker;
+  try { worker = typeof OffscreenCanvas !== 'undefined' ? new Worker(new URL('../lib/scan.worker.ts', import.meta.url)) : null; } catch { worker = null; }
+  return worker;
+}
+// il worker parte appena si carica l'editor (con la rete): così il suo file resta salvato anche per l'uso offline
+if (typeof window !== 'undefined' && navigator.onLine) scanWorker();
+function prepareOnMain(img: Img, corners: Pt[], mode: ScanMode): Promise<Prepared> {
+  return (async () => { const r = enhance(warp(img, inset(corners)), mode); return { enhanced: await toJpeg(r, mode === 'photo' ? 0.8 : 0.78), original: await toJpeg(img, 0.72) }; })();
+}
+// se il worker non parte (senza rete il suo file potrebbe non essere ancora salvato sul telefono) o non risponde entro 20 s,
+// si lavora sul thread principale: la foto non resta mai bloccata
+function prepareInWorker(img: Img, corners: Pt[], mode: ScanMode): Promise<Prepared> {
+  const w = scanWorker();
+  if (!w) return prepareOnMain(img, corners, mode);
+  const id = crypto.randomUUID();
+  return new Promise<Prepared>((res, rej) => {
+    const done = () => { clearTimeout(timer); w.removeEventListener('message', on); w.removeEventListener('error', fail); };
+    const on = (e: MessageEvent) => {
+      if (e.data?.id !== id) return;
+      done();
+      if (e.data.ok) res({ enhanced: e.data.scan, original: e.data.original }); else rej(new Error(e.data.error));
+    };
+    const fail = () => { done(); worker = null; rej(new Error('worker')); };
+    const timer = setTimeout(fail, 20000);
+    w.addEventListener('message', on);
+    w.addEventListener('error', fail);
+    w.postMessage({ id, img, corners, mode });
+  }).catch(() => prepareOnMain(img, corners, mode));
 }
 
 const MODES: ScanMode[] = ['document', 'bw', 'photo'];
@@ -38,7 +70,7 @@ const lastMode = (): ScanMode => {
 const tick = () => new Promise((r) => setTimeout(r, 30));   // lascia disegnare "Elaborazione…"
 
 // Due passi: 1) ritaglio con quattro angoli trascinabili; 2) anteprima del risultato con tre resa
-// (Documento, Bianco e nero, Foto). Restituisce originale, immagine scelta e PDF; l'originale si conserva sempre.
+// (Documento, Bianco e nero, Foto). Restituisce l'immagine scelta e l'originale ridotto, compressi in JPEG; l'originale si conserva sempre.
 export function ScanEditor({ file, t, onDone, onCancel }: {
   file: File; t: Dict; onDone: (r: ScanResult) => void; onCancel: () => void;
 }) {
@@ -96,26 +128,14 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
   // un tocco (revisione operatore, 16/11): bordi trovati in automatico, miglioramento con l'ultima modalità scelta, e si usa subito
   async function quick() {
     if (!img) return;
-    setBusy(true);
-    await tick();
-    const w = warp(img, inset(corners));
-    const r = enhance(w, mode);
-    const c = document.createElement('canvas');
-    draw(c, r);
-    const jpeg: Blob = await new Promise((res) => c.toBlob((b) => res(b!), 'image/jpeg', mode === 'photo' ? 0.88 : 0.9));
-    const pdf = await makePdf(jpeg, r.width, r.height);
-    onDone({ original: file, enhanced: jpeg, pdf });
+    // l'editor si chiude subito: raddrizzatura, miglioramento e compressione continuano in un worker
+    onDone({ original: file, prepared: prepareInWorker(img, corners, mode) });
   }
 
   async function finish() {
-    if (!result) return;
-    setBusy(true);
-    await tick();
-    const c = document.createElement('canvas');
-    draw(c, result);
-    const jpeg: Blob = await new Promise((res) => c.toBlob((b) => res(b!), 'image/jpeg', mode === 'photo' ? 0.88 : 0.9));
-    const pdf = await makePdf(jpeg, result.width, result.height);
-    onDone({ original: file, enhanced: jpeg, pdf });
+    if (!result || !img) return;
+    const res = result, im = img;
+    onDone({ original: file, prepared: (async () => ({ enhanced: await toJpeg(res, mode === 'photo' ? 0.8 : 0.78), original: await toJpeg(im, 0.72) }))() });
   }
 
   const r = img ? Math.max(img.width, img.height) / 45 : 10;
@@ -170,7 +190,7 @@ export function ScanEditor({ file, t, onDone, onCancel }: {
                       onClick={() => { const rot = rotate90(img!); setImg(rot); setCorners(detectCorners(rot)); }}>{t.scan_rotate}</button>
               <button type="button" className="btn" disabled={!img || busy} onClick={() => setCorners(detectCorners(img!))}>{t.scan_reset}</button>
               <div className="spacer" />
-              <button type="button" className="btn" disabled={busy} onClick={() => onDone({ original: file })}>{t.scan_original}</button>
+              <button type="button" className="btn" disabled={busy} onClick={() => onDone({ original: file, prepared: img ? toJpeg(img, 0.75).then((o) => ({ original: o })) : undefined })}>{t.scan_original}</button>
               <button type="button" className="btn" disabled={!img || busy} onClick={next}>{t.scan_next}</button>
               <button type="button" className="btn primary" disabled={!img || busy} onClick={quick}>{busy ? t.scan_working : t.scan_use_now}</button>
             </>

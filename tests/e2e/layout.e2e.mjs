@@ -4,7 +4,7 @@
 // scorre in orizzontale sono ammesse e vengono solo contate.
 // Uso: npm run test:layout   (prepara il database di prova da solo)
 import { readFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
@@ -88,7 +88,7 @@ async function seed() {
   const grant = (await pool.query(`insert into grants(org_id, title, project_id, amount, start_date, end_date) values ($1, $2, $3, 48000, $4, $4) returning id`,
     [org, 'Bando Fondazione per l’istruzione primaria in Madagascar 2026–2028', prj, today])).rows[0].id;
   if (process.env.DEMO) {   // anteprima con un anno di dati dimostrativi (src/lib/demo)
-    const { execFileSync } = await import('node:child_process');
+
     const payload = execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', 'scripts/demo-payload.mjs', String(Y)], { maxBuffer: 1 << 26 }).toString();
     await as(sa, 'select public.demo_load($1)', [payload]);
   }
@@ -96,9 +96,14 @@ async function seed() {
 }
 
 function startNext(stack) {
+  const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: stack.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: stack.anonKey, AI_MOCK: '1' };
+  // PROD=1: versione compilata (next build + next start), per misurare le prestazioni come in produzione
+  if (process.env.PROD) {
+    execFileSync('npx', ['next', 'build'], { env: { ...env, NEXT_DIST_DIR: '.next-prod' }, stdio: 'inherit' });
+    return spawn('npx', ['next', 'start', '-p', String(APP_PORT)], { env: { ...env, NEXT_DIST_DIR: '.next-prod' }, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+  }
   const p = spawn('npx', ['next', 'dev', '-p', String(APP_PORT)], {
-    env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: stack.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: stack.anonKey, AI_MOCK: '1' },
-    stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+    env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
   return p;
 }
 async function waitFor(url, ms = 90000) {

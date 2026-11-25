@@ -2986,3 +2986,9 @@ table.t tbody tr > th, table.t tbody tr > td { border-bottom-color: var(--line-2
 .cat-quick:not(.cat-sug) { grid-auto-rows: 1fr; }
 .cat-quick .chip-btn { text-wrap: pretty; }
 .typecards .tc-resp { align-self: flex-start; margin-top: 6px; font-size: 12px; }
+/* 25/11: editor della foto su PC, tutti i pulsanti su una riga e larghi uguali (prima «Usa» finiva da solo sulla seconda riga) */
+@media (min-width: 761px) {
+  .scan-acts { display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; align-items: stretch; }
+  .scan-acts > .spacer { display: none; }
+  .scan-acts > .btn { min-width: 0; padding: 6px 10px; white-space: normal; text-align: center; justify-content: center; line-height: 1.2; }
+}

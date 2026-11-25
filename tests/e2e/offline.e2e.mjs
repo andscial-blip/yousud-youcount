@@ -121,7 +121,7 @@ try {
     assert.deepEqual([rows[0].status, rows[0].a, rows[0].currency, rows[0].docs], ['recorded', 45000, 'MGA', 1]);
     assert.equal(rows[0].r, 5055.37);
     assert.match(String(rows[0].device_id), /^web-/, 'dispositivo registrato nel registro di sincronizzazione');
-    assert.equal(stack.files.size - files, 3, 'originale, scansione e PDF caricati');
+    assert.equal(stack.files.size - files, 2, 'originale ridotto e scansione caricati (niente PDF dal 25/11)');
     assert.equal(await page.locator('.net-badge:visible').count(), 0);
   });
 
@@ -135,7 +135,8 @@ try {
           payload: { kind: 'expense' }, cpNew: null, docIds: [], files: [], state: 'pending', attempts: 0 }); t.oncomplete = res; });
       window.dispatchEvent(new Event('youcount-outbox'));
     }, { id: client_uuid, desc: DESC, op });
-    await page.getByRole('button', { name: 'Invia ora' }).click();
+    // dal 25/11 con la rete la coda parte da sola appena cambia: «Invia ora» si tocca solo se è ancora lì
+    await page.getByRole('button', { name: 'Invia ora' }).click({ timeout: 3000 }).catch(() => {});
     await page.getByText('Nessun movimento in attesa', { exact: false }).waitFor({ timeout: 20000 });
     const n = (await pool.query('select count(*)::int n from movements where description = $1', [DESC])).rows[0].n;
     assert.equal(n, 1);
@@ -195,7 +196,7 @@ try {
       await page.waitForTimeout(3000);              // caricamento del giustificativo (non rallentato)
       const t0 = Date.now();
       await page.getByRole('button', { name: 'Registra' }).click();
-      await page.getByText('Salvato sul telefono', { exact: false }).waitFor({ timeout: 9000 });
+      await page.getByText(/Salvato sul telefono|invio si completa da solo/).waitFor({ timeout: 9000 });
       const ms = Date.now() - t0;
       assert.ok(ms < 8000, `messo in coda in ${ms} ms`);
     } finally { await ctx.unroute('**/rpc/save_movement', slow); }

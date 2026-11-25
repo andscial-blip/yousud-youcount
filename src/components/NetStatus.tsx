@@ -41,7 +41,8 @@ export function SyncEngine() {
 
   useEffect(() => {
     const upd = () => { set({ online: navigator.onLine }); if (navigator.onLine) sync(); };
-    const count = () => listOutbox().then((l) => set({ pending: l.length })).catch(() => {});
+    // coda cambiata: con la rete si invia subito (un movimento registrato mentre le foto finivano di caricarsi), non al giro dei 30 s
+    const count = () => listOutbox().then((l) => { set({ pending: l.length }); if (navigator.onLine && l.some((x) => x.state === 'pending')) sync(); }).catch(() => {});
     upd();
     // con la rete: pagine principali salvate per l'uso offline, al massimo ogni 2 ore e 6 secondi dopo l'apertura,
     // per non rubare banda e server alla prima pagina; niente con «risparmio dati» o rete 2G

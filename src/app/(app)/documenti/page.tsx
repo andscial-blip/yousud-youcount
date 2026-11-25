@@ -15,7 +15,7 @@ const TYPE_ICON: Record<string, IconName> = { invoice: 'invoice', receipt: 'rece
 export const dynamic = 'force-dynamic';
 
 type Doc = { id: string; doc_type: string; doc_date: string | null; doc_number: string | null; total: string | null;
-             currency: string | null; created_at: string; original_path: string; pdf_path: string | null; file_name: string | null;
+             currency: string | null; created_at: string; original_path: string; enhanced_path?: string | null; pdf_path: string | null; file_name: string | null;
              links: { seq: number; movement: { id: string; ref: string | null; description: string; op_date: string; doc_date: string | null;
                amount: string; currency: string; sign: number } | null }[] };
 
@@ -33,14 +33,14 @@ export default async function Documents({ searchParams }: { searchParams: Promis
   const { supabase, t, lang, me } = await requireMe();
   const FR = lang === 'fr';
   const { data, error } = await supabase.from('documents')
-    .select(`id, doc_type, doc_date, doc_number, total, currency, created_at, original_path, pdf_path, file_name,
+    .select(`id, doc_type, doc_date, doc_number, total, currency, created_at, original_path, enhanced_path, pdf_path, file_name,
       links:movement_documents(seq, movement:movements(id, ref, description, op_date, doc_date, amount, currency, sign))`)
     .not('doc_type', 'in', '(statement,estimate,delivery_receipt)').order('created_at', { ascending: false }).limit(1000).returns<Doc[]>();
   // per ogni documento: il movimento principale (quello numerato prima), il nome con cui lo si riconosce
   const rows = (data ?? []).map((d) => {
     const link = [...(d.links ?? [])].sort((a, b) => (a.movement?.ref ? 0 : 1) - (b.movement?.ref ? 0 : 1))[0];
     const m = link?.movement ?? null;
-    return { d, m, more: Math.max(0, (d.links ?? []).length - 1), name: docName(m?.ref, link?.seq, d.pdf_path ?? d.original_path, d.file_name) };
+    return { d, m, more: Math.max(0, (d.links ?? []).length - 1), name: docName(m?.ref, link?.seq, d.pdf_path ?? d.enhanced_path ?? d.original_path, d.file_name) };
   });
   const shown = rows.filter((r) => (f !== 'orfani' || !r.m)
     && (!term || [r.name, r.d.file_name, r.m?.ref, r.m?.description, r.d.doc_number].some((x) => x?.toLowerCase().includes(term))));
@@ -49,7 +49,7 @@ export default async function Documents({ searchParams }: { searchParams: Promis
   const bucket = supabase.storage.from('documents');
   const orphanUrl = new Map<string, string>();
   for (const r of shown.filter((x) => !x.m).slice(0, 50)) {
-    const u = (await bucket.createSignedUrl(r.d.pdf_path ?? r.d.original_path, 600, { download: r.name })).data?.signedUrl;
+    const u = (await bucket.createSignedUrl(r.d.pdf_path ?? r.d.enhanced_path ?? r.d.original_path, 600, { download: r.name })).data?.signedUrl;
     if (u) orphanUrl.set(r.d.id, u);
   }
   const canLink = me!.role !== 'read_only';

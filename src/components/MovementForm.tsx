@@ -15,7 +15,7 @@ import type { ScanResult } from './ScanEditor';
 // l'editor della foto (con pdf-lib) si carica a parte: la pagina si apre prima; viene comunque scaricato
 // poco dopo l'apertura, così il service worker lo conserva e funziona anche senza rete
 const ScanEditor = dynamic(() => import('./ScanEditor').then((m) => m.ScanEditor), { ssr: false });
-import { deviceId, isNetworkError, putOutbox, uploadDocument, type OutFile } from '@/lib/outbox';
+import { deviceId, isNetworkError, putOutbox, sha256, uploadDocument, type OutFile } from '@/lib/outbox';
 import { Ico } from './Ui';
 
 type Kind = 'expense' | 'income' | 'transfer';
@@ -49,11 +49,11 @@ type Props = { refData: RefData; t: Dict; initial?: Initial; prefill?: Prefill }
 // Dopo un salvataggio senza rete il modulo riparte vuoto (nuova chiave) per il movimento successivo.
 export function MovementForm(props: Props) {
   const [round, setRound] = useState(0);
-  const [queued, setQueued] = useState(false);
+  const [queued, setQueued] = useState<false | 'offline' | 'online'>(false);
   return (
     <>
-      {queued && <div className="note ok" role="status" style={{ marginBottom: 14 }}>{props.t.q_saved}</div>}
-      <Form key={round} {...props} prefill={round === 0 ? props.prefill : undefined} onQueued={() => { setQueued(true); setRound((r) => r + 1); window.scrollTo(0, 0); }} />
+      {queued && <div className="note ok" role="status" style={{ marginBottom: 14 }}>{queued === 'online' ? props.t.q_saved_bg : props.t.q_saved}</div>}
+      <Form key={round} {...props} prefill={round === 0 ? props.prefill : undefined} onQueued={() => { setQueued(navigator.onLine ? 'online' : 'offline'); setRound((r) => r + 1); window.scrollTo(0, 0); }} />
     </>
   );
 }
@@ -64,6 +64,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   const clientUuid = useRef<string>(initial ? '' : crypto.randomUUID());
   // giustificativi rimasti sul telefono (senza rete): partono con il movimento dalla coda
   const localFiles = useRef(new Map<string, OutFile>());
+  const prepping = useRef(new Map<string, Promise<OutFile>>());
 
   const [kind, setKind] = useState<Kind>(initial?.kind ?? P?.kind ?? 'expense');
   const [opDate, setOpDate] = useState(initial?.op_date ?? P?.op_date ?? today());
@@ -240,20 +241,30 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
   async function upload(r: ScanResult) {
     const file = r.original;
     const key = crypto.randomUUID();
-    const keepLocal = () => {
-      localFiles.current.set(key, { key, name: file.name, type: file.type || 'application/octet-stream', size: file.size,
-        original: file, enhanced: r.enhanced ?? null, pdf: r.pdf ?? null });
-      setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'local' } : x)));
-    };
-    // anteprima dell'immagine (scansione migliorata se c'è): si controlla il giustificativo mentre si compilano i campi
-    const img = r.enhanced ?? (file.type.startsWith('image/') ? file : null);
-    const preview = img ? URL.createObjectURL(img) : undefined;
+    // anteprima subito con la foto scelta; la versione elaborata la sostituisce appena pronta (lavora in un worker)
+    const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
     setDocs((d) => [...d, { key, label: file.name, state: 'uploading', preview }]);
+    // file pronto da inviare (compresso) e conservato sul telefono finché il server non lo conferma: così «Registra»
+    // non aspetta mai l'invio, e senza rete parte con il movimento (25/11)
+    const ready = (async (): Promise<OutFile> => {
+      const [prep, sha] = await Promise.all([r.prepared?.catch(() => undefined), sha256(file)]);
+      const body = prep?.original ?? file;
+      const f: OutFile = { key, name: prep ? file.name.replace(/\.[^.]+$/, '') + '.jpg' : file.name,
+        type: prep ? 'image/jpeg' : file.type || 'application/octet-stream', size: body.size,
+        original: body, enhanced: prep?.enhanced ?? null, pdf: null, sha };
+      localFiles.current.set(key, f);
+      if (prep?.enhanced) setDocs((d) => d.map((x) => (x.key === key ? { ...x, preview: URL.createObjectURL(prep.enhanced!) } : x)));
+      return f;
+    })();
+    prepping.current.set(key, ready);
+    const keepLocal = () => setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'local' } : x)));
+    let f: OutFile;
+    try { f = await ready; } catch { setDocs((d) => d.map((x) => (x.key === key ? { ...x, state: 'err' } : x))); return; }
     // senza rete (solo per un movimento nuovo): il file resta sul telefono e parte con il movimento
     if (!navigator.onLine && !initial) { keepLocal(); return; }
     try {
-      const data = await uploadDocument(supabase, { orgId: R.orgId, year: opDate.slice(0, 4), key, file, name: file.name,
-        type: file.type, size: file.size, enhanced: r.enhanced, pdf: r.pdf, docDate: docDate || null });
+      const data = await uploadDocument(supabase, { orgId: R.orgId, year: opDate.slice(0, 4), key, file: f.original, name: f.name,
+        type: f.type, size: f.size, enhanced: f.enhanced, pdf: null, sha: f.sha, docDate: docDate || null });
       setDocs((d) => d.map((x) => (x.key === key ? { ...x, id: data.id, state: data.outcome === 'duplicate_file' ? 'dup' : 'ok' } : x)));
       // file già in archivio: si dice a quale movimento è allegato, perché di solito è la stessa spesa inserita due volte (P2-16)
       if (data.outcome === 'duplicate_file') {
@@ -376,7 +387,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       });
       return;
     }
-    if (docs.some((d) => d.state === 'uploading')) return;
+    // un movimento già registrato aspetta i suoi file; uno nuovo no: i file ancora in invio partono con lui dalla coda
+    if (initial && docs.some((d) => d.state === 'uploading')) return;
     if (initial && !navigator.onLine) { setError(t.q_edit_offline); return; }
     setBusy(true);
     const payload = (counterparty: string | null): Record<string, unknown> => ({
@@ -396,7 +408,8 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
     });
     // senza rete (o con giustificativi rimasti sul telefono): il movimento va nella coda e partirà da solo
     const queue = async () => {
-      const files = docs.filter((d) => d.state === 'local').map((d) => localFiles.current.get(d.key)!).filter(Boolean);
+      const files = (await Promise.all(docs.filter((d) => !d.id && (d.state === 'local' || d.state === 'uploading'))
+        .map((d) => localFiles.current.get(d.key) ?? prepping.current.get(d.key)?.catch(() => undefined)))).filter((x): x is OutFile => Boolean(x));
       await putOutbox({
         id: clientUuid.current, createdAt: new Date().toISOString(), orgId: R.orgId, userId: R.userId,
         label: description.trim() || t[`k_${kind}` as keyof Dict], amount: amount ?? 0, currency, opDate,
@@ -407,7 +420,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ }
       onQueued();
     };
-    if (!initial && (!navigator.onLine || docs.some((d) => d.state === 'local'))) {
+    if (!initial && (!navigator.onLine || docs.some((d) => d.state === 'local' || d.state === 'uploading'))) {
       try { await queue(); } catch (e) { setError(errorText(String((e as Error)?.message ?? e))); setBusy(false); }
       return;
     }

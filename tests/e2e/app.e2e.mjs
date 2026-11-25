@@ -193,7 +193,7 @@ try {
                                    from movements m where id = $1`, [newId])).rows;
     const ref = m.ref; delete m.ref;
     assert.deepEqual(m, { amount: '250000.00', amount_eur: '50.00', status: 'recorded', docs: 1, seq: 1 });
-    assert.ok(txt.includes(`${ref}.png`), 'il giustificativo prende il nome del movimento');
+    assert.ok(txt.includes(`${ref}.jpg`), 'il giustificativo prende il nome del movimento (la foto è compressa in JPEG, 25/11)');
     assert.ok(await p.getByRole('link', { name: 'Scarica' }).count() >= 1, 'pulsante di download con il nome del movimento');
     await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
   });
@@ -247,7 +247,7 @@ try {
     await p.screenshot({ path: `${SHOTS}/op_scan.png` });
     await p.getByRole('button', { name: 'Usa la scansione' }).click();
     await p.getByText('caricato', { exact: true }).waitFor({ timeout: 20000 });
-    assert.equal(stack.files.size - before, 3, 'originale, scansione migliorata e PDF');
+    assert.equal(stack.files.size - before, 2, 'originale ridotto e scansione migliorata, niente PDF da inviare (25/11)');
     // nessun clic: la lettura parte da sola dopo il caricamento
     await p.getByText('Campi compilati dall’IA', { exact: false }).waitFor({ timeout: 20000 });
     assert.equal(await p.inputValue('#amount'), '125.000', 'importo letto, con il punto delle migliaia');
@@ -265,7 +265,7 @@ try {
     const [m] = (await pool.query(`select m.ai_extracted, m.amount, d.enhanced_path is not null as enh, d.pdf_path is not null as pdf,
         d.extraction->>'model' as model from movements m join movement_documents md on md.movement_id = m.id
         join documents d on d.id = md.document_id where m.id = $1`, [id])).rows;
-    assert.deepEqual(m, { ai_extracted: true, amount: '125000.00', enh: true, pdf: true, model: 'mock' });
+    assert.deepEqual(m, { ai_extracted: true, amount: '125000.00', enh: true, pdf: false, model: 'mock' });   // dal 25/11 nessun PDF della foto da inviare: si scarica la scansione JPEG
   });
   await check('operatore: campi obbligatori e possibili doppioni segnalati', async () => {
     const p = op.page;

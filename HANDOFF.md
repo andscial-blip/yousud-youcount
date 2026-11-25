@@ -497,3 +497,19 @@ Basta giri a ricerca libera: ultimi tre punti chiusi e una sola verifica di conf
   i colori dei progetti aggiornati (migrazioni `20261124000100_palette_no_pink.sql` e `20261124000200_project_colors_distinct.sql`,
   con i valori precedenti nei commenti). Colori reali ora: Agricoltura #8A739D, Ambohitsiroa #A8C078, Anjazafohy #5A64B4, Antanetibe
   #8FD3DC, Bonne Semence #427B78, Piccolino #3AA8C5, Sapone Solidale #829678, Spese generali #2279A5, Sport #CAC0F0, StreetFood #1D7954.
+
+## 25/11 — foto dei giustificativi veloci, anche offline
+Misure (telefono simulato: CPU ×4, rete 1 Mbit/s in uscita, 150 ms; foto di 12 MP da 3,4 MB; build compilata `PROD=1` del test di layout):
+| | Prima | Ora |
+|---|---|---|
+| editor pronto | 2,3 s | 0,9 s |
+| «Usa» (elaborazione, schermo bloccato) | 4,8 s | 0,4 s (lavoro in un worker) |
+| foto caricata | +29,6 s | 3,6 s in tutto |
+| dati inviati | ≈ 4,5 MB (originale intero + scansione + PDF) | 220 KB (originale ridotto 2000 px + scansione 1800 px) |
+| «Registra» con foto ancora in invio | bloccato | 1,4 s, l'invio finisce in sottofondo |
+| senza rete | | 0,9 s; arrivato sul server 6 s dopo il ritorno della rete |
+PC (wifi): foto caricata in 1,1 s. Modifiche: `lib/scan.worker.ts` (raddrizza, migliora e comprime fuori dal thread principale, con
+ripiego sul thread principale se il worker non parte); niente PDF della foto (si scarica la scansione JPEG; `pdf ?? enhanced ?? original`);
+invii in parallelo; impronta sha del file scelto per i doppioni; «Registra» di un movimento nuovo non aspetta i file (vanno nella coda
+con il movimento) e la coda parte subito quando cambia; editor su PC con i cinque pulsanti su una riga.
+Strumenti: `PROD=1 SERVE=1 DEMO=1 npm run test:layout` (anteprima compilata), `/tmp/perf/photo.mjs`, `/tmp/perf/flow.mjs`.
