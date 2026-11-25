@@ -15,7 +15,7 @@ import type { ScanResult } from './ScanEditor';
 // l'editor della foto (con pdf-lib) si carica a parte: la pagina si apre prima; viene comunque scaricato
 // poco dopo l'apertura, così il service worker lo conserva e funziona anche senza rete
 const ScanEditor = dynamic(() => import('./ScanEditor').then((m) => m.ScanEditor), { ssr: false });
-import { deviceId, isNetworkError, putOutbox, sha256, uploadDocument, type OutFile } from '@/lib/outbox';
+import { deviceId, isNetworkError, putOutbox, requestPdf, sha256, uploadDocument, type OutFile } from '@/lib/outbox';
 import { Ico } from './Ui';
 
 type Kind = 'expense' | 'income' | 'transfer';
@@ -447,6 +447,7 @@ function Form({ refData: R, t, initial, prefill: P, onQueued }: Props & { onQueu
       if (error) throw error;
       if (data.outcome === 'conflict') { setError(t.f_conflict); setBusy(false); return; }
       if (!initial) { savedOk.current = true; try { localStorage.removeItem(`yc-draft-${R.userId}`); } catch { /* memoria non disponibile */ } }
+      if (docs.some((d) => d.id)) requestPdf(data.id);   // il PDF delle foto lo crea il server, con il nome del movimento
       // spesa registrata senza giustificativo, con la scelta «prepara l'autocertificazione»: la scheda si apre sul modulo
       const goAut = (status === 'recorded' || due) && kind === 'expense' && noDoc && wantAut && docs.length === 0;   // Q3: anche «Salva da rimborsare»
       router.push(`/movimenti/${data.id}?ok=${initial && !(initial.status === 'draft' && status === 'recorded') ? 'saved' : 'new'}${goAut ? '&aut=1' : ''}`);

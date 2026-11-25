@@ -112,6 +112,11 @@ export async function uploadDocument(supabase: SupabaseClient, o: {
   return { id: data.id, outcome: data.outcome };
 }
 
+// Dopo la registrazione il server crea i PDF delle foto e li collega (25/11); non si aspetta la risposta.
+export function requestPdf(movementId: string) {
+  try { void fetch('/api/v1/documenti/pdf', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ movement_id: movementId }), keepalive: true }).catch(() => {}); } catch { /* niente */ }
+}
+
 // Invia la coda, un movimento alla volta. Un solo invio per volta anche se chiamato da più punti.
 let running: Promise<{ sent: number; failed: number }> | null = null;
 export function flushOutbox(supabase: SupabaseClient, opts: { retryErrors?: boolean } = {}) {
@@ -155,6 +160,7 @@ async function doFlush(supabase: SupabaseClient, { retryErrors = false }: { retr
       if (data?.outcome === 'conflict') throw new Error('conflict');
       await deleteOutbox(item.id);
       sent++;
+      if (data?.id && (item.files.length || item.docIds.length)) requestPdf(data.id);
     } catch (e) {
       if (isNetworkError(e)) break;    // rete caduta: si riprova al prossimo giro, la coda resta com'è
       failed++;

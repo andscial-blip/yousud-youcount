@@ -513,3 +513,8 @@ ripiego sul thread principale se il worker non parte); niente PDF della foto (si
 invii in parallelo; impronta sha del file scelto per i doppioni; «Registra» di un movimento nuovo non aspetta i file (vanno nella coda
 con il movimento) e la coda parte subito quando cambia; editor su PC con i cinque pulsanti su una riga.
 Strumenti: `PROD=1 SERVE=1 DEMO=1 npm run test:layout` (anteprima compilata), `/tmp/perf/photo.mjs`, `/tmp/perf/flow.mjs`.
+- 25/11 pomeriggio: il PDF della foto torna, ma lo crea il server dopo la registrazione (`POST /api/v1/documenti/pdf`, pdf-lib, una pagina
+  larga come un A4 dalla scansione) e lo collega con la nuova funzione `document_attach_pdf` (migrazione `20261125000100`, APPLICATA in
+  produzione: solo aggiunta di un PDF mancante, mai sostituzione). Si chiede dal modulo dopo «Registra», dalla coda dopo l'invio e, come rete
+  di sicurezza, all'apertura della scheda del movimento (`PdfEnsure`). Scaricando il giustificativo si ottiene MOV-AAAA-NNN.pdf.
+  Lo storage di prova (`local-stack.mjs`) ora supporta il download con la sessione.

@@ -121,7 +121,9 @@ try {
     assert.deepEqual([rows[0].status, rows[0].a, rows[0].currency, rows[0].docs], ['recorded', 45000, 'MGA', 1]);
     assert.equal(rows[0].r, 5055.37);
     assert.match(String(rows[0].device_id), /^web-/, 'dispositivo registrato nel registro di sincronizzazione');
-    assert.equal(stack.files.size - files, 2, 'originale ridotto e scansione caricati (niente PDF dal 25/11)');
+    // dal 25/11: dal telefono originale ridotto e scansione; il PDF lo crea il server subito dopo
+    for (let i = 0; i < 30 && stack.files.size - files < 3; i++) await page.waitForTimeout(500);
+    assert.equal(stack.files.size - files, 3, 'originale ridotto e scansione dal telefono, PDF creato dal server');
     assert.equal(await page.locator('.net-badge:visible').count(), 0);
   });
 

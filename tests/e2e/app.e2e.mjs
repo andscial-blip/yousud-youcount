@@ -193,7 +193,9 @@ try {
                                    from movements m where id = $1`, [newId])).rows;
     const ref = m.ref; delete m.ref;
     assert.deepEqual(m, { amount: '250000.00', amount_eur: '50.00', status: 'recorded', docs: 1, seq: 1 });
-    assert.ok(txt.includes(`${ref}.jpg`), 'il giustificativo prende il nome del movimento (la foto è compressa in JPEG, 25/11)');
+    // il PDF lo crea il server subito dopo la registrazione (25/11): la scheda si aggiorna da sola quando è pronto
+    await p.getByText(`${ref}.pdf`).first().waitFor({ timeout: 20000 });
+    assert.ok((await p.locator('main').innerText()).includes(`${ref}.pdf`), 'il giustificativo prende il nome del movimento, in PDF');
     assert.ok(await p.getByRole('link', { name: 'Scarica' }).count() >= 1, 'pulsante di download con il nome del movimento');
     await p.screenshot({ path: `${SHOTS}/op_dettaglio.png`, fullPage: true });
   });
@@ -262,10 +264,18 @@ try {
     await p.getByRole('button', { name: 'Registra' }).click();
     await p.waitForURL(/\/movimenti\/[0-9a-f-]{36}(\?.*)?$/, { timeout: 30000 });
     const id = p.url().split('/').pop().split('?')[0];
-    const [m] = (await pool.query(`select m.ai_extracted, m.amount, d.enhanced_path is not null as enh, d.pdf_path is not null as pdf,
+    // dal 25/11 il telefono invia solo la foto compressa: il PDF lo crea il server dopo la registrazione, entro pochi secondi
+    let m;
+    for (let i = 0; i < 30; i++) {
+      [m] = (await pool.query(`select m.ai_extracted, m.amount, d.enhanced_path is not null as enh, d.pdf_path is not null as pdf,
         d.extraction->>'model' as model from movements m join movement_documents md on md.movement_id = m.id
         join documents d on d.id = md.document_id where m.id = $1`, [id])).rows;
-    assert.deepEqual(m, { ai_extracted: true, amount: '125000.00', enh: true, pdf: false, model: 'mock' });   // dal 25/11 nessun PDF della foto da inviare: si scarica la scansione JPEG
+      if (m?.pdf) break;
+      await p.waitForTimeout(500);
+    }
+    assert.deepEqual(m, { ai_extracted: true, amount: '125000.00', enh: true, pdf: true, model: 'mock' });
+    await p.reload();
+    assert.match(await p.locator('main').innerText(), /MOV-\d{4}-\d{3}\.pdf/, 'il giustificativo si scarica in PDF con il nome del movimento');
   });
   await check('operatore: campi obbligatori e possibili doppioni segnalati', async () => {
     const p = op.page;

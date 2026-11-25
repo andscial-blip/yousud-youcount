@@ -9,6 +9,7 @@ import { date, dateTime, money, nm, rate as fxRate, noDocReason, nbRef } from '@
 import type { Key } from '@/lib/i18n';
 import { Panel, H2 } from '@/components/Page';
 import { Ico, KindIcon, StatusChip } from '@/components/Ui';
+import { PdfEnsure } from '@/components/PdfEnsure';
 import { deleteDemoAction, discardAction, purgeAction, reverseAction, selfCertAction, signSelfCertAction, unverifyAction, verifyAction, reportErrorAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -107,8 +108,10 @@ export default async function MovementDetail({ params, searchParams }: {
   const errText = err ? (t(`err_${err.split(':')[0]}` as Key) ?? err) : null;
 
   const row = (label: string, value: React.ReactNode) => (<><dt>{label}</dt><dd>{value ?? '–'}</dd></>);
+  const needPdf = docs.some((d) => !d.pdf_path && (d.enhanced_path || /^image\/(jpeg|png)$/.test(d.mime)));
   return (
     <div className="stack">
+      {needPdf && <PdfEnsure movementId={m.id} />}
       <div className="h1row">
         <KindIcon kind={m.kind} label={t(`k_${m.kind}`)} />
         <h1>{m.ref ?? (m.reimb_status === 'due' ? L('Da rimborsare', 'À rembourser') : t('st_draft'))} · {m.reverses_id ? L(`Storno di ${t(`k_${m.kind}`).toLowerCase()}`, `Extourne de ${t(`k_${m.kind}`).toLowerCase()}`) : t(`k_${m.kind}`)}</h1>

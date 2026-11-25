@@ -110,6 +110,27 @@ async function storage(req, res, url) {
     FILES.set(key, { buf: await readBody(req), type: req.headers['content-type'] ?? 'application/octet-stream' });
     return send(res, 200, { Key: key, Id: key });
   }
+  // scaricamento con la sessione (download() di supabase-js): serve al server per creare il PDF delle foto (25/11)
+  if (req.method === 'GET' && p.startsWith('/object/')) {
+    const key = p.slice('/object/'.length).replace(/^authenticated\//, '');
+    const f = FILES.get(key);
+    if (!f) return send(res, 404, { error: 'not found' });
+    // supabase-js invia i Blob come multipart: qui si restituisce solo il file, come lo Storage vero
+    let buf = f.buf, type = f.type;
+    if (/multipart\/form-data/.test(type)) {
+      const boundary = '--' + /boundary=([^;]+)/.exec(type)[1];
+      for (const part of buf.toString('latin1').split(boundary)) {
+        const i = part.indexOf('\r\n\r\n');
+        if (i > 0 && /filename=/i.test(part.slice(0, i))) {
+          type = (/content-type:\s*([^\r\n]+)/i.exec(part.slice(0, i)) ?? [, 'application/octet-stream'])[1];
+          buf = Buffer.from(part.slice(i + 4, part.length - 2), 'latin1');
+          break;
+        }
+      }
+    }
+    res.writeHead(200, { 'content-type': type });
+    return res.end(buf);
+  }
   return send(res, 404, { msg: 'not implemented in local stack' });
 }
 
